@@ -82,6 +82,12 @@ div.dashboard {
     row-gap:2%;
     grid-template-rows: auto;
   }
+
+  div.form-inputs label > textarea {
+    grid-row: span 2;
+    height:7vh;
+    resize:none;
+  }
   
   div.form-inputs > *:first-child {
     grid-column-start: span 2;
@@ -109,6 +115,7 @@ div.form-inputs > div {
   align-items: center;
 }
 
+
 div.form-inputs > div > span:nth-child(1) {
   font-size:30px;
   font-weight:700;
@@ -119,4 +126,11 @@ div.form-inputs > div > div {
   display:flex;
   flex-direction: column;
   align-items: flex-start;
+  border:1px solid black;
+  padding:3% 18%;
+}
+
+table.rank-table .disabled-link {
+  pointer-events: none;
+  color:black;
 }

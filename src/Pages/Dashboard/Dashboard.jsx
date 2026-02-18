@@ -47,7 +47,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
                 <td><Link 
                   to="/profile"
                   state={{ player: element }}
-                  >
+                  className={inTaskSession ? "disabled-link" : ""}>
                   {element.username}
                   </Link></td>
                 <td>{element.points}</td>
@@ -67,28 +67,23 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
             onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
           </label>
           <label>
-            Where will you work:
+            Why work here?
             <input type="text" name="location"
             onChange={e => setDraftTask(prev => ({ ...prev, location: e.target.value }))}/>
           </label>
           <label>
-            Where are your distractions:
+            Where are your distractions?
             <input type="text" name="distractions"
             onChange={e => setDraftTask(prev => ({ ...prev, distractions: e.target.value }))}/>
           </label>
           <label>
-            Is this task similar to what you did before:
-            <input type="text" name="similarity"
-            onChange={e => setDraftTask(prev => ({ ...prev, similarity: e.target.value }))}/>
-          </label>
-          <label>
-            Why did you pick this task:
-            <input type="text" name="reasonToSelect"
+            Why did you pick this task?
+            <textarea name="reasonToSelect"
             onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
           </label>
           <label>
-            How will you maximize efficiency:
-            <input type="text" name="efficiency"
+            How will you be efficient?
+            <textarea name="efficiency"
             onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
           <label>
@@ -179,7 +174,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
   }
 
   const taskInputsFilled = (e) => {
-    return draftTask.taskName && draftTask.location && draftTask.similarity &&
+    return draftTask.taskName && draftTask.location &&
     draftTask.distractions && draftTask.reasonToSelect && draftTask.efficiency &&
     draftTask.estimatedDuration && draftTask.estimatedBuffer;
   }
