@@ -58,11 +58,11 @@ function App() {
     <DatabaseConnectionContext.Provider value={databaseConnection}>
         <Routes>
           <Route path='/' element={<Dashboard inTaskSession={inTaskSession} setInTaskSession={setInTaskSession}></Dashboard>}/>
-          <Route path='/events'element={<Events></Events>}/>
-          <Route path='/shop'element={<Shop></Shop>}/>
-          <Route path='/journal'element={<Journal></Journal>}/>
-          <Route path='/settings'element={<Settings></Settings>}/>
-          <Route path='/profile'element={<Profile></Profile>}/>
+          <Route path='/events' element={<Events></Events>}/>
+          <Route path='/shop' element={<Shop></Shop>}/>
+          <Route path='/journal' element={<Journal></Journal>}/>
+          <Route path='/settings' element={<Settings></Settings>}/>
+          <Route path='/profile' element={<Profile></Profile>}/>
         </Routes>
     </DatabaseConnectionContext.Provider>
   </>

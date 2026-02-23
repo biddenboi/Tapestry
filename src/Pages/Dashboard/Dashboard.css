@@ -134,3 +134,12 @@ table.rank-table .disabled-link {
   pointer-events: none;
   color:black;
 }
+
+ul {
+  grid-column-start: 3;
+  grid-column-end: span 2;
+  grid-row-start: 12;
+  grid-row-end: span 5;
+  padding:30px;
+  border:1px solid black;
+}

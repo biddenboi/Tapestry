@@ -231,6 +231,15 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
   return <div className="dashboard">
     {TaskMenu()}
     {RankDisplay()}
+    <ul>
+      <li>Morning Routine (6 am)</li>
+      <li>Do Schoolwork</li>
+      <li>Extracurriculars</li>
+      <li>Jot down plans for everything incomplete / on your mind</li>
+      <li>Free Time</li>
+      <li>Journal</li>
+      <li>Night Routine (10 pm)</li>
+    </ul>
   </div>
 }
 
