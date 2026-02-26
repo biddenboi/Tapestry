@@ -7,14 +7,14 @@ import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
 
 //pass along whether a task session is currently active
-function Dashboard({ inTaskSession, setInTaskSession }) {
+function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   function TaskMenu() {
     return <form action="" className="task-creation-menu"
       onSubmit={handleSubmit}>
         {TaskDescription()}
       {
-        inTaskSession ? 
+        isTaskSession ? 
         <div className="task-session-container">
           <div className="task-form-buttons">
             <button>Complete</button>
@@ -47,7 +47,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
                 <td><Link 
                   to="/profile"
                   state={{ player: element }}
-                  className={inTaskSession ? "disabled-link" : ""}>
+                  className={isTaskSession ? "disabled-link" : ""}>
                   {element.username}
                   </Link></td>
                 <td>{element.points}</td>
@@ -59,7 +59,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
   }
 
   function TaskDescription() {
-    if (!inTaskSession) {
+    if (!isTaskSession) {
       return <div className="form-inputs">
           <label>
             Task Name:
@@ -167,7 +167,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
 
     loadPlayers();
    
-  }, [playerDatabase, inTaskSession])
+  }, [playerDatabase, isTaskSession])
 
   const getTaskDuration = () => {
     return taskStartTime ? Date.now() - taskStartTime : 0;
@@ -193,7 +193,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
 
     await taskDatabase.addTaskLog(task);
 
-    setInTaskSession(false); // Reset the start time
+    setIsTaskSession(false); // Reset the start time
     setTaskStartTime(null);  
     setDurationPenalty(null);
     setDraftTask({});
@@ -208,7 +208,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
       localCreatedAt: new Date().toLocaleString('sv').replace(' ', 'T') + '.000',
     }
 
-    setInTaskSession(true); //changes visual menu
+    setIsTaskSession(true); //changes visual menu
     setTaskStartTime(Date.now());  // Record when task started
     setDurationPenalty(0);
     setDraftTask(taskData);
@@ -216,7 +216,7 @@ function Dashboard({ inTaskSession, setInTaskSession }) {
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    setInTaskSession(false);
+    setIsTaskSession(false);
     setTaskStartTime(null);  // Reset start time when giving up
     setDurationPenalty(0);
     setDraftTask({});
