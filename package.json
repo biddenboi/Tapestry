@@ -1,5 +1,5 @@
 {
-  "name": "checkpoint",
+  "name": "Tapestry",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -36,12 +36,13 @@
   },
   "main": "electron/main.cjs",
   "build": {
-    "appId": "com.yourcompany.checkpoint1",
-    "productName": "Checkpoint-1",
+    "appId": "com.Tapestry",
+    "productName": "Tapestry",
     "files": [
       "dist/**/*",
       "electron/**/*"
     ],
+    "icon": "logo",
     "directories": {
       "buildResources": "assets"
     },
