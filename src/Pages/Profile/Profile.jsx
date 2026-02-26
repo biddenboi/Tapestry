@@ -14,7 +14,9 @@ function Profile() {
 
   function getDateAsString(date) {
     const hours = parseInt(date.split(":")[0]);
-    const minutes = parseInt(date.split(":")[1]);
+    let minutes = date.split(":")[1];
+
+
 
     return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
     hours + ":" + minutes + "am";
