@@ -1,3 +1,5 @@
+
+/* ----- Styling navigation bar ----- */
 div.navigation-bar {
   position:fixed;
   width:100%;
@@ -12,7 +14,7 @@ div.navigation-bar {
   left:0;
 }
 
-
+/*disable navigation bar when task in session*/
 div.navigation-bar.task-in-session {
   color:gray;
   cursor:not-allowed;
