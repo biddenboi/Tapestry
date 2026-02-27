@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom';
 function Dashboard({ isTaskSession, setIsTaskSession }) {
   /*Internal Data*/
   const [playerPoints, setPlayerPoints] = useState([]);
+
+  //convert this to an object with a list of penalties
   const [durationPenalty, setDurationPenalty] = useState(null);
   const [draftTask, setDraftTask] = useState({});
 
@@ -205,7 +207,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
             <button type="button" onClick={handleGiveUpTask}>Give Up</button>
           </div>
-          <Stopwatch startTime={draftTask.createdAt} durationPenalty={durationPenalty}/> 
+          <Stopwatch startTime={new Date(draftTask.localCreatedAt).getTime()} durationPenalty={durationPenalty}/> 
           
         </div>
         : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={taskInputsFilled() ? false : true}>Start</button>

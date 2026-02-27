@@ -1,37 +1,17 @@
-/***Pretty elegant, albeit difficult to reuse solution.
- * The way it works is that stopwatch uses a useEffect to constantly
- * update a visual display of the elapsed time since the startTime prop was set.
- * It doesn't actually really store data - really only taking care of the visual aspect.
- * The state updates every 100ms to update the number displayed. Unfortunately,
- * this means that a re-render of the component will be necessary.
- * 
- * In the dashboard, Elapsed time is formatted as hours, minutes, and seconds.
- * The actual duration in milliseconds is calculated within the dashboard upon
- * task completion by subtracting the current time from the start time.
- * 
- * When this component is finally detached, clearInterval command will run.
- * 
- * This implementation therefore doesn't cleanly encapsulate the stopwatch logic.
- * I don't think thats really possible unless I was using a javascript class though.
- * 
- * I think honestly this is kind of how react handles things. 
-*/
-
-//[CHECK] Implement again using online tutorial.
-
-import { useState, useEffect } from 'react';
 import './Stopwatch.css';
+import { useState, useEffect } from 'react';
+import { timeAsHHMMSS, msToPoints } from '../../Helpers';
 
 /**
- * Displays elapsed time since startTime
- * @param {number} startTime - Timestamp (from Date.now()) when task started
+ * Visually handles 
+ * @param {number} startTime (milliseconds) - when to start stopwatch from.
+ * @param {number} durationPenalty - the amount of points penalized. 
 */
 
 function Stopwatch({ startTime, durationPenalty }) {  
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    //check if elapsedtime set already
     if (!startTime) {
       setElapsedTime(0);
       return;
@@ -39,32 +19,16 @@ function Stopwatch({ startTime, durationPenalty }) {
 
     const interval = setInterval(() => {
       setElapsedTime(Date.now() - startTime);
-    }, 100);
+    }, 1000);
 
     // Cleanup: clear interval when component unmounts or startTime changes
     return () => clearInterval(interval);
   }, [startTime]);
 
-  /**
-   * Convert milliseconds to HH:MM:SS format
-   * @param {number} ms - Time in milliseconds
-   * @returns {string} Formatted time (e.g., "01:23:45")
-   */
-  const formatTime = (ms) => {
-    //[CHECK] how method functions
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    // [Pad with zeros: 5 becomes "05"
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="stopwatch">
-      <span>{formatTime(elapsedTime)}</span>
-      <span>{Math.floor(elapsedTime / 10000) - durationPenalty + " points"}</span>
+      <span>{timeAsHHMMSS(elapsedTime)}</span>
+      <span>{msToPoints(elapsedTime) - durationPenalty + " points"}</span>
       <span>{durationPenalty != 0 ? "(-" + durationPenalty + " focus penalty)" : ""}</span>
     </div>
   );
