@@ -1,5 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
+
 import './Profile.css';
+import { getTimeAsString } from "../../Helpers";
 
 function Profile() {
 //read through this code again when ur not tired
@@ -12,16 +14,7 @@ function Profile() {
     return null;
   }
 
-  function getDateAsString(date) {
-    const hours = parseInt(date.split(":")[0]);
-    let minutes = date.split(":")[1];
-
-    return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
-    hours + ":" + minutes + "am";
-  }
-
   return <div className="profile">
-           
     <div className="profile-banner">
         <div className="stats-subsection">
             <span>{player.localCreatedAt.split("T")[0]}</span>
@@ -29,9 +22,6 @@ function Profile() {
             <span>{player.description ? '"'+player.description+'"' : "No Bio."}</span>
         </div>
         <div className="description-subsection">
-            <div>
-                
-            </div>
             <div>
                 <span>Final Points:</span>
                 <span>{player.points}</span>
@@ -56,7 +46,7 @@ function Profile() {
                     {
                         player.tasks.map((element, index) => (
                         <tr key={element.createdAt}>
-                            <td>{getDateAsString(element.localCreatedAt.split('T')[1].split('Z')[0])}</td>
+                            <td>{getTimeAsString(element.createdAt)}</td>
                             <td>{Math.floor(element.duration / 60000) + "m"}</td>
                             <td>{element.taskName}</td>
                             <td>{element.points}</td>

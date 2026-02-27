@@ -49,5 +49,19 @@ export const addDurationToUTCString = (UTC, ms) => {
     return new Date(new Date(UTC).getTime() + ms);
 }
 
+/**
+ * Returns a formatted string of time given a UTC String
+ * @param {String} date - A UTC String of the starting datetime.
+ */
+export function getTimeAsString(date) {
+    const time = date.split('T')[1].split('Z')[0];
+
+    const hours = parseInt(time.split(":")[0]);
+    let minutes = time.split(":")[1];
+
+    return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
+    hours + ":" + minutes + "am";
+}
+
 /* ------------------------------ Player ------------------------------*/
 
