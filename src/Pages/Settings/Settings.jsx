@@ -1,11 +1,19 @@
-import './Settings.css'
 import { useContext, useMemo, useState, useEffect } from 'react';
 import { DatabaseConnectionContext } from '../../App';
+
+import './Settings.css'
 import PlayerDatabase from "../../network/Database/PlayerDatabase";
 import TaskDatabase from '../../network/Database/TaskDatabase';
 
 function Settings() {
+    /*Internal Data*/
+    const [playerFileData, setPlayerFileData] = useState(null);
+    const [taskFileData, setTaskFileData] = useState(null);
+    const [usernamePlaceholderText, setUsernamePlaceholderText] = useState("");
+    const [descriptionPlaceholderText, setDescriptionPlaceholderText] = useState("");
+
     const databaseConnection = useContext(DatabaseConnectionContext);
+
     const playerDatabase = useMemo(
         () => new PlayerDatabase(databaseConnection)
         ,[databaseConnection]
@@ -15,14 +23,9 @@ function Settings() {
         ,[databaseConnection]
     );
 
-    const [playerFileData, setPlayerFileData] = useState(null);
-    const [taskFileData, setTaskFileData] = useState(null);
-    const [usernamePlaceholderText, setUsernamePlaceholderText] = useState("");
-    const [descriptionPlaceholderText, setDescriptionPlaceholderText] = useState("");
-
+    
     useEffect(() => {
         const updatePlaceholder = async () => {
-
             const date = new Date().toLocaleString('sv').split(' ')[0];
             const player = await playerDatabase.getPlayer(date);
 
@@ -33,6 +36,7 @@ function Settings() {
         updatePlaceholder();
     }, [playerDatabase])
 
+    /* Helper Methods */
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -60,6 +64,7 @@ function Settings() {
           taskDatabase.addTaskLog(task);
         })
       } 
+      
       const handleTaskDownload = async (e) => {
         await taskDatabase.getDataAsJSON();
       }
@@ -74,9 +79,20 @@ function Settings() {
             playerDatabase.putPlayer(player);
         })
       } 
-      const handlePlayerDownload = async (e) => {
+
+    const handlePlayerDownload = async (e) => {
         await playerDatabase.getDataAsJSON();
-      }
+    }
+
+    /* Components */
+
+    function SettingsGroup(category, inputs) {
+    return <div className="settings-group">
+        <h3>{category}</h3>
+        <hr />
+        {inputs}
+    </div>
+    }
       
 
     return <form onSubmit={handleSubmit} className="settings">
@@ -142,12 +158,6 @@ function Settings() {
     </form>
 }
 
-function SettingsGroup(category, inputs) {
-    return <div className="settings-group">
-        <h3>{category}</h3>
-        <hr />
-        {inputs}
-    </div>
-}
+
 
 export default Settings;

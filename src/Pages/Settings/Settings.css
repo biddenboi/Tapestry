@@ -1,8 +1,25 @@
+/* ----- Settings ----- */
 form.settings {
     margin-top:10vh;
     justify-self: center;
     width:50%;
 }
+
+form.settings label {
+    display:flex;
+    margin:20px 10%;
+    justify-content: space-between;
+}
+
+form.settings button.save-changes {
+    margin-top:15px;
+    margin-left:auto;
+    margin-right:10%;
+    display:block;
+}
+
+
+/* ----- Settings Group ----- */
 
 div.settings-group {
     font-size:17px;
@@ -14,20 +31,7 @@ div.settings-group h3 {
     margin-left:20%;
 }
 
-
-form.settings label {
-    display:flex;
-    margin:20px 10%;
-    justify-content: space-between;
-}
-
 div.settings-group input, div.settings-group button {
     font-weight: 400;
 }
 
-form.settings button.save-changes {
-    margin-top:15px;
-    margin-left:auto;
-    margin-right:10%;
-    display:block;
-}
