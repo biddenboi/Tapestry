@@ -1,3 +1,5 @@
+/* ------------------------------ Time ------------------------------*/
+
 /**
     * Convert milliseconds to HH:MM:SS format
     * @param {number} ms - Time in milliseconds
@@ -27,3 +29,25 @@ export const msToSeconds = (ms) => {
 export const msToPoints = (ms) => {
     return Math.floor(ms / 10000);
 }
+
+export const getLocalDateAtMidnight = () => {
+    //retrieves swedish time (local) and formats as UTC with truncated time.
+    return new Date(new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00");
+}
+
+export const getLocalDate = () => {
+    //retrieves swedish time (local) and formats as UTC.
+    return new Date(new Date().toLocaleString('sv').replace(' ', "T"));
+}
+
+/**
+ * Returns a date object the final time elapsed by duration
+ * @param {String} UTC - A UTC String of the starting date.
+ * @param {number} ms - The amount of milliseconds to add by.
+ */
+export const addDurationToUTCString = (UTC, ms) => {
+    return new Date(new Date(UTC).getTime() + ms);
+}
+
+/* ------------------------------ Player ------------------------------*/
+

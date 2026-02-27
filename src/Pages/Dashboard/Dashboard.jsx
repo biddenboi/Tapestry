@@ -5,13 +5,18 @@ import TaskDatabase from '../../network/Database/TaskDatabase.js';
 import PlayerDatabase from '../../network/Database/PlayerDatabase.js';
 import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
+import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString, msToPoints } from '../../Helpers.js';
 
-/*Contains Rank, Todo List, and Input Task Form */
+/** 
+  * Contains Rank, Todo List, and Input Task Form 
+  * @param {boolean} isTaskSession
+  * @param {function} setIsTaskSession
+*/
 function Dashboard({ isTaskSession, setIsTaskSession }) {
   /*Internal Data*/
   const [playerPoints, setPlayerPoints] = useState([]);
 
-  //convert this to an object with a list of penalties
+  //convert duration penalty into an object
   const [durationPenalty, setDurationPenalty] = useState(null);
   const [draftTask, setDraftTask] = useState({});
 
@@ -31,12 +36,14 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const players = await playerDatabase.getPlayers()
 
       const playerPointsPromises = players.map(async (player) => {
-        const lastMidnight = new Date(new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00");
-        const currentTime = new Date(new Date().toLocaleString('sv').replace(' ', "T"));
-        const msElapsedSinceStart = currentTime - lastMidnight;
+        const lastMidnight = getLocalDateAtMidnight();
+        const currentTime = getLocalDate();
+        const msElapsed = currentTime - lastMidnight;
 
+        //grabs the tasks for each player between their respective midnight + duration since current days midnight
+        //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (new Date(new Date(player.localCreatedAt).getTime() + msElapsedSinceStart)).toISOString();
+        const endDate = (addDurationToUTCString(player.localCreatedAt, msElapsed)).toISOString();
 
         const tasks = await taskDatabase.getTasksFromRange(startDate, endDate);
 
@@ -59,18 +66,16 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       loadPlayers();
   }, [playerDatabase, isTaskSession])
 
+  /* Helper Methods */
+
   const getTaskDuration = () => {
     return draftTask.createdAt ? Date.now() - new Date(draftTask.createdAt).getTime() : 0;
   }
 
-  const taskInputsFilled = (e) => {
-    return draftTask.taskName && draftTask.location &&
-    draftTask.distractions && draftTask.reasonToSelect && draftTask.efficiency &&
-    draftTask.estimatedDuration && draftTask.estimatedBuffer;
-  }
-
   const getTaskPoints = () => {
-    return Math.floor(getTaskDuration() / 10000);
+    //might remove and replace its calls with just msToPoints(getTaskDuration());
+    const duration = getTaskDuration();
+    return Math.floor(msToPoints(duration));
   }
 
   const handleSubmit = async (e) => {
@@ -78,25 +83,25 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
-      points: Math.floor(getTaskPoints() - durationPenalty)
+      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty)
     }
 
     await taskDatabase.addTaskLog(task);
 
-    setIsTaskSession(false); // Reset the start time
+    setIsTaskSession(false); 
     setDurationPenalty(null);
     setDraftTask({});
     e.target.reset();
   }
 
-  const handleStartTask = (e) => {
+  const handleStartTask = () => {
     const taskData = {
       ...draftTask,
       createdAt: new Date().toISOString(),
-      localCreatedAt: new Date().toLocaleString('sv').replace(' ', 'T') + '.000',
+      localCreatedAt: getLocalDate(),
     }
 
-    setIsTaskSession(true); //changes visual menu
+    setIsTaskSession(true); 
     setDurationPenalty(0);
     setDraftTask(taskData);
   }
@@ -108,13 +113,15 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     setDraftTask({});
   }
 
-  const handleBrokeFocus = async(e) => {
+  const handleBrokeFocus = async() => {
+    //applies penalty that divides your points by 2 up to this point
     const penalty = (getTaskPoints() - durationPenalty) / 2;
     setDurationPenalty(Math.floor(penalty + durationPenalty));
-    //uses old value of durationpenalty for console log (to simulate fix that)
   }
 
-  function RankDisplay() {
+  /* Components */
+
+  function RankListComponent() {
     return <div className="rank-list">
       <table className="rank-table">
         <thead>
@@ -143,7 +150,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     </div>
   }
 
-  function TaskMenu() {
+  function TaskFormComponent() {
     function TaskInputs() {
     if (!isTaskSession) {
       return <div className="form-inputs">
@@ -210,14 +217,14 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           <Stopwatch startTime={new Date(draftTask.localCreatedAt).getTime()} durationPenalty={durationPenalty}/> 
           
         </div>
-        : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={taskInputsFilled() ? false : true}>Start</button>
+        : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
       }
     </form>
   }
 
   return <div className="dashboard">
-    {TaskMenu()}
-    {RankDisplay()}
+    {TaskFormComponent()}
+    {RankListComponent()}
     <ul>
       <li>Morning Routine (6 am)</li>
       <li>Do Schoolwork</li>
