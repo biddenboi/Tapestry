@@ -1,98 +1,107 @@
+/* ----- Dashboard ----- */
 div.dashboard {
     display: grid;
     height: 100%;
     grid-template-rows: repeat(20, 5%);
     grid-template-columns: repeat(10, 10%);
 }
-  
-  table.rank-table, table.rank-table th, table.rank-table td {
-    border: 0.1px solid rgb(206, 206, 206);
-  }
-  
-  div.rank-list {
-    display:flex;
-    flex-direction: column;
-  }
 
-  div.rank-list {
-    display:block;
-    overflow-y:scroll;
-    border: 1px solid rgb(194, 194, 194);
-  }
-  
-  table.rank-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    max-height:100%;
-    width:100%;
-    font-size: 17px;
-  }
-  
-  div.task-form-buttons {
-    display:flex;
-    justify-content: space-evenly;
-  }
-  
-  button.task-form-buttons {
-    width:70%;
-    align-self: center;
-  }
-  
-  form.task-creation-menu {
-    grid-column-start: 2;
-    grid-column-end: span 4;
-    grid-row-start: 3;
-    grid-row-end: span 9;
-    display:flex;
-    flex-direction: column;
-    justify-content: center;
-    gap:60px;
-  }
-  
-  div.rank-list {
-    grid-column-start: 7;
-    grid-column-end: span 3;
-    grid-row-start: 3;
-    grid-row-end: span 16;
-  }
+/* ----- Rank List ----- */
+table.rank-table, table.rank-table th, table.rank-table td {
+  border: 0.1px solid rgb(206, 206, 206);
+}
 
-  table.rank-table thead {
-    position: sticky;
-    top: 0;
-    background: white;
-    font-weight:900;
-  }
+div.rank-list {
+  display:block;
+  overflow-y:scroll;
+  border: 1px solid rgb(194, 194, 194);
+}
 
-  table.rank-table tbody {
-    font-size:15px;
-  }
+table.rank-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  max-height:100%;
+  width:100%;
+  font-size: 17px;
+}
 
-  table.rank-table tr > td {
-    padding: 5px 5px 5px 5px;
-  }
+div.rank-list {
+  grid-column-start: 7;
+  grid-column-end: span 3;
+  grid-row-start: 3;
+  grid-row-end: span 16;
+}
 
-  table.rank-table tr > td:nth-child(1) {
-    font-weight:600;
-  }
-  
-  div.form-inputs {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 5%;
-    row-gap:2%;
-    grid-template-rows: auto;
-  }
+table.rank-table thead {
+  position: sticky;
+  top: 0;
+  background: white;
+  font-weight:900;
+}
 
-  div.form-inputs label > textarea {
-    grid-row: span 2;
-    height:7vh;
-    resize:none;
-  }
-  
-  div.form-inputs > *:first-child {
-    grid-column-start: span 2;
-  }
-  
+table.rank-table tbody {
+  font-size:15px;
+}
+
+table.rank-table tr > td {
+  padding: 5px 5px 5px 5px;
+}
+
+table.rank-table tr > td:nth-child(1) {
+  font-weight:600;
+}
+
+
+table.rank-table > Link {
+  color: black;
+}
+
+table.rank-table .disabled-link {
+  pointer-events: none;
+  color:black;
+}
+
+/* ----- Task Form ----- */
+
+div.task-form-buttons {
+  display:flex;
+  justify-content: space-evenly;
+}
+
+button.task-form-buttons {
+  width:70%;
+  align-self: center;
+}
+
+form.task-creation-menu {
+  grid-column-start: 2;
+  grid-column-end: span 4;
+  grid-row-start: 3;
+  grid-row-end: span 9;
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+  gap:60px;
+}
+
+div.form-inputs {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 5%;
+  row-gap:2%;
+  grid-template-rows: auto;
+}
+
+div.form-inputs label > textarea {
+  grid-row: span 2;
+  height:7vh;
+  resize:none;
+}
+
+div.form-inputs > *:first-child {
+  grid-column-start: span 2;
+}
+
 form.task-creation-menu label {
   display:flex;
   flex-direction: column;
@@ -101,11 +110,7 @@ form.task-creation-menu label {
 
 div.task-session-container {
   display: flex;
-  flex-direction: column;  
-}
-
-table.rank-table > Link {
-  color: black;
+  flex-direction: column;
 }
 
 div.form-inputs > div {
@@ -114,7 +119,6 @@ div.form-inputs > div {
   flex-direction: column;
   align-items: center;
 }
-
 
 div.form-inputs > div > span:nth-child(1) {
   font-size:30px;
@@ -130,10 +134,7 @@ div.form-inputs > div > div {
   padding:3% 18%;
 }
 
-table.rank-table .disabled-link {
-  pointer-events: none;
-  color:black;
-}
+/* ----- Other ----- */
 
 ul {
   grid-column-start: 3;
