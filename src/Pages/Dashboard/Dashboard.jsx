@@ -6,27 +6,110 @@ import PlayerDatabase from '../../network/Database/PlayerDatabase.js';
 import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
 
-//pass along whether a task session is currently active
+/*Contains Rank, Todo List, and Input Task Form */
 function Dashboard({ isTaskSession, setIsTaskSession }) {
+  /*Internal Data*/
+  const [playerPoints, setPlayerPoints] = useState([]);
+  const [durationPenalty, setDurationPenalty] = useState(null);
+  const [draftTask, setDraftTask] = useState({});
 
-  function TaskMenu() {
-    return <form action="" className="task-creation-menu"
-      onSubmit={handleSubmit}>
-        {TaskDescription()}
-      {
-        isTaskSession ? 
-        <div className="task-session-container">
-          <div className="task-form-buttons">
-            <button>Complete</button>
-            <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
-            <button type="button" onClick={handleGiveUpTask}>Give Up</button>
-          </div>
-          <Stopwatch startTime={taskStartTime} durationPenalty={durationPenalty}/> 
-          
-        </div>
-        : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={taskInputsFilled() ? false : true}>Start</button>
+  const databaseConnection = useContext(DatabaseConnectionContext);
+  
+  const taskDatabase = useMemo(
+    () => new TaskDatabase(databaseConnection)
+    ,[databaseConnection]
+  );
+  const playerDatabase = useMemo(
+    () => new PlayerDatabase(databaseConnection),
+    [databaseConnection]
+  );
+
+  useEffect(() => {
+    const loadPlayers = async () => {
+      const players = await playerDatabase.getPlayers()
+
+      const playerPointsPromises = players.map(async (player) => {
+        const lastMidnight = new Date(new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00");
+        const currentTime = new Date(new Date().toLocaleString('sv').replace(' ', "T"));
+        const msElapsedSinceStart = currentTime - lastMidnight;
+
+        const startDate = player.localCreatedAt;
+        const endDate = (new Date(new Date(player.localCreatedAt).getTime() + msElapsedSinceStart)).toISOString();
+
+        const tasks = await taskDatabase.getTasksFromRange(startDate, endDate);
+
+        let sum = 0;
+        tasks.forEach(task => {
+          sum += (task.points || 0);
+        });
+
+        return {
+          ...player,
+          points: sum,
+          tasks: tasks
+        };
       }
-    </form>
+    );
+      const results = await Promise.all(playerPointsPromises);
+      results.sort((a, b) => b.points - a.points);
+      setPlayerPoints(results);
+    };
+      loadPlayers();
+  }, [playerDatabase, isTaskSession])
+
+  const getTaskDuration = () => {
+    return draftTask.createdAt ? Date.now() - new Date(draftTask.createdAt).getTime() : 0;
+  }
+
+  const taskInputsFilled = (e) => {
+    return draftTask.taskName && draftTask.location &&
+    draftTask.distractions && draftTask.reasonToSelect && draftTask.efficiency &&
+    draftTask.estimatedDuration && draftTask.estimatedBuffer;
+  }
+
+  const getTaskPoints = () => {
+    return Math.floor(getTaskDuration() / 10000);
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const task = {
+      ...draftTask,
+      duration: getTaskDuration(),  
+      points: Math.floor(getTaskPoints() - durationPenalty)
+    }
+
+    await taskDatabase.addTaskLog(task);
+
+    setIsTaskSession(false); // Reset the start time
+    setDurationPenalty(null);
+    setDraftTask({});
+    e.target.reset();
+  }
+
+  const handleStartTask = (e) => {
+    const taskData = {
+      ...draftTask,
+      createdAt: new Date().toISOString(),
+      localCreatedAt: new Date().toLocaleString('sv').replace(' ', 'T') + '.000',
+    }
+
+    setIsTaskSession(true); //changes visual menu
+    setDurationPenalty(0);
+    setDraftTask(taskData);
+  }
+
+  const handleGiveUpTask = async (e) => {
+    e.target.form.reset();
+    setIsTaskSession(false);
+    setDurationPenalty(0);
+    setDraftTask({});
+  }
+
+  const handleBrokeFocus = async(e) => {
+    const penalty = (getTaskPoints() - durationPenalty) / 2;
+    setDurationPenalty(Math.floor(penalty + durationPenalty));
+    //uses old value of durationpenalty for console log (to simulate fix that)
   }
 
   function RankDisplay() {
@@ -58,7 +141,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     </div>
   }
 
-  function TaskDescription() {
+  function TaskMenu() {
+    function TaskInputs() {
     if (!isTaskSession) {
       return <div className="form-inputs">
           <label>
@@ -110,122 +194,23 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       </div>
     }
   }
-
-  const databaseConnection = useContext(DatabaseConnectionContext);
-  const taskDatabase = useMemo(
-    () => new TaskDatabase(databaseConnection)
-    ,[databaseConnection]
-  );
-  const playerDatabase = useMemo(
-    () => new PlayerDatabase(databaseConnection),
-    [databaseConnection]
-  );
-  
-  //First fetch all the players, then use getTasksFromRange for each player and sum up the points. We discard the actual task object after we calculate total # of tasks so at most like 100 tasks in memory at a time before being reduced to a integer.
-  const [playerPoints, setPlayerPoints] = useState([]);
-  const [taskStartTime, setTaskStartTime] = useState(null);
-  const [durationPenalty, setDurationPenalty] = useState(null);
-  const [draftTask, setDraftTask] = useState({});
-
-
-  useEffect(() => { //review method
-    //**loads all players** and adds task totals every call. 
-    //"async/await in forEach" / "the JavaScript forEach async trap."
-    //understand ISOString and Date
-    const loadPlayers = async () => {
-      const players = await playerDatabase.getPlayers()
-
-      const playerPointsPromises = players.map(async (player) => {
-        const lastMidnight = new Date(new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00");
-        const currentTime = new Date(new Date().toLocaleString('sv').replace(' ', "T"));
-        const msElapsedSinceStart = currentTime - lastMidnight;
-
-        const startDate = player.localCreatedAt;
-        const endDate = (new Date(new Date(player.localCreatedAt).getTime() + msElapsedSinceStart)).toISOString();
-
-        const tasks = await taskDatabase.getTasksFromRange(startDate, endDate);
-
-        let sum = 0;
-        tasks.forEach(task => {
-          sum += (task.points || 0);
-        });
-
-        return {
-          ...player,
-          points: sum,
-          tasks: tasks
-        };
+    return <form action="" className="task-creation-menu"
+      onSubmit={handleSubmit}>
+        {TaskInputs()}
+      {
+        isTaskSession ? 
+        <div className="task-session-container">
+          <div className="task-form-buttons">
+            <button>Complete</button>
+            <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
+            <button type="button" onClick={handleGiveUpTask}>Give Up</button>
+          </div>
+          <Stopwatch startTime={draftTask.createdAt} durationPenalty={durationPenalty}/> 
+          
+        </div>
+        : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={taskInputsFilled() ? false : true}>Start</button>
       }
-    );
-
-    const results = await Promise.all(playerPointsPromises);
-
-    results.sort((a, b) => b.points - a.points);
-
-    setPlayerPoints(results);
-  };
-
-    loadPlayers();
-   
-  }, [playerDatabase, isTaskSession])
-
-  const getTaskDuration = () => {
-    return taskStartTime ? Date.now() - taskStartTime : 0;
-  }
-
-  const taskInputsFilled = (e) => {
-    return draftTask.taskName && draftTask.location &&
-    draftTask.distractions && draftTask.reasonToSelect && draftTask.efficiency &&
-    draftTask.estimatedDuration && draftTask.estimatedBuffer;
-  }
-
-  const getTaskPoints = () => {
-    return Math.floor(getTaskDuration() / 10000);
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const task = {
-      ...draftTask,
-      duration: getTaskDuration(),  
-      points: Math.floor(getTaskPoints() - durationPenalty)
-    }
-
-    await taskDatabase.addTaskLog(task);
-
-    setIsTaskSession(false); // Reset the start time
-    setTaskStartTime(null);  
-    setDurationPenalty(null);
-    setDraftTask({});
-    e.target.reset();
-  }
-
-
-  const handleStartTask = (e) => {
-    const taskData = {
-      ...draftTask,
-      createdAt: new Date().toISOString(),
-      localCreatedAt: new Date().toLocaleString('sv').replace(' ', 'T') + '.000',
-    }
-
-    setIsTaskSession(true); //changes visual menu
-    setTaskStartTime(Date.now());  // Record when task started
-    setDurationPenalty(0);
-    setDraftTask(taskData);
-  }
-
-  const handleGiveUpTask = async (e) => {
-    e.target.form.reset();
-    setIsTaskSession(false);
-    setTaskStartTime(null);  // Reset start time when giving up
-    setDurationPenalty(0);
-    setDraftTask({});
-  }
-
-  const handleBrokeFocus = async(e) => {
-    const penalty = (getTaskPoints() - durationPenalty) / 2;
-    setDurationPenalty(Math.floor(penalty + durationPenalty));
-    //uses old value of durationpenalty for console log (to simulate fix that)
+    </form>
   }
 
   return <div className="dashboard">
