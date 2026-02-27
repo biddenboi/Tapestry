@@ -56,42 +56,36 @@ function Settings() {
 
     //task data interaction methods
     const handleTaskUpload = async (e) => {
-    
         const tasksAsJSONString = await taskFileData.text();
         taskDatabase.clearTaskData();
     
         JSON.parse(tasksAsJSONString).forEach((task) => {
           taskDatabase.addTaskLog(task);
         })
-      } 
+    } 
       
-      const handleTaskDownload = async (e) => {
-        await taskDatabase.getDataAsJSON();
-      }
+    const handleTaskDownload = async (e) => {
+        await databaseConnection.getDataAsJSON();
+    }
 
       //player data interaction methods
       const handlePlayerUpload = async (e) => {
-    
         const playersAsJSONString = await playerFileData.text();
         playerDatabase.clearPlayerData();
     
         JSON.parse(playersAsJSONString).forEach((player) => {
             playerDatabase.putPlayer(player);
         })
-      } 
-
-    const handlePlayerDownload = async (e) => {
-        await playerDatabase.getDataAsJSON();
-    }
+    } 
 
     /* Components */
 
     function SettingsGroup(category, inputs) {
-    return <div className="settings-group">
-        <h3>{category}</h3>
-        <hr />
-        {inputs}
-    </div>
+        return <div className="settings-group">
+            <h3>{category}</h3>
+            <hr />
+            {inputs}
+        </div>
     }
       
 
@@ -124,12 +118,8 @@ function Settings() {
         {SettingsGroup("Data",
             <>
                 <label>
-                    Download Task Data:
+                    Download Data:
                     <button type="button" onClick={handleTaskDownload}>Download</button>
-                </label>  
-                <label>
-                    Download Player Data:
-                    <button type="button" onClick={handlePlayerDownload}>Download</button>
                 </label>  
                 <label>
                     Upload Task Data:
