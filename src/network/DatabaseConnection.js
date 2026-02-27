@@ -1,3 +1,5 @@
+import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString } from '../Helpers.js';
+
 class DatabaseConnection {
     database = null;
 
@@ -93,6 +95,10 @@ class DatabaseConnection {
         })
     }
 
+    /**
+     * 
+     * @param {string} file - a JSON string representation of all the data
+     */
     async dataUpload(file) {
         //data can be deleted before upload since on fail the user still has original file
 
@@ -110,13 +116,20 @@ class DatabaseConnection {
         //remove all player data and add from new file.
         this.clearPlayerData();
 
-        playerData.forEach((player) => {
-          this.createPlayer(player);
+        playerData.forEach(async (player) => {
+            const playerTasks = await this.getPlayerTasks(player);
+
+            if (playerTasks.length != 0) {
+                this.createPlayer(player);
+            }
         })
     } 
 
     /** player methods */
 
+    /**
+     * @param {*} player - player to add
+     */
     async putPlayer(player) {
         await this.ready;
 
@@ -136,6 +149,38 @@ class DatabaseConnection {
 
             return request;
         })
+    }
+
+    /**
+     * retrieves all the tasks for a player in the range of localTime + the elapsed time since midnight for the current day.
+     * @param {*} player - player to retrieve the tasks of.
+     */
+    async getRelativePlayerTasks(player) {
+        const lastMidnight = getLocalDateAtMidnight();
+        const currentTime = getLocalDate();
+        const msElapsed = currentTime - lastMidnight;
+
+        //grabs the tasks for each player between their respective midnight + duration since current days midnight
+        //allows syncronous gameplay
+        const startDate = player.localCreatedAt;
+        const endDate = (addDurationToUTCString(player.localCreatedAt, msElapsed)).toISOString();
+
+        const tasks = await this.getTasksFromRange(startDate, endDate);
+        
+        return tasks;
+    }
+
+    /**
+     * retrieves all the tasks for a player over its entire span.
+     * @param {*} player - player to retrieve the tasks of.
+     */
+    async getPlayerTasks(player) {
+        const startDate = player.localCreatedAt;
+        const endDate = (addDurationToUTCString(player.localCreatedAt, 86400000)).toISOString();
+
+        const tasks = await this.getTasksFromRange(startDate, endDate);
+        
+        return tasks;
     }
 
     async getPlayer(localCreatedAt) {

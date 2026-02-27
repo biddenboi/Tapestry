@@ -1,9 +1,9 @@
 import './Dashboard.css'
-import { useState, useEffect, useContext, useMemo } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { DatabaseConnectionContext } from '../../App.jsx';
 import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
-import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString, msToPoints } from '../../Helpers.js';
+import { getLocalDate, msToPoints } from '../../Helpers.js';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -25,16 +25,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const players = await databaseConnection.getPlayers()
 
       const playerPointsPromises = players.map(async (player) => {
-        const lastMidnight = getLocalDateAtMidnight();
-        const currentTime = getLocalDate();
-        const msElapsed = currentTime - lastMidnight;
-
-        //grabs the tasks for each player between their respective midnight + duration since current days midnight
-        //allows syncronous gameplay
-        const startDate = player.localCreatedAt;
-        const endDate = (addDurationToUTCString(player.localCreatedAt, msElapsed)).toISOString();
-
-        const tasks = await databaseConnection.getTasksFromRange(startDate, endDate);
+        const tasks = await databaseConnection.getRelativePlayerTasks(player)
 
         let sum = 0;
         tasks.forEach(task => {
