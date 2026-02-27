@@ -1,8 +1,6 @@
 import './Dashboard.css'
 import { useState, useEffect, useContext, useMemo } from 'react'
 import { DatabaseConnectionContext } from '../../App.jsx';
-import TaskDatabase from '../../network/Database/TaskDatabase.js';
-import PlayerDatabase from '../../network/Database/PlayerDatabase.js';
 import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
 import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString, msToPoints } from '../../Helpers.js';
@@ -21,19 +19,10 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [draftTask, setDraftTask] = useState({});
 
   const databaseConnection = useContext(DatabaseConnectionContext);
-  
-  const taskDatabase = useMemo(
-    () => new TaskDatabase(databaseConnection)
-    ,[databaseConnection]
-  );
-  const playerDatabase = useMemo(
-    () => new PlayerDatabase(databaseConnection),
-    [databaseConnection]
-  );
 
   useEffect(() => {
     const loadPlayers = async () => {
-      const players = await playerDatabase.getPlayers()
+      const players = await databaseConnection.getPlayers()
 
       const playerPointsPromises = players.map(async (player) => {
         const lastMidnight = getLocalDateAtMidnight();
@@ -45,7 +34,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         const startDate = player.localCreatedAt;
         const endDate = (addDurationToUTCString(player.localCreatedAt, msElapsed)).toISOString();
 
-        const tasks = await taskDatabase.getTasksFromRange(startDate, endDate);
+        const tasks = await databaseConnection.getTasksFromRange(startDate, endDate);
 
         let sum = 0;
         tasks.forEach(task => {
@@ -64,7 +53,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       setPlayerPoints(results);
     };
       loadPlayers();
-  }, [playerDatabase, isTaskSession])
+  }, [databaseConnection, isTaskSession])
 
   /* Helper Methods */
 
@@ -98,7 +87,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty)
     }
 
-    await taskDatabase.addTaskLog(task);
+    await databaseConnection.addTaskLog(task);
 
     updateStates(false, null, {})
     e.target.reset();

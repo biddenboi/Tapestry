@@ -9,7 +9,6 @@ import Journal from "./Pages/Journal/Journal";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
-import PlayerDatabase from "./network/Database/PlayerDatabase";
 
 export const DatabaseConnectionContext = createContext();
 
@@ -24,11 +23,6 @@ function App() {
     []
   );
 
-  //dependent on databaseConnection so it recalls once databaseConnection is established.
-  const playerDatabase = useMemo(() => new PlayerDatabase(databaseConnection),
-    [databaseConnection]
-  );
-
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
     const tryNewProfile = async () => {
@@ -37,11 +31,11 @@ function App() {
         createdAt: new Date().toISOString(),
         localCreatedAt: new Date().toLocaleString('sv').split(' ')[0]
       }
-      await playerDatabase.createPlayer(player);
+      await databaseConnection.createPlayer(player);
     }
 
     tryNewProfile();
-  }, [playerDatabase])
+  }, [databaseConnection])
 
   //navigating across routes
   const navigate = (route) => {

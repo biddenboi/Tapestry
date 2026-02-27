@@ -47,7 +47,6 @@ function Settings() {
     }
 
     /* Components */
-
     const handleDataUpload = async (e) => {
         const JSONfileData = await data.text();
         await databaseConnection.dataUpload(JSONfileData);
