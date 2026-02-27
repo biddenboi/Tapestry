@@ -68,6 +68,18 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   /* Helper Methods */
 
+  /**
+   * @param {boolean} taskSession
+   * @param {number} durationPenalty
+   * @param {object} draftTask
+   */
+  const updateStates = (taskSession, durationPenalty, draftTask) => {
+    //updating these states typically happen concurrently (on switch between isTaskSession)
+    setIsTaskSession(taskSession); 
+    setDurationPenalty(durationPenalty);
+    setDraftTask(draftTask);
+  }
+
   const getTaskDuration = () => {
     return draftTask.createdAt ? Date.now() - new Date(draftTask.createdAt).getTime() : 0;
   }
@@ -88,9 +100,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await taskDatabase.addTaskLog(task);
 
-    setIsTaskSession(false); 
-    setDurationPenalty(null);
-    setDraftTask({});
+    updateStates(false, null, {})
     e.target.reset();
   }
 
@@ -101,16 +111,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       localCreatedAt: getLocalDate(),
     }
 
-    setIsTaskSession(true); 
-    setDurationPenalty(0);
-    setDraftTask(taskData);
+    updateStates(true, 0, taskData);
   }
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    setIsTaskSession(false);
-    setDurationPenalty(0);
-    setDraftTask({});
+    updateStates(false, 0, {});
   }
 
   const handleBrokeFocus = async() => {
