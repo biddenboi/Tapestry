@@ -1,47 +1,35 @@
-import { useContext, useMemo, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { DatabaseConnectionContext } from '../../App';
 
 import './Settings.css'
-import PlayerDatabase from "../../network/Database/PlayerDatabase";
-import TaskDatabase from '../../network/Database/TaskDatabase';
 
 function Settings() {
     /*Internal Data*/
-    const [playerFileData, setPlayerFileData] = useState(null);
-    const [taskFileData, setTaskFileData] = useState(null);
+    const [data, setData] = useState(null);
     const [usernamePlaceholderText, setUsernamePlaceholderText] = useState("");
     const [descriptionPlaceholderText, setDescriptionPlaceholderText] = useState("");
 
     const databaseConnection = useContext(DatabaseConnectionContext);
 
-    const playerDatabase = useMemo(
-        () => new PlayerDatabase(databaseConnection)
-        ,[databaseConnection]
-    );
-    const taskDatabase = useMemo(
-        () => new TaskDatabase(databaseConnection)
-        ,[databaseConnection]
-    );
-
     
     useEffect(() => {
         const updatePlaceholder = async () => {
             const date = new Date().toLocaleString('sv').split(' ')[0];
-            const player = await playerDatabase.getPlayer(date);
+            const player = await databaseConnection.getPlayer(date);
 
             setUsernamePlaceholderText(player.username);
             setDescriptionPlaceholderText(player.description);
         }
 
         updatePlaceholder();
-    }, [playerDatabase])
+    }, [databaseConnection])
 
     /* Helper Methods */
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const date = new Date().toLocaleString('sv').split(' ')[0];
-        const player = await playerDatabase.getPlayer(date);
+        const player = await databaseConnection.getPlayer(date);
     
         const formData = new FormData(e.target);
     
@@ -51,34 +39,19 @@ function Settings() {
             localCreatedAt: new Date().toLocaleString('sv').split(' ')[0],
             description: formData.get("description") === "" ? player.description : formData.get("description")
         }
-        await playerDatabase.putPlayer(newPlayer);
+        await databaseConnection.putPlayer(newPlayer);
     }
-
-    //task data interaction methods
-    const handleTaskUpload = async (e) => {
-        const tasksAsJSONString = await taskFileData.text();
-        taskDatabase.clearTaskData();
-    
-        JSON.parse(tasksAsJSONString).forEach((task) => {
-          taskDatabase.addTaskLog(task);
-        })
-    } 
       
-    const handleTaskDownload = async (e) => {
+    const handleDataDownload = async (e) => {
         await databaseConnection.getDataAsJSON();
     }
 
-      //player data interaction methods
-      const handlePlayerUpload = async (e) => {
-        const playersAsJSONString = await playerFileData.text();
-        playerDatabase.clearPlayerData();
-    
-        JSON.parse(playersAsJSONString).forEach((player) => {
-            playerDatabase.putPlayer(player);
-        })
-    } 
-
     /* Components */
+
+    const handleDataUpload = async (e) => {
+        const JSONfileData = await data.text();
+        await databaseConnection.dataUpload(JSONfileData);
+    }
 
     function SettingsGroup(category, inputs) {
         return <div className="settings-group">
@@ -119,28 +92,17 @@ function Settings() {
             <>
                 <label>
                     Download Data:
-                    <button type="button" onClick={handleTaskDownload}>Download</button>
+                    <button type="button" onClick={handleDataDownload}>Download</button>
                 </label>  
                 <label>
-                    Upload Task Data:
+                    Upload Data:
                     <div>
                         <input type="file" 
                         accept=".json" 
                         onChange={
-                            async e => setTaskFileData(e.target.files[0])
+                            async e => setData(e.target.files[0])
                         }/>
-                        <button type="button" onClick={handleTaskUpload}>Upload</button>
-                    </div>
-                </label>  
-                <label>
-                    Upload Player Data:
-                    <div>
-                        <input type="file" 
-                        accept=".json" 
-                        onChange={
-                            async e => setPlayerFileData(e.target.files[0])
-                        }/>
-                        <button type="button" onClick={handlePlayerUpload}>Upload</button>
+                        <button type="button" onClick={handleDataUpload}>Upload</button>
                     </div>
                 </label>  
             </>

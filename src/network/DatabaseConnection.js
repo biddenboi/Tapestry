@@ -65,6 +65,8 @@ class DatabaseConnection {
         })
     }
 
+    /** general methods */
+
     async getDataAsJSON() {
         await this.ready;
 
@@ -90,6 +92,28 @@ class DatabaseConnection {
             URL.revokeObjectURL(url); //revoke since blob urls don't get collected by garbage collector
         })
     }
+
+    async dataUpload(file) {
+        //data can be deleted before upload since on fail the user still has original file
+
+        const dataArray = Object.values(JSON.parse(file));
+        const taskData = dataArray[0];
+        const playerData = dataArray[1];
+
+        //remove all task data and add from new file.
+        this.clearTaskData();
+    
+        taskData.forEach((task) => {
+          this.addTaskLog(task);
+        })
+
+        //remove all player data and add from new file.
+        this.clearPlayerData();
+
+        playerData.forEach((player) => {
+          this.createPlayer(player);
+        })
+    } 
 
     /** player methods */
 
