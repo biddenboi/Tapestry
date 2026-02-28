@@ -8,15 +8,14 @@ div.profile {
 }
 
 div.profile div.profile-banner {
-    border: 1px solid black;
     grid-column-start: 2;
     grid-column-end: span 8;
     grid-row-start:3;
     grid-row-end: span 3;
 
     display:grid;
-    grid-template-columns: 1 1 1;
-    grid-template-rows: 1;
+    grid-template-columns: 2fr 2fr;
+    grid-template-rows: 1fr;
 }
 
 /* ----- Top Bar ----- */
@@ -26,14 +25,11 @@ div.stats-subsection {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    grid-column-start: 1;
-    grid-column-end: 1;
 }
 
 div.stats-subsection > span:nth-child(1) {
     font-size:15px;
     font-weight: bold;
-    margin-top: -15px;
 }
 
 div.stats-subsection > span:nth-child(2) {
@@ -42,22 +38,57 @@ div.stats-subsection > span:nth-child(2) {
 }
 
 div.profile-banner div.description-subsection span:nth-child(2) {
-    font-size:30px;
+    font-size:20px;
     font-weight:600;
-    margin-top: -7px;
+}
+
+div.profile-banner > div.description-subsection {
     display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap:20px;
+    justify-content: center;
+    font-size: 17px;
+}
+
+/* ----- Seperator ----- */
+
+div.profile > div.seperator {
+    grid-column-start: 1;
+    grid-column-start: span 10;
+    grid-row: 7;
+    border:1px solid #B5A8A8;
+    display:flex;
+    align-items: center;
+    justify-content: space-around;
+    font-weight:600;
+    font-size:23px; 
+}
+
+div.profile > div.seperator > button {
+    font-size:15px;
 }
 
 /* ----- History ----- */
 
 div.task-history-display {
-    grid-column-start: 2;
-    grid-column-end: span 8;
-    grid-row-start:7;
-    grid-row-end: span 13;
-    display:block;
+    grid-column-start: 1;
+    grid-column-end: span 10;
+    grid-row-start:8;
+    grid-row-end: span 14;
+    width:100%;
+    background-color: #F0F2F5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+div.task-table-container {
     overflow-y:scroll;
-    border: 1px solid rgb(0, 0, 0);
+    width:80%;
+    height:90%;
+    background-color: white;
+    box-shadow: 0px 4px 5px rgb(183, 183, 183);
 }
 
 table.task-table {
@@ -69,18 +100,11 @@ table.task-table {
 }
 
 table.task-table, table.task-table th, table.task-table td {
-    border: 0.1px solid rgb(0, 0, 0);
+    border: 0.1px solid rgb(228, 228, 228);
+    
 }
 
 table.task-table tr > td {
     padding: 5px 5px 5px 5px;
 }
 
-div.profile-banner > div.description-subsection {
-    display:flex;
-    align-items: center;
-    justify-content: space-evenly;
-    font-size: 17px;
-    grid-column-start: 2;
-    grid-column-end: span 2;
-}

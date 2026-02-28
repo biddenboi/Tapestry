@@ -51,7 +51,7 @@ function App() {
       <a onClick={() => navigate("/")}>Dashboard</a>
       <a onClick={() => navigate("/events")}>Events</a>
       <a onClick={() => navigate("/shop")}>Shop</a>
-      <a onClick={() => navigate(`/profile/${currentPlayer.localCreatedAt}`)}>Journal</a>
+      <a onClick={() => navigate(`/profile/${currentPlayer.localCreatedAt}`)}>Profile</a>
       <a onClick={() => navigate("/settings")}>Settings</a>
     </div>
 

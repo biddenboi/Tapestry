@@ -1,4 +1,5 @@
 import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString } from '../Helpers.js';
+import { DATABASE_VERISON } from '../Constants.js'
 
 class DatabaseConnection {
     database = null;
@@ -16,10 +17,11 @@ class DatabaseConnection {
         console.warn("Database version too old. Please clear your data and refresh.");
     }
 
-    if (oldVersion < 8) {
-        const newPlayerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "localCreatedAt" });
-        newPlayerStore.createIndex("username", "username", { unique: false });
-        newPlayerStore.createIndex("createdAt", "createdAt", { unique: false });
+    if (oldVersion < 9) {
+        const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "localCreatedAt" });
+        PlayerStore.createIndex("username", "username", { unique: false });
+        playerStore.createIndex("createdAt", "createdAt", { unique: false });
+        playerStore.createIndex("description", "description", { unique: false });
 
         const newTaskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "localCreatedAt" });
         newTaskStore.createIndex("createdAt", "createdAt", { unique: false });
@@ -35,11 +37,6 @@ class DatabaseConnection {
         newTaskStore.createIndex("taskName", "taskName", { unique: false });
         newTaskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
     }
-
-    if (oldVersion < 9) {
-        const playerStore = transaction.objectStore("playerObjectStore");
-        playerStore.createIndex("description", "description", { unique: false });
-    }
 }
     constructor() {
         if (!this.isCompatable()) {
@@ -49,7 +46,7 @@ class DatabaseConnection {
         this.ready = new Promise((resolve, reject) => {
 
             //Reminder: when testing version updates change db version and version update if functions at same time
-            const request = window.indexedDB.open("CheckpointDatabase", 9);
+            const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERISON);
 
             request.onerror = (event) => {
                 console.error(`Database error: ${event.target.error?.message}`);
