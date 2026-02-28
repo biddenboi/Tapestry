@@ -35,7 +35,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         return {
           ...player,
           points: sum,
-          tasks: tasks
         };
       }
     );
@@ -88,7 +87,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const taskData = {
       ...draftTask,
       createdAt: new Date().toISOString(),
-      localCreatedAt: getLocalDate(),
+      localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
     }
 
     updateStates(true, 0, taskData);
@@ -122,12 +121,13 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             playerPoints.map((element, index) => (
               <tr key={element.createdAt}>
                 <td>{"#" + (index + 1)}</td>
-                <td><Link 
-                  to="/profile"
-                  state={{ player: element }}
-                  className={isTaskSession ? "disabled-link" : ""}>
-                  {element.username}
-                  </Link></td>
+                <td>
+                  <Link 
+                    to={`/profile/${element.localCreatedAt}`}
+                    className={isTaskSession ? "disabled-link" : ""}>
+                    {element.username}
+                  </Link>
+                </td>
                 <td>{element.points}</td>
               </tr>))
           }

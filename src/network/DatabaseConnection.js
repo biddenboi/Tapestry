@@ -160,10 +160,10 @@ class DatabaseConnection {
         const currentTime = getLocalDate();
         const msElapsed = currentTime - lastMidnight;
 
-        //grabs the tasks for each player between their respective midnight + duration since current days midnight
+        //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
         //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToUTCString(player.localCreatedAt, msElapsed)).toISOString();
+        const endDate = (addDurationToUTCString(startDate, msElapsed)).toISOString();
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
@@ -364,6 +364,7 @@ class DatabaseConnection {
             transaction.onerror = () => reject(transaction.error);
          })
     }  
+    
     async getTask(localCreatedAt) {
         await this.ready;
        
