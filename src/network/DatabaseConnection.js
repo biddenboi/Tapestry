@@ -382,6 +382,36 @@ class DatabaseConnection {
         })
     }
 
+    async getIncompleteTasks() {
+        //REVIEW
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(['taskObjectStore'], 'readonly');
+            const store = transaction.objectStore('taskObjectStore');
+
+            const todos = [];
+            const request = store.openCursor();
+
+            request.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor) {
+                const task = cursor.value;
+
+                if (task.localCompletedAt == null) {
+                todos.push(task);
+                }
+
+                cursor.continue();
+            } else {
+                resolve(todos);
+            }
+            };
+
+            request.onerror = () => {
+            reject(request.error);
+            };
+        });
+    }
+
     async getTasksFromRange(startDate, endDate) {
         await this.ready;
      

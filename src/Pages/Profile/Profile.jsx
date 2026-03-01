@@ -28,6 +28,7 @@ function Profile() {
 
     let sum = 0;
     tasks.forEach(task => {
+        if (task.duration == undefined) return;
         const description = task.taskName;
 
         const t = {
@@ -41,7 +42,7 @@ function Profile() {
     });
 
     journals.forEach(journal => {
-        const description = journal.title;
+        const description = journal.entry;
 
         const j = {
             ...journal,

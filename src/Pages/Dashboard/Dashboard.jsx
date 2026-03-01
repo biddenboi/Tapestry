@@ -13,6 +13,7 @@ import { getLocalDate, msToPoints } from '../../Helpers.js';
 function Dashboard({ isTaskSession, setIsTaskSession }) {
   /*Internal Data*/
   const [playerPoints, setPlayerPoints] = useState([]);
+  const [todos, setTodos] = useState([]);
 
   //convert duration penalty into an object
   const [durationPenalty, setDurationPenalty] = useState(null);
@@ -22,20 +23,15 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   useEffect(() => {
     const loadPlayers = async () => {
-      const players = await databaseConnection.getPlayers()
+      const players = await databaseConnection.getPlayers();
 
-      const playerPointsPromises = players.map(async (player) => {
+      const DataPromises = players.map(async (player) => {
         const tasks = await databaseConnection.getRelativePlayerTasks(player)
+        
 
         let sum = 0;
         tasks.forEach(task => {
           sum += (task.points || 0);
-
-          //todos are tasks without a defined duration. 
-          //Patchwork gathering method works with the assumption there has to be a player to create a task.
-          //Therefore, for each day, if any tasks exist with zero completions, it is a todo.
-
-          
         });
 
         return {
@@ -44,9 +40,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         };
       }
     );
-      const results = await Promise.all(playerPointsPromises);
+      const results = await Promise.all(DataPromises);
       results.sort((a, b) => b.points - a.points);
       setPlayerPoints(results);
+      
+      const todoArray = await databaseConnection.getIncompleteTasks();
+      setTodos(todoArray);
     };
       loadPlayers();
   }, [databaseConnection, isTaskSession])
@@ -75,7 +74,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     return Math.floor(msToPoints(duration));
   }
 
-  const handleSubmit = async (e) => {
+  const handleTaskSubmit = async (e) => {
     e.preventDefault();
     const task = {
       ...draftTask,
@@ -87,6 +86,26 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     updateStates(false, null, {})
     e.target.reset();
+  }
+
+  const handleTodoSubmit = async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    const task = {
+      taskName: formData.get("todoName"),
+      createdAt: new Date().toISOString(),
+      localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
+    }
+
+    await databaseConnection.addTaskLog(task);
+
+    const updatedTodos = await databaseConnection.getIncompleteTasks();
+    setTodos(updatedTodos);
+
+    form.reset();
   }
 
   const handleStartTask = () => {
@@ -149,6 +168,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           <label>
             Task Name:
             <input type="text" name="taskName" 
+            value={draftTask.taskName || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
           </label>
           <label>
@@ -196,7 +216,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }
   }
     return <form action="" className="task-creation-menu"
-      onSubmit={handleSubmit}>
+      onSubmit={handleTaskSubmit}>
         {TaskInputs()}
       {
         isTaskSession ? 
@@ -214,18 +234,43 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     </form>
   }
 
+  const handleSelectTodo = async (todo) => {
+  //review
+  await databaseConnection.removeTaskLog(todo.localCreatedAt); 
+
+  const todoArray = await databaseConnection.getIncompleteTasks();
+  setTodos(todoArray);
+  
+  setDraftTask(prev => ({
+    ...prev,
+    taskName: todo.taskName
+  }));
+};
+
+  function TodoFormComponent() {
+    return <div className="todo-creation-menu">
+      <form action="" onSubmit={handleTodoSubmit}>
+        <input type="text" name="todoName" placeholder='Add a task...'/>
+        <button type="submit">Add</button>
+      </form>
+      <ul>
+        {//REVIEW
+        todos.map((element) => (
+          <li
+            key={element.createdAt}
+            onClick={() => handleSelectTodo(element)}
+            style={{ cursor: "pointer" }}>
+            {element.taskName}
+          </li>
+        ))}
+      </ul>
+    </div>
+  }
+
   return <div className="dashboard">
     {TaskFormComponent()}
     {RankListComponent()}
-    <ul>
-      <li>Morning Routine (6 am)</li>
-      <li>Do Schoolwork</li>
-      <li>Extracurriculars</li>
-      <li>Jot down plans for everything incomplete / on your mind</li>
-      <li>Free Time</li>
-      <li>Journal</li>
-      <li>Night Routine (10 pm)</li>
-    </ul>
+    {TodoFormComponent()}
   </div>
 }
 
