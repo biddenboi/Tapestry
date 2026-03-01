@@ -11,31 +11,36 @@ class DatabaseConnection {
     async handleVersionUpgrades(event) {
     this.database = event.target.result;
     const oldVersion = event.oldVersion;
-    const transaction = event.target.transaction;
 
     if (oldVersion > 0 && oldVersion < 8) {
         console.warn("Database version too old. Please clear your data and refresh.");
     }
 
-    if (oldVersion < 9) {
+
+    if (oldVersion < 10) {
         const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "localCreatedAt" });
-        PlayerStore.createIndex("username", "username", { unique: false });
+        playerStore.createIndex("username", "username", { unique: false });
         playerStore.createIndex("createdAt", "createdAt", { unique: false });
         playerStore.createIndex("description", "description", { unique: false });
 
-        const newTaskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "localCreatedAt" });
-        newTaskStore.createIndex("createdAt", "createdAt", { unique: false });
-        newTaskStore.createIndex("distractions", "distractions", { unique: false });
-        newTaskStore.createIndex("duration", "duration", { unique: false });
-        newTaskStore.createIndex("efficiency", "efficiency", { unique: false });
-        newTaskStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
-        newTaskStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-        newTaskStore.createIndex("location", "location", { unique: false });
-        newTaskStore.createIndex("points", "points", { unique: false });
-        newTaskStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
-        newTaskStore.createIndex("similarity", "similarity", { unique: false });
-        newTaskStore.createIndex("taskName", "taskName", { unique: false });
-        newTaskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
+        const taskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "localCreatedAt" });
+        taskStore.createIndex("createdAt", "createdAt", { unique: false });
+        taskStore.createIndex("distractions", "distractions", { unique: false });
+        taskStore.createIndex("duration", "duration", { unique: false });
+        taskStore.createIndex("efficiency", "efficiency", { unique: false });
+        taskStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
+        taskStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
+        taskStore.createIndex("location", "location", { unique: false });
+        taskStore.createIndex("points", "points", { unique: false });
+        taskStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
+        taskStore.createIndex("similarity", "similarity", { unique: false });
+        taskStore.createIndex("taskName", "taskName", { unique: false });
+        taskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
+        
+        const journal = this.database.createObjectStore("journalObjectStore", { keyPath: "localCreatedAt"});
+        journal.createIndex("createdAt", "createdAt", { unique: false });
+        journal.createIndex("title", "title", { unique: false });
+        journal.createIndex("entry", "entry", { unique: false });
     }
 }
     constructor() {
@@ -73,10 +78,12 @@ class DatabaseConnection {
             //so what this does is basically convert the data into a string, blob gives the data a location which is in url, and then we create an attribute with download using HTML 5 download method
             const tasks = await this.getTasks();
             const players = await this.getPlayers();
+            const journals = await this.getJournals();
 
             const data = {
                 tasks: tasks,
-                players: players
+                players: players,
+                journals:journals
             }
 
             const json = JSON.stringify(data, null, 2);
@@ -102,6 +109,7 @@ class DatabaseConnection {
         const dataArray = Object.values(JSON.parse(file));
         const taskData = dataArray[0];
         const playerData = dataArray[1];
+        const journalData = dataArray[2];
 
         //remove all task data and add from new file.
         this.clearTaskData();
@@ -119,6 +127,13 @@ class DatabaseConnection {
             if (playerTasks.length != 0) {
                 this.createPlayer(player);
             }
+        })
+
+        //remove all player data and add from new file.
+        this.clearJournalData();
+    
+        journalData.forEach((journal) => {
+          this.addJournalLog(journal);
         })
     } 
 
@@ -264,7 +279,7 @@ class DatabaseConnection {
 
     /* Task methods */ 
 
-        async clearTaskData() {
+    async clearTaskData() {
         await this.ready;
 
         return new Promise((resolve, reject) => {
@@ -375,6 +390,117 @@ class DatabaseConnection {
            request.onerror = () => reject(request.error);
            transaction.onerror = () => reject(transaction.error);
          });
+    }
+
+    /** journal methods */
+
+    async getJournal(localCreatedAt) {
+        await this.ready;
+       
+        return new Promise((resolve, reject) => {
+           const transaction = this.database.transaction("journalObjectStore", "readonly");
+           const store = transaction.objectStore("journalObjectStore");
+       
+           const request = store.get(localCreatedAt);
+       
+           request.onsuccess = () => resolve(request.result);
+           request.onerror = () => reject(request.error);
+           transaction.onerror = () => reject(transaction.error);
+         });
+    }
+
+    async clearJournalData() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["journalObjectStore"], "readwrite");
+            const journals = transaction.objectStore("journalObjectStore");
+
+            const objectStoreRequest = journals.clear();
+
+            objectStoreRequest.onsuccess = (e) => {
+                resolve();
+            }
+
+            objectStoreRequest.onerror = (e) => {
+                reject(objectStoreRequest.error);
+            }
+        })
+    }
+
+    async addJournalLog(entry) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["journalObjectStore"], "readwrite");
+        
+            const journals = transaction.objectStore("journalObjectStore");
+            const request = journals.put(entry);  
+            
+            transaction.oncomplete = () => {
+                resolve();
+            }
+
+            transaction.onerror = () => {
+                reject(transaction.error);
+            }
+
+            return request;
+        })
+    }
+
+    async getJournalsFromRange(startDate, endDate) {
+        await this.ready;
+     
+         return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("journalObjectStore", "readonly");
+            const entries = transaction.objectStore("journalObjectStore");
+            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
+            const results = [];
+     
+            entries.openCursor(dateRange).onsuccess = (event) => {
+                const cursor = event.target.result;
+     
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            }
+             
+            transaction.onerror = () => reject(transaction.error);
+         })
+    }  
+
+    async getRelativePlayerJournals(player) {
+        const lastMidnight = getLocalDateAtMidnight();
+        const currentTime = getLocalDate();
+        const msElapsed = currentTime - lastMidnight;
+
+        //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
+        //allows syncronous gameplay
+        const startDate = player.localCreatedAt;
+        const endDate = (addDurationToUTCString(startDate, msElapsed)).toISOString();
+
+        const tasks = await this.getJournalsFromRange(startDate, endDate);
+        
+        return tasks;
+    }
+
+    async getJournals() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("journalObjectStore", "readonly");
+            const journals = transaction.objectStore("journalObjectStore");
+
+            const request = journals.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
     }
 }
 

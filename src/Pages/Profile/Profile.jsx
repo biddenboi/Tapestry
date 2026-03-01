@@ -1,53 +1,111 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { DatabaseConnectionContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
 
 import './Profile.css';
-import { getTimeAsString } from "../../Helpers";
+import { getLocalDate, getTimeAsString } from "../../Helpers";
 
 function Profile() {
 //read through this code again when ur not tired
   const { index } = useParams();
 
   const [player, setPlayer] = useState(null);
+  const [journalPopup, setJournalPopup] = useState(false);
 
   const databaseConnection = useContext(DatabaseConnectionContext);
   
   useEffect(() => {
     //calculates data about player and creates new object with calculations
     const getPlayer = async () => {
-      const p = await databaseConnection.getPlayer(index);
+    const p = await databaseConnection.getPlayer(index);
 
-      const history = [];
+    const history = [];
 
-      const tasks = await databaseConnection.getRelativePlayerTasks(p);
+    const tasks = await databaseConnection.getRelativePlayerTasks(p);
+    const journals = await databaseConnection.getRelativePlayerJournals(p);
 
-      let sum = 0;
-        tasks.forEach(task => {
-            const t = {
-                ...task,
-                type: "Task Completion"
-            }
+    //maybe move description to a function processed when called vs making it an attribute  
 
-            sum += (t.points || 0);
+    let sum = 0;
+    tasks.forEach(task => {
+        const description = task.taskName;
 
-            history.push(t);
-        });
+        const t = {
+            ...task,
+            description:description,
+            type: "Task Completion"
+        }
+        sum += (t.points || 0);
 
-      setPlayer({
-          ...p,
-          points: sum,
-          history: history,
+        history.push(t);
+    });
+
+    journals.forEach(journal => {
+        const description = journal.title;
+
+        const j = {
+            ...journal,
+            description:description,
+            type: "Journal Entry"
+        }
+
+        history.push(j);
+    })
+
+    history.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        
+    setPlayer({
+        ...p,
+        points: sum,
+        history: history,
         });
     }
 
     getPlayer();
-  }, [index])
+    }, [index])
 
-  //catch all to ensure player is set before rendering
-  if (!player) return null;
+    const handleJournalSubmit = (async (e) => {
+        //prevent default needed so data does not refresh on click.
+        e.preventDefault()
+        const form = e.currentTarget;
+        const formData = new FormData(form);
 
-    return <div className="profile">
+        const entryTitle = formData.get("entry-title");
+        const entryText = formData.get("entry-text");
+
+        const journal = {
+            title: entryTitle,
+            entry: entryText,
+            //create methods for local time for tasks too in helper
+            createdAt: new Date().toISOString(),
+            localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
+        }
+
+        await databaseConnection.addJournalLog(journal);
+        setJournalPopup(false);
+        
+        //reset
+        e.target.reset();
+    })
+
+    //catch all to ensure player is set before rendering
+    if (!player) return null;
+
+
+    return <div className="profile"> 
+        {journalPopup ? 
+            <div className="journal-popup">
+                <div className="blanker"></div>
+                <div className="content">
+                    <form action="" onSubmit={handleJournalSubmit}>
+                        <input type="text" name="entry-title" placeholder="Entry Title"/>
+                        <textarea name="entry-text" id=""
+                            placeholder="Enter your log here..."></textarea>
+                        <button type="submit">Publish</button>
+                    </form>
+                </div>
+            </div> : ""
+        }
         <div className="profile-banner">
             <div className="stats-subsection">
                 <span>{player.localCreatedAt.split("T")[0]}</span>
@@ -60,14 +118,19 @@ function Profile() {
                     <span>{player.points}</span>
                 </div>
                 <div> 
-                    <span>Completions: </span>
+                    <span>Entries: </span>
                     <span>{player.history.length}</span>
                 </div>
             </div>
         </div>
         <div className="seperator">
             <span>Timeline</span>
-            <button>+ Add Entry</button>
+            {
+                //checks if current date, only shows button if its the same day
+                getLocalDate().toISOString().split("T")[0] == player.localCreatedAt ?
+                <button onClick={() => setJournalPopup(true)}>+ Add Entry</button> 
+                : ""
+            }
         </div>
         <div className="task-history-display">
             <div className="task-table-container">
@@ -78,8 +141,9 @@ function Profile() {
                                 <tr key={element.createdAt}>
                                     <td>{getTimeAsString(element.createdAt)}</td>
                                     <td>{element.type}</td>
-                                    <td>{element.taskName}</td>
-                                    <td>{element.points}</td>
+                                    <td>{element.description}</td>
+                                    {/** replace description and points with generalized method */}
+                                    <td>{element.points ? element.points + "pts" : "0pts"}</td>
                                 </tr>))
                             }
                         </tbody>

@@ -55,7 +55,7 @@ div.profile-banner > div.description-subsection {
 
 div.profile > div.seperator {
     grid-column-start: 1;
-    grid-column-start: span 10;
+    grid-column-end: span 10;
     grid-row: 7;
     border:1px solid #B5A8A8;
     display:flex;
@@ -108,3 +108,55 @@ table.task-table tr > td {
     padding: 5px 5px 5px 5px;
 }
 
+/* ----- Popup ----- */
+
+div.journal-popup {
+    position: fixed; 
+    inset: 0;
+    z-index:1;
+    display: flex;
+    align-items: center;     
+    justify-content: center;
+}
+
+div.journal-popup > div.blanker {
+    position: absolute; 
+    inset: 0;
+    background: rgba(120, 120, 120, 0.5);
+}
+
+div.journal-popup > div.content {
+    position: relative; 
+    z-index: 1;
+    width: 50%;
+    height: 50%;
+    border-radius: 25px;
+    background: rgb(244, 244, 244);
+}
+
+div.journal-popup form {
+    display:flex;
+    flex-direction: column;
+    padding:40px;
+    gap:20px;
+}
+
+div.journal-popup textarea {
+    height:35vh;
+    resize:none;
+    overflow-y: scroll;
+}
+
+div.journal-popup textarea, div.journal-popup input {
+    border-radius: 10px;
+    border:1px solid black;
+}
+
+div.journal-popup input {
+    height:3vh;
+}
+
+div.journal-popup button {
+    width:70px;
+    margin-left: auto;
+}

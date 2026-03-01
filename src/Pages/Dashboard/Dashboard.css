@@ -14,7 +14,6 @@ table.rank-table, table.rank-table th, table.rank-table td {
 div.rank-list {
   display:block;
   overflow-y:scroll;
-  border: 1px solid rgb(194, 194, 194);
 }
 
 table.rank-table {
