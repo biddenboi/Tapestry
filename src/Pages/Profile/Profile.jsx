@@ -13,6 +13,18 @@ function Profile() {
   const [journalPopup, setJournalPopup] = useState(false);
 
   const databaseConnection = useContext(DatabaseConnectionContext);
+
+  useEffect(() => {
+        //REVIEW
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setJournalPopup(false);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, []);
   
   useEffect(() => {
     //calculates data about player and creates new object with calculations
