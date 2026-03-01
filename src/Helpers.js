@@ -41,12 +41,21 @@ export const getLocalDate = () => {
 }
 
 /**
+ * Converts a Date object in local time to its string representation 
+ * @param {Date} s - A date
+ */ 
+export const formatDateAsLocalString = (date) => {
+    return date.toLocaleString('sv').replace(' ', "T");
+}
+
+
+/**
  * Returns a date object the final time elapsed by duration
- * @param {String} UTC - A UTC String of the starting date.
+ * @param {String} s - A String representation of the starting date.
  * @param {number} ms - The amount of milliseconds to add by.
- */
-export const addDurationToUTCString = (UTC, ms) => {
-    return new Date(new Date(UTC).getTime() + ms);
+ */ 
+export const addDurationToString = (s, ms) => {
+    return new Date(new Date(s).getTime() + ms);
 }
 
 /**

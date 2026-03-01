@@ -30,6 +30,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         let sum = 0;
         tasks.forEach(task => {
           sum += (task.points || 0);
+
+          //todos are tasks without a defined duration. 
+          //Patchwork gathering method works with the assumption there has to be a player to create a task.
+          //Therefore, for each day, if any tasks exist with zero completions, it is a todo.
+
+          
         });
 
         return {

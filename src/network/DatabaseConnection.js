@@ -1,4 +1,4 @@
-import { getLocalDateAtMidnight, getLocalDate, addDurationToUTCString } from '../Helpers.js';
+import { getLocalDateAtMidnight, getLocalDate, addDurationToString, formatDateAsLocalString } from '../Helpers.js';
 import { DATABASE_VERISON } from '../Constants.js'
 
 class DatabaseConnection {
@@ -17,7 +17,7 @@ class DatabaseConnection {
     }
 
 
-    if (oldVersion < 10) {
+    if (DATABASE_VERISON >= 10 && oldVersion < 10) {
         const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "localCreatedAt" });
         playerStore.createIndex("username", "username", { unique: false });
         playerStore.createIndex("createdAt", "createdAt", { unique: false });
@@ -41,6 +41,32 @@ class DatabaseConnection {
         journal.createIndex("createdAt", "createdAt", { unique: false });
         journal.createIndex("title", "title", { unique: false });
         journal.createIndex("entry", "entry", { unique: false });
+    }
+
+    if (DATABASE_VERISON >= 11 && oldVersion < 11) {
+        const transaction = event.target.transaction;
+        const taskStore = transaction.objectStore("taskObjectStore");
+
+        taskStore.createIndex("localCompletedAt", "localCompletedAt", { unique: false });
+
+        const cursorRequest = taskStore.openCursor();
+
+        cursorRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+
+            if (cursor) {
+                const value = cursor.value;
+
+                const completedAtDate = addDurationToString(value.localCreatedAt, value.duration);
+                if (!value.localCompletedAt) {
+                    value.localCompletedAt = formatDateAsLocalString(completedAtDate);
+
+                    cursor.update(value);
+                }
+
+                cursor.continue();
+            }
+        }
     }
 }
     constructor() {
@@ -139,6 +165,9 @@ class DatabaseConnection {
 
     /** player methods */
 
+    //each player has a defined date (localTime) in which it was created.
+    //Tasks are the same with the local time, regardless of timezone the tasks will match to the player.
+
     /**
      * @param {*} player - player to add
      */
@@ -175,7 +204,7 @@ class DatabaseConnection {
         //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
         //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToUTCString(startDate, msElapsed)).toISOString();
+        const endDate = (addDurationToString(startDate, msElapsed)).toISOString();
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
@@ -188,7 +217,7 @@ class DatabaseConnection {
      */
     async getPlayerTasks(player) {
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToUTCString(player.localCreatedAt, 86400000)).toISOString();
+        const endDate = (addDurationToString(player.localCreatedAt, 86400000)).toISOString();
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
@@ -481,7 +510,7 @@ class DatabaseConnection {
         //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
         //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToUTCString(startDate, msElapsed)).toISOString();
+        const endDate = (addDurationToString(startDate, msElapsed)).toISOString();
 
         const tasks = await this.getJournalsFromRange(startDate, endDate);
         
