@@ -8,6 +8,7 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
+import { getLocalDateAtMidnight } from './Helpers';
 
 export const DatabaseConnectionContext = createContext();
 
@@ -27,12 +28,13 @@ function App() {
       const player = {
         username: "Guest",
         createdAt: new Date().toISOString(),
-        localCreatedAt: new Date().toLocaleString('sv').split(' ')[0]
+        localCreatedAt: new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00", // "2026-03-01T00:00:00"
       }
       await databaseConnection.createPlayer(player);
 
-      //gets and sets current profile
-      const p = await databaseConnection.getPlayer(new Date().toLocaleString('sv').split(' ')[0]);
+      const p = await databaseConnection.getPlayer(
+        new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" // same key
+      );
       setCurrentPlayer(p);
     }
 

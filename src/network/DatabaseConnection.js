@@ -204,7 +204,7 @@ class DatabaseConnection {
         //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
         //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToString(startDate, msElapsed)).toISOString();
+        const endDate = formatDateAsLocalString(addDurationToString(startDate, msElapsed));
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
@@ -217,7 +217,8 @@ class DatabaseConnection {
      */
     async getPlayerTasks(player) {
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToString(player.localCreatedAt, 86400000)).toISOString();
+        const endDate = formatDateAsLocalString(addDurationToString(startDate, 86400000));
+
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
@@ -383,6 +384,7 @@ class DatabaseConnection {
     }
 
     async getIncompleteTasks() {
+        await this.ready;
         //REVIEW
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(['taskObjectStore'], 'readonly');
@@ -540,7 +542,7 @@ class DatabaseConnection {
         //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
         //allows syncronous gameplay
         const startDate = player.localCreatedAt;
-        const endDate = (addDurationToString(startDate, msElapsed)).toISOString();
+        const endDate = formatDateAsLocalString(addDurationToString(startDate, msElapsed));
 
         const tasks = await this.getJournalsFromRange(startDate, endDate);
         

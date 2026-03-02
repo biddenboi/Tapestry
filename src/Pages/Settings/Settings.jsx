@@ -14,7 +14,7 @@ function Settings() {
     
     useEffect(() => {
         const updatePlaceholder = async () => {
-            const date = new Date().toLocaleString('sv').split(' ')[0];
+            const date = new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00";
             const player = await databaseConnection.getPlayer(date);
 
             setUsernamePlaceholderText(player.username);
@@ -36,7 +36,7 @@ function Settings() {
         const newPlayer = {
             username: formData.get("username") === "" ? player.username : formData.get("username"),
             createdAt: new Date().toISOString(),
-            localCreatedAt: new Date().toLocaleString('sv').split(' ')[0],
+            localCreatedAt: new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00",
             description: formData.get("description") === "" ? player.description : formData.get("description")
         }
         await databaseConnection.putPlayer(newPlayer);

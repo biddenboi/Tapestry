@@ -65,7 +65,7 @@ function Profile() {
         history.push(j);
     })
 
-    history.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         
     setPlayer({
         ...p,
@@ -140,7 +140,7 @@ function Profile() {
             <span>Timeline</span>
             {
                 //checks if current date, only shows button if its the same day
-                getLocalDate().toISOString().split("T")[0] == player.localCreatedAt ?
+                new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" == player.localCreatedAt ?
                 <button onClick={() => setJournalPopup(true)}>+ Add Entry</button> 
                 : ""
             }
@@ -152,7 +152,7 @@ function Profile() {
                             {
                                 player.history.map((element, index) => (
                                 <tr key={element.createdAt}>
-                                    <td>{getTimeAsString(element.createdAt)}</td>
+                                    <td>{getTimeAsString(element.localCreatedAt)}</td>
                                     <td>{element.type}</td>
                                     <td>{element.description}</td>
                                     {/** replace description and points with generalized method */}

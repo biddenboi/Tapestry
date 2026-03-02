@@ -79,7 +79,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
-      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty)
+      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
+      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
     }
 
     await databaseConnection.addTaskLog(task);
