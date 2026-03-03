@@ -198,12 +198,16 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }else {
       return <div className="form-inputs">
         <div>
-          <span>{draftTask.taskName}</span>
-          <div>
-            <span>{"Purpose: " + draftTask.reasonToSelect}</span>
-            <span>{"Plan: " + draftTask.efficiency}</span>
-            <span>{"Goal Duration: " + draftTask.estimatedDuration + "m with " + draftTask.estimatedBuffer + "m Buffer"}</span>
+          <div className="task-titlebar">
+            <p>{draftTask.taskName}</p>
+            <p>{draftTask.reasonToSelect}</p>
           </div>
+            {draftTask.efficiency ? 
+              <span>
+                  <p>{draftTask.efficiency}</p>
+              </span>
+              : ""
+            }
         </div>
       </div>
     }
