@@ -8,7 +8,7 @@ div.dashboard {
 
 /* ----- Rank List ----- */
 table.rank-table, table.rank-table th, table.rank-table td {
-  border: 0.1px solid rgb(206, 206, 206);
+  border: 1px solid rgb(180, 180, 180);
 }
 
 div.rank-list {
@@ -25,10 +25,10 @@ table.rank-table {
 }
 
 div.rank-list {
-  grid-column-start: 7;
-  grid-column-end: span 3;
-  grid-row-start: 3;
-  grid-row-end: span 16;
+  grid-column: 2 /  span 3;
+  grid-row: 3  / span 6;
+  border-top:1px solid rgb(180, 180, 180);
+  border-bottom:1px solid rgb(180, 180, 180);
 }
 
 table.rank-table thead {
@@ -67,16 +67,23 @@ div.task-form-buttons {
   justify-content: space-evenly;
 }
 
+button.task-form-buttons:nth-child(1) {
+  width:60%;
+}
+
 button.task-form-buttons {
-  width:70%;
-  align-self: center;
+  width:30%;
+}
+
+div.task-planning-container {
+  display: flex;
+  justify-content: center;
+  gap:5%;
 }
 
 form.task-creation-menu {
-  grid-column-start: 2;
-  grid-column-end: span 4;
-  grid-row-start: 3;
-  grid-row-end: span 9;
+  grid-column: 6 / span 4;
+  grid-row: 5 / span 13;
   display:flex;
   flex-direction: column;
   justify-content: center;
@@ -93,8 +100,9 @@ div.form-inputs {
 
 div.form-inputs label > textarea {
   grid-row: span 2;
-  height:7vh;
   resize:none;
+  height:30vh;
+  white-space: pre-wrap;
 }
 
 div.form-inputs > *:first-child {
@@ -135,8 +143,12 @@ div.form-inputs > div > div {
 
 /* ----- Todo Form ----- */
 div.todo-creation-menu {
-  grid-column: 2 / 6;
-  grid-row: 13 / 18;
+  grid-column: 2 / span 3;
+  grid-row: 10 / span 10;
+}
+
+div.todo-creation-menu > p {
+  font-weight:700;
 }
 
 div.todo-creation-menu > form {
@@ -153,12 +165,10 @@ div.todo-creation-menu > form > button {
 }
 
 div.todo-creation-menu > ul {
-  margin-top:20px;
   width:100%;
   height:100%;
   overflow-y: scroll;
-  border:1px solid rgb(143, 143, 143);
-  border-radius:5px;
+  border:2px solid rgb(180, 180, 180);
 }
 
 /* ----- Other ----- */

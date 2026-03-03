@@ -12,6 +12,7 @@ div.navigation-bar {
   border-bottom: 1px solid gray;
   top:0;
   left:0;
+  background-color: white;
 }
 
 /*disable navigation bar when task in session*/

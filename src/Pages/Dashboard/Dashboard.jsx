@@ -92,11 +92,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-
     const task = {
-      taskName: formData.get("todoName"),
+      ...draftTask,
       createdAt: new Date().toISOString(),
       localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
     }
@@ -106,7 +103,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const updatedTodos = await databaseConnection.getIncompleteTasks();
     setTodos(updatedTodos);
 
-    form.reset();
+    updateStates(false, null, {});
+    e.target.reset();
   }
 
   const handleStartTask = () => {
@@ -173,33 +171,27 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
           </label>
           <label>
-            Why work here?
-            <input type="text" name="location"
-            onChange={e => setDraftTask(prev => ({ ...prev, location: e.target.value }))}/>
-          </label>
-          <label>
-            Where are your distractions?
-            <input type="text" name="distractions"
-            onChange={e => setDraftTask(prev => ({ ...prev, distractions: e.target.value }))}/>
-          </label>
-          <label>
             Why did you pick this task?
             <textarea name="reasonToSelect"
+            value={draftTask.reasonToSelect || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
           </label>
           <label>
-            How will you be efficient?
+            What is your plan?
             <textarea name="efficiency"
+            value={draftTask.efficiency || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
           <label>
-            Est. Duration (minutes):
+            Duration (min):
             <input type="number" name="estimatedDuration"
+            value={draftTask.estimatedDuration || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
           </label>
           <label>
-            Est. Buffer (minutes):
+            Buffer (min):
             <input type="number" name="estimatedBuffer"
+            value={draftTask.estimatedBuffer || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
           </label>
         </div>
@@ -229,8 +221,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           </div>
           <Stopwatch startTime={new Date(draftTask.localCreatedAt).getTime()} durationPenalty={durationPenalty}/> 
           
+        </div> : 
+        <div className="task-planning-container">
+          <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
+          <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={draftTask.taskName ? false : true}>Store</button>
         </div>
-        : <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
       }
     </form>
   }
@@ -244,16 +239,19 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   
   setDraftTask(prev => ({
     ...prev,
-    taskName: todo.taskName
+    taskName: todo.taskName,
+    location: todo.location,
+    distractions: todo.distractions,
+    reasonToSelect: todo.reasonToSelect,
+    efficiency: todo.efficiency,
+    estimatedDuration: todo.estimatedDuration,
+    estimatedBuffer: todo.estimatedBuffer,
   }));
 };
 
   function TodoFormComponent() {
     return <div className="todo-creation-menu">
-      <form action="" onSubmit={handleTodoSubmit}>
-        <input type="text" name="todoName" placeholder='Add a task...'/>
-        <button type="submit">Add</button>
-      </form>
+      <p>Todo List</p>
       <ul>
         {//REVIEW
         todos.map((element) => (
