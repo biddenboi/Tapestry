@@ -104,6 +104,22 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     setTodos(updatedTodos);
 
     updateStates(false, null, {});
+
+    e.target.reset();
+  }
+
+  const handleTaskSubmitAndSave = async (e) => {
+    e.preventDefault();
+    const task = {
+      ...draftTask,
+      duration: getTaskDuration(),  
+      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
+      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
+    }
+
+    await databaseConnection.addTaskLog(task);
+
+    updateStates(false, null, draftTask)
     e.target.reset();
   }
 
@@ -119,7 +135,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    updateStates(false, 0, {});
+    updateStates(false, 0, draftTask);
   }
 
   const handleBrokeFocus = async() => {
@@ -219,9 +235,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         isTaskSession ? 
         <div className="task-session-container">
           <div className="task-form-buttons">
-            <button>Complete</button>
+            <div>
+              <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
+              <button>Complete</button>
+            </div>
             <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
-            <button type="button" onClick={handleGiveUpTask}>Give Up</button>
+            <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
           </div>
           <Stopwatch startTime={new Date(draftTask.localCreatedAt).getTime()} durationPenalty={durationPenalty}/> 
           

@@ -67,6 +67,11 @@ div.task-form-buttons {
   justify-content: space-evenly;
 }
 
+div.task-form-buttons div {
+  display:flex;
+  gap:5px;
+}
+
 button.task-form-buttons:nth-child(1) {
   width:60%;
 }
