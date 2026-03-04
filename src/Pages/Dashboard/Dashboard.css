@@ -155,6 +155,7 @@ div.form-inputs span {
   padding:5% 5%;
   align-self: center;
   white-space: pre-wrap;
+  line-height:10px;
 }
 
 /* ----- Todo Form ----- */

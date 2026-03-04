@@ -3,7 +3,8 @@ import { useState, useEffect, useContext } from 'react'
 import { DatabaseConnectionContext } from '../../App.jsx';
 import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
 import { Link } from 'react-router-dom';
-import { getLocalDate, msToPoints } from '../../Helpers.js';
+import { msToPoints } from '../../Helpers.js';
+import Markdown from 'react-markdown'
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -74,6 +75,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     return Math.floor(msToPoints(duration));
   }
 
+  //task submission, large chunk of code is duplicate see if we can merge
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
     const task = {
@@ -86,6 +88,21 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.addTaskLog(task);
 
     updateStates(false, null, {})
+    e.target.reset();
+  }
+
+  const handleTaskSubmitAndSave = async (e) => {
+    e.preventDefault();
+    const task = {
+      ...draftTask,
+      duration: getTaskDuration(),  
+      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
+      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
+    }
+
+    await databaseConnection.addTaskLog(task);
+
+    updateStates(false, null, draftTask)
     e.target.reset();
   }
 
@@ -105,21 +122,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     updateStates(false, null, {});
 
-    e.target.reset();
-  }
-
-  const handleTaskSubmitAndSave = async (e) => {
-    e.preventDefault();
-    const task = {
-      ...draftTask,
-      duration: getTaskDuration(),  
-      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
-      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
-    }
-
-    await databaseConnection.addTaskLog(task);
-
-    updateStates(false, null, draftTask)
     e.target.reset();
   }
 
@@ -193,7 +195,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
           </label>
           <label>
-            What is your plan?
+            How will you use the time?
             <textarea name="efficiency"
             value={draftTask.efficiency || ""}
             onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
@@ -216,11 +218,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         <div>
           <div className="task-titlebar">
             <p>{draftTask.taskName}</p>
-            <p>{draftTask.reasonToSelect}</p>
+            <p><Markdown>{draftTask.reasonToSelect}</Markdown></p>
           </div>
             {draftTask.efficiency ? 
               <span>
-                  <p>{draftTask.efficiency}</p>
+                  <p><Markdown>{draftTask.efficiency}</Markdown></p>
               </span>
               : ""
             }

@@ -108,6 +108,15 @@ table.task-table tr > td {
     padding: 5px 5px 5px 5px;
 }
 
+td {
+    width:5%;
+}
+
+td:nth-child(3) {
+    width:80%;
+}
+
+
 /* ----- Popup ----- */
 
 div.journal-popup {
@@ -150,15 +159,12 @@ div.journal-popup textarea {
 }
 
 div.journal-popup textarea, div.journal-popup input {
-    border-radius: 10px;
-    border:1px solid black;
-}
-
-div.journal-popup input {
-    height:3vh;
+    border-radius:5px;
+    border:1px solid rgb(62, 62, 62);;
 }
 
 div.journal-popup button {
     width:70px;
     margin-left: auto;
 }
+

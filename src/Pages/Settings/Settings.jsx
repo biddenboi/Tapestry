@@ -28,7 +28,7 @@ function Settings() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const date = new Date().toLocaleString('sv').split(' ')[0];
+        const date = new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00";
         const player = await databaseConnection.getPlayer(date);
     
         const formData = new FormData(e.target);

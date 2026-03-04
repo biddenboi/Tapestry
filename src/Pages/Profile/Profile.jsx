@@ -46,7 +46,7 @@ function Profile() {
         const t = {
             ...task,
             description:description,
-            type: "Task Completion"
+            type: "Task"
         }
         sum += (t.points || 0);
 
@@ -59,7 +59,7 @@ function Profile() {
         const j = {
             ...journal,
             description:description,
-            type: "Journal Entry"
+            type: "Journal"
         }
 
         history.push(j);
