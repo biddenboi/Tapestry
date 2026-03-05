@@ -4,16 +4,24 @@ div.dashboard {
     height: 100%;
     grid-template-rows: repeat(20, 5%);
     grid-template-columns: repeat(10, 10%);
+
 }
 
 /* ----- Rank List ----- */
-table.rank-table, table.rank-table th, table.rank-table td {
-  border: 1px solid rgb(180, 180, 180);
+table.rank-table th {
+  background-color: white;
+}
+
+table.rank-table td, table.rank-table th {
+  border-top: var(--border-card);
+  border-left: var(--border-card);
 }
 
 div.rank-list {
   display:block;
   overflow-y:scroll;
+  border-right: var(--border-card);
+  border-bottom: var(--border-card);
 }
 
 table.rank-table {
@@ -27,14 +35,11 @@ table.rank-table {
 div.rank-list {
   grid-column: 2 /  span 3;
   grid-row: 3  / span 6;
-  border-top:1px solid rgb(180, 180, 180);
-  border-bottom:1px solid rgb(180, 180, 180);
 }
 
 table.rank-table thead {
   position: sticky;
   top: 0;
-  background: white;
   font-weight:900;
 }
 
@@ -52,12 +57,12 @@ table.rank-table tr > td:nth-child(1) {
 
 
 table.rank-table > Link {
-  color: black;
+  color: var(--text-muted);
 }
 
 table.rank-table .disabled-link {
   pointer-events: none;
-  color:black;
+  color:var(--text-muted);
 }
 
 /* ----- Task Form ----- */
@@ -151,11 +156,13 @@ div.form-inputs div.task-titlebar p:nth-child(2) {
 }
 
 div.form-inputs span {
-  border:1px solid rgb(73, 60, 60);
+  border: var(--border-card);
   padding:5% 5%;
   align-self: center;
   white-space: pre-wrap;
-  line-height:10px;
+  line-height:1.5;
+  width:90%;
+  
 }
 
 /* ----- Todo Form ----- */
@@ -185,7 +192,7 @@ div.todo-creation-menu > ul {
   width:100%;
   height:100%;
   overflow-y: scroll;
-  border:2px solid rgb(180, 180, 180);
+  border:var(--border-card);
 }
 
 /* ----- Other ----- */

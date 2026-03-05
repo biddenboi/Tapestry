@@ -1,7 +1,7 @@
 import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
 import { DatabaseConnectionContext } from '../../App.jsx';
-import Stopwatch from '../../components/Stopwatch/Stopwatch.jsx';
+import Timer from '../../components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
 import { msToPoints } from '../../Helpers.js';
 import Markdown from 'react-markdown'
@@ -218,7 +218,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         <div>
           <div className="task-titlebar">
             <p>{draftTask.taskName}</p>
-            <p><Markdown>{draftTask.reasonToSelect}</Markdown></p>
+            <p>{draftTask.reasonToSelect}</p>
           </div>
             {draftTask.efficiency ? 
               <span>
@@ -236,6 +236,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       {
         isTaskSession ? 
         <div className="task-session-container">
+          <Timer startTime={new Date(draftTask.localCreatedAt).getTime()} duration={draftTask.estimatedDuration} buffer={draftTask.estimatedBuffer} durationPenalty={durationPenalty}/> 
           <div className="task-form-buttons">
             <div>
               <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
@@ -244,8 +245,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
             <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
           </div>
-          <Stopwatch startTime={new Date(draftTask.localCreatedAt).getTime()} durationPenalty={durationPenalty}/> 
-          
         </div> : 
         <div className="task-planning-container">
           <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
@@ -279,7 +278,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       <p>Todo List</p>
       <ul>
         {//REVIEW
-        todos.map((element) => (
+        todos.map((element) => ( 
           <li
             key={element.createdAt}
             onClick={() => handleSelectTodo(element)}
