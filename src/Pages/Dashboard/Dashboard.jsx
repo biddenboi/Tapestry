@@ -4,7 +4,8 @@ import { DatabaseConnectionContext } from '../../App.jsx';
 import Timer from '../../components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
 import { msToPoints } from '../../Helpers.js';
-import Markdown from 'react-markdown'
+import Markdown from 'react-markdown';
+import remarkWikiLink from 'remark-wiki-link';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -178,10 +179,10 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     </div>
   }
 
-  function TaskFormComponent() {
-    function TaskInputs() {
+  function TaskDisplay() {
+    function TaskInfoComponent() {
     if (!isTaskSession) {
-      return <div className="form-inputs">
+      return <div className="task-form-inputs">
           <label>
             Task Name:
             <input type="text" name="taskName" 
@@ -214,39 +215,40 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           </label>
         </div>
     }else {
-      return <div className="form-inputs">
-        <div>
-          <div className="task-titlebar">
-            <p>{draftTask.taskName}</p>
-            <p>{draftTask.reasonToSelect}</p>
-          </div>
-            {draftTask.efficiency ? 
-              <span>
-                  <p><Markdown>{draftTask.efficiency}</Markdown></p>
-              </span>
-              : ""
-            }
+      return <div className="task-session-description">
+        <div className="task-titlebar">
+          <p>{draftTask.taskName}</p>
+          <p>{draftTask.reasonToSelect}</p>
         </div>
+        {draftTask.efficiency ? 
+          <>
+            <p>Plan</p>
+              <span>
+                  <p>
+                    <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
+                  </p>
+              </span>
+            </>
+          : ""
+        }
       </div>
     }
   }
     return <form action="" className="task-creation-menu"
       onSubmit={handleTaskSubmit}>
-        {TaskInputs()}
+        {TaskInfoComponent()}
       {
         isTaskSession ? 
         <div className="task-session-container">
           <Timer startTime={new Date(draftTask.localCreatedAt).getTime()} duration={draftTask.estimatedDuration} buffer={draftTask.estimatedBuffer} durationPenalty={durationPenalty}/> 
-          <div className="task-form-buttons">
-            <div>
-              <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
-              <button>Complete</button>
-            </div>
+          <div className="task-session-buttons">
+            <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
+            <button>Complete</button>
             <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
             <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
           </div>
         </div> : 
-        <div className="task-planning-container">
+        <div className="task-planning-buttons">
           <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
           <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={draftTask.taskName ? false : true}>Store</button>
         </div>
@@ -291,7 +293,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   }
 
   return <div className="dashboard">
-    {TaskFormComponent()}
+    {TaskDisplay()}
     {RankListComponent()}
     {TodoFormComponent()}
   </div>

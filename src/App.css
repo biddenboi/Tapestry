@@ -9,10 +9,10 @@ div.navigation-bar {
   font-weight: 700;
   font-size:20px;
   cursor:pointer;
-  border-bottom: 1px solid gray;
+  border-bottom: 1px solid gray;t
   top:0;
   left:0;
-  background-color: white;
+  background-color: var(--bg);
 }
 
 /*disable navigation bar when task in session*/

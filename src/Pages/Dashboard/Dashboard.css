@@ -1,20 +1,25 @@
 /* ----- Dashboard ----- */
 div.dashboard {
-    display: grid;
-    height: 100%;
-    grid-template-rows: repeat(20, 5%);
-    grid-template-columns: repeat(10, 10%);
-
+  display: grid;
+  height: 100%;
+  grid-template-rows: repeat(20, 5%);
+  grid-template-columns: repeat(10, 10%);
+  background-color: var(--bg);
 }
 
 /* ----- Rank List ----- */
 table.rank-table th {
-  background-color: white;
+  background-color: var(--bg-dark);
 }
 
 table.rank-table td, table.rank-table th {
-  border-top: var(--border-card);
+  border-bottom: var(--border-card);
   border-left: var(--border-card);
+}
+
+table.rank-table th {
+  border-bottom: var(--border-card);
+  border-top: var(--border-card);
 }
 
 div.rank-list {
@@ -22,6 +27,7 @@ div.rank-list {
   overflow-y:scroll;
   border-right: var(--border-card);
   border-bottom: var(--border-card);
+  background-color: var(--bg-light);
 }
 
 table.rank-table {
@@ -35,6 +41,7 @@ table.rank-table {
 div.rank-list {
   grid-column: 2 /  span 3;
   grid-row: 3  / span 6;
+  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
 }
 
 table.rank-table thead {
@@ -67,14 +74,14 @@ table.rank-table .disabled-link {
 
 /* ----- Task Form ----- */
 
-div.task-form-buttons {
+div.task-session-buttons {
   display:flex;
-  justify-content: space-evenly;
+  justify-content: space-evenly;  
+  gap:3%;
 }
 
-div.task-form-buttons div {
-  display:flex;
-  gap:5px;
+div.task-session-buttons button:nth-child(1) {
+  width:60px;
 }
 
 button.task-form-buttons:nth-child(1) {
@@ -83,13 +90,21 @@ button.task-form-buttons:nth-child(1) {
 
 button.task-form-buttons {
   width:30%;
+  padding:12px;
+  border: var(--border-card);
 }
 
-div.task-planning-container {
+div.task-planning-buttons {
   display: flex;
   justify-content: center;
   gap:5%;
 }
+
+div.task-planning-buttons > button.task-form-buttons {
+  background-color: var(--bg-light);
+  box-shadow: 2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+}
+
 
 form.task-creation-menu {
   grid-column: 6 / span 4;
@@ -98,10 +113,9 @@ form.task-creation-menu {
   flex-direction: column;
   justify-content: center;
   gap:60px;
-  padding:10px;
 }
 
-div.form-inputs {
+div.task-form-inputs {
   display:grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 5%;
@@ -109,14 +123,28 @@ div.form-inputs {
   grid-template-rows: auto;
 }
 
-div.form-inputs label > textarea {
+div.task-form-inputs input {
+  border: var(--border-card);
+}
+
+div.task-form-inputs label > textarea {
   grid-row: span 2;
   resize:none;
   height:30vh;
   white-space: pre-wrap;
+  border: var(--border-card);
 }
 
-div.form-inputs > *:first-child {
+div.task-form-inputs label {
+  color:var(--text-muted);
+}
+
+div.task-form-inputs label:focus-within {
+  color:var(--text);
+}
+
+
+div.task-form-inputs > *:first-child {
   grid-column-start: span 2;
 }
 
@@ -131,14 +159,19 @@ div.task-session-container {
   flex-direction: column;
 }
 
-div.form-inputs > div {
+div.task-session-description {
   grid-column-start: span 2;
   display:flex;
   flex-direction: column;
   align-items: center;
+  background-color: white;
+  padding:5%;
+  background-color: var(--bg-light);
+  border:var(--border-card);
+  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
 }
 
-div.form-inputs div.task-titlebar {
+div.task-session-description div.task-titlebar {
   margin-bottom:5%;
   display:flex;
   flex-direction: column;
@@ -146,46 +179,57 @@ div.form-inputs div.task-titlebar {
   text-align: center;
 }
 
-div.form-inputs div.task-titlebar p:nth-child(1) {
+div.task-session-description div.task-titlebar p:nth-child(1) {
   font-size:30px;
   font-weight:700;
 }
 
-div.form-inputs div.task-titlebar p:nth-child(2) {
+div.task-session-description div.task-titlebar p:nth-child(2) {
   font-weight: 70;
 }
 
-div.form-inputs span {
+div.task-session-description span {
   border: var(--border-card);
   padding:5% 5%;
   align-self: center;
   white-space: pre-wrap;
   line-height:1.5;
   width:90%;
-  
+  background-color: var(--bg-light);
+}
+
+div.task-session-description > p {
+  width:90%;
+  text-align: left;
+  background-color: var(--bg-dark);
+  border: var(--border-card);
+  border-bottom: none;
+  padding:5px;
+  font-weight: 700;
+}
+
+div.task-session-buttons button {
+  padding:12px; 
+  width:35%;
+  background-color:white;
+  border:var(--border-card);
+  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
 }
 
 /* ----- Todo Form ----- */
 div.todo-creation-menu {
   grid-column: 2 / span 3;
   grid-row: 10 / span 10;
+  
+  
 }
 
 div.todo-creation-menu > p {
   font-weight:700;
-}
-
-div.todo-creation-menu > form {
-  display:flex;
-  justify-content: space-between;
-}
-
-div.todo-creation-menu > form > input {
-  width:80%;
-}
-
-div.todo-creation-menu > form > button {
-  width:13%;
+  padding:1%;
+  border: var(--border-card);
+  border-bottom:none;
+  background-color: var(--bg-dark);
 }
 
 div.todo-creation-menu > ul {
@@ -193,6 +237,8 @@ div.todo-creation-menu > ul {
   height:100%;
   overflow-y: scroll;
   border:var(--border-card);
+  background-color: var(--bg-light);
+  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
 }
 
 /* ----- Other ----- */
