@@ -19,6 +19,7 @@
   /**possibly semantic colors*/
 
   --border-card: solid 1px var(--border);
+  --box-shadow: 2px 5px 8px -3px rgba(0, 0, 0, 0.293);
 }
 
 body.dark {

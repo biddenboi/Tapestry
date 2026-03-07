@@ -183,36 +183,39 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
-          <label>
-            Task Name:
-            <input type="text" name="taskName" 
-            value={draftTask.taskName || ""}
-            onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
-          </label>
-          <label>
-            Why did you pick this task?
-            <textarea name="reasonToSelect"
-            value={draftTask.reasonToSelect || ""}
-            onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
-          </label>
-          <label>
-            How will you use the time?
-            <textarea name="efficiency"
-            value={draftTask.efficiency || ""}
-            onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
-          </label>
-          <label>
-            Duration (min):
-            <input type="number" name="estimatedDuration"
-            value={draftTask.estimatedDuration || ""}
-            onChange={e => setDraftTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
-          </label>
-          <label>
-            Buffer (min):
-            <input type="number" name="estimatedBuffer"
-            value={draftTask.estimatedBuffer || ""}
-            onChange={e => setDraftTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
-          </label>
+        <p>Task Creation</p>
+          <div>
+            <label>
+              Task Name:
+              <input type="text" name="taskName" 
+              value={draftTask.taskName || ""}
+              onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
+            </label>
+            <label>
+              Why did you pick this task?
+              <textarea name="reasonToSelect"
+              value={draftTask.reasonToSelect || ""}
+              onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
+            </label>
+            <label>
+              How will you use the time?
+              <textarea name="efficiency"
+              value={draftTask.efficiency || ""}
+              onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
+            </label>
+            <label>
+              Duration (min):
+              <input type="number" name="estimatedDuration"
+              value={draftTask.estimatedDuration || ""}
+              onChange={e => setDraftTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
+            </label>
+            <label>
+              Buffer (min):
+              <input type="number" name="estimatedBuffer"
+              value={draftTask.estimatedBuffer || ""}
+              onChange={e => setDraftTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
+            </label>
+          </div>
         </div>
     }else {
       return <div className="task-session-description">
@@ -223,12 +226,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         {draftTask.efficiency ? 
           <>
             <p>Plan</p>
-              <span>
-                  <p>
-                    <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
-                  </p>
-              </span>
-            </>
+            <span>
+              <p>
+                <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
+              </p>
+            </span>
+          </>
           : ""
         }
       </div>

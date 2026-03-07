@@ -41,7 +41,7 @@ table.rank-table {
 div.rank-list {
   grid-column: 2 /  span 3;
   grid-row: 3  / span 6;
-  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+  box-shadow:var(--box-shadow);
 }
 
 table.rank-table thead {
@@ -101,26 +101,37 @@ div.task-planning-buttons {
 }
 
 div.task-planning-buttons > button.task-form-buttons {
-  background-color: var(--bg-light);
-  box-shadow: 2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+  background-color: var(--bg-dark);
+  box-shadow:var(--box-shadow);
 }
 
 
 form.task-creation-menu {
   grid-column: 6 / span 4;
-  grid-row: 5 / span 13;
+  grid-row: 5 / span 15;
   display:flex;
   flex-direction: column;
-  justify-content: center;
-  gap:60px;
+  justify-content: space-between;
 }
 
-div.task-form-inputs {
+div.task-form-inputs > div {
   display:grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 5%;
   row-gap:2%;
   grid-template-rows: auto;
+  background-color:var(--bg-light);
+  padding:1% 5% 7% 5%;
+  border: var(--border-card);
+  box-shadow:var(--box-shadow);
+}
+
+div.task-form-inputs p {
+  background-color:var(--bg-dark);
+  padding:0.5%;
+  border: var(--border-card);
+  border-bottom: none;
+  font-weight:600;
 }
 
 div.task-form-inputs input {
@@ -144,7 +155,7 @@ div.task-form-inputs label:focus-within {
 }
 
 
-div.task-form-inputs > *:first-child {
+div.task-form-inputs > div *:first-child {
   grid-column-start: span 2;
 }
 
@@ -168,7 +179,8 @@ div.task-session-description {
   padding:5%;
   background-color: var(--bg-light);
   border:var(--border-card);
-  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+  box-shadow:var(--box-shadow);
+  height:67%;
 }
 
 div.task-session-description div.task-titlebar {
@@ -195,6 +207,8 @@ div.task-session-description span {
   white-space: pre-wrap;
   line-height:1.5;
   width:90%;
+  height:100%;
+  overflow-y: scroll;
   background-color: var(--bg-light);
 }
 
@@ -211,17 +225,17 @@ div.task-session-description > p {
 div.task-session-buttons button {
   padding:12px; 
   width:35%;
-  background-color:white;
+  background-color:var(--bg-dark);
   border:var(--border-card);
-  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+  box-shadow:var(--box-shadow);
 }
 
 /* ----- Todo Form ----- */
 div.todo-creation-menu {
   grid-column: 2 / span 3;
   grid-row: 10 / span 10;
-  
-  
+  display:flex;
+  flex-direction: column;
 }
 
 div.todo-creation-menu > p {
@@ -238,7 +252,7 @@ div.todo-creation-menu > ul {
   overflow-y: scroll;
   border:var(--border-card);
   background-color: var(--bg-light);
-  box-shadow:2px 5px 8px -3px rgba(0, 0, 0, 0.293);
+  box-shadow:var(--box-shadow);
 }
 
 /* ----- Other ----- */
