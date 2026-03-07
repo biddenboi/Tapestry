@@ -110,6 +110,7 @@ function Profile() {
             <div className="journal-popup">
                 <div className="blanker"></div>
                 <div className="content">
+                    <p>Journal Entry</p>
                     <form action="" onSubmit={handleJournalSubmit}>
                         <input type="text" name="entry-title" placeholder="Entry Title"/>
                         <textarea name="entry-text" id=""
@@ -136,16 +137,17 @@ function Profile() {
                 </div>
             </div>
         </div>
-        <div className="seperator">
-            <span>Timeline</span>
-            {
-                //checks if current date, only shows button if its the same day
-                new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" == player.localCreatedAt ?
-                <button onClick={() => setJournalPopup(true)}>+ Add Entry</button> 
-                : ""
-            }
-        </div>
+        
         <div className="task-history-display">
+            <div className="section-header">
+                <span>Timeline</span>
+                {
+                    //checks if current date, only shows button if its the same day
+                    new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" == player.localCreatedAt ?
+                    <button onClick={() => setJournalPopup(true)}>Add Entry</button> 
+                    : ""
+                }
+            </div>
             <div className="task-table-container">
                 <table className="task-table">
                         <tbody>

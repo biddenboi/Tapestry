@@ -22,12 +22,21 @@ table.rank-table th {
   border-top: var(--border-card);
 }
 
+table.rank-table td:nth-child(1), table.rank-table th:nth-child(1) {
+  border-left: none;
+}
+
+table.rank-table td:nth-child(3), table.rank-table td:nth-child(1) {
+  width:1%;
+}
+
 div.rank-list {
   display:block;
   overflow-y:scroll;
   border-right: var(--border-card);
   border-bottom: var(--border-card);
   background-color: var(--bg-light);
+  border-left:var(--border-card);
 }
 
 table.rank-table {
@@ -131,7 +140,7 @@ div.task-form-inputs p {
   padding:0.5%;
   border: var(--border-card);
   border-bottom: none;
-  font-weight:600;
+  font-weight:700;
 }
 
 div.task-form-inputs input {
@@ -175,7 +184,6 @@ div.task-session-description {
   display:flex;
   flex-direction: column;
   align-items: center;
-  background-color: white;
   padding:5%;
   background-color: var(--bg-light);
   border:var(--border-card);
