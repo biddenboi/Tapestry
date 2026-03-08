@@ -151,6 +151,32 @@ class DatabaseConnection {
             }
         }
     }
+    if (DATABASE_VERISON >= 14 && oldVersion < 14) {
+        const transaction = event.target.transaction;
+        const journalStore = transaction.objectStore("journalObjectStore");
+
+        if (!journalStore.indexNames.contains("UUIC")) {
+            journalStore.createIndex("UUIC", "UUIC", { unique: true });
+        }
+        
+        const journalCursorRequest = journalStore.openCursor();
+
+        journalCursorRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+
+            if (!cursor) return; 
+            
+            const value = cursor.value;
+
+            value.UUID = uuid();
+
+            const updateRequest = cursor.update(value);
+                
+                updateRequest.onsuccess = () => {
+                    cursor.continue();
+                };
+        }
+    }
 }
     constructor() {
         if (!this.isCompatable()) {
