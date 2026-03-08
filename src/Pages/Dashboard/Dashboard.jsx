@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { msToPoints } from '../../Helpers.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
+import { v4 as uuid } from "uuid";
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -79,11 +80,17 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   //task submission, large chunk of code is duplicate see if we can merge
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
+
+    const localCompletedAt = new Date().toLocaleString('sv').replace(' ', 'T')
+    const parent = await databaseConnection.getPlayer(localCompletedAt.split("T")[0] + "T00:00:00")
+
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
-      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
+      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T'),
+      UUID: uuid(),
+      parent: parent.UUID
     }
 
     await databaseConnection.addTaskLog(task);
@@ -94,11 +101,17 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleTaskSubmitAndSave = async (e) => {
     e.preventDefault();
+
+    const localCompletedAt = new Date().toLocaleString('sv').replace(' ', 'T')
+    const parent = await databaseConnection.getPlayer(localCompletedAt.split("T")[0] + "T00:00:00")
+
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
-      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T')
+      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T'),
+      UUID: uuid(),
+      parent: parent.UUID
     }
 
     await databaseConnection.addTaskLog(task);
@@ -260,22 +273,23 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   }
 
   const handleSelectTodo = async (todo) => {
-  //review
-  await databaseConnection.removeTaskLog(todo.localCreatedAt); 
+    //review
+    await databaseConnection.removeTaskLog(todo.localCreatedAt); 
 
-  const todoArray = await databaseConnection.getIncompleteTasks();
-  setTodos(todoArray);
-  
-  setDraftTask(prev => ({
-    ...prev,
-    taskName: todo.taskName,
-    location: todo.location,
-    distractions: todo.distractions,
-    reasonToSelect: todo.reasonToSelect,
-    efficiency: todo.efficiency,
-    estimatedDuration: todo.estimatedDuration,
-    estimatedBuffer: todo.estimatedBuffer,
-  }));
+    const todoArray = await databaseConnection.getIncompleteTasks();
+    setTodos(todoArray);
+    
+    setDraftTask(prev => ({
+      ...prev,
+      taskName: todo.taskName,
+      location: todo.location,
+      distractions: todo.distractions,
+      reasonToSelect: todo.reasonToSelect,
+      efficiency: todo.efficiency,
+      estimatedDuration: todo.estimatedDuration,
+      estimatedBuffer: todo.estimatedBuffer,
+    })
+  );
 };
 
   function TodoFormComponent() {

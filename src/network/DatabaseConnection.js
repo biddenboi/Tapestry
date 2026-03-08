@@ -1,5 +1,6 @@
 import { getLocalDateAtMidnight, getLocalDate, addDurationToString, formatDateAsLocalString } from '../Helpers.js';
 import { DATABASE_VERISON } from '../Constants.js'
+import { v4 as uuid } from "uuid";
 
 class DatabaseConnection {
     database = null;
@@ -65,6 +66,88 @@ class DatabaseConnection {
                 }
 
                 cursor.continue();
+            }
+        }
+    }
+    if (DATABASE_VERISON >= 12 && oldVersion < 12) {
+        const transaction = event.target.transaction;
+        const playerStore = transaction.objectStore("playerObjectStore");
+        const taskStore = transaction.objectStore("taskObjectStore");
+
+        playerStore.createIndex("UUID", "UUID", { unique: true });
+        
+        const playerCursorRequest = playerStore.openCursor();
+
+        playerCursorRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+            
+            if (cursor) {
+                const value = cursor.value;
+
+                if (!value.UUID) {
+                    value.UUID = uuid();
+
+                    cursor.update(value);
+                }
+
+                cursor.continue();
+            }
+        }
+
+        taskStore.createIndex("UUID", "UUID", { unique: true });
+        
+        const taskCursorRequest = taskStore.openCursor();
+
+        taskCursorRequest.onsuccess = async (e) => {
+            const cursor = e.target.result;
+    
+            if (!cursor) return;
+            const value = cursor.value;
+
+
+            if (!value.UUID) {
+                value.UUID = uuid();
+                
+                cursor.update(value);
+                    
+            } 
+
+            cursor.continue();
+        }
+    }
+    if (DATABASE_VERISON >= 13 && oldVersion < 13) {
+        const transaction = event.target.transaction;
+        const playerStore = transaction.objectStore("playerObjectStore");
+        const taskStore = transaction.objectStore("taskObjectStore");
+
+        if (!taskStore.indexNames.contains("parent")) {
+            taskStore.createIndex("parent", "parent", { unique: false });
+        }
+        
+        const taskCursorRequest = taskStore.openCursor();
+
+        taskCursorRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+
+            if (!cursor) return; 
+            
+            const value = cursor.value;
+
+            const dateKey = value.localCreatedAt.split("T")[0] + "T00:00:00";
+            const playerRequest = playerStore.get(dateKey);
+
+            playerRequest.onsuccess = () => {
+                const player = playerRequest.result;
+                
+                if (player && player.UUID) {
+                    value.parent = player.UUID;
+                } 
+                
+                const updateRequest = cursor.update(value);
+                
+                updateRequest.onsuccess = () => {
+                    cursor.continue();
+                };
             }
         }
     }

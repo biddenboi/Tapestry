@@ -8,7 +8,8 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
-import { getLocalDateAtMidnight } from './Helpers';
+import { v4 as uuid } from "uuid";
+
 
 export const DatabaseConnectionContext = createContext();
 
@@ -27,6 +28,7 @@ function App() {
     const getCurrentProfile = async () => {
       const player = {
         username: "Guest",
+        UUID: uuid(),
         createdAt: new Date().toISOString(),
         localCreatedAt: new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00", // "2026-03-01T00:00:00"
       }
