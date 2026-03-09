@@ -155,8 +155,8 @@ class DatabaseConnection {
         const transaction = event.target.transaction;
         const journalStore = transaction.objectStore("journalObjectStore");
 
-        if (!journalStore.indexNames.contains("UUIC")) {
-            journalStore.createIndex("UUIC", "UUIC", { unique: true });
+        if (!journalStore.indexNames.contains("UUID")) {
+            journalStore.createIndex("UUID", "UUID", { unique: true });
         }
         
         const journalCursorRequest = journalStore.openCursor();
