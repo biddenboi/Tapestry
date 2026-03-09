@@ -34,10 +34,9 @@ function Settings() {
         const formData = new FormData(e.target);
     
         const newPlayer = {
+            ...player,
             username: formData.get("username") === "" ? player.username : formData.get("username"),
-            createdAt: new Date().toISOString(),
-            localCreatedAt: new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00",
-            description: formData.get("description") === "" ? player.description : formData.get("description")
+            description: formData.get("description") === "" ? player.description : formData.get("description"),
         }
         await databaseConnection.putPlayer(newPlayer);
     }
