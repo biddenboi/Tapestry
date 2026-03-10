@@ -19,12 +19,13 @@ class DatabaseConnection {
 
 
     if (DATABASE_VERISON >= 10 && oldVersion < 10) {
-        const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "localCreatedAt" });
+        const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "UUID" });
         playerStore.createIndex("username", "username", { unique: false });
         playerStore.createIndex("createdAt", "createdAt", { unique: false });
         playerStore.createIndex("description", "description", { unique: false });
 
-        const taskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "localCreatedAt" });
+        const taskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "UUID" });
+        //clean up and delete some keys
         taskStore.createIndex("createdAt", "createdAt", { unique: false });
         taskStore.createIndex("distractions", "distractions", { unique: false });
         taskStore.createIndex("duration", "duration", { unique: false });
@@ -37,14 +38,15 @@ class DatabaseConnection {
         taskStore.createIndex("similarity", "similarity", { unique: false });
         taskStore.createIndex("taskName", "taskName", { unique: false });
         taskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
+        taskStore.createIndex("localCompletedAt", "localCompletedAt", { unique: false });
         
-        const journal = this.database.createObjectStore("journalObjectStore", { keyPath: "localCreatedAt"});
+        const journal = this.database.createObjectStore("journalObjectStore", { keyPath: "UUID"});
         journal.createIndex("createdAt", "createdAt", { unique: false });
         journal.createIndex("title", "title", { unique: false });
         journal.createIndex("entry", "entry", { unique: false });
     }
 
-    if (DATABASE_VERISON >= 11 && oldVersion < 11) {
+    /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
         const transaction = event.target.transaction;
         const taskStore = transaction.objectStore("taskObjectStore");
 
@@ -114,69 +116,7 @@ class DatabaseConnection {
 
             cursor.continue();
         }
-    }
-    if (DATABASE_VERISON >= 13 && oldVersion < 13) {
-        const transaction = event.target.transaction;
-        const playerStore = transaction.objectStore("playerObjectStore");
-        const taskStore = transaction.objectStore("taskObjectStore");
-
-        if (!taskStore.indexNames.contains("parent")) {
-            taskStore.createIndex("parent", "parent", { unique: false });
-        }
-        
-        const taskCursorRequest = taskStore.openCursor();
-
-        taskCursorRequest.onsuccess = (e) => {
-            const cursor = e.target.result;
-
-            if (!cursor) return; 
-            
-            const value = cursor.value;
-
-            const dateKey = value.localCreatedAt.split("T")[0] + "T00:00:00";
-            const playerRequest = playerStore.get(dateKey);
-
-            playerRequest.onsuccess = () => {
-                const player = playerRequest.result;
-                
-                if (player && player.UUID) {
-                    value.parent = player.UUID;
-                } 
-                
-                const updateRequest = cursor.update(value);
-                
-                updateRequest.onsuccess = () => {
-                    cursor.continue();
-                };
-            }
-        }
-    }
-    if (DATABASE_VERISON >= 14 && oldVersion < 14) {
-        const transaction = event.target.transaction;
-        const journalStore = transaction.objectStore("journalObjectStore");
-
-        if (!journalStore.indexNames.contains("UUID")) {
-            journalStore.createIndex("UUID", "UUID", { unique: true });
-        }
-        
-        const journalCursorRequest = journalStore.openCursor();
-
-        journalCursorRequest.onsuccess = (e) => {
-            const cursor = e.target.result;
-
-            if (!cursor) return; 
-            
-            const value = cursor.value;
-
-            value.UUID = uuid();
-
-            const updateRequest = cursor.update(value);
-                
-                updateRequest.onsuccess = () => {
-                    cursor.continue();
-                };
-        }
-    }
+    }*/
 }
     constructor() {
         if (!this.isCompatable()) {
@@ -305,7 +245,7 @@ class DatabaseConnection {
      * retrieves all the tasks for a player in the range of localTime + the elapsed time since midnight for the current day.
      * @param {*} player - player to retrieve the tasks of.
      */
-    async getRelativePlayerTasks(player) {
+    /**async getRelativePlayerTasks(player) {
         const lastMidnight = getLocalDateAtMidnight();
         const currentTime = getLocalDate();
         const msElapsed = currentTime - lastMidnight;
@@ -318,30 +258,42 @@ class DatabaseConnection {
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
         return tasks;
-    }
+    }*/
 
     /**
      * retrieves all the tasks for a player over its entire span.
      * @param {*} player - player to retrieve the tasks of.
      */
     async getPlayerTasks(player) {
-        const startDate = player.localCreatedAt;
-        const endDate = formatDateAsLocalString(addDurationToString(startDate, 86400000));
+        const transaction = this.database.transaction("taskObjectStore", "readonly");
+        const store = transaction.objectStore("taskObjectStore");
+        const UUID = player.UUID;
+        const tasks = [];
 
+        const taskCursorRequest = store.openCursor();
 
-        const tasks = await this.getTasksFromRange(startDate, endDate);
+        taskCursorRequest.onsuccess = async (e) => {
+            const cursor = e.target.result;
+
+            if (!cursor) return;
+            const value = cursor.value;
+
+            if (value.parent == UUID) {
+                tasks.push(value);
+            }
+        }
         
         return tasks;
     }
 
-    async getPlayer(localCreatedAt) {
+    async getPlayer(UUID) {
         await this.ready;
        
         return new Promise((resolve, reject) => {
            const transaction = this.database.transaction("playerObjectStore", "readonly");
            const store = transaction.objectStore("playerObjectStore");
        
-           const request = store.get(localCreatedAt);
+           const request = store.get(UUID);
        
            request.onsuccess = () => resolve(request.result);
            request.onerror = () => reject(request.error);
@@ -356,7 +308,7 @@ class DatabaseConnection {
             const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
             const players = transaction.objectStore("playerObjectStore");
 
-            const request = players.get(player.localCreatedAt);
+            const request = players.get(player.UUID);
 
             request.onsuccess = (event) => {
                 const result = request.result;
@@ -459,13 +411,13 @@ class DatabaseConnection {
         })
     }
 
-    async removeTaskLog(localCreatedAt) {
+    async removeTaskLog(UUID) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(["taskObjectStore"], "readwrite");
             const tasksObjectStore = transaction.objectStore("taskObjectStore");
-            const request = tasksObjectStore.delete(localCreatedAt);
+            const request = tasksObjectStore.delete(UUID);
 
             transaction.oncomplete = () => {
                 resolve();
@@ -523,7 +475,7 @@ class DatabaseConnection {
         });
     }
 
-    async getTasksFromRange(startDate, endDate) {
+    /**async getTasksFromRange(startDate, endDate) {
         await this.ready;
      
          return new Promise((resolve, reject) => {
@@ -545,16 +497,16 @@ class DatabaseConnection {
              
             transaction.onerror = () => reject(transaction.error);
          })
-    }  
+    }  */
     
-    async getTask(localCreatedAt) {
+    async getTask(UUID) {
         await this.ready;
        
         return new Promise((resolve, reject) => {
            const transaction = this.database.transaction("taskObjectStore", "readonly");
            const store = transaction.objectStore("taskObjectStore");
        
-           const request = store.get(localCreatedAt);
+           const request = store.get(UUID);
        
            request.onsuccess = () => resolve(request.result);
            request.onerror = () => reject(request.error);
@@ -564,14 +516,14 @@ class DatabaseConnection {
 
     /** journal methods */
 
-    async getJournal(localCreatedAt) {
+    async getJournal(UUID) {
         await this.ready;
        
         return new Promise((resolve, reject) => {
            const transaction = this.database.transaction("journalObjectStore", "readonly");
            const store = transaction.objectStore("journalObjectStore");
        
-           const request = store.get(localCreatedAt);
+           const request = store.get(UUID);
        
            request.onsuccess = () => resolve(request.result);
            request.onerror = () => reject(request.error);
@@ -619,7 +571,7 @@ class DatabaseConnection {
         })
     }
 
-    async getJournalsFromRange(startDate, endDate) {
+    /**async getJournalsFromRange(startDate, endDate) {
         await this.ready;
      
          return new Promise((resolve, reject) => {
@@ -656,7 +608,7 @@ class DatabaseConnection {
         const tasks = await this.getJournalsFromRange(startDate, endDate);
         
         return tasks;
-    }
+    }*/
 
     async getJournals() {
         await this.ready;
