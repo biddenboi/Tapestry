@@ -264,10 +264,9 @@ class DatabaseConnection {
      * retrieves all the tasks for a player over its entire span.
      * @param {*} player - player to retrieve the tasks of.
      */
-    async getPlayerTasks(player) {
+    async getPlayerTasks(UUID) {
         const transaction = this.database.transaction("taskObjectStore", "readonly");
         const store = transaction.objectStore("taskObjectStore");
-        const UUID = player.UUID;
         const tasks = [];
 
         const taskCursorRequest = store.openCursor();
@@ -571,6 +570,28 @@ class DatabaseConnection {
         })
     }
 
+    async getPlayerJournals(UUID) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transactiopn("journalObjectStore", "readonly");
+            const store = transaction.objectStore("journalObjectStore");
+            const entries = [];
+
+            store.openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+
+                if (!cursor) return;
+
+                const value = cursor.value;
+
+                if (value.parent == UUID) {
+                    entries.push(value);
+                }
+            }
+        })
+    }
+
     /**async getJournalsFromRange(startDate, endDate) {
         await this.ready;
      
@@ -593,7 +614,7 @@ class DatabaseConnection {
              
             transaction.onerror = () => reject(transaction.error);
          })
-    }  
+    }
 
     async getRelativePlayerJournals(player) {
         const lastMidnight = getLocalDateAtMidnight();
