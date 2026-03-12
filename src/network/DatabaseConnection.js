@@ -171,6 +171,8 @@ class DatabaseConnection {
             link.click();
 
             URL.revokeObjectURL(url); //revoke since blob urls don't get collected by garbage collector
+
+            resolve();
         })
     }
 
@@ -197,7 +199,7 @@ class DatabaseConnection {
         this.clearPlayerData();
 
         playerData.forEach(async (player) => {
-            const playerTasks = await this.getPlayerTasks(player);
+            const playerTasks = await this.getPlayerTasks(player.UUID);
 
             if (playerTasks.length != 0) {
                 this.createPlayer(player);
@@ -265,24 +267,40 @@ class DatabaseConnection {
      * @param {*} player - player to retrieve the tasks of.
      */
     async getPlayerTasks(UUID) {
-        const transaction = this.database.transaction("taskObjectStore", "readonly");
-        const store = transaction.objectStore("taskObjectStore");
-        const tasks = [];
+        await this.ready;
 
-        const taskCursorRequest = store.openCursor();
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("taskObjectStore", "readonly");
+            const store = transaction.objectStore("taskObjectStore");
+            
+            const index = store.index("parent");
 
-        taskCursorRequest.onsuccess = async (e) => {
-            const cursor = e.target.result;
+            const request = index.getAll(UUID);
 
-            if (!cursor) return;
-            const value = cursor.value;
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        })
+    }
 
-            if (value.parent == UUID) {
-                tasks.push(value);
+    async getCurrentPlayer() {
+        await this.ready;
+       
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("playerObjectStore", "readonly");
+            const store = transaction.objectStore("playerObjectStore");
+            const index = store.index("createdAt");
+
+            const request = index.openCursor(null, "prev");
+
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                resolve(cursor);
             }
-        }
-        
-        return tasks;
+
+            request.onerror = (e) => {
+                reject(request.error);
+            }
+         });
     }
 
     async getPlayer(UUID) {
@@ -300,35 +318,21 @@ class DatabaseConnection {
          });
     }
 
-    async createPlayer(player) {
+    async addPlayer(player) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
             const players = transaction.objectStore("playerObjectStore");
 
-            const request = players.get(player.UUID);
+            const request = players.add(player);
 
             request.onsuccess = (event) => {
-                const result = request.result;
-
-                if (result === undefined) {
-                    players.add(player)
-                }else {
-                    //player already exists
-                }
+                resolve(request.result);
             }
 
             request.onerror = (event) => {
                 reject(request.error);
-            }
-
-            transaction.oncomplete = (event) => {
-                resolve();
-            }
-
-            transaction.onerror = (event) => {
-                reject(transaction.error);
             }
         })
     }
@@ -418,11 +422,11 @@ class DatabaseConnection {
             const tasksObjectStore = transaction.objectStore("taskObjectStore");
             const request = tasksObjectStore.delete(UUID);
 
-            transaction.oncomplete = () => {
+            request.oncomplete = () => {
                 resolve();
             }
 
-            transaction.onerror = () => {
+            request.onerror = () => {
                 reject(transaction.error);
             }
         })
@@ -574,21 +578,14 @@ class DatabaseConnection {
         await this.ready;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.database.transactiopn("journalObjectStore", "readonly");
+            const transaction = this.database.transaction("journalObjectStore", "readonly");
             const store = transaction.objectStore("journalObjectStore");
-            const entries = [];
+            const index = store.index("parent");
 
-            store.openCursor().onsuccess = (e) => {
-                const cursor = e.target.result;
+            const request = index.getAll(UUID);
 
-                if (!cursor) return;
-
-                const value = cursor.value;
-
-                if (value.parent == UUID) {
-                    entries.push(value);
-                }
-            }
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
         })
     }
 

@@ -29,9 +29,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const players = await databaseConnection.getPlayers();
 
       const DataPromises = players.map(async (player) => {
-        const tasks = await databaseConnection.getRelativePlayerTasks(player)
+        const tasks = await databaseConnection.getPlayerTasks(player)
         
-
         let sum = 0;
         tasks.forEach(task => {
           sum += (task.points || 0);

@@ -30,7 +30,6 @@ function App() {
         username: "Guest",
         UUID: uuid(),
         createdAt: new Date().toISOString(),
-        localCreatedAt: new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00", // "2026-03-01T00:00:00"
       }
       await databaseConnection.createPlayer(player);
 
