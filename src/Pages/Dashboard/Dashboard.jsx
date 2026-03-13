@@ -81,6 +81,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const parent = await databaseConnection.getCurrentPlayer();
+   
 
     const task = {
       ...draftTask,
@@ -92,6 +93,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }
 
     await databaseConnection.addTaskLog(task);
+     console.log("hi");
 
     updateStates(false, null, {})
     e.target.reset();

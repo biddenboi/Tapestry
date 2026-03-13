@@ -39,8 +39,9 @@ function Settings() {
             ...player,
             username: formData.get("username") === "" ? player.username : formData.get("username"),
             description: formData.get("description") === "" ? player.description : formData.get("description"),
+            wakeTime: formData.get("wake-time"),
+            sleepTime: formData.get("sleep-time"),
         }
-        console.log("Adding player:", player)
         await databaseConnection.addPlayer(newPlayer);
     }
       
@@ -68,7 +69,8 @@ function Settings() {
             UUID: uuid(),
             createdAt: new Date().toISOString(),
             wakeTime: "07:00",
-            sleepTime:"23:00",
+            sleepTime: "23:00",
+            tokens: 0
         }
         await databaseConnection.addPlayer(player);
     }

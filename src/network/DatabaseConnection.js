@@ -306,7 +306,7 @@ class DatabaseConnection {
             const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
             const players = transaction.objectStore("playerObjectStore");
 
-            const request = players.add(player);
+            const request = players.put(player);
 
             request.onsuccess = (event) => {
                 resolve(request.result);
@@ -383,15 +383,13 @@ class DatabaseConnection {
             const tasks = transaction.objectStore("taskObjectStore");
             const request = tasks.put(task);  
             
-            transaction.onsuccess = () => {
+            request.onsuccess = () => {
                 resolve();
             }
 
-            transaction.onerror = () => {
-                reject(transaction.error);
+            request.onerror = () => {
+                reject(request.error);
             }
-
-            return request;
         })
     }
 
