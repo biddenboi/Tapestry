@@ -93,7 +93,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }
 
     await databaseConnection.addTaskLog(task);
-     console.log("hi");
 
     updateStates(false, null, {})
     e.target.reset();
@@ -125,6 +124,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const task = {
       ...draftTask,
       createdAt: new Date().toISOString(),
+      parent: parent.UUID,
+      UUID: uuid(),
     }
 
     await databaseConnection.addTaskLog(task);
@@ -134,7 +135,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     updateStates(false, null, {});
 
-    e.target.reset();
   }
 
   const handleStartTask = () => {
