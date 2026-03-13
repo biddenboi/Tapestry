@@ -1,10 +1,10 @@
 import { useParams } from "react-router-dom";
-import { DatabaseConnectionContext } from "../../App";
+import { AppContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
 import { v4 as uuid } from "uuid";
 
 import './Profile.css';
-import { getLocalDate, getTimeAsString } from "../../utils/Helpers";
+import { getTimeAsString } from "../../utils/Helpers";
 
 function Profile() {
 //read through this code again when ur not tired
@@ -13,7 +13,7 @@ function Profile() {
   const [player, setPlayer] = useState(null);
   const [journalPopup, setJournalPopup] = useState(false);
 
-  const databaseConnection = useContext(DatabaseConnectionContext);
+  const databaseConnection = useContext(AppContext).databaseConnection;
 
   useEffect(() => {
         //REVIEW
@@ -80,7 +80,7 @@ function Profile() {
     }
 
     getPlayer();
-    }, [index])
+    }, [index, useContext(AppContext).timestamp])
 
     const handleJournalSubmit = (async (e) => {
         //prevent default needed so data does not refresh on click.

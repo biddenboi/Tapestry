@@ -13,7 +13,7 @@ import { useInterval } from './utils/useInterval';
 
 
 
-export const DatabaseConnectionContext = createContext();
+export const AppContext = createContext();
 
 /*Start Point of React Program. Handles page navigation and database connection.*/
 function App() {
@@ -22,9 +22,16 @@ function App() {
 
   const [isTaskSession, setIsTaskSession] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState({});
+
+  //global updater useInterval
   const [timestamp, setTimestamp] = useState(Date.now());
   
   const databaseConnection = useMemo(() => new DatabaseConnection(), []);
+
+  const contextValue = useMemo(() => ({
+    databaseConnection: databaseConnection,
+    timestamp: timestamp
+  }), [databaseConnection, timestamp])
 
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
@@ -39,8 +46,9 @@ function App() {
 
   useInterval(() => {
     setTimestamp(Date.now())
-    console.log(timestamp);
+    //NOTE: CHANGE SECONDS TO MINUTES AFTER TESTING
   }, 5* SECOND)
+
 
   //navigating across routes
   const navigate = (route) => {
@@ -59,7 +67,7 @@ function App() {
     </div>
 
     {/*Provides database connection to all child components.*/}
-    <DatabaseConnectionContext.Provider value={databaseConnection}>
+    <AppContext.Provider value={contextValue}>
         <Routes>
           <Route 
             path='/' 
@@ -70,7 +78,7 @@ function App() {
           <Route path='/settings' element={<Settings></Settings>}/>
           <Route path='/profile/:index' element={<Profile></Profile>}/>
         </Routes>
-    </DatabaseConnectionContext.Provider>
+    </AppContext.Provider>
   </>
 }
 export default App;

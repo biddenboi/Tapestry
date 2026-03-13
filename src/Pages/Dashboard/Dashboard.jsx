@@ -1,6 +1,6 @@
 import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
-import { DatabaseConnectionContext } from '../../App.jsx';
+import { AppContext } from '../../App.jsx';
 import Timer from '../../components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
 import { msToPoints } from '../../utils/Helpers.js';
@@ -22,7 +22,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [durationPenalty, setDurationPenalty] = useState(null);
   const [draftTask, setDraftTask] = useState({});
 
-  const databaseConnection = useContext(DatabaseConnectionContext);
+  const databaseConnection = useContext(AppContext).databaseConnection;
 
   useEffect(() => {
     const loadPlayers = async () => {
@@ -50,7 +50,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       setTodos(todoArray);
     };
       loadPlayers();
-  }, [databaseConnection, isTaskSession])
+  }, [databaseConnection, useContext(AppContext).timestamp])
 
   /* Helper Methods */
 

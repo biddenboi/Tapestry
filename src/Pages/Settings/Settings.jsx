@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect } from 'react';
-import { DatabaseConnectionContext } from '../../App';
+import { AppContext } from '../../App';
 import { v4 as uuid } from "uuid";
 
 import './Settings.css'
@@ -10,9 +10,8 @@ function Settings() {
     const [usernamePlaceholderText, setUsernamePlaceholderText] = useState("");
     const [descriptionPlaceholderText, setDescriptionPlaceholderText] = useState("");
 
-    const databaseConnection = useContext(DatabaseConnectionContext);
+    const databaseConnection = useContext(AppContext).databaseConnection;
 
-    
     useEffect(() => {
         const updatePlaceholder = async () => {
             const player = await databaseConnection.getCurrentPlayer();
