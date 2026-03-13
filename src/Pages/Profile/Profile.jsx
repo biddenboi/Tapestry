@@ -29,12 +29,12 @@ function Profile() {
   useEffect(() => {
     //calculates data about player and creates new object with calculations
     const getPlayer = async () => {
-    const p = await databaseConnection.getCurrentPlayer(index);
+    const p = await databaseConnection.getPlayer(index);
 
     const history = [];
 
-    const tasks = await databaseConnection.getPlayerTasks(p);
-    const journals = await databaseConnection.getPlayerJournals(p);
+    const tasks = await databaseConnection.getPlayerTasks(p.UUID);
+    const journals = await databaseConnection.getPlayerJournals(p.UUID);
 
     //maybe move description to a function processed when called vs making it an attribute  
 

@@ -8,7 +8,7 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
-import { v4 as uuid } from "uuid";
+
 
 
 export const DatabaseConnectionContext = createContext();
@@ -46,7 +46,7 @@ function App() {
       <a onClick={() => navigate("/")}>Dashboard</a>
       <a onClick={() => navigate("/events")}>Events</a>
       <a onClick={() => navigate("/shop")}>Shop</a>
-      <a onClick={() => navigate(`/profile/${currentPlayer.localCreatedAt}`)}>Profile</a>
+      <a onClick={() => navigate(`/profile/${currentPlayer.UUID}`)}>Profile</a>
       <a onClick={() => navigate("/settings")}>Settings</a>
     </div>
 
