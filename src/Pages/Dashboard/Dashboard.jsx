@@ -29,7 +29,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const players = await databaseConnection.getPlayers();
 
       const DataPromises = players.map(async (player) => {
-        const tasks = await databaseConnection.getPlayerTasks(player)
+        const tasks = await databaseConnection.getPlayerTasks(player.UUID);
         
         let sum = 0;
         tasks.forEach(task => {
@@ -80,14 +80,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
 
-    const localCompletedAt = new Date().toLocaleString('sv').replace(' ', 'T')
-    const parent = await databaseConnection.getPlayer(localCompletedAt.split("T")[0] + "T00:00:00")
+    const parent = await databaseConnection.getCurrentPlayer();
 
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
-      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T'),
       UUID: uuid(),
       parent: parent.UUID
     }
@@ -101,14 +99,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTaskSubmitAndSave = async (e) => {
     e.preventDefault();
 
-    const localCompletedAt = new Date().toLocaleString('sv').replace(' ', 'T')
-    const parent = await databaseConnection.getPlayer(localCompletedAt.split("T")[0] + "T00:00:00")
+    const parent = await databaseConnection.getCurrentPlayer();
 
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
-      localCompletedAt: new Date().toLocaleString('sv').replace(' ', 'T'),
       UUID: uuid(),
       parent: parent.UUID
     }
@@ -178,7 +174,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
                 <td>{"#" + (index + 1)}</td>
                 <td>
                   <Link 
-                    to={`/profile/${element.localCreatedAt}`}
+                    to={`/profile/${element.UUID}`}
                     className={isTaskSession ? "disabled-link" : ""}>
                     {element.username}
                   </Link>

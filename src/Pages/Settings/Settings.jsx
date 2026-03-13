@@ -1,5 +1,6 @@
 import { useContext, useState, useEffect } from 'react';
 import { DatabaseConnectionContext } from '../../App';
+import { v4 as uuid } from "uuid";
 
 import './Settings.css'
 
@@ -14,8 +15,7 @@ function Settings() {
     
     useEffect(() => {
         const updatePlaceholder = async () => {
-            const date = new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00";
-            const player = await databaseConnection.getPlayer(date);
+            const player = await databaseConnection.getCurrentPlayer();
 
             setUsernamePlaceholderText(player.username);
             setDescriptionPlaceholderText(player.description);
@@ -28,8 +28,7 @@ function Settings() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const date = new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00";
-        const player = await databaseConnection.getPlayer(date);
+        const player = await databaseConnection.getCurrentPlayer();
     
         const formData = new FormData(e.target);
     
@@ -57,6 +56,15 @@ function Settings() {
             <hr />
             {inputs}
         </div>
+    }
+
+    const handleProfileCreation = async (e) => {
+        const player = {
+            username: "Guest",
+            UUID: uuid(),
+            createdAt: new Date().toISOString(),
+        }
+        await databaseConnection.addPlayer(player);
     }
       
 
@@ -88,6 +96,10 @@ function Settings() {
 
         {SettingsGroup("Data",
             <>
+                <label>
+                    Create Profile:
+                    <button type="button" onClick={handleProfileCreation}>New</button>
+                </label>  
                 <label>
                     Download Data:
                     <button type="button" onClick={handleDataDownload}>Download</button>

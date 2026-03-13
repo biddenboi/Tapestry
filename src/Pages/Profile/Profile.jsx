@@ -29,12 +29,12 @@ function Profile() {
   useEffect(() => {
     //calculates data about player and creates new object with calculations
     const getPlayer = async () => {
-    const p = await databaseConnection.getPlayer(index);
+    const p = await databaseConnection.getCurrentPlayer(index);
 
     const history = [];
 
-    const tasks = await databaseConnection.getRelativePlayerTasks(p);
-    const journals = await databaseConnection.getRelativePlayerJournals(p);
+    const tasks = await databaseConnection.getPlayerTasks(p);
+    const journals = await databaseConnection.getPlayerJournals(p);
 
     //maybe move description to a function processed when called vs making it an attribute  
 
@@ -86,12 +86,14 @@ function Profile() {
         const entryTitle = formData.get("entry-title");
         const entryText = formData.get("entry-text");
 
+        const parent = await databaseConnection.getCurrentPlayer();
+
         const journal = {
             title: entryTitle,
             entry: entryText,
             //create methods for local time for tasks too in helper
             createdAt: new Date().toISOString(),
-            localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
+            parent: parent.UUID
         }
 
         await databaseConnection.addJournalLog(journal);
@@ -122,7 +124,7 @@ function Profile() {
         }
         <div className="profile-banner">
             <div className="stats-subsection">
-                <span>{player.localCreatedAt.split("T")[0]}</span>
+                <span>{player.createdAt}</span>
                 <span>{player.username}</span>
                 {player.description ? <span>{player.description}</span> : ""}
             </div>
@@ -154,7 +156,7 @@ function Profile() {
                             {
                                 player.history.map((element, index) => (
                                 <tr key={element.createdAt}>
-                                    <td>{getTimeAsString(element.localCreatedAt)}</td>
+                                    <td>{getTimeAsString(element.createdAt)}</td>
                                     <td>{element.type}</td>
                                     <td>{element.description}</td>
                                     {/** replace description and points with generalized method */}

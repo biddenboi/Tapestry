@@ -25,17 +25,9 @@ function App() {
 
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
+    //UPDATE TO BE ONCE PER DAY THROUGH CREATED AT COMPARISON CHECKS
     const getCurrentProfile = async () => {
-      const player = {
-        username: "Guest",
-        UUID: uuid(),
-        createdAt: new Date().toISOString(),
-      }
-      await databaseConnection.createPlayer(player);
-
-      const p = await databaseConnection.getPlayer(
-        new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" // same key
-      );
+      const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
     }
 

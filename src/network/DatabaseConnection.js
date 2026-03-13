@@ -13,7 +13,7 @@ class DatabaseConnection {
     this.database = event.target.result;
     const oldVersion = event.oldVersion;
 
-    if (oldVersion > 0 && oldVersion < 8) {
+    if (oldVersion > 0 && oldVersion < 9) {
         console.warn("Database version too old. Please clear your data and refresh.");
     }
 
@@ -29,6 +29,7 @@ class DatabaseConnection {
         taskStore.createIndex("createdAt", "createdAt", { unique: false });
         taskStore.createIndex("distractions", "distractions", { unique: false });
         taskStore.createIndex("duration", "duration", { unique: false });
+        taskStore.createIndex("parent", "parent", { unique: false });
         taskStore.createIndex("efficiency", "efficiency", { unique: false });
         taskStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
         taskStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
@@ -44,6 +45,7 @@ class DatabaseConnection {
         journal.createIndex("createdAt", "createdAt", { unique: false });
         journal.createIndex("title", "title", { unique: false });
         journal.createIndex("entry", "entry", { unique: false });
+        journal.createIndex("parent", "parent", { unique: false });
     }
 
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
@@ -202,7 +204,7 @@ class DatabaseConnection {
             const playerTasks = await this.getPlayerTasks(player.UUID);
 
             if (playerTasks.length != 0) {
-                this.createPlayer(player);
+                this.addPlayer(player);
             }
         })
 
