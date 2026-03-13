@@ -41,14 +41,30 @@ function App() {
     }
     
     const checkNewDay = async () => {
+      
       const exitEvent = await databaseConnection.getLastExitEvent();
 
       //check if day 1 and no previous day exists
-      if (exitEvent == null) return;
+
+      //checks if getCurrentProfile ran first
+      if (currentPlayer.createdAt == null) return;
+
+      const playerCreatedAtMidnight = getMidnightOfDate(currentPlayer.createdAt).getTime();
+      const currMidnight = getMidnightOfDate(new Date()).getTime();
+
+      if (playerCreatedAtMidnight == currMidnight) return;
+      console.log("exitEvent exists");
       
-      const exitEventMidnight = getMidnightOfDate(exitEvent.createdAt);
+      const exitEventMidnight = getMidnightOfDate(exitEvent.createdAt).getTime();
       const yesterday = addDurationToDate(new Date(), -DAY);
-      const lastMidnight = getMidnightOfDate(yesterday)
+      const lastMidnight = getMidnightOfDate(yesterday).getTime()
+
+      //if we already carried out lastMidnight for the previous day
+      if (exitEventMidnight == lastMidnight) return;
+      console.log("punishments carried");
+
+      currentPlayer.tokens = 0;
+      await databaseConnection.addPlayer(currentPlayer);
     }
 
     getCurrentProfile();

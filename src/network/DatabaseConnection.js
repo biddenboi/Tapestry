@@ -56,10 +56,10 @@ class DatabaseConnection {
     }
 
     if (DATABASE_VERISON >= 12 && oldVersion < 12) {
-        const playerStore = this.database.createObjectStore("eventObjectStore", { keyPath: "UUID" });
-        playerStore.createIndex("type", "type", { unique:false })
-        playerStore.createIndex("description", "description", { unique:false })
-        playerStore.createIndex("createdAt", "createdAt", { unique:false })
+        const eventObjectStore = this.database.createObjectStore("eventObjectStore", { keyPath: "UUID" });
+        eventObjectStore.createIndex("type", "type", { unique:false })
+        eventObjectStore.createIndex("description", "description", { unique:false })
+        eventObjectStore.createIndex("createdAt", "createdAt", { unique:false })
     }
 
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
@@ -653,6 +653,25 @@ class DatabaseConnection {
             }
         })
     }
+    async addEvent(event) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["eventObjectStore"], "readwrite");
+        
+            const events = transaction.objectStore("eventObjectStore");
+            const request = events.put(event);  
+            
+            request.onsuccess = () => {
+                resolve();
+            }
+
+            request.onerror = () => {
+                reject(request.error);
+            }
+        })
+    }
+
 }
 
 export default DatabaseConnection;
