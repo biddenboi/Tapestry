@@ -56,6 +56,13 @@ class DatabaseConnection {
         playerStore.createIndex("sleepTime", "sleepTime", { unique:false })
     }
 
+    if (DATABASE_VERISON >= 12 && oldVersion < 12) {
+        const playerStore = this.database.createObjectStore("eventObjectStore", { keyPath: "UUID" });
+        playerStore.createIndex("type", "type", { unique:false })
+        playerStore.createIndex("description", "description", { unique:false })
+        playerStore.createIndex("createdAt", "createdAt", { unique:false })
+    }
+
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
         const transaction = event.target.transaction;
         const taskStore = transaction.objectStore("taskObjectStore");
