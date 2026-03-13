@@ -95,7 +95,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.addTaskLog(task);
 
     updateStates(false, null, {})
-    e.target.reset();
   }
 
   const handleTaskSubmitAndSave = async (e) => {
@@ -115,7 +114,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.addTaskLog(task);
 
     updateStates(false, null, draftTask)
-    e.target.reset();
   }
 
   const handleTodoSubmit = async (e) => {
