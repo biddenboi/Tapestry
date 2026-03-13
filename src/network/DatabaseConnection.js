@@ -375,7 +375,7 @@ class DatabaseConnection {
             const tasks = transaction.objectStore("taskObjectStore");
             const request = tasks.put(task);  
             
-            transaction.oncomplete = () => {
+            transaction.onsuccess = () => {
                 resolve();
             }
 
@@ -395,7 +395,7 @@ class DatabaseConnection {
             const tasksObjectStore = transaction.objectStore("taskObjectStore");
             const request = tasksObjectStore.delete(UUID);
 
-            request.oncomplete = () => {
+            request.onsuccess = () => {
                 resolve();
             }
 
@@ -535,7 +535,7 @@ class DatabaseConnection {
             const journals = transaction.objectStore("journalObjectStore");
             const request = journals.put(entry);  
             
-            transaction.oncomplete = () => {
+            transaction.onsuccess = () => {
                 resolve();
             }
 
