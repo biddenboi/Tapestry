@@ -17,3 +17,40 @@ div.shop div.shop-row {
 div.shop div.shop-row span {
     margin-left:20px;
 }
+
+div.shop div.tool-bar {
+    position: fixed;
+    width:300px;
+    height:70px;
+    background-color: var(--bg-light);
+    border: var(--border-card);
+    margin-left:70%;
+    margin-top:-10px;
+    display:flex;
+    flex-direction: column;
+}
+
+div.shop div.tool-bar p {
+    background-color: var(--bg-dark);
+    border-bottom:var(--border-card);
+    font-weight:700;
+    padding-left:10px;
+}
+
+div.shop div.tool-bar div {
+    height: 100%;
+    display:flex;
+    align-items: center;
+    justify-content: center;
+    gap:5%;
+}
+
+div.shop div.tool-bar button {
+    border:var(--border-card);
+    background-color: var(--bg-dark);
+}
+
+div.shop div.tool-bar span {
+    border:var(--border-card);
+    padding:1px 10px;
+}
