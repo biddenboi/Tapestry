@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { v4 as uuid } from "uuid";
 
 import './Profile.css';
-import { getLocalDate, getTimeAsString } from "../../Helpers";
+import { getLocalDate, getTimeAsString } from "../../utils/Helpers";
 
 function Profile() {
 //read through this code again when ur not tired

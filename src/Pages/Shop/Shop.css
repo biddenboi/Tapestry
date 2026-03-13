@@ -1,10 +1,19 @@
 div.shop {
-    height:100%;
     display:flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    font-size:30px;
-    font-weight:700;
     background-color: var(--bg);
+    gap:100px;
+    padding-top: 100px;
 }
 
+div.shop div.shop-row {
+    width:90%;
+    height:350px;
+    font-size:20px;
+    color:var(--text-muted)
+}
+
+div.shop div.shop-row span {
+    margin-left:20px;
+}

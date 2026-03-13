@@ -3,7 +3,7 @@ import { useState, useEffect, useContext } from 'react'
 import { DatabaseConnectionContext } from '../../App.jsx';
 import Timer from '../../components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
-import { msToPoints } from '../../Helpers.js';
+import { msToPoints } from '../../utils/Helpers.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";

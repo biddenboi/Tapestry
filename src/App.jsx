@@ -8,6 +8,8 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
+import { MINUTE, SECOND } from './utils/Constants';
+import { useInterval } from './utils/useInterval';
 
 
 
@@ -20,6 +22,7 @@ function App() {
 
   const [isTaskSession, setIsTaskSession] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState({});
+  const [timestamp, setTimestamp] = useState(Date.now());
   
   const databaseConnection = useMemo(() => new DatabaseConnection(), []);
 
@@ -33,6 +36,11 @@ function App() {
 
     getCurrentProfile();
   }, [databaseConnection])
+
+  useInterval(() => {
+    setTimestamp(Date.now())
+    console.log(timestamp);
+  }, 5* SECOND)
 
   //navigating across routes
   const navigate = (route) => {

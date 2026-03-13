@@ -1,5 +1,5 @@
-import { getLocalDateAtMidnight, getLocalDate, addDurationToString, formatDateAsLocalString } from '../Helpers.js';
-import { DATABASE_VERISON } from '../Constants.js'
+import { getLocalDateAtMidnight, getLocalDate, addDurationToString, formatDateAsLocalString } from '../utils/Helpers.js';
+import { DATABASE_VERISON } from '../utils/Constants.js'
 
 
 class DatabaseConnection {
