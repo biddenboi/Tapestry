@@ -48,6 +48,14 @@ class DatabaseConnection {
         journal.createIndex("parent", "parent", { unique: false });
     }
 
+    if (DATABASE_VERISON >= 11 && oldVersion < 11) {
+        const transaction = event.target.transaction
+        const playerStore = transaction.objectStore("playerObjectStore")
+        playerStore.createIndex("tokens", "tokens", { unique:false })
+        playerStore.createIndex("wakeTime", "wakeTime", { unique:false })
+        playerStore.createIndex("sleepTime", "sleepTime", { unique:false })
+    }
+
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
         const transaction = event.target.transaction;
         const taskStore = transaction.objectStore("taskObjectStore");

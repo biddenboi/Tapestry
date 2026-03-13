@@ -34,7 +34,6 @@ function App() {
 
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
-    //UPDATE TO BE ONCE PER DAY THROUGH CREATED AT COMPARISON CHECKS
     const getCurrentProfile = async () => {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
