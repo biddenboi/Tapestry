@@ -7,8 +7,7 @@ import './Settings.css'
 function Settings() {
     /*Internal Data*/
     const [data, setData] = useState(null);
-    const [usernamePlaceholderText, setUsernamePlaceholderText] = useState("");
-    const [descriptionPlaceholderText, setDescriptionPlaceholderText] = useState("");
+    const [placeholder, setPlaceholder] = useState({});
 
     const databaseConnection = useContext(AppContext).databaseConnection;
 
@@ -16,8 +15,13 @@ function Settings() {
         const updatePlaceholder = async () => {
             const player = await databaseConnection.getCurrentPlayer();
 
-            setUsernamePlaceholderText(player.username);
-            setDescriptionPlaceholderText(player.description);
+            setPlaceholder({
+                username: player.username,
+                description: player.description,
+                wakeTime: player.wakeTime,
+                sleepTime: player.sleepTime,
+            });
+            
         }
 
         updatePlaceholder();
@@ -63,6 +67,8 @@ function Settings() {
             username: "Guest",
             UUID: uuid(),
             createdAt: new Date().toISOString(),
+            wakeTime: "07:00",
+            sleepTime:"23:00",
         }
         await databaseConnection.addPlayer(player);
     }
@@ -75,26 +81,28 @@ function Settings() {
                     Username:
                     <input 
                         type="text" 
-                        placeholder={usernamePlaceholderText} 
+                        placeholder={placeholder.username} 
                         name="username"/>
                 </label>  
                 <label className="description-settings">
                     Description:
                     <input 
                         type="text" 
-                        placeholder={descriptionPlaceholderText} 
+                        placeholder={placeholder.description} 
                         name="description"/>
                 </label>  
                 <label className="wake-settings">
                     Wake Time:
                     <input 
                         type="time" 
+                        defaultValue={placeholder.wakeTime} 
                         name="wake-time"/>
                 </label>  
                 <label className="sleep-settings">
                     Bed Time:
                     <input 
                         type="time" 
+                        defaultValue={placeholder.sleepTime} 
                         name="sleep-time"/>
                 </label>  
             </>
