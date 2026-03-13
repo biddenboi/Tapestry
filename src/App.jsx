@@ -1,6 +1,5 @@
 import { useState, createContext, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-
 import './App.css';
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import Events from "./Pages/Events/Events";
@@ -42,7 +41,7 @@ function App() {
     }
 
     getCurrentProfile();
-  }, [databaseConnection])
+  }, [timestamp])
 
   useInterval(() => {
     setTimestamp(Date.now())

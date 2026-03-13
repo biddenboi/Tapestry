@@ -16,7 +16,6 @@ function ShopRow({title, items}) {
       <span>{title}</span>
       <hr />
       <div className="shop-item-scroll">
-         {ShopItem()}
       </div>
    </div>
 }

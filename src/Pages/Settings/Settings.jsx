@@ -85,6 +85,18 @@ function Settings() {
                         placeholder={descriptionPlaceholderText} 
                         name="description"/>
                 </label>  
+                <label className="wake-settings">
+                    Wake Time:
+                    <input 
+                        type="time" 
+                        name="wake-time"/>
+                </label>  
+                <label className="sleep-settings">
+                    Bed Time:
+                    <input 
+                        type="time" 
+                        name="sleep-time"/>
+                </label>  
             </>
         )}
 
