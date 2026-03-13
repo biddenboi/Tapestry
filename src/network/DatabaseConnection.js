@@ -216,35 +216,6 @@ class DatabaseConnection {
         })
     } 
 
-    /** player methods */
-
-    //each player has a defined date (localTime) in which it was created.
-    //Tasks are the same with the local time, regardless of timezone the tasks will match to the player.
-
-    /**
-     * @param {*} player - player to add
-     */
-    async putPlayer(player) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
-
-            const players = transaction.objectStore("playerObjectStore");
-            const request = players.put(player);
-
-            transaction.oncomplete = () => {
-                resolve();
-            }
-
-            transaction.onerror = () => {
-                reject(transaction.error);
-            }
-
-            return request;
-        })
-    }
-
     /**
      * retrieves all the tasks for a player in the range of localTime + the elapsed time since midnight for the current day.
      * @param {*} player - player to retrieve the tasks of.
@@ -296,7 +267,7 @@ class DatabaseConnection {
 
             request.onsuccess = (e) => {
                 const cursor = e.target.result;
-                resolve(cursor);
+                resolve(cursor.value);
             }
 
             request.onerror = (e) => {

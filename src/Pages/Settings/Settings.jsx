@@ -37,7 +37,8 @@ function Settings() {
             username: formData.get("username") === "" ? player.username : formData.get("username"),
             description: formData.get("description") === "" ? player.description : formData.get("description"),
         }
-        await databaseConnection.putPlayer(newPlayer);
+        console.log("Adding player:", player)
+        await databaseConnection.addPlayer(newPlayer);
     }
       
     const handleDataDownload = async (e) => {
