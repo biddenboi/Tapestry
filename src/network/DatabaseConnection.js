@@ -39,7 +39,7 @@ class DatabaseConnection {
         taskStore.createIndex("similarity", "similarity", { unique: false });
         taskStore.createIndex("taskName", "taskName", { unique: false });
         taskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
-        taskStore.createIndex("localCompletedAt", "localCompletedAt", { unique: false });
+        taskStore.createIndex("completedAt", "completedAt", { unique: false });
         
         const journal = this.database.createObjectStore("journalObjectStore", { keyPath: "UUID"});
         journal.createIndex("createdAt", "createdAt", { unique: false });
@@ -435,7 +435,7 @@ class DatabaseConnection {
             if (cursor) {
                 const task = cursor.value;
 
-                if (task.localCompletedAt == null) {
+                if (task.completedAt == null) {
                 todos.push(task);
                 }
 

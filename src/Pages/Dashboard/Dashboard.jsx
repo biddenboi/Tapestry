@@ -87,7 +87,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
       UUID: uuid(),
-      parent: parent.UUID
+      parent: parent.UUID,
+      completedAt: new Date().toISOString()
     }
 
     await databaseConnection.addTaskLog(task);
@@ -106,7 +107,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
       UUID: uuid(),
-      parent: parent.UUID
+      parent: parent.UUID,
+      completedAt: new Date().toISOString()
     }
 
     await databaseConnection.addTaskLog(task);
@@ -269,7 +271,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleSelectTodo = async (todo) => {
     //review
-    await databaseConnection.removeTaskLog(todo.localCreatedAt); 
+    await databaseConnection.removeTaskLog(todo.UUID); 
 
     const todoArray = await databaseConnection.getIncompleteTasks();
     setTodos(todoArray);
