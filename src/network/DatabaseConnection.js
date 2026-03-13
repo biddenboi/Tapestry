@@ -628,6 +628,32 @@ class DatabaseConnection {
             transaction.onerror = () => reject(transaction.error);
         })
     }
+
+    /** event methods */
+
+    async getLastExitEvent() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const store = transaction.objectStore("eventObjectStore");
+            const index = store.index("type");
+
+            const range = IDBKeyRange.only("exit");
+
+            const request = index.openCursor(range, "prev");
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+
+                if (cursor) {
+                    resolve(cursor.value);
+                }else {
+                    resolve(null);
+                }
+            }
+        })
+    }
 }
 
 export default DatabaseConnection;
