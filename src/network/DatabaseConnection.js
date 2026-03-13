@@ -1,6 +1,6 @@
 import { getLocalDateAtMidnight, getLocalDate, addDurationToString, formatDateAsLocalString } from '../Helpers.js';
 import { DATABASE_VERISON } from '../Constants.js'
-import { v4 as uuid } from "uuid";
+
 
 class DatabaseConnection {
     database = null;

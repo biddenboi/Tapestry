@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { DatabaseConnectionContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
+import { v4 as uuid } from "uuid";
 
 import './Profile.css';
 import { getLocalDate, getTimeAsString } from "../../Helpers";
@@ -66,11 +67,15 @@ function Profile() {
     })
 
     history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    //checks if player is current player to use for journal creation button
+    const currentPlayer = await databaseConnection.getCurrentPlayer();
         
     setPlayer({
         ...p,
         points: sum,
         history: history,
+        current: currentPlayer.UUID == index ? true : false
         });
     }
 
@@ -93,7 +98,8 @@ function Profile() {
             entry: entryText,
             //create methods for local time for tasks too in helper
             createdAt: new Date().toISOString(),
-            parent: parent.UUID
+            parent: parent.UUID,
+            UUID: uuid(),
         }
 
         await databaseConnection.addJournalLog(journal);
@@ -145,7 +151,7 @@ function Profile() {
                 <span>Timeline</span>
                 {
                     //checks if current date, only shows button if its the same day
-                    new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00" == player.localCreatedAt ?
+                    player.current ?
                     <button onClick={() => setJournalPopup(true)}>Add Entry</button> 
                     : ""
                 }
