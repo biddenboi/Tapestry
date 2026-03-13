@@ -82,6 +82,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     const parent = await databaseConnection.getCurrentPlayer();
    
+    //temporary, creates token every minute
+    databaseConnection.addPlayer({
+      ...parent,
+      tokens: Math.floor(parent.tokens + (msToPoints(getTaskDuration()) - durationPenalty) / 6)
+    })
 
     const task = {
       ...draftTask,
