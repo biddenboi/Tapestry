@@ -30,9 +30,9 @@ export const msToPoints = (ms) => {
     return Math.floor(ms / 10000);
 }
 
-export const getLocalDateAtMidnight = () => {
+export const getMidnightOfDate = (date) => {
     //retrieves swedish time (local) and formats as UTC with truncated time.
-    return new Date(new Date().toLocaleString('sv').split(' ')[0] + "T00:00:00");
+    return new Date(date.toLocaleString('sv').split(' ')[0] + "T00:00:00");
 }
 
 export const getLocalDate = () => {
@@ -42,7 +42,7 @@ export const getLocalDate = () => {
 
 /**
  * Converts a Date object in local time to its string representation 
- * @param {Date} s - A date
+ * @param {Date} s - A date 
  */ 
 export const formatDateAsLocalString = (date) => {
     return date.toLocaleString('sv').replace(' ', "T");
