@@ -1,5 +1,7 @@
 /* ------------------------------ Time ------------------------------*/
 
+//NOTE: convert from string manipulation to local time conversion.
+
 /**
     * Convert milliseconds to HH:MM:SS format
     * @param {number} ms - Time in milliseconds
@@ -35,9 +37,9 @@ export const getMidnightOfDate = (date) => {
     return new Date(date.toLocaleString('sv').split(' ')[0] + "T00:00:00");
 }
 
-export const getLocalDate = () => {
+export const getLocalDate = (date) => {
     //retrieves swedish time (local) and formats as UTC.
-    return new Date(new Date().toLocaleString('sv').replace(' ', "T"));
+    return new Date(date.toLocaleString('sv').replace(' ', "T"));
 }
 
 /**
@@ -48,14 +50,13 @@ export const formatDateAsLocalString = (date) => {
     return date.toLocaleString('sv').replace(' ', "T");
 }
 
-
 /**
  * Returns a date object the final time elapsed by duration
  * @param {String} s - A String representation of the starting date.
  * @param {number} ms - The amount of milliseconds to add by.
  */ 
-export const addDurationToString = (s, ms) => {
-    return new Date(new Date(s).getTime() + ms);
+export const addDurationToDate = (date, ms) => {
+    return new Date(date.getTime() + ms);
 }
 
 /**

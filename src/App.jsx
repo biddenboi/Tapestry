@@ -7,8 +7,9 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
-import { MINUTE, SECOND } from './utils/Constants';
+import { DAY, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
+import { addDurationToDate, getMidnightOfDate } from './utils/Helpers';
 
 
 
@@ -38,8 +39,20 @@ function App() {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
     }
+    
+    const checkNewDay = async () => {
+      const exitEvent = await databaseConnection.getLastExitEvent();
+
+      //check if day 1 and no previous day exists
+      if (exitEvent == null) return;
+      
+      const exitEventMidnight = getMidnightOfDate(exitEvent.createdAt);
+      const yesterday = addDurationToDate(new Date(), -DAY);
+      const lastMidnight = getMidnightOfDate(yesterday)
+    }
 
     getCurrentProfile();
+    checkNewDay();
   }, [timestamp])
 
   useInterval(() => {

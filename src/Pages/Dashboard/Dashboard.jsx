@@ -25,7 +25,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const databaseConnection = useContext(AppContext).databaseConnection;
 
   useEffect(() => {
-    const loadPlayers = async () => {
+    const reload = async () => {
       const players = await databaseConnection.getPlayers();
 
       const DataPromises = players.map(async (player) => {
@@ -49,7 +49,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const todoArray = await databaseConnection.getIncompleteTasks();
       setTodos(todoArray);
     };
-      loadPlayers();
+      reload();
   }, [databaseConnection, useContext(AppContext).timestamp])
 
   /* Helper Methods */
