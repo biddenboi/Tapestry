@@ -38,8 +38,6 @@ function App() {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
     }
-
-   
     
     const checkNewDay = async () => {
       //checks if getCurrentProfile ran first
@@ -53,19 +51,20 @@ function App() {
       const exitEvent = await databaseConnection.getLastExitEvent();
       const yesterday = addDurationToDate(new Date(), -DAY);
       const lastMidnight = getMidnightOfDate(yesterday)
+      
 
       if (exitEvent == null) {
         endDay(false);
         return;
       }
+      //---------------------
 
       const newExitEvent = await databaseConnection.getLastExitEvent();
-      
-      const exitEventMidnight = getMidnightOfDate(newExitEvent.createdAt);
+
+      const exitEventMidnight = getMidnightOfDate(new Date(newExitEvent.createdAt));
 
       //if we already carried out lastMidnight for the previous day
       if (exitEventMidnight.getTime() == lastMidnight.getTime()) return;
-
       endDay(false);
     }
 
@@ -79,15 +78,18 @@ function App() {
   }, 5* SECOND)
 
   const endDay = async (early) => {
+    const yesterday = addDurationToDate(new Date(), -DAY);
+    currentPlayer.tokens = early ? currentPlayer.tokens / 2 : 0;
+
     await databaseConnection.addEvent({
-          type: "exit",
-          description: "",
-          UUID: uuid(),
-          parent: currentPlayer.UUID,
-          createdAt: lastMidnight.toString()
+      type: "exit",
+      description: "",
+      UUID: uuid(),
+      parent: currentPlayer.UUID,
+      createdAt: yesterday.toISOString()
     })
 
-    currentPlayer.tokens = early ? currentPlayer.tokens / 2 : 0;
+    await databaseConnection.addPlayer(currentPlayer);
   }
 
 

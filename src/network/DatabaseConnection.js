@@ -649,22 +649,26 @@ class DatabaseConnection {
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction("eventObjectStore", "readonly");
             const store = transaction.objectStore("eventObjectStore");
-            const index = store.index("type");
+            
+            const index = store.index("createdAt"); 
 
-            const range = IDBKeyRange.only("exit");
-
-            const request = index.openCursor(range, "prev");
+            const request = index.openCursor(null, "prev"); 
 
             request.onsuccess = (event) => {
                 const cursor = event.target.result;
 
                 if (cursor) {
-                    resolve(cursor.value);
-                }else {
+                    if (cursor.value.type === "exit") {
+                        resolve(cursor.value); 
+                    } else {
+                        cursor.continue(); 
+                    }
+                } else {
                     resolve(null);
                 }
-            }
-        })
+            };
+            request.onerror = (err) => reject(err);
+        });
     }
     async addEvent(event) {
         await this.ready;
