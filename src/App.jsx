@@ -10,8 +10,7 @@ import DatabaseConnection from "./network/DatabaseConnection";
 import { DAY, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers';
-
-
+import { v4 as uuid } from "uuid";
 
 export const AppContext = createContext();
 
@@ -39,36 +38,8 @@ function App() {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
     }
-    
-    const checkNewDay = async () => {
-      
-      const exitEvent = await databaseConnection.getLastExitEvent();
-
-      //check if day 1 and no previous day exists
-
-      //checks if getCurrentProfile ran first
-      if (currentPlayer.createdAt == null) return;
-
-      const playerCreatedAtMidnight = getMidnightOfDate(currentPlayer.createdAt).getTime();
-      const currMidnight = getMidnightOfDate(new Date()).getTime();
-
-      if (playerCreatedAtMidnight == currMidnight) return;
-      console.log("exitEvent exists");
-      
-      const exitEventMidnight = getMidnightOfDate(exitEvent.createdAt).getTime();
-      const yesterday = addDurationToDate(new Date(), -DAY);
-      const lastMidnight = getMidnightOfDate(yesterday).getTime()
-
-      //if we already carried out lastMidnight for the previous day
-      if (exitEventMidnight == lastMidnight) return;
-      console.log("punishments carried");
-
-      currentPlayer.tokens = 0;
-      await databaseConnection.addPlayer(currentPlayer);
-    }
 
     getCurrentProfile();
-    checkNewDay();
   }, [timestamp])
 
   useInterval(() => {
