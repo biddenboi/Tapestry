@@ -10,8 +10,7 @@ import DatabaseConnection from "./network/DatabaseConnection";
 import { DAY, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers';
-
-
+import { v4 as uuid } from "uuid";
 
 export const AppContext = createContext();
 
@@ -41,34 +40,58 @@ function App() {
     }
     
     const checkNewDay = async () => {
-      
-      const exitEvent = await databaseConnection.getLastExitEvent();
-
-      //check if day 1 and no previous day exists
-
       //checks if getCurrentProfile ran first
       if (currentPlayer.createdAt == null) return;
 
-      const playerCreatedAtMidnight = getMidnightOfDate(currentPlayer.createdAt).getTime();
-      const currMidnight = getMidnightOfDate(new Date()).getTime();
+      const exitEvent = await databaseConnection.getLastExitEvent();
+
+      const playerCreatedAtMidnight = getMidnightOfDate(currentPlayer.createdAt);
+      const currMidnight = getMidnightOfDate(new Date());
 
       if (playerCreatedAtMidnight == currMidnight) return;
-      console.log("exitEvent exists");
-      
-      const exitEventMidnight = getMidnightOfDate(exitEvent.createdAt).getTime();
+      console.log("exitEvent could exist");
+
+      //could possibly improve efficiency?
+
       const yesterday = addDurationToDate(new Date(), -DAY);
-      const lastMidnight = getMidnightOfDate(yesterday).getTime()
+      const lastMidnight = getMidnightOfDate(yesterday)
+
+      if (exitEvent == null) {
+        databaseConnection.addEvent({
+          type: "exit",
+          description: "",
+          UUID: uuid(),
+          parent: currentPlayer.UUID,
+          createdAt: lastMidnight
+        })
+
+        console.log("punishments carried | first chance");
+
+        currentPlayer.tokens = 0;
+      }
+
+      const newExitEvent = await databaseConnection.getLastExitEvent();
+      
+      const exitEventMidnight = getMidnightOfDate(newExitEvent.createdAt);
 
       //if we already carried out lastMidnight for the previous day
       if (exitEventMidnight == lastMidnight) return;
-      console.log("punishments carried");
+      console.log("punishments carried | second");
 
       currentPlayer.tokens = 0;
+
+        databaseConnection.addEvent({
+          type: "exit",
+          description: "",
+          UUID: uuid(),
+          parent: currentPlayer.UUID,
+          createdAt: lastMidnight.toString()
+        })
+
       await databaseConnection.addPlayer(currentPlayer);
     }
 
     getCurrentProfile();
-    checkNewDay();
   }, [timestamp])
 
   useInterval(() => {

@@ -60,6 +60,8 @@ class DatabaseConnection {
         eventObjectStore.createIndex("type", "type", { unique:false })
         eventObjectStore.createIndex("description", "description", { unique:false })
         eventObjectStore.createIndex("createdAt", "createdAt", { unique:false })
+        eventObjectStore.createIndex("UUID", "UUID", { unique:false })
+        eventObjectStore.createIndex("parent", "parent", { unique:false })
     }
 
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
