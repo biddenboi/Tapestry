@@ -101,12 +101,10 @@ function Profile() {
             parent: parent.UUID,
             UUID: uuid(),
         }
-
-        await databaseConnection.addJournalLog(journal);
         setJournalPopup(false);
-        
-        //reset
+        setPlayer(player);
         e.target.reset();
+        await databaseConnection.addJournalLog(journal);
     })
 
     //catch all to ensure player is set before rendering
