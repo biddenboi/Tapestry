@@ -83,7 +83,7 @@ function App() {
 
     await databaseConnection.addEvent({
       type: "exit",
-      description: "",
+      description: early ? "Early!" : "Exited On Time",
       UUID: uuid(),
       parent: currentPlayer.UUID,
       createdAt: yesterday.toISOString()
