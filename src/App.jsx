@@ -43,16 +43,12 @@ function App() {
       //checks if getCurrentProfile ran first
       if (currentPlayer.createdAt == null) return;
 
-      const exitEvent = await databaseConnection.getLastExitEvent();
-
-      const playerCreatedAtMidnight = getMidnightOfDate(currentPlayer.createdAt);
+      const playerCreatedAtMidnight = getMidnightOfDate(new Date(currentPlayer.createdAt));
       const currMidnight = getMidnightOfDate(new Date());
 
-      if (playerCreatedAtMidnight == currMidnight) return;
-      console.log("exitEvent could exist");
+      if (playerCreatedAtMidnight.getTime() == currMidnight.getTime()) return;
 
-      //could possibly improve efficiency?
-
+      const exitEvent = await databaseConnection.getLastExitEvent();
       const yesterday = addDurationToDate(new Date(), -DAY);
       const lastMidnight = getMidnightOfDate(yesterday)
 
@@ -64,10 +60,9 @@ function App() {
           parent: currentPlayer.UUID,
           createdAt: lastMidnight
         })
-
-        console.log("punishments carried | first chance");
-
+      
         currentPlayer.tokens = 0;
+        return;
       }
 
       const newExitEvent = await databaseConnection.getLastExitEvent();
@@ -75,11 +70,9 @@ function App() {
       const exitEventMidnight = getMidnightOfDate(newExitEvent.createdAt);
 
       //if we already carried out lastMidnight for the previous day
-      if (exitEventMidnight == lastMidnight) return;
-      console.log("punishments carried | second");
+      if (exitEventMidnight.getTime() == lastMidnight.getTime()) return;
 
       currentPlayer.tokens = 0;
-
         databaseConnection.addEvent({
           type: "exit",
           description: "",
@@ -92,6 +85,7 @@ function App() {
     }
 
     getCurrentProfile();
+    checkNewDay();
   }, [timestamp])
 
   useInterval(() => {

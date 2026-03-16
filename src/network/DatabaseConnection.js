@@ -64,6 +64,17 @@ class DatabaseConnection {
         eventObjectStore.createIndex("parent", "parent", { unique:false })
     }
 
+    if (DATABASE_VERISON >= 13 && oldVersion < 13) {
+        const shopObjectStore = this.database.createObjectStore("shopObjectStore", { keyPath: "UUID" });
+        shopObjectStore.createIndex("name", "name", { unique:false })
+        shopObjectStore.createIndex("description", "description", { unique:false })
+
+        //of quantity or time
+        shopObjectStore.createIndex("type", "type", { unique:false })
+
+        shopObjectStore.createIndex("name", "name", { unique:false })
+    }
+
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
         const transaction = event.target.transaction;
         const taskStore = transaction.objectStore("taskObjectStore");
