@@ -71,8 +71,6 @@ class DatabaseConnection {
 
         //of quantity or time
         shopObjectStore.createIndex("type", "type", { unique:false })
-
-        shopObjectStore.createIndex("name", "name", { unique:false })
     }
 
     /**if (DATABASE_VERISON >= 11 && oldVersion < 11) {
