@@ -157,7 +157,7 @@ class DatabaseConnection {
         todoObjectStore.createIndex("location", "location", { unique: false });
         todoObjectStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
         todoObjectStore.createIndex("similarity", "similarity", { unique: false });
-        todoObjectStore.createIndex("todoName", "todoName", { unique: false });
+        todoObjectStore.createIndex("taskName", "taskName", { unique: false });
     }
 }
     constructor() {
@@ -196,11 +196,15 @@ class DatabaseConnection {
             const tasks = await this.getTasks();
             const players = await this.getPlayers();
             const journals = await this.getJournals();
+            const events = await this.getEvents();
+            const todos = await this.getTodos();
 
             const data = {
                 tasks: tasks,
                 players: players,
-                journals:journals
+                journals: journals,
+                events: events,
+                todos: todos,
             }
 
             const json = JSON.stringify(data, null, 2);
@@ -209,7 +213,7 @@ class DatabaseConnection {
 
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'data.json';
+            link.download = 'tapestry-dataset.json';
             link.click();
 
             URL.revokeObjectURL(url); //revoke since blob urls don't get collected by garbage collector
@@ -229,6 +233,8 @@ class DatabaseConnection {
         const taskData = dataArray[0];
         const playerData = dataArray[1];
         const journalData = dataArray[2];
+        const eventData = dataArray[3];
+        const todoData = dataArray[4];
 
         //remove all task data and add from new file.
         this.clearTaskData();
@@ -248,11 +254,25 @@ class DatabaseConnection {
             }
         })
 
-        //remove all player data and add from new file.
+        //remove all journal data and add from new file.
         this.clearJournalData();
     
         journalData.forEach((journal) => {
           this.addJournalLog(journal);
+        })
+
+        //remove all event data and add from new file.
+        this.clearEventData();
+    
+        eventData.forEach((event) => {
+          this.addEvent(event);
+        })
+
+        //remove all todo data and add from new file.
+        this.clearTodoData();
+    
+        todoData.forEach((todo) => {
+          this.addTodoLog(todo);
         })
     } 
 
@@ -458,37 +478,6 @@ class DatabaseConnection {
         })
     }
 
-    async getIncompleteTasks() {
-        await this.ready;
-        //REVIEW
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(['taskObjectStore'], 'readonly');
-            const store = transaction.objectStore('taskObjectStore');
-
-            const todos = [];
-            const request = store.openCursor();
-
-            request.onsuccess = (event) => {
-            const cursor = event.target.result;
-            if (cursor) {
-                const task = cursor.value;
-
-                if (task.completedAt == null) {
-                todos.push(task);
-                }
-
-                cursor.continue();
-            } else {
-                resolve(todos);
-            }
-            };
-
-            request.onerror = () => {
-            reject(request.error);
-            };
-        });
-    }
-
     /**async getTasksFromRange(startDate, endDate) {
         await this.ready;
      
@@ -683,6 +672,41 @@ class DatabaseConnection {
             request.onerror = (err) => reject(err);
         });
     }
+
+    async getEvents() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const events = transaction.objectStore("eventObjectStore");
+
+            const request = events.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
+    }
+
+    async clearEventData() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["eventObjectStore"], "readwrite");
+            const events = transaction.objectStore("eventObjectStore");
+
+            const objectStoreRequest = events.clear();
+
+            objectStoreRequest.onsuccess = (e) => {
+                resolve();
+            }
+
+            objectStoreRequest.onerror = (e) => {
+                reject(objectStoreRequest.error);
+            }
+        })
+    }
+
     async addEvent(event) {
         await this.ready;
 
@@ -702,6 +726,78 @@ class DatabaseConnection {
         })
     }
 
+    /** event methods */
+
+    async getTodos() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("todoObjectStore", "readonly");
+            const todos = transaction.objectStore("todoObjectStore");
+
+            const request = todos.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
+    }
+
+    async removeTodoLog(UUID) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
+            const todoObjectStore = transaction.objectStore("todoObjectStore");
+            const request = todoObjectStore.delete(UUID);
+
+            request.onsuccess = () => {
+                resolve();
+            }
+
+            request.onerror = () => {
+                reject(transaction.error);
+            }
+        })
+    }
+
+    async addTodoLog(todo) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
+        
+            const todos = transaction.objectStore("todoObjectStore");
+            const request = todos.put(todo);  
+            
+            request.onsuccess = () => {
+                resolve();
+            }
+
+            request.onerror = () => {
+                reject(request.error);
+            }
+        })
+    }
+
+    async clearTodoData() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
+            const todos = transaction.objectStore("todoObjectStore");
+
+            const objectStoreRequest = todos.clear();
+
+            objectStoreRequest.onsuccess = (e) => {
+                resolve();
+            }
+
+            objectStoreRequest.onerror = (e) => {
+                reject(objectStoreRequest.error);
+            }
+        })
+    }
 }
 
 export default DatabaseConnection;

@@ -1,7 +1,7 @@
 import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
-import Timer from '../../components/Timer/Timer.jsx';
+import Timer from '../../Components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
 import { msToPoints } from '../../utils/Helpers.js';
 import Markdown from 'react-markdown';
@@ -46,7 +46,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       results.sort((a, b) => b.points - a.points);
       setPlayerPoints(results);
       
-      const todoArray = await databaseConnection.getIncompleteTasks();
+      const todoArray = await databaseConnection.getTodos();
       setTodos(todoArray);
     };
       reload();
@@ -131,9 +131,9 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       UUID: uuid(),
     }
 
-    await databaseConnection.addTaskLog(task);
+    await databaseConnection.addTodoLog(task);
 
-    const updatedTodos = await databaseConnection.getIncompleteTasks();
+    const updatedTodos = await databaseConnection.getTodos();
     setTodos(updatedTodos);
 
     updateStates(false, null, {});
@@ -275,10 +275,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleSelectTodo = async (todo) => {
     //review
-    await databaseConnection.removeTaskLog(todo.UUID); 
-
-    const todoArray = await databaseConnection.getIncompleteTasks();
-    setTodos(todoArray);
+    await databaseConnection.removeTodoLog(todo.UUID); 
     
     setDraftTask(prev => ({
       ...prev,
@@ -289,8 +286,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       efficiency: todo.efficiency,
       estimatedDuration: todo.estimatedDuration,
       estimatedBuffer: todo.estimatedBuffer,
-    })
-  );
+      })
+    );
+
+    const todoArray = await databaseConnection.getTodos();
+    setTodos(todoArray);
 };
 
   function TodoFormComponent() {
