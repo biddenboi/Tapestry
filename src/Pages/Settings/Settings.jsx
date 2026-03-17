@@ -70,7 +70,7 @@ function Settings() {
             createdAt: new Date().toISOString(),
             wakeTime: "07:00",
             sleepTime: "23:00",
-            tokens: 1000
+            tokens: 0
         }
         await databaseConnection.addPlayer(player);
     }

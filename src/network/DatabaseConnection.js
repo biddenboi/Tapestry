@@ -146,6 +146,19 @@ class DatabaseConnection {
             cursor.continue();
         }
     }*/
+    if (DATABASE_VERISON >= 14 && oldVersion < 14) {
+        const todoObjectStore = this.database.createObjectStore("todoObjectStore", { keyPath: "UUID" });
+        todoObjectStore.createIndex("createdAt", "createdAt", { unique: false });
+        todoObjectStore.createIndex("distractions", "distractions", { unique: false });
+        todoObjectStore.createIndex("parent", "parent", { unique: false });
+        todoObjectStore.createIndex("efficiency", "efficiency", { unique: false });
+        todoObjectStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
+        todoObjectStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
+        todoObjectStore.createIndex("location", "location", { unique: false });
+        todoObjectStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
+        todoObjectStore.createIndex("similarity", "similarity", { unique: false });
+        todoObjectStore.createIndex("todoName", "todoName", { unique: false });
+    }
 }
     constructor() {
         if (!this.isCompatable()) {

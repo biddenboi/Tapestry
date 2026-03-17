@@ -57,7 +57,6 @@ function App() {
         endDay(false);
         return;
       }
-      //---------------------
 
       const newExitEvent = await databaseConnection.getLastExitEvent();
 
@@ -69,6 +68,7 @@ function App() {
     }
 
     getCurrentProfile();
+    checkNewDay();
   }, [timestamp])
 
   useInterval(() => {
