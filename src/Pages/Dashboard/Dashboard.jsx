@@ -79,8 +79,10 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         }
       }
     };
-    reload();
-  }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession]);
+      reload();
+  }, [databaseConnection, useContext(AppContext).timestamp])
+
+  /* Helper Methods */
 
   const updateStates = (taskSession, durationPenalty, draftTask) => {
     setIsTaskSession(taskSession);
