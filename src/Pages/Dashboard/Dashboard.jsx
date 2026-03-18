@@ -232,16 +232,18 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             </label>
             <label>
               Due Date:
-              <input type="date" name="estimatedBuffer"
+              <input type="date" name="dueDate"
               value={draftTask.dueDate || ""}
-              onChange={null}/>
+              onChange={e => setDraftTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
             </label>
             <label>
               Difficulty:
-              <select name="difficulty">
+              <select name="difficulty"
+                value={draftTask.difficulty || ""}
+                onChange={e => setDraftTask(prev => ({ ...prev, difficulty: e.target.value }))}>
                 <option value="easy">Easy</option>
-                <option value="easy">Medium</option>
-                <option value="easy">Hard</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
               </select>
             </label>
           </div>
@@ -301,6 +303,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       efficiency: todo.efficiency,
       estimatedDuration: todo.estimatedDuration,
       estimatedBuffer: todo.estimatedBuffer,
+      dueDate: todo.dueDate,
+      difficulty: todo.difficulty,
       })
     );
 
