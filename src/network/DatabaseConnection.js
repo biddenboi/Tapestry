@@ -157,6 +157,13 @@ class DatabaseConnection {
         todoObjectStore.createIndex("similarity", "similarity", { unique: false });
         todoObjectStore.createIndex("taskName", "taskName", { unique: false });
     }
+    if (DATABASE_VERISON >= 15 && oldVersion < 15) {
+        const transaction = event.target.transaction;
+        const todoObjectStore = transaction.objectStore("todoObjectStore");
+
+        todoObjectStore.createIndex("difficulty", "difficulty", { unique: false });
+        todoObjectStore.createIndex("dueDate", "dueDate", { unique: false });
+    }
 }
     constructor() {
         if (!this.isCompatable()) {

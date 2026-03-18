@@ -147,12 +147,6 @@ div.task-form-inputs input {
   border: var(--border-card);
 }
 
-div.task-form-inputs select {
-  border: var(--border-card);
-  background-color: var(--bg);
-  color: inherit;
-}
-
 div.task-form-inputs label > textarea {
   grid-row: span 2;
   resize:none;
@@ -245,32 +239,11 @@ div.task-session-buttons button {
 }
 
 /* ----- Todo Form ----- */
-
-div.todo-section {
+div.todo-creation-menu {
   grid-column: 2 / span 3;
   grid-row: 10 / span 10;
-  display: flex;
-  flex-direction: column;
-}
-
-div.todo-header-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 4px;
-}
-
-button.get-next-btn {
-  padding: 12px;
-  border: var(--border-card);
-  background-color: var(--bg-dark);
-  box-shadow: var(--box-shadow);
-}
-
-div.todo-creation-menu {
   display:flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
 }
 
 div.todo-creation-menu > p {
