@@ -197,6 +197,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
+        <button>Get Next Todo</button>
         <p>Task Creation</p>
           <div>
             <label>
@@ -228,6 +229,20 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
               <input type="number" name="estimatedBuffer"
               value={draftTask.estimatedBuffer || ""}
               onChange={e => setDraftTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
+            </label>
+            <label>
+              Due Date:
+              <input type="date" name="estimatedBuffer"
+              value={draftTask.dueDate || ""}
+              onChange={null}/>
+            </label>
+            <label>
+              Difficulty:
+              <select name="difficulty">
+                <option value="easy">Easy</option>
+                <option value="easy">Medium</option>
+                <option value="easy">Hard</option>
+              </select>
             </label>
           </div>
         </div>
@@ -312,6 +327,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   return <div className="dashboard">
     {TaskDisplay()}
+    
     {RankListComponent()}
     {TodoFormComponent()}
   </div>
