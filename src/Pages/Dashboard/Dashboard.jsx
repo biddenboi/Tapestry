@@ -50,7 +50,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       setTodos(todoArray);
     };
       reload();
-  }, [databaseConnection, useContext(AppContext).timestamp])
+  }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
 
   /* Helper Methods */
 

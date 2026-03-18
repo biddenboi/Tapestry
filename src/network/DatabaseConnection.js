@@ -157,6 +157,14 @@ class DatabaseConnection {
         todoObjectStore.createIndex("similarity", "similarity", { unique: false });
         todoObjectStore.createIndex("taskName", "taskName", { unique: false });
     }
+
+    if (DATABASE_VERISON >= 15 && oldVersion < 15) {
+        const transaction = event.target.transaction;
+        const todoStore = transaction.objectStore("todoObjectStore");
+
+        todoObjectStore.createIndex("difficulty", "difficulty", { unique: false });
+        todoObjectStore.createIndex("dueDate", "dueDate", { unique: false });
+    }
 }
     constructor() {
         if (!this.isCompatable()) {
@@ -341,7 +349,7 @@ class DatabaseConnection {
            const transaction = this.database.transaction("playerObjectStore", "readonly");
            const store = transaction.objectStore("playerObjectStore");
        
-           const request = store.get(UUID);
+           const request = store.get(UUID); 
        
            request.onsuccess = () => resolve(request.result);
            request.onerror = () => reject(request.error);
