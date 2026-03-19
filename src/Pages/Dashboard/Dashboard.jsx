@@ -51,12 +51,58 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       setTodos(todoArray);
 
       //check if nextTodo has not been used yet.
-      if (nextTodo != null) return;
+      if (nextTodo != null || todoArray.length === 0) return;
 
-      const localDate = new Date().toLocaleDateString('en-CA')
-      console.log(localDate);
-    };
-      reload();
+      //creating object enum to handle sorting
+      const difficultyOrder = { hard: 3, medium: 2, easy: 1};
+
+      //SVT returns YYYY-MM-DD
+      const todayStr = new Date().toLocaleDateString('sv');
+      const dueTodayTasks = todoArray.filter(t => t.dueDate === todayStr);
+
+      if (dueTodayTasks.length > 0) {
+        dueTodayTasks.sort((a, b) => (difficultyOrder[b.difficulty] || 0) - (difficultyOrder[a.difficulty] || 0));
+        setUpcomingTodos(dueTodayTasks[0]);
+      } else {
+        const today = new Date();
+
+        //maybe remove this line so more granular time controls are possible.
+        today.setHours(0, 0, 0, 0);
+
+        const weights = todoArray.map(t => {
+          const dur = parseFloat(t.estimatedDuration) || 0;
+          const buf = parseFloat(t.estimatedBuffer) || 0;
+          const due = new Date(t.dueDate + 'T00:00:00');
+
+          //what value is returned from subtracting date objects?
+          const daysUntilDue = Math.max((due - today) / DAY, 1);
+          return (dur + buf) / daysUntilDue;
+        });
+
+        const total = weights.reduce((sum, w) => sum + w, 0);
+
+        if (total === 0) {
+          setUpcomingTodos(todoArray[0]);
+          return;
+        }
+
+        const scaled = weights.map(w => (w / total) * 100);
+        const rng = 1 + Math.random() * 99;
+        let remaining = rng;
+        let selected = todoArray[todoArray.length - 1];
+
+        for (let i = 0; i < scaled.length; i++) {
+          remaining -= scaled[i];
+          if (remaining <= 0) {
+            selected = todoArray[i];
+            break;
+          }
+        }
+
+        setUpcomingTodos(selected);
+      }
+    }
+    reload();
   }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
 
   /* Helper Methods */
