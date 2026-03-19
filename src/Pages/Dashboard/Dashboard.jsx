@@ -50,7 +50,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const todoArray = await databaseConnection.getTodos();
       setTodos(todoArray);
 
-      //check if nextTodo has not been used yet.
+      //check if nextTodo has not been used yet
       if (nextTodo != null || todoArray.length === 0) return;
 
       //creating object enum to handle sorting
@@ -62,7 +62,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
       if (dueTodayTasks.length > 0) {
         dueTodayTasks.sort((a, b) => (difficultyOrder[b.difficulty] || 0) - (difficultyOrder[a.difficulty] || 0));
-        setUpcomingTodos(dueTodayTasks[0]);
+        setNextTodo(dueTodayTasks[0]);
       } else {
         const today = new Date();
 
@@ -74,7 +74,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           const buf = parseFloat(t.estimatedBuffer) || 0;
           const due = new Date(t.dueDate + 'T00:00:00');
 
-          //what value is returned from subtracting date objects?
           const daysUntilDue = Math.max((due - today) / DAY, 1);
           return (dur + buf) / daysUntilDue;
         });
@@ -82,7 +81,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
         const total = weights.reduce((sum, w) => sum + w, 0);
 
         if (total === 0) {
-          setUpcomingTodos(todoArray[0]);
+          setNextTodo(todoArray[0]);
           return;
         }
 
@@ -158,16 +157,20 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTaskSubmitAndSave = async (e) => {
     e.preventDefault();
 
+    const duration = getTaskDuration();
+
     const parent = await databaseConnection.getCurrentPlayer();
 
     const task = {
       ...draftTask,
-      duration: getTaskDuration(),  
-      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
+      duration: duration,  
+      points: Math.floor(msToPoints(duration) - durationPenalty),
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString()
     }
+
+    draftTask.estimatedDuration -= duration;
 
     await databaseConnection.addTaskLog(task);
 
@@ -190,7 +193,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     setTodos(updatedTodos);
 
     updateStates(false, null, {});
-
   }
 
   const handleStartTask = () => {
@@ -250,7 +252,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
-        <button>Get Next Todo</button>
+        <button onClick={() => handleSelectTodo(nextTodo)} 
+          disabled={nextTodo ? true : false}>Get Next Todo</button>
         <p>Task Creation</p>
           <div>
             <label>
