@@ -17,6 +17,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   /*Internal Data*/
   const [playerPoints, setPlayerPoints] = useState([]);
   const [todos, setTodos] = useState([]);
+  const [nextTodo, setNextTodo] = useState(null);
 
   //convert duration penalty into an object
   const [durationPenalty, setDurationPenalty] = useState(null);
@@ -40,14 +41,20 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           ...player,
           points: sum,
         };
-      }
-    );
+      });
+
       const results = await Promise.all(DataPromises);
       results.sort((a, b) => b.points - a.points);
       setPlayerPoints(results);
       
       const todoArray = await databaseConnection.getTodos();
       setTodos(todoArray);
+
+      //check if nextTodo has not been used yet.
+      if (nextTodo != null) return;
+
+      const localDate = new Date().toLocaleDateString('en-CA')
+      console.log(localDate);
     };
       reload();
   }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
