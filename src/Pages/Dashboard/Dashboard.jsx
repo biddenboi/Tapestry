@@ -7,6 +7,7 @@ import { msToPoints } from '../../utils/Helpers.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
+import { DAY, MINUTE, SECOND } from '../../utils/Constants.js'
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -98,7 +99,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           }
         }
 
-        setUpcomingTodos(selected);
+        setNextTodo(selected);
       }
     }
     reload();
@@ -170,7 +171,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       completedAt: new Date().toISOString()
     }
 
-    draftTask.estimatedDuration -= duration;
+    draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
 
     await databaseConnection.addTaskLog(task);
 
@@ -252,8 +253,9 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
-        <button onClick={() => handleSelectTodo(nextTodo)} 
-          disabled={nextTodo ? true : false}>Get Next Todo</button>
+        <button onClick={() => handleGetNextTodo()} 
+          disabled={!nextTodo}
+          type="button">Get Next Todo</button>
         <p>Task Creation</p>
           <div>
             <label>
@@ -348,7 +350,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleSelectTodo = async (todo) => {
     //review
-    await databaseConnection.removeTodoLog(todo.UUID); 
     
     setDraftTask(prev => ({
       ...prev,
@@ -364,9 +365,35 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       })
     );
 
+    await databaseConnection.removeTodoLog(todo.UUID); 
+
     const todoArray = await databaseConnection.getTodos();
     setTodos(todoArray);
-};
+  };
+
+  const handleGetNextTodo = async () => {
+        //review
+    
+    setDraftTask(prev => ({
+      ...prev,
+      taskName: nextTodo.taskName,
+      location: nextTodo.location,
+      distractions: nextTodo.distractions,
+      reasonToSelect: nextTodo.reasonToSelect,
+      efficiency: nextTodo.efficiency,
+      estimatedDuration: nextTodo.estimatedDuration,
+      estimatedBuffer: nextTodo.estimatedBuffer,
+      dueDate: nextTodo.dueDate,
+      difficulty: nextTodo.difficulty,
+      })
+    );
+
+    await databaseConnection.removeTodoLog(nextTodo.UUID); 
+    setNextTodo(null);
+
+    const todoArray = await databaseConnection.getTodos();
+    setTodos(todoArray);
+  }
 
   function TodoFormComponent() {
     return <div className="todo-creation-menu">
