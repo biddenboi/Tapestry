@@ -161,7 +161,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const duration = getTaskDuration();
 
     const parent = await databaseConnection.getCurrentPlayer();
-
+    
     const task = {
       ...draftTask,
       duration: duration,  
