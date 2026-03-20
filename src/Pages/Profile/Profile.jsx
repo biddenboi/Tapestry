@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { v4 as uuid } from "uuid";
 
 import './Profile.css';
-import { getTimeAsString } from "../../utils/Helpers";
+import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers";
 
 function Profile() {
 //read through this code again when ur not tired
@@ -128,7 +128,7 @@ function Profile() {
         }
         <div className="profile-banner">
             <div className="stats-subsection">
-                <span>{player.createdAt}</span>
+                <span>{UTCStringToLocalDate(player.createdAt)}</span>
                 <span>{player.username}</span>
                 {player.description ? <span>{player.description}</span> : ""}
             </div>
@@ -160,7 +160,7 @@ function Profile() {
                             {
                                 player.history.map((element, index) => (
                                 <tr key={element.createdAt}>
-                                    <td>{getTimeAsString(element.createdAt)}</td>
+                                    <td>{UTCStringToLocalTime(element.createdAt)}</td>
                                     <td>{element.type}</td>
                                     <td>{element.description}</td>
                                     {/** replace description and points with generalized method */}

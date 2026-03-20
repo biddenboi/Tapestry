@@ -594,7 +594,7 @@ class DatabaseConnection {
         })
     }
 
-    /**async getJournalsFromRange(startDate, endDate) {
+    async getJournalsFromRange(startDate, endDate) {
         await this.ready;
      
          return new Promise((resolve, reject) => {
@@ -631,7 +631,7 @@ class DatabaseConnection {
         const tasks = await this.getJournalsFromRange(startDate, endDate);
         
         return tasks;
-    }*/
+    }
 
     async getJournals() {
         await this.ready;

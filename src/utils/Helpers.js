@@ -40,6 +40,19 @@ export function getTimeAsString(date) {
     hours + ":" + minutes + "am";
 }
 
+export function getDateAsString(date) {
+    const d = date.split('T')[0];
+    return d;
+}
+
+export function UTCStringToLocalTime(dateString) {
+    return getTimeAsString(formatDateAsLocalString(new Date(dateString)));
+}
+
+export function UTCStringToLocalDate(dateString) {
+    return getDateAsString(formatDateAsLocalString(new Date(dateString)));
+}
+
 export const getMsUntilMidnight = () => {
     const now = new Date();
     const midnight = new Date(now);
