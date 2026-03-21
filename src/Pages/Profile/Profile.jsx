@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { v4 as uuid } from "uuid";
 
 import './Profile.css';
-import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers";
+import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
 
 function Profile() {
 //read through this code again when ur not tired
@@ -55,7 +55,7 @@ function Profile() {
     });
 
     journals.forEach(journal => {
-        const description = journal.entry;
+        const description = journal.title;
 
         const j = {
             ...journal,
@@ -110,6 +110,10 @@ function Profile() {
     //catch all to ensure player is set before rendering
     if (!player) return null;
 
+    function getRow() {
+        
+    }
+
 
     return <div className="profile"> 
         {journalPopup ? 
@@ -144,25 +148,31 @@ function Profile() {
             </div>
         </div>
         
-        <div className="task-history-display">
+        <div className="history-display">
             <div className="section-header">
                 <span>Timeline</span>
-                {
+                {   
                     //checks if current date, only shows button if its the same day
                     player.current ?
-                    <button onClick={() => setJournalPopup(true)}>Add Entry</button> 
+                    <button onClick={() => setJournalPopup(true)}>Entry</button> 
                     : ""
                 }
             </div>
-            <div className="task-table-container">
-                <table className="task-table">
+            <div className="table-container">
+                <table>
                         <tbody>
                             {
                                 player.history.map((element, index) => (
                                 <tr key={element.createdAt}>
                                     <td>{UTCStringToLocalTime(element.createdAt)}</td>
                                     <td>{element.type}</td>
-                                    <td>{element.description}</td>
+                                    <td className="description">
+                                        <div>
+                                            <span>{element.description}</span>
+                                            {element.type === "Journal" ? 
+                                            <button onClick={() => setJournalPopup(true)}>View</button> : ""}
+                                        </div>
+                                    </td>
                                     {/** replace description and points with generalized method */}
                                     <td>{element.points ? element.points + "pts" : "0pts"}</td>
                                 </tr>))

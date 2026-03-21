@@ -1,4 +1,5 @@
 import { DATABASE_VERISON } from '../utils/Constants.js'
+import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate } from '../utils/Helpers/Time.js';
 
 
 class DatabaseConnection {
@@ -285,20 +286,21 @@ class DatabaseConnection {
      * retrieves all the tasks for a player in the range of localTime + the elapsed time since midnight for the current day.
      * @param {*} player - player to retrieve the tasks of.
      */
-    /**async getRelativePlayerTasks(player) {
-        const lastMidnight = getLocalDateAtMidnight();
-        const currentTime = getLocalDate();
-        const msElapsed = currentTime - lastMidnight;
+    async getRelativePlayerTasks(player) {
+        const dateMS = (new Date()).getTime();
+        const dateMidnightMS = (getMidnightOfDate(new Date())).getTime()
 
-        //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
-        //allows syncronous gameplay
-        const startDate = player.localCreatedAt;
-        const endDate = formatDateAsLocalString(addDurationToString(startDate, msElapsed));
+        // gets difference in duratino since midnight
+        const msElapsed = dateMS - dateMidnightMS;
+        
+
+        const startDate = player.createdAt;
+        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
 
         const tasks = await this.getTasksFromRange(startDate, endDate);
         
         return tasks;
-    }*/
+    }
 
     /**
      * retrieves all the tasks for a player over its entire span.
@@ -483,7 +485,7 @@ class DatabaseConnection {
         })
     }
 
-    /**async getTasksFromRange(startDate, endDate) {
+    async getTasksFromRange(startDate, endDate) {
         await this.ready;
      
          return new Promise((resolve, reject) => {
@@ -505,7 +507,7 @@ class DatabaseConnection {
              
             transaction.onerror = () => reject(transaction.error);
          })
-    }  */
+    }
     
     async getTask(UUID) {
         await this.ready;

@@ -19,6 +19,11 @@ export const getMidnightOfDate = (date) => {
     return new Date(date.toLocaleString('sv').split(' ')[0] + "T00:00:00");
 }
 
+export const getMidnightInUTC = (date) => {
+    const d = new Date(date);
+    return new Date(d.toLocaleString('sv').split(' ')[0] + "T00:00:00").toISOString();
+}
+
 export const getLocalDate = (date) => {
     return new Date(date.toLocaleString('sv').replace(' ', "T"));
 }
@@ -37,7 +42,7 @@ export function getTimeAsString(date) {
     let minutes = time.split(":")[1];
 
     return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
-    hours + ":" + minutes + "am";
+    hours + ":" + minutes + " am";
 }
 
 export function getDateAsString(date) {
@@ -50,7 +55,15 @@ export function UTCStringToLocalTime(dateString) {
 }
 
 export function UTCStringToLocalDate(dateString) {
-    return getDateAsString(formatDateAsLocalString(new Date(dateString)));
+    const date = new Date(dateString); 
+
+    const formattedDate = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    })
+
+    return formattedDate;
 }
 
 export const getMsUntilMidnight = () => {

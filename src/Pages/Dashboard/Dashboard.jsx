@@ -3,11 +3,11 @@ import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
 import { Link } from 'react-router-dom';
-import { msToPoints } from '../../utils/Helpers.js';
+import { msToPoints } from '../../utils/Helpers/Time.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
-import { DAY, MINUTE, SECOND } from '../../utils/Constants.js'
+import { DAY, MINUTE } from '../../utils/Constants.js'
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -31,7 +31,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       const players = await databaseConnection.getPlayers();
 
       const DataPromises = players.map(async (player) => {
-        const tasks = await databaseConnection.getPlayerTasks(player.UUID);
+        const tasks = await databaseConnection.getRelativePlayerTasks(player);
         
         let sum = 0;
         tasks.forEach(task => {

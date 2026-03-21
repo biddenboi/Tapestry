@@ -57,7 +57,7 @@ div.profile-banner > div.description-subsection {
 
 /* ----- section header ----- */
 
-div.task-history-display > div.section-header {
+div.history-display > div.section-header {
     display:flex;
     justify-content: space-between;
     align-items: center;
@@ -70,7 +70,7 @@ div.task-history-display > div.section-header {
     background-color: var(--bg-dark);
 }
 
-div.task-history-display > div.section-header > button {
+div.history-display > div.section-header > button {
     font-size:15px;
     font-weight: 500;
     border: var(--border-card);
@@ -80,7 +80,7 @@ div.task-history-display > div.section-header > button {
 
 /* ----- History ----- */
 
-div.task-history-display {
+div.history-display {
     grid-column-start: 1;
     grid-column-end: span 10;
     grid-row-start:8;
@@ -93,7 +93,7 @@ div.task-history-display {
     align-items:center;
 }
 
-div.task-table-container {
+div.table-container {
     overflow-y:scroll;
     width:80%;
     height:90%;
@@ -104,7 +104,7 @@ div.task-table-container {
     border-left:var(--border-card);
 }
 
-table.task-table {
+table {
     border-collapse: separate;
     border-spacing: 0;
     max-height:100%;
@@ -112,21 +112,33 @@ table.task-table {
     font-size: 17px;
 }
 
-table.task-table td {
+table td {
     border-bottom: var(--border-card);
     border-left: var(--border-card);
-    white-space: pre-wrap;
 }
 
-table.task-table td:nth-child(1) {
+table td:nth-child(1) {
     border-left: none;
 }
 
-div.task-history-display > div.section-header {
+table td.description > div {
+    width: 100%;
+    height:100%;
+    display:flex;
+    justify-content: space-between;
+    
+    /**tried to use flexbox to space the text from the button but it ended up breaking resizing*/
+}
+
+table td.description button{
+    border: var(--border-card)
+}
+
+div.history-display > div.section-header {
     border-bottom: var(--border-card);
 }
 
-table.task-table tr > td {
+table tr > td {
     padding: 5px 5px 5px 5px;
 }
 

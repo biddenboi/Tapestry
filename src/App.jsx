@@ -9,7 +9,7 @@ import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
 import { DAY, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
-import { addDurationToDate, getMidnightOfDate } from './utils/Helpers';
+import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
 import { v4 as uuid } from "uuid";
 
 export const AppContext = createContext();
