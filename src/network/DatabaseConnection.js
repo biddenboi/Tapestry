@@ -1,4 +1,4 @@
-import { DATABASE_VERISON } from '../utils/Constants.js'
+import { DATABASE_VERSION } from '../utils/Constants.js'
 import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate } from '../utils/Helpers/Time.js';
 
 
@@ -48,7 +48,7 @@ class DatabaseConnection {
         journal.createIndex("parent", "parent", { unique: false });
     }
 
-    if (DATABASE_VERISON >= 11 && oldVersion < 11) {
+    if (DATABASE_VERSION >= 11 && oldVersion < 11) {
         const transaction = event.target.transaction
         const playerStore = transaction.objectStore("playerObjectStore")
         playerStore.createIndex("tokens", "tokens", { unique:false })
@@ -56,7 +56,7 @@ class DatabaseConnection {
         playerStore.createIndex("sleepTime", "sleepTime", { unique:false })
     }
 
-    if (DATABASE_VERISON >= 12 && oldVersion < 12) {
+    if (DATABASE_VERSION >= 12 && oldVersion < 12) {
         const eventObjectStore = this.database.createObjectStore("eventObjectStore", { keyPath: "UUID" });
         eventObjectStore.createIndex("type", "type", { unique:false })
         eventObjectStore.createIndex("description", "description", { unique:false })
@@ -65,7 +65,7 @@ class DatabaseConnection {
         eventObjectStore.createIndex("parent", "parent", { unique:false })
     }
 
-    if (DATABASE_VERISON >= 13 && oldVersion < 13) {
+    if (DATABASE_VERSION >= 13 && oldVersion < 13) {
         const shopObjectStore = this.database.createObjectStore("shopObjectStore", { keyPath: "UUID" });
         shopObjectStore.createIndex("name", "name", { unique:false })
         shopObjectStore.createIndex("description", "description", { unique:false })
@@ -174,7 +174,7 @@ class DatabaseConnection {
         this.ready = new Promise((resolve, reject) => {
 
             //Reminder: when testing version updates change db version and version update if functions at same time
-            const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERISON);
+            const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERSION);
 
             request.onerror = (event) => {
                 console.error(`Database error: ${event.target.error?.message}`);

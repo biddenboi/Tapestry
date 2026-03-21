@@ -1,4 +1,4 @@
-class Task {
+export class Task {
     constructor(data) {
         this._createdAt = data.createdAt;
         this._distractions = data.distractions;
@@ -14,6 +14,15 @@ class Task {
         this._taskName = data.taskName;
         this._timeOfStart = data.timeOfStart;
         this._completedAt = data.completedAt;
+        this._UUID = data.UUID;
+    }
+
+    get UUID() {
+        return this._UUID;
+    }
+
+    set UUID(value) {
+        this._UUID = value;
     }
 
     get createdAt() {
