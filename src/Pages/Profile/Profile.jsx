@@ -34,8 +34,8 @@ function Profile() {
 
     const history = [];
 
-    const tasks = await databaseConnection.getPlayerTasks(p.UUID);
-    const journals = await databaseConnection.getPlayerJournals(p.UUID);
+    const tasks = await databaseConnection.getRelativePlayerTasks(p);
+    const journals = await databaseConnection.getRelativePlayerJournals(p);
 
     //maybe move description to a function processed when called vs making it an attribute  
 

@@ -288,7 +288,9 @@ class DatabaseConnection {
      */
     async getRelativePlayerTasks(player) {
         const dateMS = (new Date()).getTime();
-        const dateMidnightMS = (getMidnightOfDate(new Date())).getTime()
+       
+        const current = await this.getCurrentPlayer();
+        const dateMidnightMS = new Date(current.createdAt).getTime()
 
         // gets difference in duratino since midnight
         const msElapsed = dateMS - dateMidnightMS;
@@ -491,10 +493,11 @@ class DatabaseConnection {
          return new Promise((resolve, reject) => {
             const transaction = this.database.transaction("taskObjectStore", "readonly");
             const tasks = transaction.objectStore("taskObjectStore");
+            const index = tasks.index("completedAt")
             const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
             const results = [];
      
-            tasks.openCursor(dateRange).onsuccess = (event) => {
+            index.openCursor(dateRange).onsuccess = (event) => {
                 const cursor = event.target.result;
      
                 if (cursor) {
@@ -599,13 +602,14 @@ class DatabaseConnection {
     async getJournalsFromRange(startDate, endDate) {
         await this.ready;
      
-         return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const transaction = this.database.transaction("journalObjectStore", "readonly");
             const entries = transaction.objectStore("journalObjectStore");
+            const index = entries.index("createdAt")
             const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
             const results = [];
      
-            entries.openCursor(dateRange).onsuccess = (event) => {
+            index.openCursor(dateRange).onsuccess = (event) => {
                 const cursor = event.target.result;
      
                 if (cursor) {
@@ -617,18 +621,21 @@ class DatabaseConnection {
             }
              
             transaction.onerror = () => reject(transaction.error);
-         })
+        })
     }
 
     async getRelativePlayerJournals(player) {
-        const lastMidnight = getLocalDateAtMidnight();
-        const currentTime = getLocalDate();
-        const msElapsed = currentTime - lastMidnight;
+        const dateMS = (new Date()).getTime();
+       
+        const current = await this.getCurrentPlayer();
+        const dateMidnightMS = new Date(current.createdAt).getTime()
 
-        //grabs the tasks for each player between their respect ive midnight + duration since current days midnight
-        //allows syncronous gameplay
-        const startDate = player.localCreatedAt;
-        const endDate = formatDateAsLocalString(addDurationToString(startDate, msElapsed));
+        // gets difference in duratino since midnight
+        const msElapsed = dateMS - dateMidnightMS;
+        
+
+        const startDate = player.createdAt;
+        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
 
         const tasks = await this.getJournalsFromRange(startDate, endDate);
         
