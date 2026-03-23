@@ -18,7 +18,7 @@ class DatabaseConnection {
     }
 
 
-    if (DATABASE_VERSION >= 10 && oldVersion < 10) {
+    if (oldVersion < 10) {
         const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "UUID" });
         playerStore.createIndex("username", "username", { unique: false });
         playerStore.createIndex("createdAt", "createdAt", { unique: false });
@@ -145,7 +145,7 @@ class DatabaseConnection {
             cursor.continue();
         }
     }*/
-    if (DATABASE_VERISON >= 14 && oldVersion < 14) {
+    if (DATABASE_VERSION >= 14 && oldVersion < 14) {
         const todoObjectStore = this.database.createObjectStore("todoObjectStore", { keyPath: "UUID" });
         todoObjectStore.createIndex("createdAt", "createdAt", { unique: false });
         todoObjectStore.createIndex("distractions", "distractions", { unique: false });
@@ -158,7 +158,7 @@ class DatabaseConnection {
         todoObjectStore.createIndex("similarity", "similarity", { unique: false });
         todoObjectStore.createIndex("taskName", "taskName", { unique: false });
     }
-    if (DATABASE_VERISON >= 15 && oldVersion < 15) {
+    if (DATABASE_VERSION >= 15 && oldVersion < 15) {
         const transaction = event.target.transaction;
         const todoObjectStore = transaction.objectStore("todoObjectStore");
 
