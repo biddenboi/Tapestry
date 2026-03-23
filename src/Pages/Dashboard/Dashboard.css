@@ -86,7 +86,6 @@ table.rank-table .disabled-link {
 div.task-session-buttons {
   display:flex;
   justify-content: space-evenly;  
-  gap:3%;
 }
 
 div.task-session-buttons button:nth-child(1) {

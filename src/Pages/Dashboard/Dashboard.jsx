@@ -22,7 +22,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [nextTodo, setNextTodo] = useState(null);
 
   //convert duration penalty into an object
-  const [durationPenalty, setDurationPenalty] = useState(null);
+  //const [durationPenalty, setDurationPenalty] = useState(null);
   const [draftTask, setDraftTask] = useState({});
 
   const databaseConnection = useContext(AppContext).databaseConnection;
@@ -212,11 +212,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     updateStates(false, 0, draftTask);
   }
 
-  const handleBrokeFocus = async() => {
+  /**const handleBrokeFocus = async() => {
     //applies penalty that divides your points by 2 up to this point
     const penalty = (getTaskPoints() - durationPenalty) / 2;
     setDurationPenalty(Math.floor(penalty + durationPenalty));
-  }
+  }*/
 
   /* Components */
 
@@ -343,11 +343,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       {
         isTaskSession ? 
         <div className="task-session-container">
-          <Timer startTime={new Date(draftTask.localCreatedAt).getTime()} duration={draftTask.estimatedDuration} buffer={draftTask.estimatedBuffer} durationPenalty={durationPenalty}/> 
+          <Timer startTime={new Date(draftTask.localCreatedAt).getTime()} duration={draftTask.estimatedDuration} buffer={draftTask.estimatedBuffer}/> 
           <div className="task-session-buttons">
             <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
             <button>Complete</button>
-            <button type="button" onClick={handleBrokeFocus}>Broke Focus</button>
+            {/**<button type="button" onClick={handleBrokeFocus}>Broke Focus</button>*/}
             <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
           </div>
         </div> : 

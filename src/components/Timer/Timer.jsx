@@ -6,10 +6,9 @@ import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time';
  * Visually handles 
  * @param {number} startTime (milliseconds) - when to start timer from.
  * @param {number} duration (milliseconds) - how long the timer lasts
- * @param {number} durationPenalty - the amount of points penalized. 
 */
 
-function Timer({ startTime, duration, buffer, durationPenalty }) {  
+function Timer({ startTime, duration, buffer }) {  
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
@@ -48,8 +47,8 @@ function Timer({ startTime, duration, buffer, durationPenalty }) {
   return (
     <div className="timer">
       {getTimerComponent()}
-      <span>{msToPoints(elapsedTime) - durationPenalty + " points"}</span>
-      <span>{durationPenalty != 0 ? "(-" + durationPenalty + " focus penalty)" : ""}</span>
+      <span>{msToPoints(elapsedTime) /**- durationPenalty*/ + " points"}</span>
+      {/**<span>{durationPenalty != 0 ? "(-" + durationPenalty + " focus penalty)" : ""}</span>*/}
     </div>
   );
 }
