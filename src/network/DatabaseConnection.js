@@ -102,7 +102,7 @@ class DatabaseConnection {
         transactionObjectStore.createIndex("completedAt", "completedAt", { unique: false });
         transactionObjectStore.createIndex("cost", "cost", { unique: false });
         transactionObjectStore.createIndex("duration", "duration", { unique: false });
-        transactionObjectStore.createIndex("duration", "duration", { unique: false });
+        transactionObjectStore.createIndex("location", "location", { unique: false });
     }
 }
     constructor() {

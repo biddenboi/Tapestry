@@ -9,6 +9,7 @@ import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
 import { DAY, MINUTE } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
+import { getCurrentLocation } from '../../utils/Helpers/Location.js'
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -113,7 +114,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
    * @param {number} durationPenalty
    * @param {object} draftTask
    */
-  const updateStates = (taskSession, durationPenalty, draftTask) => {
+  const updateStates = (taskSession, draftTask) => {
     //updating these states typically happen concurrently (on switch between isTaskSession)
     setIsTaskSession(taskSession); 
     setDraftTask(draftTask);
@@ -134,25 +135,27 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const parent = await databaseConnection.getCurrentPlayer();
+    const location = await getCurrentLocation();
    
     //temporary, creates token every minute
     databaseConnection.addPlayer({
       ...parent,
-      tokens: Math.floor(parent.tokens + (msToPoints(getTaskDuration()) - durationPenalty) / 6)
+      tokens: Math.floor(parent.tokens + (msToPoints(getTaskDuration())) / 6)
     })
 
     const task = {
       ...draftTask,
       duration: getTaskDuration(),  
-      points: Math.floor(msToPoints(getTaskDuration()) - durationPenalty),
+      points: Math.floor(msToPoints(getTaskDuration())),
       UUID: uuid(),
       parent: parent.UUID,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
+      location: location,
     }
 
     await databaseConnection.addTaskLog(task);
 
-    updateStates(false, null, {})
+    updateStates(false, {})
   }
 
   const handleTaskSubmitAndSave = async (e) => {
@@ -161,21 +164,23 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const duration = getTaskDuration();
 
     const parent = await databaseConnection.getCurrentPlayer();
+    const location = await getCurrentLocation();
     
     const task = {
       ...draftTask,
       duration: duration,  
-      points: Math.floor(msToPoints(duration) - durationPenalty),
+      points: Math.floor(msToPoints(duration)),
       UUID: uuid(),
       parent: parent.UUID,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
+      location: location,
     }
 
     draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
 
     await databaseConnection.addTaskLog(task);
 
-    updateStates(false, null, draftTask)
+    updateStates(false, draftTask)
   }
 
   //temporary method to log free for now transactions 
@@ -185,6 +190,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const duration = getTaskDuration();
 
     const parent = await databaseConnection.getCurrentPlayer();
+    const location = await getCurrentLocation();
     
     const transaction = {
       name: draftTask.taskName,
@@ -192,12 +198,13 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       duration: duration,  
       UUID: uuid(),
       parent: parent.UUID,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
+      location: location,
     }
 
     await databaseConnection.addTransactionLog(transaction);
 
-    updateStates(false, null, draftTask)
+    updateStates(false, {})
   }
 
   const handleTodoSubmit = async (e) => {
@@ -215,7 +222,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const updatedTodos = await databaseConnection.getTodos();
     setTodos(updatedTodos);
 
-    updateStates(false, null, {});
+    updateStates(false, {});
   }
 
   const handleStartTask = () => {
@@ -225,12 +232,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
     }
 
-    updateStates(true, 0, taskData);
+    updateStates(true, taskData);
   }
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    updateStates(false, 0, draftTask);
+    updateStates(false, draftTask);
   }
 
   /**const handleBrokeFocus = async() => {
