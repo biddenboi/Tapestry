@@ -13,7 +13,9 @@ export function getCurrentLocation() {
           lng: position.coords.longitude,
         });
       },
-      reject,
+      () => {
+        resolve(null);
+      },
       {
         enableHighAccuracy: false,
         timeout: 5000,
