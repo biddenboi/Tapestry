@@ -40,6 +40,8 @@ function App() {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
 
+      return; //for now, logic is broken will fix down the line.
+
       //checks if getCurrentProfile ran first
       if (currentPlayer.createdAt == null) return;
 
