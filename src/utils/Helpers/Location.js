@@ -18,7 +18,7 @@ export function getCurrentLocation() {
       },
       {
         enableHighAccuracy: false,
-        timeout: 5000,
+        timeout: 60000,
         maximumAge: 300000,
       }
     );

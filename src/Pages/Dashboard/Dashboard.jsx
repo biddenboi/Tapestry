@@ -135,7 +135,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const parent = await databaseConnection.getCurrentPlayer();
-    const location = await getCurrentLocation();
    
     //temporary, creates token every minute
     databaseConnection.addPlayer({
@@ -150,12 +149,26 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
-      location: location,
+      location: null
     }
 
     await databaseConnection.addTaskLog(task);
 
     updateStates(false, {})
+
+    //note - revise maybe into seperate method?
+    getCurrentLocation()
+      .then(async (location) => {
+        if (!location) return;
+
+        await databaseConnection.addTransactionLog({
+          ...transaction,
+          location,
+        });
+      })
+      .catch((err) => {
+        console.error("Background location update failed:", err);
+      });
   }
 
   const handleTaskSubmitAndSave = async (e) => {
@@ -164,7 +177,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const duration = getTaskDuration();
 
     const parent = await databaseConnection.getCurrentPlayer();
-    const location = await getCurrentLocation();
     
     const task = {
       ...draftTask,
@@ -173,7 +185,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
-      location: location,
+      location: null,
     }
 
     draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
@@ -181,6 +193,20 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.addTaskLog(task);
 
     updateStates(false, draftTask)
+
+    //note - revise maybe into seperate method?
+    getCurrentLocation()
+      .then(async (location) => {
+        if (!location) return;
+
+        await databaseConnection.addTransactionLog({
+          ...transaction,
+          location,
+        });
+      })
+      .catch((err) => {
+        console.error("Background location update failed:", err);
+      });
   }
 
   //temporary method to log free for now transactions 
@@ -188,24 +214,37 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const duration = getTaskDuration();
-
     const parent = await databaseConnection.getCurrentPlayer();
-    const location = await getCurrentLocation();
-    
+    const transactionId = uuid();
+
     const transaction = {
       name: draftTask.taskName,
       createdAt: draftTask.createdAt,
-      duration: duration,  
-      UUID: uuid(),
+      duration,
+      UUID: transactionId,
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
-      location: location,
-    }
+      location: null,
+    };
 
     await databaseConnection.addTransactionLog(transaction);
 
-    updateStates(false, {})
-  }
+    updateStates(false, {});
+
+    //note - revise maybe into seperate method?
+    getCurrentLocation()
+      .then(async (location) => {
+        if (!location) return;
+
+        await databaseConnection.addTransactionLog({
+          ...transaction,
+          location,
+        });
+      })
+      .catch((err) => {
+        console.error("Background location update failed:", err);
+      });
+  };
 
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
