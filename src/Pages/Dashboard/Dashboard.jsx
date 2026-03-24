@@ -116,7 +116,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const updateStates = (taskSession, durationPenalty, draftTask) => {
     //updating these states typically happen concurrently (on switch between isTaskSession)
     setIsTaskSession(taskSession); 
-    setDurationPenalty(durationPenalty);
     setDraftTask(draftTask);
   }
 
@@ -175,6 +174,28 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
 
     await databaseConnection.addTaskLog(task);
+
+    updateStates(false, null, draftTask)
+  }
+
+  //temporary method to log free for now transactions 
+  const handleLogTransaction = async (e) => {
+    e.preventDefault();
+
+    const duration = getTaskDuration();
+
+    const parent = await databaseConnection.getCurrentPlayer();
+    
+    const transaction = {
+      name: draftTask.taskName,
+      createdAt: draftTask.createdAt,
+      duration: duration,  
+      UUID: uuid(),
+      parent: parent.UUID,
+      completedAt: new Date().toISOString()
+    }
+
+    await databaseConnection.addTransactionLog(transaction);
 
     updateStates(false, null, draftTask)
   }
@@ -349,6 +370,9 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             <button>Complete</button>
             {/**<button type="button" onClick={handleBrokeFocus}>Broke Focus</button>*/}
             <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
+
+            {/**temporary button just to hold off on breaks until shop is implemented */}
+            <button type="button" onClick={handleLogTransaction}>Zero Log</button>
           </div>
         </div> : 
         <div className="task-planning-buttons">

@@ -23,6 +23,8 @@ function Profile() {
 
     const tasks = await databaseConnection.getRelativePlayerTasks(p);
     const journals = await databaseConnection.getRelativePlayerJournals(p);
+    const events = await databaseConnection.getRelativePlayerEvents(p);
+    const transactions = await databaseConnection.getRelativePlayerTransactions(p);
 
     //maybe move description to a function processed when called vs making it an attribute  
 
@@ -48,6 +50,30 @@ function Profile() {
             ...journal,
             description:description,
             type: "Journal"
+        }
+
+        history.push(j);
+    })
+
+    events.forEach(event => {
+        const description = event.description;
+
+        const j = {
+            ...event,
+            description:description,
+            type: "Event"
+        }
+
+        history.push(j);
+    })
+
+    transactions.forEach(transaction => {
+        const description = transaction.name;
+
+        const j = {
+            ...transaction,
+            description:description,
+            type: "Transaction"
         }
 
         history.push(j);

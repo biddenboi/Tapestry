@@ -168,9 +168,11 @@ class DatabaseConnection {
     if (DATABASE_VERSION >= 16 && oldVersion < 16) {
         const transactionObjectStore = this.database.createObjectStore("transactionObjectStore", { keyPath: "UUID" });
         transactionObjectStore.createIndex("name", "name", { unique: false });
-        transactionObjectStore.createIndex("description", "description", { unique: false });
+        //transactionObjectStore.createIndex("description", "description", { unique: false });
         transactionObjectStore.createIndex("createdAt", "createdAt", { unique: false });
+        transactionObjectStore.createIndex("completedAt", "completedAt", { unique: false });
         transactionObjectStore.createIndex("cost", "cost", { unique: false });
+        transactionObjectStore.createIndex("duration", "duration", { unique: false });
         transactionObjectStore.createIndex("duration", "duration", { unique: false });
     }
 }
@@ -212,6 +214,7 @@ class DatabaseConnection {
             const journals = await this.getJournals();
             const events = await this.getEvents();
             const todos = await this.getTodos();
+            const transactions = await this.getTransactions();
 
             const data = {
                 tasks: tasks,
@@ -219,6 +222,7 @@ class DatabaseConnection {
                 journals: journals,
                 events: events,
                 todos: todos,
+                transactions: transactions,
             }
 
             const json = JSON.stringify(data, null, 2);
@@ -249,6 +253,7 @@ class DatabaseConnection {
         const journalData = dataArray[2];
         const eventData = dataArray[3];
         const todoData = dataArray[4];
+        const transactionData = dataArray[5];
 
         //remove all task data and add from new file.
         this.clearTaskData();
@@ -287,6 +292,13 @@ class DatabaseConnection {
     
         todoData.forEach((todo) => {
           this.addTodoLog(todo);
+        })
+
+        //remove all todo data and add from new file.
+        this.clearTransactionData();
+    
+        transactionData.forEach((transaction) => {
+          this.addTransactionLog(transaction);
         })
     } 
 
@@ -667,6 +679,49 @@ class DatabaseConnection {
 
     /** event methods */
 
+    async getEventsFromRange(startDate, endDate) {
+        await this.ready;
+     
+         return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const tasks = transaction.objectStore("eventObjectStore");
+            const index = tasks.index("createdAt")
+            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
+            const results = [];
+    
+            index.openCursor(dateRange).onsuccess = (event) => {
+                const cursor = event.target.result;
+     
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            }
+             
+            transaction.onerror = () => reject(transaction.error);
+         })
+    }
+
+    async getRelativePlayerEvents(player) {
+        const dateMS = (new Date()).getTime();
+       
+        const current = await this.getCurrentPlayer();
+        const dateMidnightMS = new Date(current.createdAt).getTime()
+
+        // gets difference in duratino since midnight
+        const msElapsed = dateMS - dateMidnightMS;
+        
+
+        const startDate = player.createdAt;
+        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
+
+        const tasks = await this.getEventsFromRange(startDate, endDate);
+        
+        return tasks;
+    }
+
     async getLastExitEvent() {
         await this.ready;
 
@@ -853,6 +908,104 @@ class DatabaseConnection {
             const todos = transaction.objectStore("todoObjectStore");
 
             const objectStoreRequest = todos.clear();
+
+            objectStoreRequest.onsuccess = (e) => {
+                resolve();
+            }
+
+            objectStoreRequest.onerror = (e) => {
+                reject(objectStoreRequest.error);
+            }
+        })
+    }
+
+    // transaction
+
+    async addTransactionLog(t) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["transactionObjectStore"], "readwrite");
+        
+            const transactions = transaction.objectStore("transactionObjectStore");
+            const request = transactions.put(t);  
+            
+            request.onsuccess = () => {
+                resolve();
+            }
+
+            request.onerror = () => {
+                reject(request.error);
+            }
+        })
+    }
+
+
+    async getRelativePlayerTransactions(player) {
+        const dateMS = (new Date()).getTime();
+       
+        const current = await this.getCurrentPlayer();
+        const dateMidnightMS = new Date(current.createdAt).getTime()
+
+        // gets difference in duratino since midnight
+        const msElapsed = dateMS - dateMidnightMS;
+        
+
+        const startDate = player.createdAt;
+        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
+
+        const tasks = await this.getTransactionsFromRange(startDate, endDate);
+        
+        return tasks;
+    }
+
+    async getTransactionsFromRange(startDate, endDate) {
+        await this.ready;
+     
+         return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("transactionObjectStore", "readonly");
+            const tasks = transaction.objectStore("transactionObjectStore");
+            const index = tasks.index("completedAt")
+            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
+            const results = [];
+    
+            index.openCursor(dateRange).onsuccess = (event) => {
+                const cursor = event.target.result;
+     
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            }
+             
+            transaction.onerror = () => reject(transaction.error);
+         })
+    }
+
+    async getTransactions() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("transactionObjectStore", "readonly");
+            const objectStore = transaction.objectStore("transactionObjectStore");
+
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
+    }
+    async clearTransactionData() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(["transactionObjectStore"], "readwrite");
+            const objectStore = transaction.objectStore("transactionObjectStore");
+
+            const objectStoreRequest = objectStore.clear();
 
             objectStoreRequest.onsuccess = (e) => {
                 resolve();

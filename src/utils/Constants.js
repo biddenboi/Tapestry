@@ -1,4 +1,4 @@
-export const DATABASE_VERSION = 15;
+export const DATABASE_VERSION = 16;
 
 export const SECOND = 1000;
 export const MINUTE = SECOND * 60;
