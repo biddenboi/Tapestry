@@ -165,6 +165,14 @@ class DatabaseConnection {
         todoObjectStore.createIndex("difficulty", "difficulty", { unique: false });
         todoObjectStore.createIndex("dueDate", "dueDate", { unique: false });
     }
+    if (DATABASE_VERSION >= 16 && oldVersion < 16) {
+        const transactionObjectStore = this.database.createObjectStore("transactionObjectStore", { keyPath: "UUID" });
+        transactionObjectStore.createIndex("name", "name", { unique: false });
+        transactionObjectStore.createIndex("description", "description", { unique: false });
+        transactionObjectStore.createIndex("createdAt", "createdAt", { unique: false });
+        transactionObjectStore.createIndex("cost", "cost", { unique: false });
+        transactionObjectStore.createIndex("duration", "duration", { unique: false });
+    }
 }
     constructor() {
         if (!this.isCompatable()) {
