@@ -1,5 +1,5 @@
 import { DATABASE_VERSION } from '../utils/Constants.js'
-import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate } from '../utils/Helpers/Time.js';
+import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate, getMidnightInUTC } from '../utils/Helpers/Time.js';
 
 
 class DatabaseConnection {
@@ -700,6 +700,49 @@ class DatabaseConnection {
             request.onerror = () => reject(request.error);
             transaction.onerror = () => reject(transaction.error);
         })
+    }
+
+    async getEvents() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const events = transaction.objectStore("eventObjectStore");
+
+            const request = events.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
+    }
+
+    async getLastEnterEvent() {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const store = transaction.objectStore("eventObjectStore");
+            
+            const index = store.index("createdAt"); 
+
+            const request = index.openCursor(null, "prev"); 
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+
+                if (cursor) {
+                    if (cursor.value.type === "enter") {
+                        resolve(cursor.value); 
+                    } else {
+                        cursor.continue(); 
+                    }
+                } else {
+                    resolve(null);
+                }
+            };
+            request.onerror = (err) => reject(err);
+        });
     }
 
     async clearEventData() {

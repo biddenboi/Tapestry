@@ -8,6 +8,8 @@ import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
 import { DAY, MINUTE } from '../../utils/Constants.js'
+import NiceModal from '@ebay/nice-modal-react';
+import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -253,11 +255,17 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
-        <button onClick={() => handleGetNextTodo()} 
-          disabled={!nextTodo}
-          type="button">Get Next Todo</button>
+        <div className="button-bar">
+          <button
+            type="button" onClick={() => NiceModal.show(JournalPopup, 
+              { title: "End of Workday Conclusions"})}
+            >End Early</button>
+          <button onClick={() => handleGetNextTodo()} 
+            disabled={!nextTodo}
+            type="button">Get Next Todo</button>
+        </div>
         <p>Task Creation</p>
-          <div>
+          <div className="inputs">
             <label>
               Task Name:
               <input type="text" name="taskName" 

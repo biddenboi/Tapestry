@@ -11,6 +11,7 @@ import { DAY, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
 import { v4 as uuid } from "uuid";
+import NiceModal from '@ebay/nice-modal-react';
 
 export const AppContext = createContext();
 
@@ -29,35 +30,41 @@ function App() {
 
   const contextValue = useMemo(() => ({
     databaseConnection: databaseConnection,
-    timestamp: timestamp
+    timestamp: timestamp,
   }), [databaseConnection, timestamp])
 
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
-    const getCurrentProfile = async () => {
+    const syncAndUpdateEvents = async () => {
       const p = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(p);
-    }
-    
-    const checkNewDay = async () => {
+
       //checks if getCurrentProfile ran first
       if (currentPlayer.createdAt == null) return;
+
+      const enterEvent = await databaseConnection.getLastEnterEvent();
+      const exitEvent = await databaseConnection.getLastExitEvent();
+      const yesterday = addDurationToDate(new Date(), -DAY);
+      const lastMidnight = getMidnightOfDate(yesterday)
+      const midnight = getMidnightOfDate(new Date())
+
+      console.log(enterEvent.createdAt);
+      console.log(midnight.toISOString());
+
+      if (enterEvent === null || enterEvent.createdAt < midnight.toISOString()) {
+        await startDay();
+      }
 
       const playerCreatedAtMidnight = getMidnightOfDate(new Date(currentPlayer.createdAt));
       const currMidnight = getMidnightOfDate(new Date());
 
       if (playerCreatedAtMidnight.getTime() == currMidnight.getTime()) return;
 
-      const exitEvent = await databaseConnection.getLastExitEvent();
-      const yesterday = addDurationToDate(new Date(), -DAY);
-      const lastMidnight = getMidnightOfDate(yesterday)
-      
-
       if (exitEvent == null) {
         endDay(false);
         return;
       }
-
+        
       const newExitEvent = await databaseConnection.getLastExitEvent();
 
       const exitEventMidnight = getMidnightOfDate(new Date(newExitEvent.createdAt));
@@ -67,8 +74,7 @@ function App() {
       endDay(false);
     }
 
-    getCurrentProfile();
-    checkNewDay();
+    syncAndUpdateEvents();
   }, [timestamp])
 
   useInterval(() => {
@@ -91,6 +97,16 @@ function App() {
     await databaseConnection.addPlayer(currentPlayer);
   }
 
+  const startDay = async () => {
+    
+    await databaseConnection.addEvent({
+      type: "enter",
+      description: "Started the Day",
+      UUID: uuid(),
+      parent: currentPlayer.UUID,
+      createdAt: new Date().toISOString()
+    });
+  };
 
   //navigating across routes
   const navigate = (route) => {
@@ -110,6 +126,7 @@ function App() {
 
     {/*Provides database connection to all child components.*/}
     <AppContext.Provider value={contextValue}>
+      <NiceModal.Provider>
         <Routes>
           <Route 
             path='/' 
@@ -120,6 +137,7 @@ function App() {
           <Route path='/settings' element={<Settings></Settings>}/>
           <Route path='/profile/:index' element={<Profile></Profile>}/>
         </Routes>
+      </NiceModal.Provider>
     </AppContext.Provider>
   </>
 }

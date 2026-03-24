@@ -1,31 +1,18 @@
 import { useParams } from "react-router-dom";
 import { AppContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
-import { v4 as uuid } from "uuid";
-
 import './Profile.css';
 import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
+import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
+import NiceModal, { useModal } from '@ebay/nice-modal-react';
 
 function Profile() {
+    const databaseConnection = useContext(AppContext).databaseConnection;
+    const timestamp = useContext(AppContext).timestamp;
 //read through this code again when ur not tired
   const { index } = useParams();
 
   const [player, setPlayer] = useState(null);
-  const [journalPopup, setJournalPopup] = useState(false);
-
-  const databaseConnection = useContext(AppContext).databaseConnection;
-
-  useEffect(() => {
-        //REVIEW
-        const handleKeyDown = (e) => {
-            if (e.key === "Escape") {
-                setJournalPopup(false);
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, []);
   
   useEffect(() => {
     //calculates data about player and creates new object with calculations
@@ -80,56 +67,14 @@ function Profile() {
     }
 
     getPlayer();
-    }, [index, useContext(AppContext).timestamp])
+    }, [index, timestamp])
 
-    const handleJournalSubmit = (async (e) => {
-        //prevent default needed so data does not refresh on click.
-        e.preventDefault()
-        const form = e.currentTarget;
-        const formData = new FormData(form);
 
-        const entryTitle = formData.get("entry-title");
-        const entryText = formData.get("entry-text");
-
-        const parent = await databaseConnection.getCurrentPlayer();
-
-        const journal = {
-            title: entryTitle,
-            entry: entryText,
-            //create methods for local time for tasks too in helper
-            createdAt: new Date().toISOString(),
-            parent: parent.UUID,
-            UUID: uuid(),
-        }
-        setJournalPopup(false);
-        setPlayer(player);
-        e.target.reset();
-        await databaseConnection.addJournalLog(journal);
-    })
 
     //catch all to ensure player is set before rendering
     if (!player) return null;
-
-    function getRow() {
-        
-    }
-
-
+    
     return <div className="profile"> 
-        {journalPopup ? 
-            <div className="journal-popup">
-                <div className="blanker"></div>
-                <div className="content">
-                    <p>Journal Entry</p>
-                    <form action="" onSubmit={handleJournalSubmit}>
-                        <input type="text" name="entry-title" placeholder="Entry Title"/>
-                        <textarea name="entry-text" id=""
-                            placeholder="Enter your log here..."></textarea>
-                        <button type="submit">Publish</button>
-                    </form>
-                </div>
-            </div> : ""
-        }
         <div className="profile-banner">
             <div className="stats-subsection">
                 <span>{UTCStringToLocalDate(player.createdAt)}</span>
@@ -154,7 +99,7 @@ function Profile() {
                 {   
                     //checks if current date, only shows button if its the same day
                     player.current ?
-                    <button onClick={() => setJournalPopup(true)}>Entry</button> 
+                    <button onClick={() => NiceModal.show(JournalPopup)}>Entry</button> 
                     : ""
                 }
             </div>
@@ -170,7 +115,7 @@ function Profile() {
                                         <div>
                                             <span>{element.description}</span>
                                             {element.type === "Journal" ? 
-                                            <button onClick={() => setJournalPopup(true)}>View</button> : ""}
+                                            <button onClick={() => NiceModal.show(JournalPopup)}>View</button> : ""}
                                         </div>
                                     </td>
                                     {/** replace description and points with generalized method */}

@@ -11,6 +11,7 @@
     "electron:build:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
+    "@ebay/nice-modal-react": "^1.2.13",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",

@@ -123,7 +123,7 @@ form.task-creation-menu {
   justify-content: space-between;
 }
 
-div.task-form-inputs > div {
+div.task-form-inputs > div.inputs {
   display:grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 5%;
@@ -143,13 +143,17 @@ div.task-form-inputs p {
   font-weight:700;
 }
 
-div.task-form-inputs > button {
+div.task-form-inputs > div.button-bar > button {
   border: var(--border-card);
   background-color: var(--bg-dark);
   padding:12px;
   margin-bottom: 20px;
-  display: block;
-  margin-left:auto;
+}
+
+div.task-form-inputs > div.button-bar {
+  display: flex;
+  gap:20px;
+  justify-content: flex-end;
 }
 
 div.task-form-inputs > input {
