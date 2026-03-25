@@ -42,7 +42,7 @@ export default NiceModal.create(({title}) => {
         }
         e.target.reset();
         modal.hide()
-        await databaseConnection.addJournalLog(journal);
+        await databaseConnection.add(STORES.journal, journal);
     })
 
     return modal.visible ? (<div className="journal-popup"

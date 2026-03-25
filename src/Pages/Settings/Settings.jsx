@@ -42,7 +42,7 @@ function Settings() {
             wakeTime: formData.get("wake-time"),
             sleepTime: formData.get("sleep-time"),
         }
-        await databaseConnection.addPlayer(newPlayer);
+        await databaseConnection.add(STORES.player, newPlayer);
     }
       
     const handleDataDownload = async (e) => {
@@ -72,7 +72,7 @@ function Settings() {
             sleepTime: "23:00",
             tokens: 0
         }
-        await databaseConnection.addPlayer(player);
+        await databaseConnection.add(STORES.player, player);
     }
       
 

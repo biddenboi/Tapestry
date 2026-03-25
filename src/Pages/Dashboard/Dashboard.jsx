@@ -2,12 +2,12 @@ import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
-import { data, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { msToPoints } from '../../utils/Helpers/Time.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
-import { DAY, MINUTE } from '../../utils/Constants.js'
+import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
 
@@ -30,10 +30,10 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   useEffect(() => {
     const reload = async () => {
-      const players = await databaseConnection.getPlayers();
+      const players = await databaseConnection.get(STORES.player);
 
       const DataPromises = players.map(async (player) => {
-        const tasks = await databaseConnection.getRelativePlayerTasks(player);
+        const tasks = await databaseConnection.getRelativePlayerStore(STORES.player, player);
         
         let sum = 0;
         tasks.forEach(task => {
@@ -50,7 +50,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       results.sort((a, b) => b.points - a.points);
       setPlayerPoints(results);
       
-      const todoArray = await databaseConnection.getTodos();
+      const todoArray = await databaseConnection.get(STORES.todo);
       setTodos(todoArray);
 
       //check if nextTodo has not been used yet
@@ -137,7 +137,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const parent = await databaseConnection.getCurrentPlayer();
    
     //temporary, creates token every minute
-    databaseConnection.addPlayer({
+    databaseConnection.add(STORES.player, {
       ...parent,
       tokens: Math.floor(parent.tokens + (msToPoints(getTaskDuration())) / 6)
     })
@@ -152,7 +152,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       location: null
     }
 
-    await databaseConnection.addTaskLog(task);
+    await databaseConnection.add(STORES.task, task);
 
     updateStates(false, {})
 
@@ -161,7 +161,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       .then(async (location) => {
         if (!location) return;
 
-        await databaseConnection.addTransactionLog({
+        await databaseConnection.add(STORES.transaction, {
           ...transaction,
           location,
         });
@@ -190,7 +190,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
 
-    await databaseConnection.addTaskLog(task);
+    await databaseConnection.add(STORES.task, task);
 
     updateStates(false, draftTask)
 
@@ -199,7 +199,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       .then(async (location) => {
         if (!location) return;
 
-        await databaseConnection.addTransactionLog({
+        await databaseConnection.add(STORES.transaction, {
           ...transaction,
           location,
         });
@@ -227,7 +227,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       location: null,
     };
 
-    await databaseConnection.addTransactionLog(transaction);
+    await databaseConnection.add(STORES.transaction, transaction);
 
     updateStates(false, {});
 
@@ -236,7 +236,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       .then(async (location) => {
         if (!location) return;
 
-        await databaseConnection.addTransactionLog({
+        await databaseConnection.add(STORES.transaction, {
           ...transaction,
           location,
         });
@@ -249,16 +249,17 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
 
-    const task = {
+    const todo = {
       ...draftTask,
       createdAt: new Date().toISOString(),
       parent: parent.UUID,
       UUID: uuid(),
     }
 
-    await databaseConnection.addTodoLog(task);
+    await databaseConnection.add(STORES.todo, todo);
 
-    const updatedTodos = await databaseConnection.getTodos();
+    //potentially comment out see if updating state still occurs
+    const updatedTodos = await databaseConnection.get(STORES.todo);
     setTodos(updatedTodos);
 
     updateStates(false, {});
@@ -279,13 +280,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     updateStates(false, draftTask);
   }
 
-  /**const handleBrokeFocus = async() => {
-    //applies penalty that divides your points by 2 up to this point
-    const penalty = (getTaskPoints() - durationPenalty) / 2;
-    setDurationPenalty(Math.floor(penalty + durationPenalty));
-  }*/
-
-  /* Components */
 
   function RankListComponent() {
     return <div className="rank-list">
@@ -449,9 +443,9 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       })
     );
 
-    await databaseConnection.removeTodoLog(todo.UUID); 
+    await databaseConnection.remove(STORES.todo, todo.UUID); 
 
-    const todoArray = await databaseConnection.getTodos();
+    const todoArray = await databaseConnection.get(STORES.todo);
     setTodos(todoArray);
   };
 
@@ -472,10 +466,10 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       })
     );
 
-    await databaseConnection.removeTodoLog(nextTodo.UUID); 
+    await databaseConnection.remove(STORES.todo, nextTodo.UUID); 
     setNextTodo(null);
 
-    const todoArray = await databaseConnection.getTodos();
+    const todoArray = await databaseConnection.get(STORES.todo);
     setTodos(todoArray);
   }
 

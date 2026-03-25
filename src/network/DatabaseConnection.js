@@ -1,4 +1,4 @@
-import { DATABASE_VERSION } from '../utils/Constants.js'
+import { DATABASE_VERSION, STORES } from '../utils/Constants.js'
 import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate, getMidnightInUTC } from '../utils/Helpers/Time.js';
 
 
@@ -97,7 +97,6 @@ class DatabaseConnection {
     if (DATABASE_VERSION >= 16 && oldVersion < 16) {
         const transactionObjectStore = this.database.createObjectStore("transactionObjectStore", { keyPath: "UUID" });
         transactionObjectStore.createIndex("name", "name", { unique: false });
-        //transactionObjectStore.createIndex("description", "description", { unique: false });
         transactionObjectStore.createIndex("createdAt", "createdAt", { unique: false });
         transactionObjectStore.createIndex("completedAt", "completedAt", { unique: false });
         transactionObjectStore.createIndex("cost", "cost", { unique: false });
@@ -137,13 +136,13 @@ class DatabaseConnection {
         await this.ready;
 
         return new Promise(async (resolve, reject) => {
-            //so what this does is basically convert the data into a string, blob gives the data a location which is in url, and then we create an attribute with download using HTML 5 download method
-            const tasks = await this.getTasks();
-            const players = await this.getPlayers();
-            const journals = await this.getJournals();
-            const events = await this.getEvents();
-            const todos = await this.getTodos();
-            const transactions = await this.getTransactions();
+            //Possibly compress into for loop
+            const tasks = await this.getAll(STORES.task);
+            const players = await this.getAll(STORES.player);
+            const journals = await this.getAll(STORES.journal);
+            const events = await this.getAll(STORES.event);
+            const todos = await this.getAll(STORES.todo);
+            const transactions = await this.getAll(STORES.transaction);
 
             const data = {
                 tasks: tasks,
@@ -179,94 +178,51 @@ class DatabaseConnection {
         //data can be deleted before upload since on fail the user still has original file
 
         const dataArray = Object.values(JSON.parse(file));
-        const taskData = dataArray[0];
-        const playerData = dataArray[1];
-        const journalData = dataArray[2];
-        const eventData = dataArray[3];
-        const todoData = dataArray[4];
-        const transactionData = dataArray[5];
 
-        //remove all task data and add from new file.
-        this.clearTaskData();
-    
-        taskData.forEach((task) => {
-          this.addTaskLog(task);
-        })
+        // remove i?
+        let i = 0;
+        for (const [key, value] of Object.entries(STORES)) {
+            this.clear(value);
 
-        //remove all player data and add from new file.
-        this.clearPlayerData();
-
-        playerData.forEach(async (player) => {
-            const playerTasks = await this.getPlayerTasks(player.UUID);
-
-            if (playerTasks.length != 0) {
-                this.addPlayer(player);
-            }
-        })
-
-        //remove all journal data and add from new file.
-        this.clearJournalData();
-    
-        journalData.forEach((journal) => {
-          this.addJournalLog(journal);
-        })
-
-        //remove all event data and add from new file.
-        this.clearEventData();
-    
-        eventData.forEach((event) => {
-          this.addEvent(event);
-        })
-
-        //remove all todo data and add from new file.
-        this.clearTodoData();
-    
-        todoData.forEach((todo) => {
-          this.addTodoLog(todo);
-        })
-
-        //remove all todo data and add from new file.
-        this.clearTransactionData();
-    
-        transactionData.forEach((transaction) => {
-          this.addTransactionLog(transaction);
-        })
+            dataArray[i].forEach((data) => {
+                this.add(value, data);
+            })
+            i++;
+        }
     } 
 
     /**
-     * retrieves all the tasks for a player in the range of localTime + the elapsed time since midnight for the current day.
+     * retrieves all of a store for a player in the range of localTime + the elapsed time since midnight for the current day.
      * @param {*} player - player to retrieve the tasks of.
      */
-    async getRelativePlayerTasks(player) {
+    async getRelativePlayerStore(store, player) {
         const dateMS = (new Date()).getTime();
        
         const current = await this.getCurrentPlayer();
         const dateMidnightMS = new Date(current.createdAt).getTime()
 
-        // gets difference in duratino since midnight
         const msElapsed = dateMS - dateMidnightMS;
-        
 
         const startDate = player.createdAt;
         const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
 
-        const tasks = await this.getTasksFromRange(startDate, endDate);
+        const data = await this.getStoreFromRange(store, startDate, endDate);
         
-        return tasks;
+        return data;
     }
 
     /**
-     * retrieves all the tasks for a player over its entire span.
+     * retrieves all the objectStore data for a player over its entire span.
      * @param {*} player - player to retrieve the tasks of.
      */
-    async getPlayerTasks(UUID) {
+    async getPlayerStore(store, UUID) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("taskObjectStore", "readonly");
-            const store = transaction.objectStore("taskObjectStore");
+            const transaction = this.database.transaction(store, "readonly");
+            const objectStore = transaction.objectStore(store);
             
-            const index = store.index("parent");
+            const index = objectStore.index("parent");
 
             const request = index.getAll(UUID);
 
@@ -280,8 +236,8 @@ class DatabaseConnection {
        
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction("playerObjectStore", "readonly");
-            const store = transaction.objectStore("playerObjectStore");
-            const index = store.index("createdAt");
+            const objectStore = transaction.objectStore("playerObjectStore");
+            const index = objectStore.index("createdAt");
 
             const request = index.openCursor(null, "prev");
 
@@ -296,14 +252,14 @@ class DatabaseConnection {
          });
     }
 
-    async getPlayer(UUID) {
+    async get(store, UUID) {
         await this.ready;
        
         return new Promise((resolve, reject) => {
-           const transaction = this.database.transaction("playerObjectStore", "readonly");
-           const store = transaction.objectStore("playerObjectStore");
+           const transaction = this.database.transaction(store, "readonly");
+           const objectStore = transaction.objectStore(store);
        
-           const request = store.get(UUID);
+           const request = objectStore.get(UUID);
        
            request.onsuccess = () => resolve(request.result);
            request.onerror = () => reject(request.error);
@@ -311,14 +267,14 @@ class DatabaseConnection {
          });
     }
 
-    async addPlayer(player) {
+    async add(store, data) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
-            const players = transaction.objectStore("playerObjectStore");
+            const transaction = this.database.transaction(store, "readwrite");
+            const objectStore = transaction.objectStore(store);
 
-            const request = players.put(player);
+            const request = objectStore.put(data);
 
             request.onsuccess = (event) => {
                 resolve(request.result);
@@ -330,88 +286,13 @@ class DatabaseConnection {
         })
     }
 
-    async clearPlayerData() {
+    async remove(store, UUID) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["playerObjectStore"], "readwrite");
-            const players = transaction.objectStore("playerObjectStore");
-
-            const objectStoreRequest = players.clear();
-
-            objectStoreRequest.onsuccess = (e) => {
-                resolve();
-            }
-
-            objectStoreRequest.onerror = (e) => {
-                reject(objectStoreRequest.error);
-            }
-        })
-    }
-
-    async getPlayers() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("playerObjectStore", "readonly");
-            const players = transaction.objectStore("playerObjectStore");
-
-            const request = players.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    /* Task methods */ 
-
-    async clearTaskData() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["taskObjectStore"], "readwrite");
-            const tasks = transaction.objectStore("taskObjectStore");
-
-            const objectStoreRequest = tasks.clear();
-
-            objectStoreRequest.onsuccess = (e) => {
-                resolve();
-            }
-
-            objectStoreRequest.onerror = (e) => {
-                reject(objectStoreRequest.error);
-            }
-        })
-    }
-
-    //localCreatedAt, username, taskName, taskDescription, taskDifficulty
-    async addTaskLog(task) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["taskObjectStore"], "readwrite");
-        
-            const tasks = transaction.objectStore("taskObjectStore");
-            const request = tasks.put(task);  
-            
-            request.onsuccess = () => {
-                resolve();
-            }
-
-            request.onerror = () => {
-                reject(request.error);
-            }
-        })
-    }
-
-    async removeTaskLog(UUID) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["taskObjectStore"], "readwrite");
-            const tasksObjectStore = transaction.objectStore("taskObjectStore");
-            const request = tasksObjectStore.delete(UUID);
+            const transaction = this.database.transaction(store, "readwrite");
+            const objectStore = transaction.objectStore(store);
+            const request = objectStore.delete(UUID);
 
             request.onsuccess = () => {
                 resolve();
@@ -423,518 +304,12 @@ class DatabaseConnection {
         })
     }
 
-    async getTasks() {
+    async clear(store) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("taskObjectStore", "readonly");
-            const tasks = transaction.objectStore("taskObjectStore");
-
-            const request = tasks.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getTasksFromRange(startDate, endDate) {
-        await this.ready;
-     
-         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("taskObjectStore", "readonly");
-            const tasks = transaction.objectStore("taskObjectStore");
-            const index = tasks.index("completedAt")
-            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
-            const results = [];
-     
-            index.openCursor(dateRange).onsuccess = (event) => {
-                const cursor = event.target.result;
-     
-                if (cursor) {
-                    results.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            }
-             
-            transaction.onerror = () => reject(transaction.error);
-         })
-    }
-    
-    async getTask(UUID) {
-        await this.ready;
-       
-        return new Promise((resolve, reject) => {
-           const transaction = this.database.transaction("taskObjectStore", "readonly");
-           const store = transaction.objectStore("taskObjectStore");
-       
-           const request = store.get(UUID);
-       
-           request.onsuccess = () => resolve(request.result);
-           request.onerror = () => reject(request.error);
-           transaction.onerror = () => reject(transaction.error);
-         });
-    }
-
-    /** journal methods */
-
-    async getJournal(UUID) {
-        await this.ready;
-       
-        return new Promise((resolve, reject) => {
-           const transaction = this.database.transaction("journalObjectStore", "readonly");
-           const store = transaction.objectStore("journalObjectStore");
-       
-           const request = store.get(UUID);
-       
-           request.onsuccess = () => resolve(request.result);
-           request.onerror = () => reject(request.error);
-           transaction.onerror = () => reject(transaction.error);
-         });
-    }
-
-    async clearJournalData() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["journalObjectStore"], "readwrite");
-            const journals = transaction.objectStore("journalObjectStore");
-
-            const objectStoreRequest = journals.clear();
-
-            objectStoreRequest.onsuccess = (e) => {
-                resolve();
-            }
-
-            objectStoreRequest.onerror = (e) => {
-                reject(objectStoreRequest.error);
-            }
-        })
-    }
-
-    async addJournalLog(entry) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["journalObjectStore"], "readwrite");
-        
-            const journals = transaction.objectStore("journalObjectStore");
-            const request = journals.put(entry);  
-            
-            transaction.onsuccess = () => {
-                resolve();
-            }
-
-            transaction.onerror = () => {
-                reject(transaction.error);
-            }
-
-            return request;
-        })
-    }
-
-    async getPlayerJournals(UUID) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("journalObjectStore", "readonly");
-            const store = transaction.objectStore("journalObjectStore");
-            const index = store.index("parent");
-
-            const request = index.getAll(UUID);
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        })
-    }
-
-    async getJournalsFromRange(startDate, endDate) {
-        await this.ready;
-     
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("journalObjectStore", "readonly");
-            const entries = transaction.objectStore("journalObjectStore");
-            const index = entries.index("createdAt")
-            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
-            const results = [];
-     
-            index.openCursor(dateRange).onsuccess = (event) => {
-                const cursor = event.target.result;
-     
-                if (cursor) {
-                    results.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            }
-             
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getRelativePlayerJournals(player) {
-        const dateMS = (new Date()).getTime();
-       
-        const current = await this.getCurrentPlayer();
-        const dateMidnightMS = new Date(current.createdAt).getTime()
-
-        // gets difference in duratino since midnight
-        const msElapsed = dateMS - dateMidnightMS;
-        
-
-        const startDate = player.createdAt;
-        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
-
-        const tasks = await this.getJournalsFromRange(startDate, endDate);
-        
-        return tasks;
-    }
-
-    async getJournals() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("journalObjectStore", "readonly");
-            const journals = transaction.objectStore("journalObjectStore");
-
-            const request = journals.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    /** event methods */
-
-    async getEventsFromRange(startDate, endDate) {
-        await this.ready;
-     
-         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const tasks = transaction.objectStore("eventObjectStore");
-            const index = tasks.index("createdAt")
-            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
-            const results = [];
-    
-            index.openCursor(dateRange).onsuccess = (event) => {
-                const cursor = event.target.result;
-     
-                if (cursor) {
-                    results.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            }
-             
-            transaction.onerror = () => reject(transaction.error);
-         })
-    }
-
-    async getRelativePlayerEvents(player) {
-        const dateMS = (new Date()).getTime();
-       
-        const current = await this.getCurrentPlayer();
-        const dateMidnightMS = new Date(current.createdAt).getTime()
-
-        // gets difference in duratino since midnight
-        const msElapsed = dateMS - dateMidnightMS;
-        
-
-        const startDate = player.createdAt;
-        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
-
-        const tasks = await this.getEventsFromRange(startDate, endDate);
-        
-        return tasks;
-    }
-
-    async getLastExitEvent() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const store = transaction.objectStore("eventObjectStore");
-            
-            const index = store.index("createdAt"); 
-
-            const request = index.openCursor(null, "prev"); 
-
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-
-                if (cursor) {
-                    if (cursor.value.type === "exit") {
-                        resolve(cursor.value); 
-                    } else {
-                        cursor.continue(); 
-                    }
-                } else {
-                    resolve(null);
-                }
-            };
-            request.onerror = (err) => reject(err);
-        });
-    }
-
-    async getEvents() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const events = transaction.objectStore("eventObjectStore");
-
-            const request = events.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getEvents() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const events = transaction.objectStore("eventObjectStore");
-
-            const request = events.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getLastEnterEvent() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const store = transaction.objectStore("eventObjectStore");
-            
-            const index = store.index("createdAt"); 
-
-            const request = index.openCursor(null, "prev"); 
-
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-
-                if (cursor) {
-                    if (cursor.value.type === "enter") {
-                        resolve(cursor.value); 
-                    } else {
-                        cursor.continue(); 
-                    }
-                } else {
-                    resolve(null);
-                }
-            };
-            request.onerror = (err) => reject(err);
-        });
-    }
-
-    async clearEventData() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["eventObjectStore"], "readwrite");
-            const events = transaction.objectStore("eventObjectStore");
-
-            const objectStoreRequest = events.clear();
-
-            objectStoreRequest.onsuccess = (e) => {
-                resolve();
-            }
-
-            objectStoreRequest.onerror = (e) => {
-                reject(objectStoreRequest.error);
-            }
-        })
-    }
-
-    async addEvent(event) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["eventObjectStore"], "readwrite");
-        
-            const events = transaction.objectStore("eventObjectStore");
-            const request = events.put(event);  
-            
-            request.onsuccess = () => {
-                resolve();
-            }
-
-            request.onerror = () => {
-                reject(request.error);
-            }
-        })
-    }
-
-    /** event methods */
-
-    async getTodos() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("todoObjectStore", "readonly");
-            const todos = transaction.objectStore("todoObjectStore");
-
-            const request = todos.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async removeTodoLog(UUID) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
-            const todoObjectStore = transaction.objectStore("todoObjectStore");
-            const request = todoObjectStore.delete(UUID);
-
-            request.onsuccess = () => {
-                resolve();
-            }
-
-            request.onerror = () => {
-                reject(transaction.error);
-            }
-        })
-    }
-
-    async addTodoLog(todo) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
-        
-            const todos = transaction.objectStore("todoObjectStore");
-            const request = todos.put(todo);  
-            
-            request.onsuccess = () => {
-                resolve();
-            }
-
-            request.onerror = () => {
-                reject(request.error);
-            }
-        })
-    }
-
-    async clearTodoData() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["todoObjectStore"], "readwrite");
-            const todos = transaction.objectStore("todoObjectStore");
-
-            const objectStoreRequest = todos.clear();
-
-            objectStoreRequest.onsuccess = (e) => {
-                resolve();
-            }
-
-            objectStoreRequest.onerror = (e) => {
-                reject(objectStoreRequest.error);
-            }
-        })
-    }
-
-    // transaction
-
-    async addTransactionLog(t) {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["transactionObjectStore"], "readwrite");
-        
-            const transactions = transaction.objectStore("transactionObjectStore");
-            const request = transactions.put(t);  
-            
-            request.onsuccess = () => {
-                resolve();
-            }
-
-            request.onerror = () => {
-                reject(request.error);
-            }
-        })
-    }
-
-
-    async getRelativePlayerTransactions(player) {
-        const dateMS = (new Date()).getTime();
-       
-        const current = await this.getCurrentPlayer();
-        const dateMidnightMS = new Date(current.createdAt).getTime()
-
-        // gets difference in duratino since midnight
-        const msElapsed = dateMS - dateMidnightMS;
-        
-
-        const startDate = player.createdAt;
-        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
-
-        const tasks = await this.getTransactionsFromRange(startDate, endDate);
-        
-        return tasks;
-    }
-
-    async getTransactionsFromRange(startDate, endDate) {
-        await this.ready;
-     
-         return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("transactionObjectStore", "readonly");
-            const tasks = transaction.objectStore("transactionObjectStore");
-            const index = tasks.index("completedAt")
-            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
-            const results = [];
-    
-            index.openCursor(dateRange).onsuccess = (event) => {
-                const cursor = event.target.result;
-     
-                if (cursor) {
-                    results.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            }
-             
-            transaction.onerror = () => reject(transaction.error);
-         })
-    }
-
-    async getTransactions() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("transactionObjectStore", "readonly");
-            const objectStore = transaction.objectStore("transactionObjectStore");
-
-            const request = objectStore.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-    async clearTransactionData() {
-        await this.ready;
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(["transactionObjectStore"], "readwrite");
-            const objectStore = transaction.objectStore("transactionObjectStore");
+            const transaction = this.database.transaction(store, "readwrite");
+            const objectStore = transaction.objectStore(store);
 
             const objectStoreRequest = objectStore.clear();
 
@@ -946,6 +321,50 @@ class DatabaseConnection {
                 reject(objectStoreRequest.error);
             }
         })
+    }
+
+    //use sparingly
+    async getAll(store) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(store, "readonly");
+            const objectStore = transaction.objectStore(store);
+
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            transaction.onerror = () => reject(transaction.error);
+        })
+    }
+
+    async getLastEventType(type) {
+        await this.ready;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction("eventObjectStore", "readonly");
+            const objectStore = transaction.objectStore("eventObjectStore");
+            
+            const index = objectStore.index("createdAt"); 
+
+            const request = index.openCursor(null, "prev"); 
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+
+                if (cursor) {
+                    if (cursor.value.type === type) {
+                        resolve(cursor.value); 
+                    } else {
+                        cursor.continue(); 
+                    }
+                } else {
+                    resolve(null);
+                }
+            };
+            request.onerror = (err) => reject(err);
+        });
     }
 }
 

@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { AppContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
 import './Profile.css';
+import { STORES } from '../../utils/Constants.js'
 import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
@@ -17,14 +18,14 @@ function Profile() {
   useEffect(() => {
     //calculates data about player and creates new object with calculations
     const getPlayer = async () => {
-    const p = await databaseConnection.getPlayer(index);
+    const p = await databaseConnection.get(STORES.player, index);
 
     const history = [];
 
-    const tasks = await databaseConnection.getRelativePlayerTasks(p);
-    const journals = await databaseConnection.getRelativePlayerJournals(p);
-    const events = await databaseConnection.getRelativePlayerEvents(p);
-    const transactions = await databaseConnection.getRelativePlayerTransactions(p);
+    const tasks = await databaseConnection.getRelativePlayerStore(STORES.task, p);
+    const journals = await databaseConnection.getRelativePlayerStore(STORES.journal, p);
+    const events = await databaseConnection.getRelativePlayerStore(STORES.event, p);
+    const transactions = await databaseConnection.getRelativePlayerStore(STORES.transaction, p);
 
     //maybe move description to a function processed when called vs making it an attribute  
 
