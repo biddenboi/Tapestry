@@ -154,7 +154,9 @@ class DatabaseConnection {
                 transactions: transactions,
             }
 
-            const json = JSON.stringify(data, null, 2);
+            const replacer = (key, value) => (value === null || value === '') ? undefined : value;
+            const json = JSON.stringify(data, replacer);
+
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
