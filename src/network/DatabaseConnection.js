@@ -1,5 +1,5 @@
 import { DATABASE_VERSION, STORES } from '../utils/Constants.js'
-import { getMidnightOfDate, formatDateAsLocalString, addDurationToDate, getMidnightInUTC } from '../utils/Helpers/Time.js';
+import { addDurationToDate } from '../utils/Helpers/Time.js';
 
 
 class DatabaseConnection {

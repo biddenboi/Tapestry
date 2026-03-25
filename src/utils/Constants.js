@@ -14,3 +14,9 @@ export const STORES = {
     todo: "todoObjectStore",
     transaction: "transactionObjectStore",
 }
+
+export const EVENT = {
+    wake: "ENTER",
+    sleep: "EXIT",
+    end_work: "END"
+}
