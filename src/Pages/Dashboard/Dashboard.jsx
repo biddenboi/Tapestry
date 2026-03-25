@@ -414,11 +414,14 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           <div className="task-session-buttons">
             <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
             <button>Complete</button>
-            {/**<button type="button" onClick={handleBrokeFocus}>Broke Focus</button>*/}
-            <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
 
             {/**temporary button just to hold off on breaks until shop is implemented */}
             <button type="button" onClick={handleLogTransaction}>Zero Log</button>
+
+            {/**<button type="button" onClick={handleBrokeFocus}>Broke Focus</button>*/}
+            <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
+
+            
           </div>
         </div> : 
         <div className="task-planning-buttons">
