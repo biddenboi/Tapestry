@@ -27,8 +27,8 @@ function Timer({ startTime, duration, buffer }) {
 
   function getTimerComponent() {
     //convert for concatenation
-    const safeDuration = Number(duration) * 60000;
-    const safeBuffer = Number(buffer) * 60000;
+    const safeDuration = duration ? Number(duration) * 60000 : 0;
+    const safeBuffer = buffer ? Number(buffer) * 60000 : 0;
     const totalSessionDuration = safeDuration + safeBuffer;
 
     if (safeDuration - elapsedTime > 0) {
