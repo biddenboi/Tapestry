@@ -116,6 +116,7 @@ class DatabaseConnection {
             const players = await this.getAll(STORES.player);
             const journals = await this.getAll(STORES.journal);
             const events = await this.getAll(STORES.event);
+            const shop = await this.getAll(STORES.shop);
             const todos = await this.getAll(STORES.todo);
             const transactions = await this.getAll(STORES.transaction);
 
@@ -125,6 +126,7 @@ class DatabaseConnection {
                 journals: journals,
                 events: events,
                 todos: todos,
+                shop, shop,
                 transactions: transactions,
             }
 
@@ -184,6 +186,31 @@ class DatabaseConnection {
         const data = await this.getStoreFromRange(store, startDate, endDate);
         
         return data;
+    }
+
+    async getStoreFromRange(store, startDate, endDate) {
+        await this.ready;
+     
+         return new Promise((resolve, reject) => {
+            const transaction = this.database.transaction(store, "readonly");
+            const objectStore = transaction.objectStore(store);
+            const index = objectStore.index("createdAt")
+            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
+            const results = [];
+     
+            index.openCursor(dateRange).onsuccess = (event) => {
+                const cursor = event.target.result;
+     
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            }
+             
+            transaction.onerror = () => reject(transaction.error);
+         })
     }
 
     /**

@@ -30,7 +30,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   useEffect(() => {
     const reload = async () => {
-      const players = await databaseConnection.get(STORES.player);
+      const players = await databaseConnection.getAll(STORES.player);
 
       const DataPromises = players.map(async (player) => {
         const tasks = await databaseConnection.getRelativePlayerStore(STORES.player, player);
@@ -50,7 +50,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       results.sort((a, b) => b.points - a.points);
       setPlayerPoints(results);
       
-      const todoArray = await databaseConnection.get(STORES.todo);
+      const todoArray = await databaseConnection.getAll(STORES.todo);
       setTodos(todoArray);
 
       //check if nextTodo has not been used yet
@@ -259,7 +259,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.add(STORES.todo, todo);
 
     //potentially comment out see if updating state still occurs
-    const updatedTodos = await databaseConnection.get(STORES.todo);
+    const updatedTodos = await databaseConnection.getAll(STORES.todo);
     setTodos(updatedTodos);
 
     updateStates(false, {});
@@ -445,7 +445,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await databaseConnection.remove(STORES.todo, todo.UUID); 
 
-    const todoArray = await databaseConnection.get(STORES.todo);
+    const todoArray = await databaseConnection.getAll(STORES.todo);
     setTodos(todoArray);
   };
 
@@ -469,7 +469,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     await databaseConnection.remove(STORES.todo, nextTodo.UUID); 
     setNextTodo(null);
 
-    const todoArray = await databaseConnection.get(STORES.todo);
+    const todoArray = await databaseConnection.getAll(STORES.todo);
     setTodos(todoArray);
   }
 

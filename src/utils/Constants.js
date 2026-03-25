@@ -16,7 +16,7 @@ export const STORES = {
 }
 
 export const EVENT = {
-    wake: "ENTER",
-    sleep: "EXIT",
-    end_work: "END"
+    wake: "enter",
+    sleep: "exit",
+    end_work: "end-work"
 }

@@ -3,6 +3,7 @@ import { useContext, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import './JournalPopup.css'
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import { STORES } from '../../utils/Constants'
 
 export default NiceModal.create(({title}) => {
     const databaseConnection = useContext(AppContext).databaseConnection;

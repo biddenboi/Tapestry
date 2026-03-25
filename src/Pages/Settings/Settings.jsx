@@ -1,6 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../../App';
 import { v4 as uuid } from "uuid";
+import { STORES } from '../../utils/Constants.js'
 
 import './Settings.css'
 
