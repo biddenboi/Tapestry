@@ -2,7 +2,6 @@ import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
-import { Link } from 'react-router-dom';
 import { msToPoints } from '../../utils/Helpers/Time.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
@@ -10,6 +9,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
+import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -18,7 +18,7 @@ import { getCurrentLocation } from '../../utils/Helpers/Location.js'
 */
 function Dashboard({ isTaskSession, setIsTaskSession }) {
   /*Internal Data*/
-  const [playerPoints, setPlayerPoints] = useState([]);
+  
   const [todos, setTodos] = useState([]);
   const [nextTodo, setNextTodo] = useState(null);
 
@@ -30,25 +30,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   useEffect(() => {
     const reload = async () => {
-      const players = await databaseConnection.getAll(STORES.player);
-
-      const DataPromises = players.map(async (player) => {
-        const tasks = await databaseConnection.getRelativePlayerStore(STORES.player, player);
-        
-        let sum = 0;
-        tasks.forEach(task => {
-          sum += (task.points || 0);
-        });
-
-        return {
-          ...player,
-          points: sum,
-        };
-      });
-
-      const results = await Promise.all(DataPromises);
-      results.sort((a, b) => b.points - a.points);
-      setPlayerPoints(results);
       
       const todoArray = await databaseConnection.getAll(STORES.todo);
       setTodos(todoArray);
@@ -280,37 +261,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     updateStates(false, draftTask);
   }
 
-
-  function RankListComponent() {
-    return <div className="rank-list">
-      <table className="rank-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Username</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            playerPoints.map((element, index) => (
-              <tr key={element.createdAt}>
-                <td>{"#" + (index + 1)}</td>
-                <td>
-                  <Link 
-                    to={`/profile/${element.UUID}`}
-                    className={isTaskSession ? "disabled-link" : ""}>
-                    {element.username}
-                  </Link>
-                </td>
-                <td>{element.points}</td>
-              </tr>))
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-
   const handleEndWorkDay = async () => {
     const currentPlayer = await databaseConnection.getCurrentPlayer();
     endWorkDay(databaseConnection, currentPlayer)
@@ -388,9 +338,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           <>
             <p>Plan</p>
             <span>
-              <p>
-                <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
-              </p>
+              <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
             </span>
           </>
           : ""
