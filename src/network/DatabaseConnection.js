@@ -13,95 +13,70 @@ class DatabaseConnection {
     this.database = event.target.result;
     const oldVersion = event.oldVersion;
 
-    if (oldVersion > 0 && oldVersion < 9) {
+    if (oldVersion > 0 && oldVersion < 1) {
         console.warn("Database version too old. Please clear your data and refresh.");
     }
 
+    if (DATABASE_VERSION >= 1 && oldVersion < 1) {
+        const tasks = this.database.createObjectStore(STORES.task, { keyPath: "UUID" });
+        tasks.createIndex("createdAt", "createdAt", { unique: false });
+        tasks.createIndex("duration", "duration", { unique: false });
+        tasks.createIndex("parent", "parent", { unique: false });
+        tasks.createIndex("efficiency", "efficiency", { unique: false });
+        tasks.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
+        tasks.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
+        tasks.createIndex("location", "location", { unique: false });
+        tasks.createIndex("points", "points", { unique: false });
+        tasks.createIndex("taskName", "taskName", { unique: false });
+        tasks.createIndex("completedAt", "completedAt", { unique: false });
 
-    if (oldVersion < 10) {
-        const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "UUID" });
-        playerStore.createIndex("username", "username", { unique: false });
-        playerStore.createIndex("createdAt", "createdAt", { unique: false });
-        playerStore.createIndex("description", "description", { unique: false });
+        const journals = this.database.createObjectStore(STORES.journal, { keyPath: "UUID"});
+        journals.createIndex("createdAt", "createdAt", { unique: false });
+        journals.createIndex("title", "title", { unique: false });
+        journals.createIndex("entry", "entry", { unique: false });
+        journals.createIndex("parent", "parent", { unique: false });
 
-        const taskStore = this.database.createObjectStore("taskObjectStore", { keyPath: "UUID" });
-        //clean up and delete some keys
-        taskStore.createIndex("createdAt", "createdAt", { unique: false });
-        taskStore.createIndex("distractions", "distractions", { unique: false });
-        taskStore.createIndex("duration", "duration", { unique: false });
-        taskStore.createIndex("parent", "parent", { unique: false });
-        taskStore.createIndex("efficiency", "efficiency", { unique: false });
-        taskStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
-        taskStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-        taskStore.createIndex("location", "location", { unique: false });
-        taskStore.createIndex("points", "points", { unique: false });
-        taskStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
-        taskStore.createIndex("similarity", "similarity", { unique: false });
-        taskStore.createIndex("taskName", "taskName", { unique: false });
-        taskStore.createIndex("timeOfStart", "timeOfStart", { unique: false });
-        taskStore.createIndex("completedAt", "completedAt", { unique: false });
-        
-        const journal = this.database.createObjectStore("journalObjectStore", { keyPath: "UUID"});
-        journal.createIndex("createdAt", "createdAt", { unique: false });
-        journal.createIndex("title", "title", { unique: false });
-        journal.createIndex("entry", "entry", { unique: false });
-        journal.createIndex("parent", "parent", { unique: false });
-    }
+        const players = this.database.createObjectStore(STORES.player, { keyPath: "UUID" });
+        players.createIndex("username", "username", { unique: false });
+        players.createIndex("createdAt", "createdAt", { unique: false });
+        players.createIndex("description", "description", { unique: false });
+        players.createIndex("tokens", "tokens", { unique:false })
+        players.createIndex("wakeTime", "wakeTime", { unique:false })
+        players.createIndex("sleepTime", "sleepTime", { unique:false })
 
-    if (DATABASE_VERSION >= 11 && oldVersion < 11) {
-        const transaction = event.target.transaction
-        const playerStore = transaction.objectStore("playerObjectStore")
-        playerStore.createIndex("tokens", "tokens", { unique:false })
-        playerStore.createIndex("wakeTime", "wakeTime", { unique:false })
-        playerStore.createIndex("sleepTime", "sleepTime", { unique:false })
-    }
+        const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });
+        events.createIndex("type", "type", { unique:false })
+        events.createIndex("description", "description", { unique:false })
+        events.createIndex("createdAt", "createdAt", { unique:false })
+        events.createIndex("UUID", "UUID", { unique:false })
+        events.createIndex("parent", "parent", { unique:false })
 
-    if (DATABASE_VERSION >= 12 && oldVersion < 12) {
-        const eventObjectStore = this.database.createObjectStore("eventObjectStore", { keyPath: "UUID" });
-        eventObjectStore.createIndex("type", "type", { unique:false })
-        eventObjectStore.createIndex("description", "description", { unique:false })
-        eventObjectStore.createIndex("createdAt", "createdAt", { unique:false })
-        eventObjectStore.createIndex("UUID", "UUID", { unique:false })
-        eventObjectStore.createIndex("parent", "parent", { unique:false })
-    }
+        const shops = this.database.createObjectStore(STORES.shop, { keyPath: "UUID" });
+        shops.createIndex("name", "name", { unique:false })
+        shops.createIndex("description", "description", { unique:false })
+        shops.createIndex("type", "type", { unique:false })
+       
+        const todos = this.database.createObjectStore(STORES.todo, { keyPath: "UUID" });
+        todos.createIndex("difficulty", "difficulty", { unique: false });
+        todos.createIndex("dueDate", "dueDate", { unique: false });
+        todos.createIndex("createdAt", "createdAt", { unique: false });
+        todos.createIndex("distractions", "distractions", { unique: false });
+        todos.createIndex("parent", "parent", { unique: false });
+        todos.createIndex("efficiency", "efficiency", { unique: false });
+        todos.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
+        todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
+        todos.createIndex("location", "location", { unique: false });
+        todos.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
+        todos.createIndex("similarity", "similarity", { unique: false });
+        todos.createIndex("taskName", "taskName", { unique: false });
 
-    if (DATABASE_VERSION >= 13 && oldVersion < 13) {
-        const shopObjectStore = this.database.createObjectStore("shopObjectStore", { keyPath: "UUID" });
-        shopObjectStore.createIndex("name", "name", { unique:false })
-        shopObjectStore.createIndex("description", "description", { unique:false })
-
-        //of quantity or time
-        shopObjectStore.createIndex("type", "type", { unique:false })
-    }
-
-    if (DATABASE_VERSION >= 14 && oldVersion < 14) {
-        const todoObjectStore = this.database.createObjectStore("todoObjectStore", { keyPath: "UUID" });
-        todoObjectStore.createIndex("createdAt", "createdAt", { unique: false });
-        todoObjectStore.createIndex("distractions", "distractions", { unique: false });
-        todoObjectStore.createIndex("parent", "parent", { unique: false });
-        todoObjectStore.createIndex("efficiency", "efficiency", { unique: false });
-        todoObjectStore.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
-        todoObjectStore.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-        todoObjectStore.createIndex("location", "location", { unique: false });
-        todoObjectStore.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
-        todoObjectStore.createIndex("similarity", "similarity", { unique: false });
-        todoObjectStore.createIndex("taskName", "taskName", { unique: false });
-    }
-    if (DATABASE_VERSION >= 15 && oldVersion < 15) {
-        const transaction = event.target.transaction;
-        const todoObjectStore = transaction.objectStore("todoObjectStore");
-
-        todoObjectStore.createIndex("difficulty", "difficulty", { unique: false });
-        todoObjectStore.createIndex("dueDate", "dueDate", { unique: false });
-    }
-    if (DATABASE_VERSION >= 16 && oldVersion < 16) {
-        const transactionObjectStore = this.database.createObjectStore("transactionObjectStore", { keyPath: "UUID" });
-        transactionObjectStore.createIndex("name", "name", { unique: false });
-        transactionObjectStore.createIndex("createdAt", "createdAt", { unique: false });
-        transactionObjectStore.createIndex("completedAt", "completedAt", { unique: false });
-        transactionObjectStore.createIndex("cost", "cost", { unique: false });
-        transactionObjectStore.createIndex("duration", "duration", { unique: false });
-        transactionObjectStore.createIndex("location", "location", { unique: false });
+        const transactions = this.database.createObjectStore(STORES.transaction, { keyPath: "UUID" });
+        transactions.createIndex("name", "name", { unique: false });
+        transactions.createIndex("createdAt", "createdAt", { unique: false });
+        transactions.createIndex("completedAt", "completedAt", { unique: false });
+        transactions.createIndex("cost", "cost", { unique: false });
+        transactions.createIndex("duration", "duration", { unique: false });
+        transactions.createIndex("location", "location", { unique: false });
     }
 }
     constructor() {
