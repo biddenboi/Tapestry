@@ -35,7 +35,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       //check if nextTodo has not been used yet
       if (nextTodo != null || todoArray.length === 0) return;
       setNextTodo(getMostUrgent(todoArray));
-      
+
     }
     reload();
   }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
@@ -371,7 +371,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     return <div className="todo-creation-menu">
       <p>Todo List</p>
       <ul>
-        {//REVIEW
+        {
         todos.map((element) => ( 
           <li
             key={element.createdAt}

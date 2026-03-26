@@ -349,7 +349,7 @@ class DatabaseConnection {
         })
     }
 
-    async getLastEventType(type) {
+    async getLastEventType(types) {
         await this.ready;
 
         return new Promise((resolve, reject) => {
@@ -364,7 +364,10 @@ class DatabaseConnection {
                 const cursor = event.target.result;
 
                 if (cursor) {
-                    if (cursor.value.type === type) {
+                    const type = cursor.value.type;
+                    const matches = Array.isArray(types) ? types.includes(type) : types == type;
+
+                    if (matches) {
                         resolve(cursor.value); 
                     } else {
                         cursor.continue(); 
