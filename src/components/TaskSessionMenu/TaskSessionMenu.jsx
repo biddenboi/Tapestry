@@ -1,3 +1,5 @@
+import './TaskSessionMenu.css'
+
 import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
@@ -140,7 +142,7 @@ export default function TaskSessionMenu() {
     };
 
     return <>
-      <form action="" className="task-session-menu"
+      <form action="" className="task-creation-menu"
         onSubmit={handleTaskSubmit}>
           <div className="task-session-description">
           <div className="task-titlebar">
