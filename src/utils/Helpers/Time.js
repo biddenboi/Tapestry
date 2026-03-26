@@ -45,6 +45,7 @@ export function getTimeAsString(date) {
     hours + ":" + minutes + " am";
 }
 
+
 export function getDateAsString(date) {
     const d = date.split('T')[0];
     return d;

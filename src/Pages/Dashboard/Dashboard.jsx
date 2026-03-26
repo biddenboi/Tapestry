@@ -9,6 +9,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
+import { getTaskDuration, getTaskPoints } from '../../utils/Helpers/Tasks.js'
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 
 /** 
@@ -101,37 +102,28 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     setDraftTask(draftTask);
   }
 
-  const getTaskDuration = () => {
-    return draftTask.createdAt ? Date.now() - new Date(draftTask.createdAt).getTime() : 0;
-  }
-
-  const getTaskPoints = () => {
-    //might remove and replace its calls with just msToPoints(getTaskDuration());
-    const duration = getTaskDuration();
-    return Math.floor(msToPoints(duration));
-  }
-
   //task submission, large chunk of code is duplicate see if we can merge
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
 
     const parent = await databaseConnection.getCurrentPlayer();
-   
-    //temporary, creates token every minute
-    databaseConnection.add(STORES.player, {
-      ...parent,
-      tokens: Math.floor(parent.tokens + (msToPoints(getTaskDuration())) / 6)
-    })
 
     const task = {
       ...draftTask,
-      duration: getTaskDuration(),  
       points: Math.floor(msToPoints(getTaskDuration())),
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
       location: null
     }
+
+    const duration = getTaskDuration(task);
+
+        //temporary, creates token every minute
+    databaseConnection.add(STORES.player, {
+      ...parent,
+      tokens: Math.floor(parent.tokens + (msToPoints(duration)) / 6)
+    })
 
     await databaseConnection.add(STORES.task, task);
 
@@ -161,7 +153,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     
     const task = {
       ...draftTask,
-      duration: duration,  
       points: Math.floor(msToPoints(duration)),
       UUID: uuid(),
       parent: parent.UUID,
@@ -194,14 +185,12 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleLogTransaction = async (e) => {
     e.preventDefault();
 
-    const duration = getTaskDuration();
     const parent = await databaseConnection.getCurrentPlayer();
     const transactionId = uuid();
 
     const transaction = {
       name: draftTask.taskName,
       createdAt: draftTask.createdAt,
-      duration,
       UUID: transactionId,
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
