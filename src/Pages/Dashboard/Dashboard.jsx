@@ -23,7 +23,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [todos, setTodos] = useState([]);
   const [nextTodo, setNextTodo] = useState(null);
 
-  const [draftTask, setDraftTask] = useState({});
+  const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
 
   const databaseConnection = useContext(AppContext).databaseConnection;
 
@@ -38,20 +38,24 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     }
     reload();
-  }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
+  }, [databaseConnection, useContext(AppContext).timestamp, activeTask])
 
   /* Helper Methods */
 
   /**
    * @param {boolean} taskSession
    * @param {number} durationPenalty
-   * @param {object} draftTask
+   * @param {object} activeTask
    */
-  const updateStates = (taskSession, draftTask) => {
+  const updateStates = (taskSession, activeTask) => {
     //updating these states typically happen concurrently (on switch between isTaskSession)
     setIsTaskSession(taskSession); 
-    setDraftTask(draftTask);
+    setActiveTask(activeTask);
   }
+
+  useEffect(() => {
+
+  }, [activeTask])
 
   //task submission, large chunk of code is duplicate see if we can merge
   const handleTaskSubmit = async (e) => {
@@ -60,7 +64,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const parent = await databaseConnection.getCurrentPlayer();
 
     const task = {
-      ...draftTask,
+      ...activeTask,
       points: null,
       UUID: uuid(),
       parent: parent.UUID,
@@ -100,7 +104,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const task = {
-      ...draftTask,
+      ...activeTask,
       points: null,
       UUID: uuid(),
       parent: parent.UUID,
@@ -111,7 +115,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const duration = getTaskDuration(task);
     task.points = Math.floor(msToPoints(getTaskDuration(task)));
 
-    draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
+    activeTask.estimatedDuration -= Math.floor(duration/MINUTE);
 
     //temporary, creates token every minute
     databaseConnection.add(STORES.player, {
@@ -121,7 +125,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await databaseConnection.add(STORES.task, task);
 
-    updateStates(false, draftTask)
+    updateStates(false, activeTask)
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
@@ -146,8 +150,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const transactionId = uuid();
 
     const transaction = {
-      name: draftTask.taskName,
-      createdAt: draftTask.createdAt,
+      name: activeTask.taskName,
+      createdAt: activeTask.createdAt,
       UUID: transactionId,
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
@@ -177,7 +181,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const todo = {
-      ...draftTask,
+      ...activeTask,
       createdAt: new Date().toISOString(),
       parent: parent.UUID,
       UUID: uuid(),
@@ -194,7 +198,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleStartTask = () => {
     const taskData = {
-      ...draftTask,
+      ...activeTask,
       createdAt: new Date().toISOString(),
       localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
     }
@@ -204,7 +208,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    updateStates(false, draftTask);
+    updateStates(false, activeTask);
   }
 
   const handleEndWorkDay = async () => {
@@ -229,44 +233,44 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
             <label>
               Task Name:
               <input type="text" name="taskName" 
-              value={draftTask.taskName || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, taskName: e.target.value }))}/>
+              value={activeTask.taskName || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, taskName: e.target.value }))}/>
             </label>
             <label>
               Why did you pick this task?
               <textarea name="reasonToSelect"
-              value={draftTask.reasonToSelect || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
+              value={activeTask.reasonToSelect || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
             </label>
             <label>
               How will you use the time?
               <textarea name="efficiency"
-              value={draftTask.efficiency || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
+              value={activeTask.efficiency || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
             </label>
             <label>
               Duration (min):
               <input type="number" name="estimatedDuration"
-              value={draftTask.estimatedDuration || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
+              value={activeTask.estimatedDuration || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
             </label>
             <label>
               Buffer (min):
               <input type="number" name="estimatedBuffer"
-              value={draftTask.estimatedBuffer || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
+              value={activeTask.estimatedBuffer || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
             </label>
             <label>
               Due Date:
               <input type="date" name="dueDate"
-              value={draftTask.dueDate || ""}
-              onChange={e => setDraftTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
+              value={activeTask.dueDate || ""}
+              onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
             </label>
             <label>
               Difficulty:
               <select name="difficulty"
-                value={draftTask.difficulty || ""}
-                onChange={e => setDraftTask(prev => ({ ...prev, difficulty: e.target.value }))}>
+                value={activeTask.difficulty || ""}
+                onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}>
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>
@@ -277,14 +281,14 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }else {
       return <div className="task-session-description">
         <div className="task-titlebar">
-          <p>{draftTask.taskName}</p>
-          <p>{draftTask.reasonToSelect}</p>
+          <p>{activeTask.taskName}</p>
+          <p>{activeTask.reasonToSelect}</p>
         </div>
-        {draftTask.efficiency ? 
+        {activeTask.efficiency ? 
           <>
             <p>Plan</p>
             <span>
-              <Markdown remarkPlugins={[remarkWikiLink]}>{draftTask.efficiency}</Markdown>
+              <Markdown remarkPlugins={[remarkWikiLink]}>{activeTask.efficiency}</Markdown>
             </span>
           </>
           : ""
@@ -298,7 +302,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       {
         isTaskSession ? 
         <div className="task-session-container">
-          <Timer startTime={new Date(draftTask.localCreatedAt).getTime()} duration={draftTask.estimatedDuration} buffer={draftTask.estimatedBuffer}/> 
+          <Timer startTime={new Date(activeTask.localCreatedAt).getTime()} duration={activeTask.estimatedDuration} buffer={activeTask.estimatedBuffer}/> 
           <div className="task-session-buttons">
             <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
             <button>Complete</button>
@@ -313,8 +317,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
           </div>
         </div> : 
         <div className="task-planning-buttons">
-          <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={draftTask.taskName ? false : true}>Start</button>
-          <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={draftTask.taskName ? false : true}>Store</button>
+          <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button>
+          <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={activeTask.taskName ? false : true}>Store</button>
         </div>
       }
     </form>
@@ -323,7 +327,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleSelectTodo = async (todo) => {
     //review
     
-    setDraftTask(prev => ({
+    setActiveTask(prev => ({
       ...prev,
       taskName: todo.taskName,
       location: todo.location,
@@ -346,7 +350,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleGetNextTodo = async () => {
         //review
     
-    setDraftTask(prev => ({
+    setActiveTask(prev => ({
       ...prev,
       taskName: nextTodo.taskName,
       location: nextTodo.location,

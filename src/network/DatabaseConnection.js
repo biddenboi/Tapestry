@@ -78,14 +78,6 @@ class DatabaseConnection {
         transactions.createIndex("duration", "duration", { unique: false });
         transactions.createIndex("location", "location", { unique: false });
     }
-
-    if (DATABASE_VERSION >= 2 && oldVersion < 2) {
-        const transaction = event.target.transaction;
-        const players = transaction.objectStore(STORES.player);
-        
-        //replacement for draftTask to allow component seperation between session, creation, and todos.
-        players.createIndex("activeTask", "activeTask", { unique: false });
-    }
 }
     constructor() {
         if (!this.isCompatable()) {

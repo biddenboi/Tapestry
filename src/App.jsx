@@ -26,13 +26,16 @@ function App() {
 
   //global updater useInterval
   const [timestamp, setTimestamp] = useState(Date.now());
+  const [activeTask, setActiveTask] = useState({});
   
   const databaseConnection = useMemo(() => new DatabaseConnection(), []);
 
   const contextValue = useMemo(() => ({
+    //context value sends update prompt when data within changes, only changes on timestamp or active
     databaseConnection: databaseConnection,
     timestamp: timestamp,
-  }), [databaseConnection, timestamp])
+    activeTask: [activeTask, setActiveTask]
+  }), [timestamp, activeTask])
 
   // calls createPlayer on app load, if player does not exist then it creates a new profile.
   useEffect(() => {
