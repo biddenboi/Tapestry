@@ -6,6 +6,7 @@ import { STORES } from '../../utils/Constants.js'
 import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import { getTaskDuration, getTaskPoints } from '../../utils/Helpers/Tasks.js'
 
 function Profile() {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -31,7 +32,8 @@ function Profile() {
 
     let sum = 0;
     tasks.forEach(task => {
-        if (task.duration == undefined) return;
+        //necessary if condition?
+        if (getTaskDuration(task) == undefined) return;
         const description = task.taskName;
 
         const t = {

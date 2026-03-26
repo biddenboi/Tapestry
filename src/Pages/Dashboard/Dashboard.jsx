@@ -9,7 +9,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
-import { getTaskDuration, getTaskPoints } from '../../utils/Helpers/Tasks.js'
+import { getTaskDuration } from '../../utils/Helpers/Tasks.js'
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 
 /** 
