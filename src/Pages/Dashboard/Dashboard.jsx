@@ -9,7 +9,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
-import { getTaskDuration } from '../../utils/Helpers/Tasks.js'
+import { getMostUrgent, getTaskDuration } from '../../utils/Helpers/Tasks.js'
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 
 /** 
@@ -29,60 +29,13 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   useEffect(() => {
     const reload = async () => {
-      
       const todoArray = await databaseConnection.getAll(STORES.todo);
       setTodos(todoArray);
 
       //check if nextTodo has not been used yet
       if (nextTodo != null || todoArray.length === 0) return;
-
-      //creating object enum to handle sorting
-      const difficultyOrder = { hard: 3, medium: 2, easy: 1};
-
-      //SVT returns YYYY-MM-DD
-      const todayStr = new Date().toLocaleDateString('sv');
-      const dueTodayTasks = todoArray.filter(t => t.dueDate === todayStr);
-
-      if (dueTodayTasks.length > 0) {
-        dueTodayTasks.sort((a, b) => (difficultyOrder[b.difficulty] || 0) - (difficultyOrder[a.difficulty] || 0));
-        setNextTodo(dueTodayTasks[0]);
-      } else {
-        const today = new Date();
-
-        //maybe remove this line so more granular time controls are possible.
-        today.setHours(0, 0, 0, 0);
-
-        const weights = todoArray.map(t => {
-          const dur = parseFloat(t.estimatedDuration) || 0;
-          const buf = parseFloat(t.estimatedBuffer) || 0;
-          const due = new Date(t.dueDate + 'T00:00:00');
-
-          const daysUntilDue = Math.max((due - today) / DAY, 1);
-          return (dur + buf) / daysUntilDue;
-        });
-
-        const total = weights.reduce((sum, w) => sum + w, 0);
-
-        if (total === 0) {
-          setNextTodo(todoArray[0]);
-          return;
-        }
-
-        const scaled = weights.map(w => (w / total) * 100);
-        const rng = 1 + Math.random() * 99;
-        let remaining = rng;
-        let selected = todoArray[todoArray.length - 1];
-
-        for (let i = 0; i < scaled.length; i++) {
-          remaining -= scaled[i];
-          if (remaining <= 0) {
-            selected = todoArray[i];
-            break;
-          }
-        }
-
-        setNextTodo(selected);
-      }
+      setNextTodo(getMostUrgent(todoArray));
+      
     }
     reload();
   }, [databaseConnection, useContext(AppContext).timestamp, isTaskSession])
