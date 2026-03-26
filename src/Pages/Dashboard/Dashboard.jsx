@@ -23,8 +23,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [todos, setTodos] = useState([]);
   const [nextTodo, setNextTodo] = useState(null);
 
-  //convert duration penalty into an object
-  //const [durationPenalty, setDurationPenalty] = useState(null);
   const [draftTask, setDraftTask] = useState({});
 
   const databaseConnection = useContext(AppContext).databaseConnection;
@@ -110,7 +108,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     const task = {
       ...draftTask,
-      points: Math.floor(msToPoints(getTaskDuration())),
+      points: null,
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
@@ -118,8 +116,9 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     }
 
     const duration = getTaskDuration(task);
-
-        //temporary, creates token every minute
+    task.points = Math.floor(msToPoints(getTaskDuration(task)));
+    
+    //temporary, creates token every minute
     databaseConnection.add(STORES.player, {
       ...parent,
       tokens: Math.floor(parent.tokens + (msToPoints(duration)) / 6)
@@ -147,20 +146,25 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const handleTaskSubmitAndSave = async (e) => {
     e.preventDefault();
 
-    const duration = getTaskDuration();
-
-    const parent = await databaseConnection.getCurrentPlayer();
-    
     const task = {
       ...draftTask,
-      points: Math.floor(msToPoints(duration)),
+      points: null,
       UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
-      location: null,
+      location: null
     }
 
+    const duration = getTaskDuration(task);
+    task.points = Math.floor(msToPoints(getTaskDuration(task)));
+
     draftTask.estimatedDuration -= Math.floor(duration/MINUTE);
+
+    //temporary, creates token every minute
+    databaseConnection.add(STORES.player, {
+      ...parent,
+      tokens: Math.floor(parent.tokens + (msToPoints(duration)) / 6)
+    })
 
     await databaseConnection.add(STORES.task, task);
 
