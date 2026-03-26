@@ -10,7 +10,6 @@ import DatabaseConnection from "./network/DatabaseConnection";
 import { DAY, EVENT, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
-import { v4 as uuid } from "uuid";
 import NiceModal from '@ebay/nice-modal-react';
 import { startDay, endDay } from './utils/Helpers/Events';
 
