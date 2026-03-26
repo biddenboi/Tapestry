@@ -23,6 +23,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
   const [todos, setTodos] = useState([]);
   const [nextTodo, setNextTodo] = useState(null);
 
+  //via reference
   const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
 
   const databaseConnection = useContext(AppContext).databaseConnection;
@@ -102,6 +103,8 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   const handleTaskSubmitAndSave = async (e) => {
     e.preventDefault();
+
+    const parent = await databaseConnection.getCurrentPlayer();
 
     const task = {
       ...activeTask,
