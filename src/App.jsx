@@ -21,7 +21,6 @@ function App() {
   /*Internal Data*/
   const nav = useNavigate(); 
 
-  const [isTaskSession, setIsTaskSession] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState({});
 
   //global updater useInterval
@@ -87,13 +86,13 @@ function App() {
 
   //navigating across routes
   const navigate = (route) => {
-    if (!isTaskSession) {
+    if (!activeTask.createdAt) {
       nav(route);
     }
   }
   
   return <>
-    <div className={isTaskSession ? "navigation-bar task-in-session" : "navigation-bar"}>
+    <div className={activeTask.createdAt ? "navigation-bar task-in-session" : "navigation-bar"}>
       <a onClick={() => navigate("/")}>Dashboard</a>
       <a onClick={() => navigate("/events")}>Events</a>
       <a onClick={() => navigate("/shop")}>Shop</a>
@@ -107,7 +106,7 @@ function App() {
         <Routes>
           <Route 
             path='/' 
-            element={<Dashboard isTaskSession={isTaskSession} setIsTaskSession={setIsTaskSession}
+            element={<Dashboard
             ></Dashboard>}/>
           <Route path='/events' element={<Events></Events>}/>
           <Route path='/shop' element={<Shop></Shop>}/>

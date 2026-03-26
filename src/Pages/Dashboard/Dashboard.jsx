@@ -1,5 +1,5 @@
 import './Dashboard.css'
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, act } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
 import { msToPoints } from '../../utils/Helpers/Time.js';
@@ -14,10 +14,8 @@ import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
-  * @param {boolean} isTaskSession
-  * @param {function} setIsTaskSession
 */
-function Dashboard({ isTaskSession, setIsTaskSession }) {
+function Dashboard() {
   /*Internal Data*/
   
   const [todos, setTodos] = useState([]);
@@ -48,11 +46,6 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
    * @param {number} durationPenalty
    * @param {object} activeTask
    */
-  const updateStates = (taskSession, activeTask) => {
-    //updating these states typically happen concurrently (on switch between isTaskSession)
-    setIsTaskSession(taskSession); 
-    setActiveTask(activeTask);
-  }
 
   useEffect(() => {
 
@@ -84,15 +77,15 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await databaseConnection.add(STORES.task, task);
 
-    updateStates(false, {})
+    setActiveTask({});
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
       .then(async (location) => {
         if (!location) return;
 
-        await databaseConnection.add(STORES.transaction, {
-          ...transaction,
+        await databaseConnection.add(STORES.task, {
+          ...task,
           location,
         });
       })
@@ -128,15 +121,15 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await databaseConnection.add(STORES.task, task);
 
-    updateStates(false, activeTask)
+    setActiveTask({...activeTask, createdAt: null});
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
       .then(async (location) => {
         if (!location) return;
 
-        await databaseConnection.add(STORES.transaction, {
-          ...transaction,
+        await databaseConnection.add(STORES.task, {
+          ...task,
           location,
         });
       })
@@ -150,12 +143,11 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     e.preventDefault();
 
     const parent = await databaseConnection.getCurrentPlayer();
-    const transactionId = uuid();
 
     const transaction = {
       name: activeTask.taskName,
       createdAt: activeTask.createdAt,
-      UUID: transactionId,
+      UUID: uuid(),
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
       location: null,
@@ -163,7 +155,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
     await databaseConnection.add(STORES.transaction, transaction);
 
-    updateStates(false, {});
+    setActiveTask({});
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
@@ -196,22 +188,21 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     const updatedTodos = await databaseConnection.getAll(STORES.todo);
     setTodos(updatedTodos);
 
-    updateStates(false, {});
+    setActiveTask({});
   }
 
   const handleStartTask = () => {
     const taskData = {
       ...activeTask,
       createdAt: new Date().toISOString(),
-      localCreatedAt: new Date().toLocaleString('sv').replace(' ', "T"),
     }
 
-    updateStates(true, taskData);
+    setActiveTask(taskData);
   }
 
   const handleGiveUpTask = async (e) => {
     e.target.form.reset();
-    updateStates(false, activeTask);
+    setActiveTask({...activeTask, createdAt: null});
   }
 
   const handleEndWorkDay = async () => {
@@ -221,7 +212,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
 
   function TaskDisplay() {
     function TaskInfoComponent() {
-    if (!isTaskSession) {
+    if (activeTask.createdAt == null) {
       return <div className="task-form-inputs">
         <div className="button-bar">
           <button
@@ -303,7 +294,7 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
       onSubmit={handleTaskSubmit}>
         {TaskInfoComponent()}
       {
-        isTaskSession ? 
+        activeTask.createdAt != null ? 
         <div className="task-session-container">
           <Timer startTime={new Date(activeTask.localCreatedAt).getTime()} duration={activeTask.estimatedDuration} buffer={activeTask.estimatedBuffer}/> 
           <div className="task-session-buttons">
