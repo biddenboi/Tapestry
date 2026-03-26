@@ -7,7 +7,7 @@ import Settings from "./Pages/Settings/Settings";
 import Profile from "./Pages/Profile/Profile";
 import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
-import { DAY, MINUTE, SECOND } from './utils/Constants';
+import { DAY, EVENT, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
 import { v4 as uuid } from "uuid";
@@ -45,8 +45,8 @@ function App() {
       //checks if getCurrentProfile ran first
       if (currentPlayer.createdAt == null) return;
 
-      const enterEvent = await databaseConnection.getLastEnterEvent();
-      const exitEvent = await databaseConnection.getLastExitEvent();
+      const enterEvent = await databaseConnection.getLastEventType(EVENT.wake);
+      const exitEvent = await databaseConnection.getLastEventType(EVENT.sleep);
       const yesterday = addDurationToDate(new Date(), -DAY);
       const lastMidnight = getMidnightOfDate(yesterday)
       const midnight = getMidnightOfDate(new Date())
@@ -65,7 +65,7 @@ function App() {
         return;
       }
         
-      const newExitEvent = await databaseConnection.getLastExitEvent();
+      const newExitEvent = await databaseConnection.getLastEventType(EVENT.wake);
 
       const exitEventMidnight = getMidnightOfDate(new Date(newExitEvent.createdAt));
 
