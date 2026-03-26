@@ -177,30 +177,3 @@ div.task-session-buttons button {
   border:var(--border-card);
   box-shadow:var(--box-shadow);
 }
-
-/* ----- Todo Form ----- */
-div.todo-creation-menu {
-  grid-column: 2 / span 3;
-  grid-row: 10 / span 10;
-  display:flex;
-  flex-direction: column;
-}
-
-div.todo-creation-menu > p {
-  font-weight:700;
-  padding:1%;
-  border: var(--border-card);
-  border-bottom:none;
-  background-color: var(--bg-dark);
-}
-
-div.todo-creation-menu > ul {
-  width:100%;
-  height:100%;
-  overflow-y: scroll;
-  border:var(--border-card);
-  background-color: var(--bg-light);
-  box-shadow:var(--box-shadow);
-}
-
-/* ----- Other ----- */

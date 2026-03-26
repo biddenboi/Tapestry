@@ -1,5 +1,5 @@
 import './Dashboard.css'
-import { useState, useEffect, useContext, act } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
 import { msToPoints } from '../../utils/Helpers/Time.js';
@@ -9,47 +9,18 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { endWorkDay } from '../../utils/Helpers/Events.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
-import { getMostUrgent, getTaskDuration } from '../../utils/Helpers/Tasks.js'
+import { getTaskDuration } from '../../utils/Helpers/Tasks.js'
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
+import TodoList from '../../Components/Todolist/Todolist.jsx';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
 */
 function Dashboard() {
   /*Internal Data*/
-  
-  const [todos, setTodos] = useState([]);
-  const [nextTodo, setNextTodo] = useState(null);
 
-  //via reference
   const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-
   const databaseConnection = useContext(AppContext).databaseConnection;
-
-  useEffect(() => {
-    const reload = async () => {
-      const todoArray = await databaseConnection.getAll(STORES.todo);
-      setTodos(todoArray);
-
-      //check if nextTodo has not been used yet
-      if (nextTodo != null || todoArray.length === 0) return;
-      setNextTodo(getMostUrgent(todoArray));
-
-    }
-    reload();
-  }, [databaseConnection, useContext(AppContext).timestamp, activeTask])
-
-  /* Helper Methods */
-
-  /**
-   * @param {boolean} taskSession
-   * @param {number} durationPenalty
-   * @param {object} activeTask
-   */
-
-  useEffect(() => {
-
-  }, [activeTask])
 
   //task submission, large chunk of code is duplicate see if we can merge
   const handleTaskSubmit = async (e) => {
@@ -184,10 +155,6 @@ function Dashboard() {
 
     await databaseConnection.add(STORES.todo, todo);
 
-    //potentially comment out see if updating state still occurs
-    const updatedTodos = await databaseConnection.getAll(STORES.todo);
-    setTodos(updatedTodos);
-
     setActiveTask({});
   }
 
@@ -218,9 +185,6 @@ function Dashboard() {
           <button
             type="button" onClick={handleEndWorkDay}
             >End Workday</button>
-          <button onClick={() => handleGetNextTodo()} 
-            disabled={!nextTodo}
-            type="button">Get Next Todo</button>
         </div>
         <p>Task Creation</p>
           <div className="inputs">
@@ -318,75 +282,11 @@ function Dashboard() {
     </form>
   }
 
-  const handleSelectTodo = async (todo) => {
-    //review
-    
-    setActiveTask(prev => ({
-      ...prev,
-      taskName: todo.taskName,
-      location: todo.location,
-      distractions: todo.distractions,
-      reasonToSelect: todo.reasonToSelect,
-      efficiency: todo.efficiency,
-      estimatedDuration: todo.estimatedDuration,
-      estimatedBuffer: todo.estimatedBuffer,
-      dueDate: todo.dueDate,
-      difficulty: todo.difficulty,
-      })
-    );
-
-    await databaseConnection.remove(STORES.todo, todo.UUID); 
-
-    const todoArray = await databaseConnection.getAll(STORES.todo);
-    setTodos(todoArray);
-  };
-
-  const handleGetNextTodo = async () => {
-        //review
-    
-    setActiveTask(prev => ({
-      ...prev,
-      taskName: nextTodo.taskName,
-      location: nextTodo.location,
-      distractions: nextTodo.distractions,
-      reasonToSelect: nextTodo.reasonToSelect,
-      efficiency: nextTodo.efficiency,
-      estimatedDuration: nextTodo.estimatedDuration,
-      estimatedBuffer: nextTodo.estimatedBuffer,
-      dueDate: nextTodo.dueDate,
-      difficulty: nextTodo.difficulty,
-      })
-    );
-
-    await databaseConnection.remove(STORES.todo, nextTodo.UUID); 
-    setNextTodo(null);
-
-    const todoArray = await databaseConnection.getAll(STORES.todo);
-    setTodos(todoArray);
-  }
-
-  function TodoFormComponent() {
-    return <div className="todo-creation-menu">
-      <p>Todo List</p>
-      <ul>
-        {
-        todos.map((element) => ( 
-          <li
-            key={element.createdAt}
-            onClick={() => handleSelectTodo(element)}
-            style={{ cursor: "pointer" }}>
-            {element.taskName}
-          </li>
-        ))}
-      </ul>
-    </div>
-  }
-
   return <div className="dashboard">
     {TaskDisplay()}
     
     {RankListComponent()}
-    {TodoFormComponent()}
+    {TodoList()}
   </div>
 }
 

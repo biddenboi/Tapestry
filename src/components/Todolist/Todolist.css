@@ -1,0 +1,30 @@
+div.todo-creation-menu {
+  grid-column: 2 / span 3;
+  grid-row: 10 / span 10;
+  display:flex;
+  flex-direction: column;
+}
+
+div.todo-creation-menu div {
+  font-weight:700;
+  padding:1%;
+  border: var(--border-card);
+  border-bottom:none;
+  background-color: var(--bg-dark);
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+div.todo-creation-menu > ul {
+  width:100%;
+  height:100%;
+  overflow-y: scroll;
+  border:var(--border-card);
+  background-color: var(--bg-light);
+  box-shadow:var(--box-shadow);
+}
+
+div.todo-creation-menu button {
+    font-weight:500;
+}
