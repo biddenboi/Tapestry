@@ -4,9 +4,7 @@ import { AppContext } from '../../App.jsx';
 import { useState, useEffect, useContext } from 'react'
 import { STORES } from '../../utils/Constants';
 
-
-
-export default function RankListComponent() {
+export default function RankListComponent({ style }) {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [playerPoints, setPlayerPoints] = useState([]);
 
@@ -37,7 +35,7 @@ export default function RankListComponent() {
     }, [databaseConnection, useContext(AppContext).timestamp])
     
 
-    return <div className="rank-list">
+    return <div className="rank-list" style={style}>
       <table className="rank-table">
         <thead>
           <tr>

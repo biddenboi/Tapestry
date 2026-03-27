@@ -1,19 +1,17 @@
 div.todo-creation-menu {
-  grid-column: 2 / span 3;
-  grid-row: 10 / span 10;
   display:flex;
   flex-direction: column;
 }
 
 div.todo-creation-menu div {
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
   font-weight:700;
   padding:1%;
   border: var(--border-card);
   border-bottom:none;
   background-color: var(--bg-dark);
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 div.todo-creation-menu > ul {
@@ -26,5 +24,8 @@ div.todo-creation-menu > ul {
 }
 
 div.todo-creation-menu button {
-    font-weight:500;
+  display: flex;
+  font-weight:500;
+  background-color: var(--bg-light);
+  border: var(--border-card);
 }

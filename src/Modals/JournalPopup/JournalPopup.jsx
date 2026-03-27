@@ -10,7 +10,6 @@ export default NiceModal.create(({title}) => {
     const modal = useModal()
 
     useEffect(() => {
-        //REVIEW
         const handleKeyDown = (e) => {
             if (e.key === "Escape") {
                 modal.hide()
@@ -43,6 +42,7 @@ export default NiceModal.create(({title}) => {
         }
         e.target.reset();
         modal.hide()
+        modal.remove();
         await databaseConnection.add(STORES.journal, journal);
     })
 
@@ -57,8 +57,8 @@ export default NiceModal.create(({title}) => {
                     placeholder={title ? title : "Entry Title"}/>
                 <textarea name="entry-text" id=""
                     placeholder="Enter your log here..."></textarea>
-            <button type="submit">Publish</button>
-        </form>
+                <button type="submit">Publish</button>
+            </form>
         </div>
     </div>) : ""
 }) 

@@ -2,18 +2,24 @@
 
 /* NOTE: div.dashboard belongs to whatever parent/layout component renders the grid.
    Move it to Dashboard.css or your top-level layout stylesheet. */
-
-form.task-creation-menu {
-  grid-column: 6 / span 4;
-  grid-row: 4 / span 15;
+div.task-session-menu {
+  position: fixed; 
+  inset: 0;
+  z-index:1;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;     
+  justify-content: center;
 }
 
-div.task-session-container {
+form.task-session-form {
+  position: relative; 
+  z-index: 1;
+  width:60%;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg);
+  padding:1%;
+  border: var(--border-card);
 }
 
 div.task-session-description {

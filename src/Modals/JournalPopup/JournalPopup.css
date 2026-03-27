@@ -10,12 +10,6 @@ div.journal-popup {
     justify-content: center;
 }
 
-div.journal-popup > div.blanker {
-    position: absolute; 
-    inset: 0;
-    background-color: var(--background-dim);
-}
-
 div.journal-popup > div.content {
     position: relative; 
     z-index: 1;

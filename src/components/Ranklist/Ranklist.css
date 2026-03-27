@@ -39,8 +39,6 @@ table.rank-table {
 }
 
 div.rank-list {
-  grid-column: 2 /  span 3;
-  grid-row: 3  / span 6;
   box-shadow:var(--box-shadow);
 }
 

@@ -3,12 +3,26 @@
 /* NOTE: The form in TaskCreationMenu.jsx should use className="task-creation-form"
    instead of "task-creation-menu" to distinguish it from TaskSessionMenu's form. */
 
+div.task-creation-menu {
+  position: fixed; 
+  inset: 0;
+  z-index:1;
+  display: flex;
+  align-items: center;     
+  justify-content: center;
+}
+
 form.task-creation-form {
-  grid-column: 6 / span 4;
-  grid-row: 4 / span 15;
+  position: relative; 
+  z-index: 1;
+  min-width:60%;
+  padding-bottom:2vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap:5vh;
+  background-color: var(--bg-light);
+  border: var(--border-card);
+  box-shadow: var(--box-shadow);
 }
 
 form.task-creation-form label {
@@ -20,7 +34,7 @@ div.task-form-inputs p {
   background-color: var(--bg-dark);
   padding: 0.5%;
   border: var(--border-card);
-  border-bottom: none;
+
   font-weight: 700;
 }
 
@@ -30,10 +44,8 @@ div.task-form-inputs > div.inputs {
   column-gap: 5%;
   row-gap: 2%;
   grid-template-rows: auto;
-  background-color: var(--bg-light);
   padding: 1% 5% 7% 5%;
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
+  
 }
 
 div.task-form-inputs > div *:first-child {
@@ -62,19 +74,6 @@ div.task-form-inputs label > textarea {
   height: 30vh;
   white-space: pre-wrap;
   border: var(--border-card);
-}
-
-div.task-form-inputs > div.button-bar {
-  display: flex;
-  gap: 20px;
-  justify-content: flex-end;
-}
-
-div.task-form-inputs > div.button-bar > button {
-  border: var(--border-card);
-  background-color: var(--bg-dark);
-  padding: 12px;
-  margin-bottom: 20px;
 }
 
 div.task-planning-buttons {

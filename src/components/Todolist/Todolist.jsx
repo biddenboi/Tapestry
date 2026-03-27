@@ -3,8 +3,10 @@ import { useState, useEffect, useContext } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { getMostUrgent } from '../../utils/Helpers/Tasks.js'
+import NiceModal from '@ebay/nice-modal-react';
+import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 
-export default function TodoList() {
+export default function TodoList({ style }) {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
 
@@ -41,35 +43,34 @@ export default function TodoList() {
             difficulty: todo.difficulty,
         }));
         await databaseConnection.remove(STORES.todo, todo.UUID); 
-    
-        const todoArray = await databaseConnection.getAll(STORES.todo);
-        setTodos(todoArray);
+
+        NiceModal.show(TaskCreationMenu)
+
     };
 
     const handleGetNextTodo = async () => {
-    setActiveTask(prev => ({
-        ...prev,
-        taskName: nextTodo.taskName,
-        location: nextTodo.location,
-        distractions: nextTodo.distractions,
-        reasonToSelect: nextTodo.reasonToSelect,
-        efficiency: nextTodo.efficiency,
-        estimatedDuration: nextTodo.estimatedDuration,
-        estimatedBuffer: nextTodo.estimatedBuffer,
-        dueDate: nextTodo.dueDate,
-        difficulty: nextTodo.difficulty,
-    }));
+        NiceModal.show(TaskCreationMenu)
+        setActiveTask(prev => ({
+            ...prev,
+            taskName: nextTodo.taskName,
+            location: nextTodo.location,
+            distractions: nextTodo.distractions,
+            reasonToSelect: nextTodo.reasonToSelect,
+            efficiency: nextTodo.efficiency,
+            estimatedDuration: nextTodo.estimatedDuration,
+            estimatedBuffer: nextTodo.estimatedBuffer,
+            dueDate: nextTodo.dueDate,
+            difficulty: nextTodo.difficulty,
+        }));
         await databaseConnection.remove(STORES.todo, nextTodo.UUID); 
         setNextTodo(null);
-
-        const todoArray = await databaseConnection.getAll(STORES.todo);
-        setTodos(todoArray);
     }
 
-    return <div className="todo-creation-menu">
+    return <div className="todo-creation-menu" style={style}>
         <div>
             <p>Todo List</p>
-            <button onClick={() => handleGetNextTodo()} 
+            <button 
+                onClick={() => handleGetNextTodo()} 
                 disabled={!nextTodo}
                 type="button">Get Next Todo
             </button>

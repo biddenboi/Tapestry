@@ -1,18 +1,27 @@
 import './TaskCreationMenu.css'
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import { AppContext } from '../../App.jsx';
 import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
+import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
 
-
-export default function TaskCreationMenu() {    
+export default NiceModal.create(() => {    
   const databaseConnection = useContext(AppContext).databaseConnection;
   const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+  const modal = useModal()
 
-  const handleEndWorkDay = async () => {
-      const currentPlayer = await databaseConnection.getCurrentPlayer();
-      endWorkDay(databaseConnection, currentPlayer)
-  }
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        modal.hide()
+        modal.remove();
+      }
+    };
+      
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleStartTask = () => {
     const taskData = {
@@ -20,6 +29,10 @@ export default function TaskCreationMenu() {
         createdAt: new Date().toISOString(),
     }
     setActiveTask(taskData);
+
+    modal.hide();
+    modal.remove();
+    NiceModal.show(TaskSessionMenu)
   }
 
   const handleTodoSubmit = async (e) => {
@@ -34,15 +47,15 @@ export default function TaskCreationMenu() {
     await databaseConnection.add(STORES.todo, todo);
 
     setActiveTask({});
+    modal.hide();
+    modal.remove();
   }
 
-  return <>
+  return modal.visible ? <div className="task-creation-menu">
+    <div className="blanker"></div>
     <form action="" className="task-creation-form">   
       <div className="task-form-inputs">
       <div className="button-bar">
-         <button
-          type="button" onClick={handleEndWorkDay}
-          >End Workday</button>
       </div>
       <p>Task Creation</p>
         <div className="inputs">
@@ -99,5 +112,5 @@ export default function TaskCreationMenu() {
         <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={activeTask.taskName ? false : true}>Store</button>
       </div>
     </form>
-  </>
-}
+  </ div> : ""
+})

@@ -1,9 +1,17 @@
 /* Dashboard.css */
 
 div.dashboard {
-  display: grid;
   height: 100%;
-  grid-template-rows: repeat(20, 5%);
-  grid-template-columns: repeat(10, 10%);
   background-color: var(--bg);
+  display:flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.dashboard > div > button {
+  border: var(--border-card);
+  background-color: var(--bg-dark);
+  padding: 5px 13px;
+  margin-right:20px;
+  margin-bottom:10px;
 }

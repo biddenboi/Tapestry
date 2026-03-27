@@ -8,17 +8,24 @@ import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-import { endWorkDay } from '../../utils/Helpers/Events.js';
+
 import { getCurrentLocation } from '../../utils/Helpers/Location.js'
 import { getTaskDuration } from '../../utils/Helpers/Tasks.js'
+import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import TaskCreationMenu from '../TaskCreationMenu/TaskCreationMenu.jsx';
 
-export default function TaskSessionMenu() {
+
+export default NiceModal.create(() => {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+     const modal = useModal()
 
     const handleGiveUpTask = async (e) => {
         e.target.form.reset();
         setActiveTask({...activeTask, createdAt: null});
+        NiceModal.show(TaskCreationMenu)
+        modal.hide();
+        modal.remove();
     }
 
     const handleTaskSubmit = async (e) => {
@@ -47,6 +54,8 @@ export default function TaskSessionMenu() {
     await databaseConnection.add(STORES.task, task);
 
     setActiveTask({});
+    modal.hide();
+    modal.remove();
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
@@ -91,6 +100,9 @@ export default function TaskSessionMenu() {
     await databaseConnection.add(STORES.task, task);
 
     setActiveTask({...activeTask, createdAt: null});
+    NiceModal.show(TaskCreationMenu)
+    modal.hide();
+    modal.remove();
 
     //note - revise maybe into seperate method?
     getCurrentLocation()
@@ -125,6 +137,8 @@ export default function TaskSessionMenu() {
         await databaseConnection.add(STORES.transaction, transaction);
 
         setActiveTask({});
+        modal.hide();
+        modal.remove();
 
         //note - revise maybe into seperate method?
         getCurrentLocation()
@@ -141,8 +155,9 @@ export default function TaskSessionMenu() {
         });
     };
 
-    return <>
-      <form action="" className="task-creation-menu"
+    return modal.visible ? <div className="task-session-menu">
+      <div className="blanker"></div>
+      <form action="" className="task-session-form"
         onSubmit={handleTaskSubmit}>
           <div className="task-session-description">
           <div className="task-titlebar">
@@ -171,5 +186,5 @@ export default function TaskSessionMenu() {
             </div>
         </div>
       </form>
-    </>
-}
+    </ div> : ""
+})

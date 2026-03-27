@@ -23,6 +23,12 @@
   --background-dim: hsla(206, 33%, 12%, 0.414);
 }
 
+div.blanker {
+    position: absolute; 
+    inset: 0;
+    background-color: var(--background-dim);
+}
+
 body.dark {
   /**dark mode*/
 }
