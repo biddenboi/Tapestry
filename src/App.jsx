@@ -12,6 +12,7 @@ import { useInterval } from './utils/useInterval';
 import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
 import { v4 as uuid } from "uuid";
 import NiceModal from '@ebay/nice-modal-react';
+import { startDay, endDay } from './utils/Helpers/Events';
 
 export const AppContext = createContext();
 
@@ -48,11 +49,8 @@ function App() {
       const lastMidnight = getMidnightOfDate(yesterday)
       const midnight = getMidnightOfDate(new Date())
 
-      console.log(enterEvent.createdAt);
-      console.log(midnight.toISOString());
-
       if (enterEvent === null || enterEvent.createdAt < midnight.toISOString()) {
-        await startDay();
+        await startDay(databaseConnection, currentPlayer);
       }
 
       const playerCreatedAtMidnight = getMidnightOfDate(new Date(currentPlayer.createdAt));
@@ -61,7 +59,7 @@ function App() {
       if (playerCreatedAtMidnight.getTime() == currMidnight.getTime()) return;
 
       if (exitEvent == null) {
-        endDay(false);
+        endDay(databaseConnection, currentPlayer, false);
         return;
       }
         
@@ -71,7 +69,7 @@ function App() {
 
       //if we already carried out lastMidnight for the previous day
       if (exitEventMidnight.getTime() == lastMidnight.getTime()) return;
-      endDay(false);
+      endDay(databaseConnection, currentPlayer, false);
     }
 
     syncAndUpdateEvents();
@@ -81,32 +79,6 @@ function App() {
     setTimestamp(Date.now())
     //NOTE: CHANGE SECONDS TO MINUTES AFTER TESTING
   }, 5* SECOND)
-
-  const endDay = async (early) => {
-    const yesterday = addDurationToDate(new Date(), -DAY);
-    currentPlayer.tokens = early ? currentPlayer.tokens / 2 : 0;
-
-    await databaseConnection.addEvent({
-      type: "exit",
-      description: early ? "Early!" : "Exited On Time",
-      UUID: uuid(),
-      parent: currentPlayer.UUID,
-      createdAt: yesterday.toISOString()
-    })
-
-    await databaseConnection.addPlayer(currentPlayer);
-  }
-
-  const startDay = async () => {
-    
-    await databaseConnection.addEvent({
-      type: "enter",
-      description: "Started the Day",
-      UUID: uuid(),
-      parent: currentPlayer.UUID,
-      createdAt: new Date().toISOString()
-    });
-  };
 
   //navigating across routes
   const navigate = (route) => {

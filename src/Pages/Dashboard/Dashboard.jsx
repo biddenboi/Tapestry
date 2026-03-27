@@ -2,14 +2,13 @@ import './Dashboard.css'
 import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
-import { Link } from 'react-router-dom';
+import { data, Link } from 'react-router-dom';
 import { msToPoints } from '../../utils/Helpers/Time.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
 import { DAY, MINUTE } from '../../utils/Constants.js'
-import NiceModal from '@ebay/nice-modal-react';
-import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
+import { endWorkDay } from '../../utils/Helpers/Events.js';
 
 /** 
   * Contains Rank, Todo List, and Input Task Form 
@@ -251,15 +250,19 @@ function Dashboard({ isTaskSession, setIsTaskSession }) {
     </div>
   }
 
+  const handleEndWorkDay = async () => {
+    const currentPlayer = await databaseConnection.getCurrentPlayer();
+    endWorkDay(databaseConnection, currentPlayer)
+  }
+
   function TaskDisplay() {
     function TaskInfoComponent() {
     if (!isTaskSession) {
       return <div className="task-form-inputs">
         <div className="button-bar">
           <button
-            type="button" onClick={() => NiceModal.show(JournalPopup, 
-              { title: "End of Workday Conclusions"})}
-            >End Early</button>
+            type="button" onClick={handleEndWorkDay}
+            >End Workday</button>
           <button onClick={() => handleGetNextTodo()} 
             disabled={!nextTodo}
             type="button">Get Next Todo</button>
