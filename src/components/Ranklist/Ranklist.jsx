@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppContext } from '../../App.jsx';
 import { useState, useEffect, useContext } from 'react'
 import { STORES } from '../../utils/Constants';
+import { getRankColorClass } from '../../utils/Helpers/Players.js';
 
 export default function RankListComponent({ style }) {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -50,8 +51,9 @@ export default function RankListComponent({ style }) {
               <tr key={element.UUID}>
                 <td>{"#" + (index + 1)}</td>
                 <td>
-                  <Link 
-                    to={`/profile/${element.UUID}`}>
+                  <Link style={{textDecoration: "none", fontWeight:500}}
+                    to={`/profile/${element.UUID}`}
+                    className={getRankColorClass(element)}>
                     {element.username}
                   </Link>
                 </td>
@@ -61,4 +63,4 @@ export default function RankListComponent({ style }) {
         </tbody>
       </table>
     </div>
-}
+} 

@@ -7,6 +7,7 @@ import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { getTaskDuration } from  '../../utils/Helpers/Tasks.js'
+import { getRankColorClass } from "../../utils/Helpers/Players.js";
 
 function Profile() {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -107,7 +108,7 @@ function Profile() {
         <div className="profile-banner">
             <div className="stats-subsection">
                 <span>{UTCStringToLocalDate(player.createdAt)}</span>
-                <span>{player.username}</span>
+                <span className={getRankColorClass(player)}>{player.username}</span>
                 {player.description ? <span>{player.description}</span> : ""}
             </div>
             <div className="description-subsection">
