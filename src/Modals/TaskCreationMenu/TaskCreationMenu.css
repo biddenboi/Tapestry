@@ -19,7 +19,6 @@ form.task-creation-form {
   padding-bottom:2vh;
   display: flex;
   flex-direction: column;
-  gap:5vh;
   background-color: var(--bg-light);
   border: var(--border-card);
   box-shadow: var(--box-shadow);

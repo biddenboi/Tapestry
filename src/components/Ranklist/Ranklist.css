@@ -53,7 +53,7 @@ table.rank-table tbody {
 }
 
 table.rank-table tr > td {
-  padding: 5px 5px 5px 5px;
+  padding: 5px 5px 5px 5px; 
 }
 
 table.rank-table tr > td:nth-child(1) {
@@ -61,6 +61,3 @@ table.rank-table tr > td:nth-child(1) {
 }
 
 
-table.rank-table > Link {
-  color: var(--text-muted);
-}

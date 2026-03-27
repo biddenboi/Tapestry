@@ -47,7 +47,7 @@ export default function RankListComponent({ style }) {
         <tbody>
           {
             playerPoints.map((element, index) => (
-              <tr key={element.createdAt}>
+              <tr key={element.UUID}>
                 <td>{"#" + (index + 1)}</td>
                 <td>
                   <Link 

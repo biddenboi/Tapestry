@@ -112,7 +112,7 @@ function Profile() {
             </div>
             <div className="description-subsection">
                 <div>
-                    <span>Final Points: </span>
+                    <span>Elo: </span>
                     <span>{player.points}</span>
                 </div>
                 <div> 

@@ -86,7 +86,7 @@ function Dashboard() {
       <RankListComponent style={{width: "80vh", height:"60vh"}}/>
     </div>
     
-    <TodoList style={{width: "50vh", height:"63vh"}} />
+    <TodoList style={{width: "50vh", height:"64vh"}} />
   </div>
 }
 
