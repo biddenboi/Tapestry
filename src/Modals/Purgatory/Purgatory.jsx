@@ -2,11 +2,10 @@ import './Purgatory.css'
 import { useContext, useEffect } from 'react'
 import { AppContext } from '../../App';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import { endDay } from '../../utils/Helpers/Events';
 import Timer from '../../Components/Timer/Timer';
 import { DAY, MINUTE } from '../../utils/Constants';
 import { EVENT } from '../../utils/Constants.js';
-import { getMidnightOfDate, getMsUntilMidnight, getLocalDate, UTCStringToLocalDate } from '../../utils/Helpers/Time';
+import { getMidnightOfDate, getMsUntilMidnight, getLocalDate } from '../../utils/Helpers/Time';
 
 export default NiceModal.create(() => {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -18,7 +17,7 @@ export default NiceModal.create(() => {
 
             const midnight = getMidnightOfDate(getLocalDate(new Date()));
             
-            if (UTCStringToLocalDate(sleep.createdAt) < midnight) {
+            if (getLocalDate(sleep.createdAt) < midnight) {
                 modal.remove();
             }
         }

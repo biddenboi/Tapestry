@@ -1,10 +1,9 @@
 import './Dashboard.css'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState, useRef } from 'react'
 import App, { AppContext } from '../../App.jsx';
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 import TodoList from '../../Components/Todolist/Todolist.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
-import TaskSessionMenu from '../../Modals/TaskSessionMenu/TaskSessionMenu.jsx';
 import NiceModal from '@ebay/nice-modal-react';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
 import { endDay, endWorkDay, startDay } from '../../utils/Helpers/Events.js';
@@ -14,42 +13,47 @@ import { addDurationToDate, getMidnightOfDate, getLocalDate, UTCStringToLocalDat
 import Purgatory from '../../Modals/Purgatory/Purgatory';
 
 function Dashboard() {
-  const databaseConnection = useContext(AppContext).databaseConnection;
+  const { databaseConnection, timestamp } = useContext(AppContext);
   const [scheduleStage, setScheduleStage] = useState(null);
+  const isSyncing = useRef(false);
 
   //possibly patchy hierarchy level of syncAndUpdateEvents. Possibly Hoist into App.jsx and create buffer function
   useEffect(() => {
     const syncAndUpdateEvents = async () => {
-      const p = await databaseConnection.getCurrentPlayer();
+      if (isSyncing.current) return; 
+      isSyncing.current = true;
 
-      if (p.createdAt == null) return;
-      const lastEvent = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
-      const midnight = getMidnightOfDate(getLocalDate(new Date()));
+      try {
+        const p = await databaseConnection.getCurrentPlayer();
 
-      if (lastEvent === null) {
-        console.log("A");
-        await startDay(databaseConnection, p);
-        return;
-      }
+        if (p.createdAt == null) return;
+        const lastEvent = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
+        const midnight = getMidnightOfDate(getLocalDate(new Date()));
 
-      if (UTCStringToLocalDate(lastEvent.createdAt) < midnight) {
-        if (lastEvent.type == EVENT.sleep) {
-           console.log("B");
+        if (lastEvent === null) {
           await startDay(databaseConnection, p);
-        }else {
-           console.log("C");
-          await endDay(databaseConnection, p, false);
-          await startDay(databaseConnection, p);
+          return;
         }
-      }
-      
-      if (lastEvent.type === EVENT.sleep) {
-        NiceModal.show(Purgatory)
+
+        if (getLocalDate(lastEvent.createdAt) < midnight) {
+          if (lastEvent.type == EVENT.sleep) {
+            await startDay(databaseConnection, p);
+          }else {
+            await endDay(databaseConnection, p, false);
+            await startDay(databaseConnection, p);
+          }
+        }
+        
+        if (lastEvent.type === EVENT.sleep) {
+          NiceModal.show(Purgatory)
+        }
+      } finally {
+        isSyncing.current = false;
       }
     }
 
     syncAndUpdateEvents();
-  }, [useContext(AppContext).timestamp])
+  }, [timestamp])
 
   useEffect(() => {
     const getScheduleStage = async () => {
@@ -57,7 +61,7 @@ function Dashboard() {
       setScheduleStage(currentStage);
     }
     getScheduleStage();
-  }, [useContext(AppContext).timestamp])
+  }, [timestamp])
 
   const handleEndWorkDay = async () => {
     NiceModal.show(JournalPopup, {title: "End of Workday Journal"})

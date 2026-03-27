@@ -6,7 +6,7 @@ import { STORES } from '../../utils/Constants.js'
 import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import { getTaskDuration } from '../../utils/Helpers/Tasks.js'
+import { getTaskDuration } from  '../../utils/Helpers/Tasks.js'
 
 function Profile() {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -137,7 +137,7 @@ function Profile() {
                         <tbody>
                             {
                                 player.history.map((element, index) => (
-                                <tr key={element.createdAt}>
+                                <tr key={element.UUID}>
                                     <td>{UTCStringToLocalTime(element.createdAt)}</td>
                                     <td>{element.type}</td>
                                     <td className="description">
