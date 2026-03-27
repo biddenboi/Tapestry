@@ -18,7 +18,7 @@ class DatabaseConnection {
     }
 
 
-    if (DATABASE_VERISON >= 10 && oldVersion < 10) {
+    if (DATABASE_VERSION >= 10 && oldVersion < 10) {
         const playerStore = this.database.createObjectStore("playerObjectStore", { keyPath: "UUID" });
         playerStore.createIndex("username", "username", { unique: false });
         playerStore.createIndex("createdAt", "createdAt", { unique: false });
