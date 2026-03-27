@@ -8,7 +8,7 @@ import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time';
  * @param {number} duration (milliseconds) - how long the timer lasts
 */
 
-function Timer({ startTime, duration, buffer }) {  
+function Timer({ showPoints, startTime, duration, buffer }) {  
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
@@ -47,8 +47,9 @@ function Timer({ startTime, duration, buffer }) {
   return (
     <div className="timer">
       {getTimerComponent()}
-      <span>{msToPoints(elapsedTime) /**- durationPenalty*/ + " points"}</span>
-      {/**<span>{durationPenalty != 0 ? "(-" + durationPenalty + " focus penalty)" : ""}</span>*/}
+      {showPoints ? 
+        <span>{msToPoints(elapsedTime) /**- durationPenalty*/ + " points"}</span> :""
+      }
     </div>
   );
 }

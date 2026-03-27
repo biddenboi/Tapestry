@@ -9,9 +9,9 @@ import Shop from "./Pages/Shop/Shop";
 import DatabaseConnection from "./network/DatabaseConnection";
 import { DAY, EVENT, MINUTE, SECOND } from './utils/Constants';
 import { useInterval } from './utils/useInterval';
-import { addDurationToDate, getMidnightOfDate } from './utils/Helpers/Time';
+
 import NiceModal from '@ebay/nice-modal-react';
-import { startDay, endDay } from './utils/Helpers/Events';
+
 
 export const AppContext = createContext();
 
@@ -25,6 +25,15 @@ function App() {
   //global updater useInterval
   const [timestamp, setTimestamp] = useState(Date.now());
   const [activeTask, setActiveTask] = useState({});
+
+  useEffect(() => {
+    const getCurrentPlayer = async () => {
+      const p = await databaseConnection.getCurrentPlayer();
+
+      setCurrentPlayer(p);
+    }
+    getCurrentPlayer();
+  })
   
   const databaseConnection = useMemo(() => new DatabaseConnection(), []);
 
@@ -34,49 +43,6 @@ function App() {
     timestamp: timestamp,
     activeTask: [activeTask, setActiveTask]
   }), [timestamp, activeTask])
-
-  // calls createPlayer on app load, if player does not exist then it creates a new profile.
-  useEffect(() => {
-    const syncAndUpdateEvents = async () => {
-      const p = await databaseConnection.getCurrentPlayer();
-      setCurrentPlayer(p);
-
-      return; //for now, logic is broken will fix down the line.
-
-      //checks if getCurrentProfile ran first
-      if (currentPlayer.createdAt == null) return;
-
-      const enterEvent = await databaseConnection.getLastEventType(EVENT.wake);
-      const exitEvent = await databaseConnection.getLastEventType(EVENT.sleep);
-      const yesterday = addDurationToDate(new Date(), -DAY);
-      const lastMidnight = getMidnightOfDate(yesterday)
-      const midnight = getMidnightOfDate(new Date())
-
-      if (enterEvent === null || enterEvent.createdAt < midnight.toISOString()) {
-        await startDay(databaseConnection, currentPlayer);
-      }
-
-      const playerCreatedAtMidnight = getMidnightOfDate(new Date(currentPlayer.createdAt));
-      const currMidnight = getMidnightOfDate(new Date());
-
-      if (playerCreatedAtMidnight.getTime() == currMidnight.getTime()) return;
-
-      if (exitEvent == null) {
-        endDay(databaseConnection, currentPlayer, false);
-        return;
-      }
-        
-      const newExitEvent = await databaseConnection.getLastEventType(EVENT.wake);
-
-      const exitEventMidnight = getMidnightOfDate(new Date(newExitEvent.createdAt));
-
-      //if we already carried out lastMidnight for the previous day
-      if (exitEventMidnight.getTime() == lastMidnight.getTime()) return;
-      endDay(databaseConnection, currentPlayer, false);
-    }
-
-    syncAndUpdateEvents();
-  }, [timestamp])
 
   useInterval(() => {
     setTimestamp(Date.now())

@@ -1,0 +1,43 @@
+.end-day-confirm {
+  position: fixed; 
+  inset: 0;
+  z-index:1;
+  display: flex;
+  align-items: center;     
+  justify-content: center;
+}
+
+.end-day-confirm .container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  position: relative; 
+  z-index: 1;
+  min-width:40%;
+  padding-bottom:2vh;
+  gap:5vh;
+  background-color: var(--bg-light);
+  border: var(--border-card);
+  box-shadow: var(--box-shadow);
+}
+
+.end-day-confirm .button-row {
+    display:flex;
+    justify-content:center;
+    gap:20%;
+    width:100%;
+}
+
+.end-day-confirm .container > p {
+    width:100%;
+    background-color: var(--bg-dark);
+    border-bottom:var(--border-card);
+    padding:5px 13px;
+    font-weight:600;
+}
+
+.end-day-confirm .button-row > button {
+    border: var(--border-card);
+    padding:10px 20px;
+}
+
