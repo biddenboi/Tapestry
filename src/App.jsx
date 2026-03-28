@@ -59,8 +59,8 @@ function App() {
   return <>
     <div className={activeTask.createdAt ? "navigation-bar task-in-session" : "navigation-bar"}>
       <a onClick={() => navigate("/")}>Dashboard</a>
-      <a onClick={() => navigate("/events")}>Events</a>
-      <a onClick={() => navigate("/shop")}>Shop</a>
+      {/**<a onClick={() => navigate("/events")}>Events</a>*/}
+      {/**<a onClick={() => navigate("/shop")}>Shop</a>*/}
       <a onClick={() => navigate(`/profile/${currentPlayer.UUID}`)}>Profile</a>
       <a onClick={() => navigate("/settings")}>Settings</a>
     </div>

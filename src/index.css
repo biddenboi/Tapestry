@@ -24,54 +24,18 @@
 }
 
 /**player rank colors - possibly migrate for cleaner codebase?*/
-.newbie {
-  color: #808080;
-}
-
-.pupil {
-  color: #008000;
-}
-
-.specialist {
-  color: #03a89e;
-}
-
-.expert {
-  color: #0000ff;
-}
-
-.candidate-master {
-  color: #aa00aa;
-}
-
-.master {
-  color: #ff8c00;
-}
-
-.international-master {
-  color: #ff8c00;
-}
-
-.grandmaster {
-  color: #ff0000;
-}
-
-.international-grandmaster {
-  color: #ff0000;
-}
-
-.legendary-grandmaster {
-  color: #ff0000;
-  display: inline-block;
-}
-
-.legendary-grandmaster::first-letter {
-  color: #000000;
-}
-
-.legendary {
-  color: #000000;
-}
+.newbie               { color: #7a8694; }
+.pupil                { color: #2cb67d; }
+.specialist           { color: #0ea5e9; }
+.expert               { color: #6366f1; }
+.candidate-master     { color: #a855f7; }
+.master               { color: #f97316; }
+.international-master { color: #ea580c; }
+.grandmaster          { color: #ff4655; }
+.international-grandmaster { color: #e11d48; }
+.legendary-grandmaster { color: #e11d48; display: inline-block; }
+.legendary-grandmaster::first-letter { color: #f5a623; }
+.legendary { color: #ff4655; }
 
 div.blanker {
     position: absolute; 
