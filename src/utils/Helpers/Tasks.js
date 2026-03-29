@@ -72,3 +72,20 @@ export const getWeights = (todoArray) => {
   const scaled = weights.map(w => (w / total) * 100);
   return scaled;
 }
+
+/**calculates the estimated points based on a gaussian function centered at d.
+ * The main issue with this system is if someone finishes a task early - they might wait until the peak to gain the maximum bonus.
+ * If you hide the timer, this creates uncertainty in shorter durations, causing people to want to finish faster.
+ * In longer spans, while there is a larger margin of error for someone trying to cheat, the max multiplier is only 1.
+ * Why intentionally stretch it out when you can just do smaller tasks that have the same peak? 
+ * Not to mention longer tasks your perception of time elapsed becomes more error prone as well.
+ * Only way to resolve this is with external tools which at a point just aren't worth it.
+ * 
+ * @param {number} duration - actual elapsed time in ms
+ * @param {number} estimatedDuration - estimated duration in ms
+ * @returns {number} multiplier between 0 and 1
+*/
+export const getSessionMultiplier = (duration, estimatedDuration) => {
+    if (estimatedDuration <= 0 || estimatedDuration == null) return 0;
+    return Math.exp(-9 * Math.pow(duration - estimatedDuration, 2) / (2 * Math.pow(estimatedDuration, 2)));
+}

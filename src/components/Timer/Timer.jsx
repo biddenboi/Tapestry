@@ -1,7 +1,6 @@
 import './Timer.css';
 import { useState, useEffect } from 'react';
 import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time';
-import { SECOND } from '../../utils/Constants';
 
 /**
  * Visually handles 
@@ -32,7 +31,7 @@ function Timer({ showPoints, startTime, duration }) {
     const difference = safeDuration - elapsedTime;
 
     return <span className={difference > 0 ?  "in-session" : "in-overtime"}>
-      {timeAsHHMMSS(difference > 0 ? Math.abs(difference) : Math.abs(difference)+SECOND)}</span>
+      {timeAsHHMMSS(Math.abs(difference))}</span>
   }
 
   
