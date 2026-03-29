@@ -2,30 +2,14 @@ import './Todolist.css'
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-import { getMostUrgent } from '../../utils/Helpers/Tasks.js'
+import { getMostUrgent, getWeights } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
+import { prettyPrintDate } from '../../utils/Helpers/Time.js';
 
-export default function TodoList({ style }) {
+function TodoItem({element}) {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-
-    const [todos, setTodos] = useState([]);
-    const [nextTodo, setNextTodo] = useState(null);
-
-    useEffect(() => {
-        const reload = async () => {
-            const todoArray = await databaseConnection.getAll(STORES.todo);
-            setTodos(todoArray);
-            
-            //check if nextTodo has not been used yet
-            if (nextTodo != null || todoArray.length === 0) return;
-            setNextTodo(getMostUrgent(todoArray));
-        }
-        
-        reload();
-    }, [databaseConnection, useContext(AppContext).timestamp, activeTask])
-
 
     const handleSelectTodo = async (todo) => {
         //review
@@ -48,6 +32,39 @@ export default function TodoList({ style }) {
 
     };
 
+    return <div className="todo-item" onClick={() => handleSelectTodo(element)}>
+        <div>
+            <span style={{color: `hsl(145, ${element.weight}%, 42%`}}>{element.taskName}</span>
+            <p>{element.difficulty} · {element.weight}%</p>
+        </div>
+        <span>{prettyPrintDate(element.dueDate)}</span>
+    </div>
+}
+
+export default function TodoList({ style }) {
+    const databaseConnection = useContext(AppContext).databaseConnection;
+    const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+
+    const [todos, setTodos] = useState([]);
+    const [nextTodo, setNextTodo] = useState(null);
+
+    useEffect(() => {
+        const reload = async () => {
+            const todoArray = await databaseConnection.getAll(STORES.todo);
+            const weightArray = getWeights(todoArray)
+
+            setTodos(todoArray.map((element, i) => ({
+                ...element,
+                weight: Math.floor(weightArray[i])
+            })))
+            
+            //check if nextTodo has not been used yet
+            if (nextTodo != null || todoArray.length === 0) return;
+            setNextTodo(getMostUrgent(todoArray, weightArray));
+        }
+        reload();
+    }, [databaseConnection, activeTask])
+
     const handleGetNextTodo = async () => {
         NiceModal.show(TaskCreationMenu)
         setActiveTask(prev => ({
@@ -67,7 +84,7 @@ export default function TodoList({ style }) {
     }
 
     return <div className="todo-creation-menu" style={style}>
-        <div>
+        <div className="header">
             <p>Todo List</p>
             <button 
                 onClick={() => handleGetNextTodo()} 
@@ -75,16 +92,16 @@ export default function TodoList({ style }) {
                 type="button">Get Next Todo
             </button>
         </div>
-        <ul>
+        <div className="content">
             {
             todos.map((element) => ( 
-            <li
-                key={element.createdAt}
-                onClick={() => handleSelectTodo(element)}
-                style={{ cursor: "pointer" }}>
-                {element.taskName}
-            </li>
+                <TodoItem
+                    key={element.UUID}
+                    element={element}>
+                </TodoItem>
             ))}
-        </ul>
+        </div>
     </div>
+
+
 }

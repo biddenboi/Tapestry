@@ -51,6 +51,12 @@ export default NiceModal.create(() => {
     modal.remove();
   }
 
+  const canSubmitTodo = () => {
+    if (!activeTask.dueDate) return false;
+    if (!activeTask.estimatedBuffer || !activeTask.estimatedDuration) return false;
+    return true;
+  }
+
   return modal.visible ? <div className="task-creation-menu">
     <div className="blanker"></div>
     <form action="" className="task-creation-form">   
@@ -109,7 +115,7 @@ export default NiceModal.create(() => {
       </div>
       <div className="task-planning-buttons">
         <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button>
-        <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={activeTask.taskName ? false : true}>Store</button>
+        <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={!canSubmitTodo()}>Store</button>
       </div>
     </form>
   </ div> : ""

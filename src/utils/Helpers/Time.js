@@ -1,3 +1,5 @@
+import { DAY, WEEK, STRING_DAYS } from "../Constants";
+
 export const timeAsHHMMSS = (ms) => {
     const totalSeconds = msToSeconds(ms);
     const hours = Math.floor(totalSeconds / 3600);
@@ -43,6 +45,21 @@ export function getTimeAsString(date) {
 
     return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
     hours + ":" + minutes + " am";
+}
+
+//pretty prints dates in MM-DD-YYYY
+export function prettyPrintDate(date) {
+    
+    const currentTime = new Date().getTime();
+    const dateObj = new Date(date);
+    const timeTill = dateObj.getTime() - currentTime;
+
+    if (timeTill < -DAY) return date;
+    if (timeTill < 0) return "Today";
+    if (timeTill < DAY) return "Tomorrow";
+    if (timeTill < WEEK) return STRING_DAYS[dateObj.getDay()];
+
+    return date;
 }
 
 
