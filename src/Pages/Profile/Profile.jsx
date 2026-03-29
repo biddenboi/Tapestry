@@ -3,11 +3,53 @@ import { AppContext } from "../../App";
 import { useState, useEffect, useContext } from "react";
 import './Profile.css';
 import { STORES } from '../../utils/Constants.js'
-import { UTCStringToLocalDate, UTCStringToLocalTime } from "../../utils/Helpers/Time";
+import { UTCStringToLocalDate, UTCStringToLocalTime, formatDuration } from "../../utils/Helpers/Time";
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { getTaskDuration } from  '../../utils/Helpers/Tasks.js'
 import { getRankColorClass } from "../../utils/Helpers/Players.js";
+
+function HistoryItem({ element }) {
+    const type = element.type;
+    const iconMap = { task: "TSK", journal: "JNL", event: "EVT", transaction: "TXN" };
+
+    const title = element.taskName ?? element.title ?? element.description ?? element.name ?? "—";
+    const time = UTCStringToLocalTime(element.createdAt);
+
+    let subtitle = type;
+    if (type === "task") {
+        const dur = formatDuration(element.duration);
+        if (dur) subtitle += ` · ${dur}`;
+    } else if (type === "journal" && element.entry) {
+        subtitle += ` · ${element.entry.slice(0, 40)}${element.entry.length > 40 ? "…" : ""}`;
+    } else if (type === "event" && element.type) {
+        subtitle += ` · ${element.type}`;
+    } else if (type === "transaction" && element.location) {
+        subtitle += ` · ${element.location}`;
+    }
+
+    const pts = type === "task" && element.points > 0 ? `+${element.points} pts`
+        : type === "transaction" && element.cost ? `−${element.cost} tokens`
+        : null;
+
+    return (
+        <div className="history-item">
+            <div className="history-item-left">
+                <div className={`history-item-icon history-item-icon--${type}`}>
+                    {iconMap[type]}
+                </div>
+                <div className="history-item-body">
+                    <span className="history-item-name">{title}</span>
+                    <span className="history-item-sub">{subtitle}</span>
+                </div>
+            </div>
+            <div className="history-item-right">
+                {pts && <span className="history-item-pts">{pts}</span>}
+                <span className="history-item-time">{time}</span>
+            </div>
+        </div>
+    );
+}
 
 function Profile() {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -29,64 +71,50 @@ function Profile() {
     const events = await databaseConnection.getRelativePlayerStore(STORES.event, p);
     const transactions = await databaseConnection.getRelativePlayerStore(STORES.transaction, p);
 
-    //maybe move description to a function processed when called vs making it an attribute  
-
     let sum = 0;
     tasks.forEach(task => {
         //necessary if condition?
         if (getTaskDuration(task) == undefined) return;
-        const description = task.taskName;
-
-        const t = {
+        history.push({
             ...task,
-            description:description,
-            type: "Task"
-        }
-        sum += (t.points || 0);
-
-        history.push(t);
-    });
+            type: "task"
+        });
+        sum += (task.points || 0);
+    })
 
     journals.forEach(journal => {
-        const description = journal.title;
-
-        const j = {
+        //necessary if condition?
+        history.push({
             ...journal,
-            description:description,
-            type: "Journal"
-        }
-
-        history.push(j);
+            type: "journal"
+        });
     })
 
     events.forEach(event => {
-        const description = event.description;
-
-        const j = {
+        //necessary if condition?
+        if (getTaskDuration(event) == undefined) return;
+        history.push({
             ...event,
-            description:description,
-            type: "Event"
-        }
-
-        history.push(j);
+            type: "event"
+        });
     })
 
     transactions.forEach(transaction => {
-        const description = transaction.name;
-
-        const j = {
+        //necessary if condition?
+        if (getTaskDuration(transaction) == undefined) return;
+        history.push({
             ...transaction,
-            description:description,
-            type: "Transaction"
-        }
-
-        history.push(j);
+            type: "transaction"
+        });
     })
+
 
     history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     //checks if player is current player to use for journal creation button
     const currentPlayer = await databaseConnection.getCurrentPlayer();
+
+    console.log(history);
         
     setPlayer({
         ...p,
@@ -133,27 +161,13 @@ function Profile() {
                     : ""
                 }
             </div>
-            <div className="table-container">
-                <table>
-                        <tbody>
-                            {
-                                player.history.map((element, index) => (
-                                <tr key={element.UUID}>
-                                    <td>{UTCStringToLocalTime(element.createdAt)}</td>
-                                    <td>{element.type}</td>
-                                    <td className="description">
-                                        <div>
-                                            <span>{element.description}</span>
-                                            {element.type === "Journal" ? 
-                                            <button onClick={() => NiceModal.show(JournalPopup)}>View</button> : ""}
-                                        </div>
-                                    </td>
-                                    {/** replace description and points with generalized method */}
-                                    <td>{element.points ? element.points + "pts" : "0pts"}</td>
-                                </tr>))
-                            }
-                        </tbody>
-                </table>
+            <div className="container">
+                {player.history.map((element, index) => (
+                    <HistoryItem
+                        element={element}
+                        key={element.UUID}
+                    ></HistoryItem>
+                ))}
             </div>
         </div>
     </div>

@@ -62,6 +62,14 @@ export function prettyPrintDate(date) {
     return date;
 }
 
+export function formatDuration(ms) {
+    if (!ms || ms < 5000) return null;
+    const totalMin = Math.floor(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m}m`;
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
 
 export function getDateAsString(date) {
     const d = date.split('T')[0];
