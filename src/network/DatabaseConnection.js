@@ -63,7 +63,6 @@ class DatabaseConnection {
         todos.createIndex("distractions", "distractions", { unique: false });
         todos.createIndex("parent", "parent", { unique: false });
         todos.createIndex("efficiency", "efficiency", { unique: false });
-        todos.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
         todos.createIndex("location", "location", { unique: false });
         todos.createIndex("reasonToSelect", "reasonToSelect", { unique: false });

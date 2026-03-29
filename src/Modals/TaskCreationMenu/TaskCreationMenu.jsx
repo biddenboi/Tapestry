@@ -53,7 +53,7 @@ export default NiceModal.create(() => {
 
   const canSubmitTodo = () => {
     if (!activeTask.dueDate) return false;
-    if (!activeTask.estimatedBuffer || !activeTask.estimatedDuration) return false;
+    if (!activeTask.estimatedDuration) return false;
     return true;
   }
 
@@ -88,12 +88,6 @@ export default NiceModal.create(() => {
             <input type="number" name="estimatedDuration"
             value={activeTask.estimatedDuration || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
-          </label>
-          <label>
-            Buffer (min):
-            <input type="number" name="estimatedBuffer"
-            value={activeTask.estimatedBuffer || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, estimatedBuffer: e.target.value }))}/>
           </label>
           <label>
             Due Date:

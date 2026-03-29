@@ -11,10 +11,6 @@ div.timer > span.in-session {
   color: var(--light-green-color);
 }
 
-div.timer > span.in-buffer {
-  color: var(--lemonade-yellow-color);
-}
-
 div.timer > span.in-overtime {
   color: var(--red-orange-color);
 }

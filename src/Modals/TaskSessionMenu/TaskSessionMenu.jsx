@@ -177,8 +177,7 @@ export default NiceModal.create(() => {
           <div className="task-session-container">
             <Timer showPoints={true} 
               startTime={new Date(activeTask.createdAt).getTime()} 
-              duration={activeTask.estimatedDuration} 
-              buffer={activeTask.estimatedBuffer}/> 
+              duration={activeTask.estimatedDuration} />
             <div className="task-session-buttons">
               <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
               <button>Complete</button>
