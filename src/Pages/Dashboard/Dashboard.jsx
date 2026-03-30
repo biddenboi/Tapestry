@@ -2,7 +2,7 @@ import './Dashboard.css'
 import { useContext, useEffect, useState, useRef } from 'react'
 import App, { AppContext } from '../../App.jsx';
 import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
-import TodoList from '../../Components/Todolist/Todolist.jsx';
+import TodoList from '../../components/TodoList/TodoList.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import NiceModal from '@ebay/nice-modal-react';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
@@ -11,6 +11,7 @@ import { EVENT } from '../../utils/Constants.js';
 import EndDayConfirm from '../../Modals/EndDayConfirm/EndDayConfirm.jsx';
 import { addDurationToDate, getMidnightOfDate, getLocalDate, UTCStringToLocalDate } from '../../utils/Helpers/Time';
 import Purgatory from '../../Modals/Purgatory/Purgatory';
+import StartDayPopup from '../../Modals/StartDayPopup/StartDayPopup.jsx';
 
 function Dashboard() {
   const { databaseConnection, timestamp } = useContext(AppContext);
@@ -65,6 +66,7 @@ function Dashboard() {
 
   const handleEndWorkDay = async () => {
     NiceModal.show(JournalPopup, {title: "End of Workday Journal"})
+    //fix, should only be an event if end of day journal is submitted
     const currentPlayer = await databaseConnection.getCurrentPlayer();
     endWorkDay(databaseConnection, currentPlayer)
   }

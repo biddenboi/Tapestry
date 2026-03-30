@@ -34,8 +34,8 @@
 .grandmaster          { color: #ff4655; }
 .international-grandmaster { color: #e11d48; }
 .legendary-grandmaster { color: #e11d48; display: inline-block; }
-.legendary-grandmaster::first-letter { color: #f5a623; }
-.legendary { color: #ff4655; }
+.legendary-grandmaster::first-letter { color: #000000; }
+.legendary { color: #000000; }
 
 div.blanker {
     position: absolute; 

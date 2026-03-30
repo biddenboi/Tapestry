@@ -125,8 +125,8 @@ class DatabaseConnection {
                 players: players,
                 journals: journals,
                 events: events,
-                todos: todos,
                 shop, shop,
+                todos: todos,
                 transactions: transactions,
             }
 
