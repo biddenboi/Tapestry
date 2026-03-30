@@ -20,7 +20,6 @@ class DatabaseConnection {
     if (DATABASE_VERSION >= 1 && oldVersion < 1) {
         const tasks = this.database.createObjectStore(STORES.task, { keyPath: "UUID" });
         tasks.createIndex("createdAt", "createdAt", { unique: false });
-        tasks.createIndex("duration", "duration", { unique: false });
         tasks.createIndex("parent", "parent", { unique: false });
         tasks.createIndex("efficiency", "efficiency", { unique: false });
         tasks.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
