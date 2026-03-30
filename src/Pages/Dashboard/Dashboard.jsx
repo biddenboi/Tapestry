@@ -71,7 +71,7 @@ function Dashboard() {
   }
 
   const handleAddSession = async () => {
-    NiceModal.show(TaskCreationMenu)
+    NiceModal.show(TaskCreationMenu, { start: false})
   }
 
   if (scheduleStage == null) return;

@@ -28,8 +28,7 @@ function TodoItem({element}) {
         }));
         await databaseConnection.remove(STORES.todo, todo.UUID); 
 
-        NiceModal.show(TaskCreationMenu)
-
+        NiceModal.show(TaskCreationMenu, { start: false})
     };
 
     return <div className="todo-item" onClick={() => handleSelectTodo(element)}>
@@ -66,7 +65,7 @@ export default function TodoList({ style }) {
     }, [databaseConnection, activeTask])
 
     const handleGetNextTodo = async () => {
-        NiceModal.show(TaskCreationMenu)
+        NiceModal.show(TaskCreationMenu, { start: true})
         setActiveTask(prev => ({
             ...prev,
             taskName: nextTodo.taskName,

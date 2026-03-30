@@ -6,7 +6,7 @@ import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
 
-export default NiceModal.create(() => {    
+export default NiceModal.create(({start = false}) => {    
   const databaseConnection = useContext(AppContext).databaseConnection;
   const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
   const modal = useModal()
@@ -108,7 +108,10 @@ export default NiceModal.create(() => {
         </div>
       </div>
       <div className="task-planning-buttons">
-        <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button>
+        {
+          start ? 
+          <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button> : ""
+        }
         <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={!canSubmitTodo()}>Store</button>
       </div>
     </form>
