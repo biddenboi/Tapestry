@@ -1,7 +1,5 @@
 import { STORES, DAY } from "../Constants"
 
-// ─── Rank Display ────────────────────────────────────────────────────────────
-
 export const getRankColorClass = (player) => {
     if (player.elo < 1199) return "newbie"
     if (player.elo < 1399) return "pupil"
@@ -16,8 +14,6 @@ export const getRankColorClass = (player) => {
     return "legendary"
 }
 
-// ─── Competition Orchestrator ─────────────────────────────────────────────────
-
 export const endCompetition = async (db) => {
     const players = await db.getAll(STORES.player);
     if (players.length < 2) return;
@@ -28,8 +24,6 @@ export const endCompetition = async (db) => {
 
     await updateCompetitionStartDate(db, updatedPlayers, currentPlayer.UUID);
 };
-
-// ─── Score Fetching ───────────────────────────────────────────────────────────
 
 const fetchCompetitionScores = async (db, players) => {
     return Promise.all(players.map(async (player) => {
@@ -50,16 +44,10 @@ const fetchCompetitionScores = async (db, players) => {
     }));
 };
 
-// ─── Pure ELO Math ────────────────────────────────────────────────────────────
-
 const winProbability = (ratingA, ratingB) => {
     return 1.0 / (1.0 + Math.pow(6, (ratingB - ratingA) / 400));
 };
 
-/**
- * Uses seedElo — 1400 for unrated players (elo === 0), actual elo otherwise.
- * This prevents new players from distorting win-probability calculations.
- */
 const computeSeed = (allPlayers, ratingR) => {
     let result = 1;
     for (const other of allPlayers) {
@@ -70,7 +58,7 @@ const computeSeed = (allPlayers, ratingR) => {
 
 const binarySearchRating = (allPlayers, targetRank) => {
     let lo = 1;
-    let hi = 6000;
+    let hi = 4000;
 
     while (hi - lo > 1) {
         const mid = Math.floor((lo + hi) / 2);
@@ -99,19 +87,12 @@ const assignRanks = (scoredPlayers) => {
     return sorted;
 };
 
-const computeInflationAdjustment = (rankedPlayers) => {
-    const totalRawChange = rankedPlayers.reduce((sum, p) => sum + p.rawChange, 0);
-    return Math.floor(-totalRawChange / rankedPlayers.length) - 1;
-};
+const ELO_FLOOR = -50;
 
 const updateElo = (scoredPlayers) => {
     const withElo = scoredPlayers.map(p => ({
         ...p,
         elo:     p.elo ?? 0,
-        // seedElo: 1400 for any player whose stored elo is 0 (unrated).
-        // elo=0 is our "never competed" sentinel. Once they've competed their
-        // elo will be non-zero (positive or negative), so this only applies
-        // to genuinely new players in the probability calculations.
         seedElo: (p.elo == null || p.elo === 0) ? 1400 : p.elo,
     }));
 
@@ -120,34 +101,35 @@ const updateElo = (scoredPlayers) => {
     const withRawChange = ranked.map(player => {
         const others     = ranked.filter(p => p.UUID !== player.UUID);
         const fairRating = binarySearchRating(others, player.actualRank);
-        // rawChange based on seedElo so the delta is relative to 1400,
-        // not 0 — prevents the 3000-point first-round spike.
-        const rawChange  = Math.floor((fairRating - player.seedElo) / 2);
+        const rawChange  = Math.floor((fairRating - player.seedElo) / 70);
         return { ...player, rawChange };
     });
 
-    const adjustment = computeInflationAdjustment(withRawChange);
+    const totalRawChange = withRawChange.reduce((sum, p) => sum + p.rawChange, 0);
+    const adjustment     = Math.floor(-totalRawChange / withRawChange.length) - 1;
 
-    return withRawChange.map(player => ({
-        ...player,
-        elo: player.elo + Math.max(player.rawChange + adjustment, -10),
+    const withDelta = withRawChange.map(p => ({
+        ...p,
+        delta: p.rawChange + adjustment,
     }));
+
+    const totalDelta = withDelta.reduce((sum, p) => sum + Math.max(p.delta, ELO_FLOOR), 0);
+    const correction = Math.floor(-totalDelta / withDelta.length);
+
+    return withDelta.map(player => {
+        const baseElo = (player.elo === 0) ? player.seedElo : player.elo;
+        return {
+            ...player,
+            elo: baseElo + Math.max(player.delta + correction, ELO_FLOOR),
+        };
+    });
 };
 
-// ─── Competition Window Rolling ───────────────────────────────────────────────
-
-/**
- * @param {DatabaseConnection} db
- * @param {Object[]} players
- * @param {string} currentPlayerUUID - always pins to createdAt so the active
- *   profile's window never jumps into a random historical slot mid-session.
- */
 const updateCompetitionStartDate = async (db, players, currentPlayerUUID) => {
     await Promise.all(players.map(async (player) => {
         let newStart;
 
         if (player.UUID === currentPlayerUUID) {
-            // Active profile — always anchor to its own origin.
             newStart = player.createdAt;
         } else {
             const createdAtMs   = new Date(player.createdAt).getTime();
