@@ -1,7 +1,6 @@
 import './Dashboard.css'
 import { useContext, useEffect, useState, useRef } from 'react'
 import App, { AppContext } from '../../App.jsx';
-import RankListComponent from '../../Components/Ranklist/Ranklist.jsx';
 import TodoList from '../../components/TodoList/TodoList.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import NiceModal from '@ebay/nice-modal-react';
@@ -85,10 +84,10 @@ function Dashboard() {
       <button type="button" onClick={handleEndWorkDay}>End Workday</button> : 
       <button type="button" onClick={() => NiceModal.show(EndDayConfirm)}>End Day</button>}
       
-      <RankListComponent style={{width: "80vh", height:"60vh"}}/>
+      <TodoList style={{width: "100vh", height:"64vh"}} />
     </div>
     
-    <TodoList style={{width: "50vh", height:"64vh"}} />
+    
   </div>
 }
 

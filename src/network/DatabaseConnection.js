@@ -42,9 +42,6 @@ class DatabaseConnection {
         players.createIndex("tokens", "tokens", { unique:false })
         players.createIndex("wakeTime", "wakeTime", { unique:false })
         players.createIndex("sleepTime", "sleepTime", { unique:false })
-        players.createIndex("elo", "elo", { unique:false })
-        players.createIndex("completedAt", "completedAt", { unique:false })
-        players.createIndex("competitionStartDate", "competitionStartDate", { unique:false })
 
 
         const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });

@@ -47,7 +47,7 @@ function App() {
   useInterval(() => {
     setTimestamp(Date.now())
     //NOTE: CHANGE SECONDS TO MINUTES AFTER TESTING
-  }, 5* SECOND)
+  }, 5* MINUTE)
 
   //navigating across routes
   const navigate = (route) => {

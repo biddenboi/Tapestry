@@ -7,7 +7,6 @@ import { UTCStringToLocalDate, UTCStringToLocalTime, formatDuration } from "../.
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup";
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { getTaskDuration } from  '../../utils/Helpers/Tasks.js'
-import { getRankColorClass } from "../../utils/Helpers/Players.js";
 
 function HistoryItem({ element }) {
     const type = element.type;
@@ -66,7 +65,7 @@ function Profile() {
         const history = [];
 
         // Tasks use the relative window — same elapsed time comparison across players
-        const tasks        = await databaseConnection.getRelativePlayerStore(STORES.task, p);
+        const tasks     = await databaseConnection.getPlayerStore(STORES.task, p.UUID);
         
         // Everything else uses full player history — not windowed
         const journals     = await databaseConnection.getPlayerStore(STORES.journal, p.UUID);
@@ -126,13 +125,13 @@ function Profile() {
         <div className="profile-banner">
             <div className="stats-subsection">
                 <span>{UTCStringToLocalDate(player.createdAt)}</span>
-                <span className={getRankColorClass(player)}>{player.username}</span>
+                <span>{player.username}</span>
                 {player.description ? <span>{player.description}</span> : ""}
             </div>
             <div className="description-subsection">
                 <div>
-                    <span>Elo: </span>
-                    <span>{player.elo}</span>
+                    <span>Points: </span>
+                    <span>{player.points}</span>
                 </div>
                 <div> 
                     <span>Entries: </span>

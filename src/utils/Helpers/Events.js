@@ -4,7 +4,6 @@ import { DAY, MINUTE } from "../Constants.js";
 import JournalPopup from "../../Modals/JournalPopup/JournalPopup.jsx";
 import NiceModal from '@ebay/nice-modal-react';
 import { STORES, EVENT } from '../../utils/Constants.js'
-import { endCompetition } from "./Players.js";
 
 export const endDay = async (db, player, early) => {
     const rightBeforeMidnight = new Date(getMidnightOfDate(new Date()).getTime() - MINUTE);
@@ -31,7 +30,6 @@ export const startDay = async (db, player) => {
         parent: player.UUID,
         createdAt: new Date().toISOString()
     });
-    endCompetition(db);
 };
 
 export const endWorkDay = (async (db, player) => {
