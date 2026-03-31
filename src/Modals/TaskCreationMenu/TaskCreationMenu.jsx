@@ -89,6 +89,16 @@ export default NiceModal.create(({start = false}) => {
             value={activeTask.estimatedDuration || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
           </label>
+          {
+            //not included as dataset attribute
+            start ?
+            <label>
+              Session (min):
+              <input type="number" name="sessionDuration"
+              value={activeTask.sessionDuration || 0}
+              onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
+            </label> : ""
+          }
           <label>
             Due Date:
             <input type="date" name="dueDate"

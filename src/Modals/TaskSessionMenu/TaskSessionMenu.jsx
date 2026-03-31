@@ -29,7 +29,7 @@ export default NiceModal.create(() => {
         modal.remove();
     }
 
-    const handleTaskSubmit = async (e) => {
+    const handleTaskSubmit = async (e, save=false) => {
         e.preventDefault();
 
         const parent = await databaseConnection.getCurrentPlayer();
@@ -56,7 +56,6 @@ export default NiceModal.create(() => {
 
         await databaseConnection.add(STORES.task, task);
 
-        setActiveTask({});
         modal.hide();
         modal.remove();
 
@@ -67,55 +66,13 @@ export default NiceModal.create(() => {
             showTaskCreation: false,
         });
 
-        getCurrentLocation()
-            .then(async (location) => {
-                if (!location) return;
-                await databaseConnection.add(STORES.task, { ...task, location });
-            })
-            .catch((err) => {
-                console.error("Background location update failed:", err);
-            });
-    }
-
-    const handleTaskSubmitAndSave = async (e) => {
-        e.preventDefault();
-
-        const parent = await databaseConnection.getCurrentPlayer();
-
-        const task = {
-            ...activeTask,
-            points: null,
-            UUID: uuid(),
-            parent: parent.UUID,
-            completedAt: new Date().toISOString(),
-            location: null
+        if (save) {
+            activeTask.estimatedDuration -= activeTask.sessionDuration;
+            setActiveTask({...activeTask, createdAt: null});
+        }else {
+            setActiveTask({});
         }
-
-        const duration = getTaskDuration(task);
-        const multiplier = getSessionMultiplier(duration, task.estimatedDuration * MINUTE);
-        task.points = Math.floor(msToPoints(duration) * multiplier);
-
-        const tokensGained = Math.floor(msToPoints(duration) / 6);
-
-        activeTask.estimatedDuration -= Math.floor(duration / MINUTE);
-
-        databaseConnection.add(STORES.player, {
-            ...parent,
-            tokens: Math.floor(parent.tokens + tokensGained)
-        });
-
-        await databaseConnection.add(STORES.task, task);
-
-        setActiveTask({...activeTask, createdAt: null});
-        modal.hide();
-        modal.remove();
-
-        NiceModal.show(SessionResults, {
-            duration,
-            tokens: tokensGained,
-            estimatedDuration: task.estimatedDuration,
-            showTaskCreation: true,
-        });
+        
 
         getCurrentLocation()
             .then(async (location) => {
@@ -126,37 +83,6 @@ export default NiceModal.create(() => {
                 console.error("Background location update failed:", err);
             });
     }
-
-    //temporary method to log free for now transactions 
-    const handleLogTransaction = async (e) => {
-        e.preventDefault();
-
-        const parent = await databaseConnection.getCurrentPlayer();
-
-        const transaction = {
-            name: activeTask.taskName,
-            createdAt: activeTask.createdAt,
-            UUID: uuid(),
-            parent: parent.UUID,
-            completedAt: new Date().toISOString(),
-            location: null,
-        };
-
-        await databaseConnection.add(STORES.transaction, transaction);
-
-        setActiveTask({});
-        modal.hide();
-        modal.remove();
-
-        getCurrentLocation()
-            .then(async (location) => {
-                if (!location) return;
-                await databaseConnection.add(STORES.transaction, { ...transaction, location });
-            })
-            .catch((err) => {
-                console.error("Background location update failed:", err);
-            });
-    };
 
     return modal.visible ? <div className="task-session-menu">
         <div className="blanker"></div>
@@ -181,7 +107,7 @@ export default NiceModal.create(() => {
                     startTime={new Date(activeTask.createdAt).getTime()} 
                     duration={activeTask.estimatedDuration} />*/}
                 <div className="task-session-buttons">
-                    <button type="button" onClick={handleTaskSubmitAndSave}>⎋</button>
+                    <button type="button" onClick={() => handleTaskSubmit(true)}>⎋</button>
                     <button>Complete</button>
                     {/**temporary button just to hold off on breaks until shop is implemented */}
                     <button type="button" onClick={handleLogTransaction}>Zero Log</button>
