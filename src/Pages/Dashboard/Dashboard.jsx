@@ -36,7 +36,7 @@ function Dashboard() {
           return;
         }
 
-        if (getLocalDate(lastEvent.createdAt) < midnight) {
+        if (getLocalDate(new Date(lastEvent.createdAt)) < midnight) {
           if (lastEvent.type == EVENT.sleep) {
             await startDay(databaseConnection, p);
           }else {

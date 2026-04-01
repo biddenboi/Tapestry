@@ -1,5 +1,5 @@
 import { DATABASE_VERSION, STORES } from '../utils/Constants.js'
-import { addDurationToDate } from '../utils/Helpers/Time.js';
+import { addDurationToDate, getMidnightOfDate } from '../utils/Helpers/Time.js';
 
 
 class DatabaseConnection {
@@ -42,6 +42,10 @@ class DatabaseConnection {
         players.createIndex("tokens", "tokens", { unique:false })
         players.createIndex("wakeTime", "wakeTime", { unique:false })
         players.createIndex("sleepTime", "sleepTime", { unique:false })
+        players.createIndex("elo", "elo", { unique:false })
+        players.createIndex("completedAt", "completedAt", { unique:false })
+        players.createIndex("competitionStartDate", "competitionStartDate", { unique:false })
+
 
         const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });
         events.createIndex("type", "type", { unique:false })
@@ -167,18 +171,17 @@ class DatabaseConnection {
     } 
 
     /**
-     * retrieves all of a store for a player in the range of localTime + the elapsed time since midnight for the current day.
+     * retrieves all of a store for a player in the range of its createdAt to the createdAt + time the current profile has existed.
      * @param {*} player - player to retrieve the tasks of.
      */
     async getRelativePlayerStore(store, player) {
         const dateMS = (new Date()).getTime();
        
-        const current = await this.getCurrentPlayer();
-        const dateMidnightMS = new Date(current.createdAt).getTime()
+        const dateMidnightMS = getMidnightOfDate(new Date()).getTime();
 
         const msElapsed = dateMS - dateMidnightMS;
 
-        const startDate = player.createdAt;
+        const startDate = player.competitionStartDate;
         const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
 
         const data = await this.getStoreFromRange(store, startDate, endDate);
@@ -192,7 +195,10 @@ class DatabaseConnection {
          return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(store, "readonly");
             const objectStore = transaction.objectStore(store);
-            const index = objectStore.index("createdAt")
+        
+            const index = store == STORES.task ? objectStore.index("completedAt") : objectStore.index("createdAt")
+
+            
             const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
             const results = [];
      

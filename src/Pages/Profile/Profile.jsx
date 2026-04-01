@@ -62,65 +62,55 @@ function Profile() {
   useEffect(() => {
     //calculates data about player and creates new object with calculations
     const getPlayer = async () => {
-    const p = await databaseConnection.get(STORES.player, index);
+        const p = await databaseConnection.get(STORES.player, index);
+        const history = [];
 
-    const history = [];
-
-    const tasks = await databaseConnection.getRelativePlayerStore(STORES.task, p);
-    const journals = await databaseConnection.getRelativePlayerStore(STORES.journal, p);
-    const events = await databaseConnection.getRelativePlayerStore(STORES.event, p);
-    const transactions = await databaseConnection.getRelativePlayerStore(STORES.transaction, p);
-
-    let sum = 0;
-    tasks.forEach(task => {
-        //necessary if condition?
-        if (getTaskDuration(task) == undefined) return;
-        history.push({
-            ...task,
-            type: "task"
-        });
-        sum += (task.points || 0);
-    })
-
-    journals.forEach(journal => {
-        //necessary if condition?
-        history.push({
-            ...journal,
-            type: "journal"
-        });
-    })
-
-    events.forEach(event => {
-        //necessary if condition?
-        if (getTaskDuration(event) == undefined) return;
-        history.push({
-            ...event,
-            type: "event"
-        });
-    })
-
-    transactions.forEach(transaction => {
-        //necessary if condition?
-        if (getTaskDuration(transaction) == undefined) return;
-        history.push({
-            ...transaction,
-            type: "transaction"
-        });
-    })
-
-
-    history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-    //checks if player is current player to use for journal creation button
-    const currentPlayer = await databaseConnection.getCurrentPlayer();
-
-    console.log(history);
+        // Tasks use the relative window — same elapsed time comparison across players
+        const tasks        = await databaseConnection.getRelativePlayerStore(STORES.task, p);
         
-    setPlayer({
-        ...p,
-        points: sum,
-        history: history,
-        current: currentPlayer.UUID == index ? true : false
+        // Everything else uses full player history — not windowed
+        const journals     = await databaseConnection.getPlayerStore(STORES.journal, p.UUID);
+        const events       = await databaseConnection.getPlayerStore(STORES.event, p.UUID);
+        //repair by adding on creation - const transactions = await databaseConnection.getPlayerStore(STORES.transaction, p.UUID)
+
+        let sum = 0;
+        tasks.forEach(task => {
+            //necessary if condition?
+            if (getTaskDuration(task) == undefined) return;
+            history.push({
+                ...task,
+                type: "task"
+            });
+            sum += (task.points || 0);
+        })
+
+        journals.forEach(journal => {
+            //necessary if condition?
+            history.push({
+                ...journal,
+                type: "journal"
+            });
+        })
+
+        events.forEach(event => {
+            history.push({
+                ...event,
+                type: "event"
+            });
+        })
+
+
+
+        history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+        //checks if player is current player to use for journal creation button
+        const currentPlayer = await databaseConnection.getCurrentPlayer();
+            
+        setPlayer({
+            ...p,
+            points: sum,
+            history: history,
+            current: currentPlayer.UUID == index ? true : false
         });
     }
 
@@ -142,7 +132,7 @@ function Profile() {
             <div className="description-subsection">
                 <div>
                     <span>Elo: </span>
-                    <span>{player.points}</span>
+                    <span>{player.elo}</span>
                 </div>
                 <div> 
                     <span>Entries: </span>

@@ -65,6 +65,13 @@ function Settings() {
     }
 
     const handleProfileCreation = async (e) => {
+        // will fail if no player data: BUG
+        const currentPlayer = await databaseConnection.getCurrentPlayer();
+        await databaseConnection.add(STORES.player, {
+            ...currentPlayer,
+            completedAt:  new Date().toISOString()
+        })
+
         const player = {
             username: "Guest",
             UUID: uuid(),
@@ -72,7 +79,8 @@ function Settings() {
             wakeTime: "07:00",
             sleepTime: "23:00",
             tokens: 0,
-            elo:1400,
+            elo:0,
+            competitionStartDate: new Date().toISOString()
         }
         await databaseConnection.add(STORES.player, player);
     }
