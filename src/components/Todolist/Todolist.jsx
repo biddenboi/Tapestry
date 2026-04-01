@@ -2,7 +2,7 @@ import './Todolist.css'
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-import { getMostUrgent, getWeights } from '../../utils/Helpers/Tasks.js'
+import { getWeights, getNextTodo } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import { prettyPrintDate } from '../../utils/Helpers/Time.js';

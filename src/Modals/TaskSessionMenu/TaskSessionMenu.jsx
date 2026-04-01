@@ -30,8 +30,10 @@ export default NiceModal.create(() => {
     }
 
     const handleTaskSubmit = async (e, save=false) => {
-        e.preventDefault();
-
+        if (!save) {
+            e.preventDefault();
+        }
+        
         const parent = await databaseConnection.getCurrentPlayer();
 
         const task = {
@@ -62,8 +64,8 @@ export default NiceModal.create(() => {
         NiceModal.show(SessionResults, {
             duration,
             tokens: tokensGained,
-            estimatedDuration: task.estimatedDuration,
-            showTaskCreation: false,
+            estimatedDuration: task.sessionDuration,
+            showTaskCreation: save,
         });
 
         if (save) {
@@ -107,10 +109,9 @@ export default NiceModal.create(() => {
                     startTime={new Date(activeTask.createdAt).getTime()} 
                     duration={activeTask.estimatedDuration} />*/}
                 <div className="task-session-buttons">
-                    <button type="button" onClick={() => handleTaskSubmit(true)}>⎋</button>
+                    <button type="button" onClick={() => handleTaskSubmit(false)}>⎋</button>
                     <button>Complete</button>
                     {/**temporary button just to hold off on breaks until shop is implemented */}
-                    <button type="button" onClick={handleLogTransaction}>Zero Log</button>
                     <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
                 </div>
             </div>
