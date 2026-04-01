@@ -29,11 +29,7 @@ export default NiceModal.create(() => {
         modal.remove();
     }
 
-    const handleTaskSubmit = async (e, save=false) => {
-        if (!save) {
-            e.preventDefault();
-        }
-        
+    const handleTaskSubmit = async (save=false) => {
         const parent = await databaseConnection.getCurrentPlayer();
 
         const task = {
@@ -88,6 +84,7 @@ export default NiceModal.create(() => {
 
     return modal.visible ? <div className="task-session-menu">
         <div className="blanker"></div>
+        {/**maybe not make it a form, is it necessary? it only really exists as indicator.*/}
         <form action="" className="task-session-form" onSubmit={handleTaskSubmit}>
             <div className="task-session-description">
                 <div className="task-titlebar">
@@ -109,8 +106,8 @@ export default NiceModal.create(() => {
                     startTime={new Date(activeTask.createdAt).getTime()} 
                     duration={activeTask.estimatedDuration} />*/}
                 <div className="task-session-buttons">
-                    <button type="button" onClick={() => handleTaskSubmit(false)}>⎋</button>
-                    <button>Complete</button>
+                    <button type="button" onClick={() => handleTaskSubmit(true)}>⎋</button>
+                    <button type="button" onClick={() => handleTaskSubmit(false)}>Complete</button>
                     {/**temporary button just to hold off on breaks until shop is implemented */}
                     <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
                 </div>
