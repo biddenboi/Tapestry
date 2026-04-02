@@ -58,7 +58,7 @@ export default NiceModal.create(() => {
         NiceModal.show(SessionResults, {
             duration,
             tokens: tokensGained,
-            estimatedDuration: task.sessionDuration,
+            sessionDuration: task.sessionDuration,
             showTaskCreation: save,
         });
 

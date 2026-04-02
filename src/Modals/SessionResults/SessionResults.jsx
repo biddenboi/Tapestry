@@ -37,16 +37,16 @@ function useCountUp(target, duration = 1200, delay = 0) {
     return value;
 }
 
-export default NiceModal.create(({ duration, tokens, estimatedDuration, showTaskCreation }) => {
+export default NiceModal.create(({ duration, tokens, sessionDuration, showTaskCreation }) => {
     const modal = useModal();
 
-    const estimatedDurationMs = estimatedDuration * MINUTE;
-    const multiplier = getSessionMultiplier(duration, estimatedDurationMs);
+    const sessionDurationMs = sessionDuration * MINUTE;
+    const multiplier = getSessionMultiplier(duration, sessionDurationMs);
     const points = Math.floor(msToPoints(duration) * multiplier);
-    const maxPoints = msToPoints(estimatedDurationMs); // points at multiplier = 1
+    const maxPoints = msToPoints(sessionDurationMs); // points at multiplier = 1
     const pointDiff = points - maxPoints;
 
-    const ratio = estimatedDurationMs > 0 ? duration / estimatedDurationMs : 1;
+    const ratio = sessionDurationMs > 0 ? duration / sessionDurationMs : 1;
     const percentOfEstimate = Math.round(ratio * 100);
 
     const animatedPoints = useCountUp(points, 1000, 300);
@@ -84,7 +84,7 @@ export default NiceModal.create(({ duration, tokens, estimatedDuration, showTask
                 <div className="results-duration">
                     <span className="duration-value">{formatDuration(duration)}</span>
                     <span className="duration-sub">
-                        vs. {formatDuration(estimatedDurationMs)} estimated &nbsp;·&nbsp;
+                        vs. {formatDuration(sessionDurationMs)} estimated &nbsp;·&nbsp;
                         <span className={efficiency.className}>{efficiency.label} ({percentOfEstimate}%)</span>
                     </span>
                 </div>
