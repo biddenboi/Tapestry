@@ -22,7 +22,6 @@ class DatabaseConnection {
         tasks.createIndex("createdAt", "createdAt", { unique: false });
         tasks.createIndex("parent", "parent", { unique: false });
         tasks.createIndex("efficiency", "efficiency", { unique: false });
-        tasks.createIndex("estimatedBuffer", "estimatedBuffer", { unique: false });
         tasks.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
         tasks.createIndex("location", "location", { unique: false });
         tasks.createIndex("points", "points", { unique: false });
@@ -64,6 +63,7 @@ class DatabaseConnection {
         todos.createIndex("parent", "parent", { unique: false });
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
+        todos.createIndex("timeSpent", "timeSpent", { unique: false });
         todos.createIndex("location", "location", { unique: false });
         todos.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
         todos.createIndex("similarity", "similarity", { unique: false });

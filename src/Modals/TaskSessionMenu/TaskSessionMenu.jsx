@@ -1,6 +1,6 @@
 import './TaskSessionMenu.css'
 
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, act } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
 import { msToPoints } from '../../utils/Helpers/Time.js';
@@ -66,6 +66,7 @@ export default NiceModal.create(() => {
 
         if (save) {
             activeTask.estimatedDuration -= activeTask.sessionDuration;
+            console.log(activeTask.estimatedDuration);  
             setActiveTask({...activeTask, createdAt: null});
         }else {
             setActiveTask({});

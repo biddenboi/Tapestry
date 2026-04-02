@@ -6,6 +6,7 @@ import { getWeights, getNextTodo } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import { prettyPrintDate } from '../../utils/Helpers/Time.js';
+import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 
 function TodoItem({element}) {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -65,7 +66,7 @@ export default function TodoList({ style }) {
     }, [databaseConnection, activeTask])
 
     const handleGetNextTodo = async () => {
-        NiceModal.show(TaskCreationMenu, { start: true})
+        NiceModal.show(TaskPreviewMenu, { start: true})
         setActiveTask(prev => ({
             ...prev,
             taskName: nextTodo.taskName,

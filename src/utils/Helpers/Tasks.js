@@ -57,12 +57,7 @@ export const getWeights = (todoArray) => {
     today.setHours(0, 0, 0, 0);
           
     const weights = todoArray.map(t => {
-      const dur = parseFloat(t.estimatedDuration) || 0;
-      const buf = parseFloat(t.estimatedBuffer) || 0;
-      const due = new Date(t.dueDate + 'T00:00:00');
-
-      const daysUntilDue = Math.max((due - today) / DAY, 1);
-      return (dur + buf) / daysUntilDue;
+      return getTaskWeight(t);
     });
 
     const total = weights.reduce((sum, w) => sum + w, 0);
@@ -74,6 +69,14 @@ export const getWeights = (todoArray) => {
     const scaled = weights.map(w => (w / total) * 100);
     return scaled;
   } 
+}
+
+const getTaskWeight = (task) => {
+  const today = getLocalDate(new Date());
+  const dur = parseFloat(task.estimatedDuration) || 0;
+  const due = new Date(task.dueDate + 'T00:00:00');
+  const daysUntilDue = Math.max((due - today) / DAY, 1);
+  return (dur) / daysUntilDue;
 }
 
 /**calculates the estimated points based on a gaussian function centered at d.

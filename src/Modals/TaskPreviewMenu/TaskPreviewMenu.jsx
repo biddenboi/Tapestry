@@ -1,4 +1,4 @@
-import './TaskCreationMenu.css'
+import './TaskPreviewMenu.css'
 import { useContext, useEffect } from 'react'
 import { AppContext } from '../../App.jsx';
 import { v4 as uuid } from "uuid";
@@ -14,6 +14,7 @@ export default NiceModal.create(() => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
+        handleTodoSubmit();
         modal.hide()
         modal.remove();
       }
@@ -36,8 +37,6 @@ export default NiceModal.create(() => {
   }
 
   const handleTodoSubmit = async (e) => {
-    e.preventDefault();
-
     const todo = {
       ...activeTask,
       createdAt: new Date().toISOString(),
@@ -49,12 +48,6 @@ export default NiceModal.create(() => {
     setActiveTask({});
     modal.hide();
     modal.remove();
-  }
-
-  const canSubmitTodo = () => {
-    if (!activeTask.dueDate) return false;
-    if (!activeTask.estimatedDuration) return false;
-    return true;
   }
 
   return modal.visible ? <div className="task-creation-menu">
@@ -84,11 +77,11 @@ export default NiceModal.create(() => {
             onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
           <label>
-            Duration (min):
-            <input type="number" name="estimatedDuration"
-            value={activeTask.estimatedDuration || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
-          </label>
+            Session (min):
+            <input type="number" name="sessionDuration"
+            value={activeTask.sessionDuration || ""}
+            onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
+          </label> 
           <label>
             Due Date:
             <input type="date" name="dueDate"
@@ -108,7 +101,7 @@ export default NiceModal.create(() => {
         </div>
       </div>
       <div className="task-planning-buttons">
-        <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={!canSubmitTodo()}>Store</button>
+      <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button> 
       </div>
     </form>
   </ div> : ""
