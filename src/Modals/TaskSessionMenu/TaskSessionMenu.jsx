@@ -39,12 +39,12 @@ export default NiceModal.create(() => {
             location: null
         }
 
+        //calculating point gain logic
         const duration = getTaskDuration(task);
         const multiplier = getSessionMultiplier(duration, task.estimatedDuration * MINUTE);
         task.points = Math.floor(msToPoints(duration) * multiplier);
 
         const tokensGained = Math.floor(msToPoints(duration) / 6);
-
         databaseConnection.add(STORES.player, {
             ...parent,
             tokens: Math.floor(parent.tokens + tokensGained)
@@ -55,6 +55,7 @@ export default NiceModal.create(() => {
         modal.hide();
         modal.remove();
 
+        //showing results
         NiceModal.show(SessionResults, {
             duration,
             tokens: tokensGained,
@@ -69,7 +70,7 @@ export default NiceModal.create(() => {
             setActiveTask({});
         }
         
-
+        //async for setting location without causing popup open delay - possibly unnecessary
         getCurrentLocation()
             .then(async (location) => {
                 if (!location) return;
