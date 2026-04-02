@@ -90,7 +90,7 @@ export default NiceModal.create(() => {
         <form action="" className="task-session-form" onSubmit={handleTaskSubmit}>
             <div className="task-session-description">
                 <div className="task-titlebar">
-                    <p>{activeTask.taskName}</p>
+                    <p>{activeTask.name}</p>
                     <p>{activeTask.reasonToSelect}</p>
                 </div>
                 {activeTask.efficiency ?

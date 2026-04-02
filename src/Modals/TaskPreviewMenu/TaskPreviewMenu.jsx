@@ -40,25 +40,25 @@ export default NiceModal.create(() => {
   }
 
   const putTodoBack = async (e) => {
-    await databaseConnection.add(STORES.todo, activeTask);
+    await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 
     setActiveTask({});
     modal.hide();
     modal.remove();
   }
 
-  return modal.visible ? <div className="task-creation-menu">
+  return modal.visible ? <div className="task-preview-menu">
     <div className="blanker"></div>
-    <form action="" className="task-creation-form">   
+    <form action="" className="task-preview-form">   
       <div className="task-form-inputs">
       <div className="button-bar">
       </div>
-      <p>Task Creation</p>
+      <p>Preview</p>
         <div className="inputs">
           <label>
             Task Name:
-            <input type="text" name="taskName" 
-            value={activeTask.taskName || ""}
+            <input type="text" name="name" 
+            value={activeTask.name || ""}
             disabled={true}/>
           </label>
           <label>
@@ -79,12 +79,6 @@ export default NiceModal.create(() => {
             value={activeTask.sessionDuration || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
           </label> 
-          <label>
-            Due Date:
-            <input type="date" name="dueDate"
-            value={activeTask.dueDate || ""}
-            disabled={true}/>
-          </label>
           <label>
             Difficulty:
             <select name="difficulty"

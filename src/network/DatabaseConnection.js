@@ -25,7 +25,7 @@ class DatabaseConnection {
         tasks.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
         tasks.createIndex("location", "location", { unique: false });
         tasks.createIndex("points", "points", { unique: false });
-        tasks.createIndex("taskName", "taskName", { unique: false });
+        tasks.createIndex("name", "name", { unique: false });
         tasks.createIndex("completedAt", "completedAt", { unique: false });
 
         const journals = this.database.createObjectStore(STORES.journal, { keyPath: "UUID"});

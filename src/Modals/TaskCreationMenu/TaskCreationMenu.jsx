@@ -26,7 +26,7 @@ export default NiceModal.create(() => {
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
 
-    await databaseConnection.add(STORES.todo, activeTask);
+    await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 
     setActiveTask({});
     modal.hide();
@@ -36,7 +36,7 @@ export default NiceModal.create(() => {
   const canSubmitTodo = () => {
     if (!activeTask.dueDate) return false;
     if (!activeTask.estimatedDuration) return false;
-    return true;
+    return true; 
   }
 
   return modal.visible ? <div className="task-creation-menu">
@@ -49,9 +49,9 @@ export default NiceModal.create(() => {
         <div className="inputs">
           <label>
             Task Name:
-            <input type="text" name="taskName" 
-            value={activeTask.taskName || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, taskName: e.target.value }))}/>
+            <input type="text" name="name" 
+            value={activeTask.name || ""}
+            onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
           </label>
           <label>
             Why did you pick this task?

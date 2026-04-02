@@ -44,11 +44,6 @@ function App() {
     activeTask: [activeTask, setActiveTask]
   }), [timestamp, activeTask])
 
-  useInterval(() => {
-    setTimestamp(Date.now())
-    //NOTE: CHANGE SECONDS TO MINUTES AFTER TESTING
-  }, 5* MINUTE)
-
   //navigating across routes
   const navigate = (route) => {
     if (!activeTask.createdAt) {

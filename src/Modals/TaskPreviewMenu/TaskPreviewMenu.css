@@ -3,7 +3,7 @@
 /* NOTE: The form in TaskCreationMenu.jsx should use className="task-creation-form"
    instead of "task-creation-menu" to distinguish it from TaskSessionMenu's form. */
 
-div.task-creation-menu {
+div.task-preview-menu {
   position: fixed; 
   inset: 0;
   z-index:1;
@@ -12,7 +12,7 @@ div.task-creation-menu {
   justify-content: center;
 }
 
-form.task-creation-form {
+form.task-preview-form {
   position: relative; 
   z-index: 1;
   min-width:60%;
@@ -24,7 +24,7 @@ form.task-creation-form {
   box-shadow: var(--box-shadow);
 }
 
-form.task-creation-form label {
+form.task-preview-form label {
   display: flex;
   flex-direction: column;
 }

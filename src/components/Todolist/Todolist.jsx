@@ -1,5 +1,5 @@
 import './Todolist.css'
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, act } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { getWeights, getNextTodo } from '../../utils/Helpers/Tasks.js'
@@ -7,6 +7,7 @@ import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import { prettyPrintDate } from '../../utils/Helpers/Time.js';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
+import { useInterval } from '../../utils/useInterval.js';
 
 function TodoItem({element}) {
     const databaseConnection = useContext(AppContext).databaseConnection;
@@ -17,7 +18,7 @@ function TodoItem({element}) {
         
         setActiveTask(prev => ({
             ...prev,
-            taskName: todo.taskName,
+            name: todo.name,
             location: todo.location,
             distractions: todo.distractions,
             reasonToSelect: todo.reasonToSelect,
@@ -34,7 +35,7 @@ function TodoItem({element}) {
 
     return <div className="todo-item" onClick={() => handleSelectTodo(element)}>
         <div>
-            <span style={{color: `hsl(145, ${element.weight}%, 42%`}}>{element.taskName}</span>
+            <span style={{color: `hsl(145, ${element.weight}%, 42%`}}>{element.name}</span>
             <p>{element.difficulty} · {element.weight}%</p>
         </div>
         <span>{prettyPrintDate(element.dueDate)}</span>
@@ -69,7 +70,7 @@ export default function TodoList({ style }) {
         NiceModal.show(TaskPreviewMenu, { start: true})
         setActiveTask(prev => ({
             ...prev,
-            taskName: nextTodo.taskName,
+            task: nextTodo.name,
             location: nextTodo.location,
             distractions: nextTodo.distractions,
             reasonToSelect: nextTodo.reasonToSelect,
