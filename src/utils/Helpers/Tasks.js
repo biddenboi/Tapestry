@@ -56,9 +56,7 @@ export const getWeights = (todoArray) => {
     //maybe remove this line so more granular time controls are possible.
     today.setHours(0, 0, 0, 0);
           
-    const weights = todoArray.map(t => {
-      return getTaskWeight(t);
-    });
+    const weights = getAllWPDFromArray(todoArray);
 
     const total = weights.reduce((sum, w) => sum + w, 0);
 
@@ -71,7 +69,16 @@ export const getWeights = (todoArray) => {
   } 
 }
 
-const getTaskWeight = (task) => {
+
+const getAllWPDFromArray = (data) => {
+  const AllWPD = data.map(t => {
+      return getTodoWPD(t);
+  });
+  return AllWPD;
+}
+
+//calculates "Work per Day" or the area of task duration to complete each day
+const getTodoWPD = (task) => {
   const today = getLocalDate(new Date());
   const dur = parseFloat(task.estimatedDuration) || 0;
   const due = new Date(task.dueDate + 'T00:00:00');

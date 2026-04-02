@@ -65,6 +65,9 @@ export default NiceModal.create(() => {
 
         if (save) {
             activeTask.estimatedDuration -= activeTask.sessionDuration;
+
+            //not an index in tasks, if save mode it should exist as object.
+            activeTask.elapsedTime += activeTask.sessionDuration;
             setActiveTask({...activeTask, createdAt: null});
         }else {
             setActiveTask({});
