@@ -69,18 +69,19 @@ export const getWeights = (todoArray) => {
   } 
 }
 
-
-const getAllWPDFromArray = (data) => {
+const getAllWPDFromArray = (data, relative=false) => {
   const AllWPD = data.map(t => {
-      return getTodoWPD(t);
+      return getTodoWPD(t, relative);
   });
   return AllWPD;
 }
 
 //calculates "Work per Day" or the area of task duration to complete each day
-const getTodoWPD = (task) => {
+//if relative is true, only consider the actual time left, elsewise take into consideration elapsed time
+const getTodoWPD = (task, relative=false) => {
   const today = getLocalDate(new Date());
-  const dur = parseFloat(task.estimatedDuration) || 0;
+  const dur = !relative ? parseFloat(task.estimatedDuration) || 0 :
+    parseFloat(task.estimatedDuration || 0  + task.elapsedTime) || 0;
   const due = new Date(task.dueDate + 'T00:00:00');
   const daysUntilDue = Math.max((due - today) / DAY, 1);
   return (dur) / daysUntilDue;
