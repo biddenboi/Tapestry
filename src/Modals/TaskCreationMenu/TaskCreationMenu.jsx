@@ -23,28 +23,10 @@ export default NiceModal.create(() => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleStartTask = () => {
-    const taskData = {
-        ...activeTask,
-        createdAt: new Date().toISOString(),
-    }
-    setActiveTask(taskData);
-
-    modal.hide();
-    modal.remove();
-    NiceModal.show(TaskSessionMenu)
-  }
-
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
 
-    const todo = {
-      ...activeTask,
-      createdAt: new Date().toISOString(),
-      parent: parent.UUID,
-      UUID: uuid(),
-    }
-    await databaseConnection.add(STORES.todo, todo);
+    await databaseConnection.add(STORES.todo, activeTask);
 
     setActiveTask({});
     modal.hide();

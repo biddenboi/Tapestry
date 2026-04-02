@@ -14,7 +14,7 @@ export default NiceModal.create(() => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        handleTodoSubmit();
+        putTodoBack();
         modal.hide()
         modal.remove();
       }
@@ -24,26 +24,23 @@ export default NiceModal.create(() => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleStartTask = () => {
-    const taskData = {
+  const startSession = () => {
+    //What is parent?
+    const task = {
         ...activeTask,
         createdAt: new Date().toISOString(),
+        parent: parent.UUID,
+        UUID: uuid(),
     }
-    setActiveTask(taskData);
+    setActiveTask(task);
 
     modal.hide();
     modal.remove();
     NiceModal.show(TaskSessionMenu)
   }
 
-  const handleTodoSubmit = async (e) => {
-    const todo = {
-      ...activeTask,
-      createdAt: new Date().toISOString(),
-      parent: parent.UUID,
-      UUID: uuid(),
-    }
-    await databaseConnection.add(STORES.todo, todo);
+  const putTodoBack = async (e) => {
+    await databaseConnection.add(STORES.todo, activeTask);
 
     setActiveTask({});
     modal.hide();
@@ -62,19 +59,19 @@ export default NiceModal.create(() => {
             Task Name:
             <input type="text" name="taskName" 
             value={activeTask.taskName || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, taskName: e.target.value }))}/>
+            disabled={true}/>
           </label>
           <label>
             Why did you pick this task?
             <textarea name="reasonToSelect"
-             value={activeTask.reasonToSelect || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
+            value={activeTask.reasonToSelect || ""}
+            disabled={true}/>
           </label>
           <label>
             How will you use the time?
             <textarea name="efficiency"
             value={activeTask.efficiency || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
+            disabled={true}/>
           </label>
           <label>
             Session (min):
@@ -86,13 +83,13 @@ export default NiceModal.create(() => {
             Due Date:
             <input type="date" name="dueDate"
             value={activeTask.dueDate || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
+            disabled={true}/>
           </label>
           <label>
             Difficulty:
             <select name="difficulty"
               value={activeTask.difficulty || ""}
-              onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}>
+              disabled={true}>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
               <option value="hard">Hard</option>
@@ -101,7 +98,7 @@ export default NiceModal.create(() => {
         </div>
       </div>
       <div className="task-planning-buttons">
-      <button onClick={handleStartTask} className="task-form-buttons" type="button" disabled={activeTask.taskName ? false : true}>Start</button> 
+      <button onClick={startSession} className="task-form-buttons" type="button" disabled={activeTask.sessionDuration ? false : true}>Start</button> 
       </div>
     </form>
   </ div> : ""

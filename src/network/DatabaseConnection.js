@@ -63,7 +63,7 @@ class DatabaseConnection {
         todos.createIndex("parent", "parent", { unique: false });
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-        todos.createIndex("timeSpent", "timeSpent", { unique: false });
+        todos.createIndex("elapsedTime", "elapsedTime", { unique: false });
         todos.createIndex("location", "location", { unique: false });
         todos.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
         todos.createIndex("similarity", "similarity", { unique: false });

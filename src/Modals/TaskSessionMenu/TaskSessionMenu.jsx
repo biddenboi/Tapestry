@@ -35,8 +35,6 @@ export default NiceModal.create(() => {
         const task = {
             ...activeTask,
             points: null,
-            UUID: uuid(),
-            parent: parent.UUID,
             completedAt: new Date().toISOString(),
             location: null
         }
@@ -66,7 +64,6 @@ export default NiceModal.create(() => {
 
         if (save) {
             activeTask.estimatedDuration -= activeTask.sessionDuration;
-            console.log(activeTask.estimatedDuration);  
             setActiveTask({...activeTask, createdAt: null});
         }else {
             setActiveTask({});
