@@ -2,7 +2,7 @@ import './Todolist.css'
 import { useState, useEffect, useContext, act } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-import { getWeights, getNextTodo } from '../../utils/Helpers/Tasks.js'
+import { getWeights, getNextTodo, getTodoWPD } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import { prettyPrintDate } from '../../utils/Helpers/Time.js';
@@ -22,7 +22,7 @@ function TodoItem({element}) {
             location: todo.location,
             distractions: todo.distractions,
             reasonToSelect: todo.reasonToSelect,
-              efficiency: todo.efficiency,
+            efficiency: todo.efficiency,
             estimatedDuration: todo.estimatedDuration,
             estimatedBuffer: todo.estimatedBuffer,
             dueDate: todo.dueDate,
@@ -70,7 +70,7 @@ export default function TodoList({ style }) {
         NiceModal.show(TaskPreviewMenu, { start: true})
         setActiveTask(prev => ({
             ...prev,
-            task: nextTodo.name,
+            name: nextTodo.name,
             location: nextTodo.location,
             distractions: nextTodo.distractions,
             reasonToSelect: nextTodo.reasonToSelect,

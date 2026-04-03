@@ -2,7 +2,7 @@ import { DAY } from '../Constants.js';
 import { getLocalDate } from './Time.js';
 
 export const getTaskDuration = (task) => {
-    return new Date(task.completedAt).getTime() - new Date(task.createdAt).getTime();
+  return new Date(task.completedAt).getTime() - new Date(task.createdAt).getTime();
 }
 
 export const getNextTodo = (todoArray, weightArray) => {
@@ -69,7 +69,7 @@ export const getWeights = (todoArray) => {
   } 
 }
 
-const getAllWPDFromArray = (data, relative=false) => {
+export const getAllWPDFromArray = (data, relative=false) => {
   const AllWPD = data.map(t => {
       return getTodoWPD(t, relative);
   });
@@ -78,12 +78,12 @@ const getAllWPDFromArray = (data, relative=false) => {
 
 //calculates "Work per Day" or the area of task duration to complete each day
 //if relative is true, only consider the actual time left, elsewise take into consideration elapsed time
-const getTodoWPD = (task, relative=false) => {
-  const today = getLocalDate(new Date());
+export const getTodoWPD = (task, relative=false) => {
+  const now = getLocalDate(new Date());
   const dur = !relative ? parseFloat(task.estimatedDuration) || 0 :
-    parseFloat(task.estimatedDuration || 0  + task.elapsedTime) || 0;
+    parseFloat((task.estimatedDuration || 0)  + (task.elapsedTime || 0));
   const due = new Date(task.dueDate + 'T00:00:00');
-  const daysUntilDue = Math.max((due - today) / DAY, 1);
+  const daysUntilDue = Math.max((due - now) / DAY, 0) + 1;
   return (dur) / daysUntilDue;
 }
 

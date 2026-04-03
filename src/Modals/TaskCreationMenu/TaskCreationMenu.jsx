@@ -50,37 +50,37 @@ export default NiceModal.create(() => {
           <label>
             Task Name:
             <input type="text" name="name" 
-            value={activeTask.name || ""}
+            defaultValue={activeTask.name || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
           </label>
           <label>
             Why did you pick this task?
             <textarea name="reasonToSelect"
-             value={activeTask.reasonToSelect || ""}
+            defaultValue={activeTask.reasonToSelect || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
           </label>
           <label>
             How will you use the time?
             <textarea name="efficiency"
-            value={activeTask.efficiency || ""}
+            defaultValue={activeTask.efficiency || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
           <label>
             Duration (min):
-            <input type="number" name="estimatedDuration"
-            value={activeTask.estimatedDuration || ""}
+            <input type="number" name="estimatedDuration" min="1"
+            defaultValue={Math.max(activeTask.estimatedDuration, 0) || 0}
             onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
           </label>
           <label>
             Due Date:
             <input type="date" name="dueDate"
-            value={activeTask.dueDate || ""}
+            defaultValue={activeTask.dueDate || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
           </label>
           <label>
             Difficulty:
             <select name="difficulty"
-              value={activeTask.difficulty || ""}
+              defaultValue={activeTask.difficulty || ""}
               onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
