@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
-import { getTodoWPD } from '../../utils/Helpers/Tasks.js';
+import { getTodoWPD, getDaysUntilDue } from '../../utils/Helpers/Tasks.js';
 
 export default NiceModal.create(() => {    
   const databaseConnection = useContext(AppContext).databaseConnection;
@@ -33,6 +33,19 @@ export default NiceModal.create(() => {
 
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
+    const task = await databaseConnection.get(STORES.todo, activeTask.UUID || "");
+    
+    if (task) {
+      const durationDifference = activeTask.estimatedDuration - task.estimatedDuration;
+      const currentplayer = await databaseConnection.getCurrentPlayer();
+      const delta = parseInt(durationDifference) / parseInt(getDaysUntilDue(task));
+
+      //whenever duration of an existing task is changed, it needs to update its time
+      //contribution relative to the remaining work of the task.
+      currentplayer.minutesClearedToday += delta;
+      await databaseConnection.add(STORES.player, currentplayer);
+    }
+    
 
     await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 

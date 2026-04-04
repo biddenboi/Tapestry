@@ -37,6 +37,7 @@ export default function TodoList({ style }) {
     const [todos, setTodos] = useState([]);
     const [nextTodo, setNextTodo] = useState(null);
     const [minLeftToWork, setMinLeftToWork] = useState(null);
+    const [minWorked, setMinWorked] = useState(null);
 
     useEffect(() => {
         const reload = async () => {
@@ -48,6 +49,7 @@ export default function TodoList({ style }) {
             const SumTodoWPD = AllTodoWPD.reduce((a, c) => a+c, 0);
 
             setMinLeftToWork(SumTodoWPD);
+            setMinWorked(currentPlayer.minutesClearedToday);
 
             setTodos(todoArray.map((element, i) => ({
                 ...element,
@@ -56,7 +58,6 @@ export default function TodoList({ style }) {
             
             //check if nextTodo has not been used yet
             setNextTodo(getNextTodo(todoArray, weightArray));
-            console.log(minLeftToWork);
         }
         reload();
     }, [databaseConnection, activeTask])
@@ -72,6 +73,7 @@ export default function TodoList({ style }) {
         <div className="header">
             <p>Todo List</p>
             {minLeftToWork > 0 && <p>{formatDuration(minLeftToWork*MINUTE)} Left</p>}
+            <p>{formatDuration(minWorked*MINUTE)} Minutes Worked</p>
             <button 
                 onClick={() => handleGetNextTodo()} 
                 disabled={!nextTodo}

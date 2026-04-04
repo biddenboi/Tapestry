@@ -81,7 +81,7 @@ function Settings() {
             sleepTime: "23:00",
             tokens: 0,
             elo:0,
-            minutesWorkedToday: 0
+            minutesClearedToday: 0
         }
         await databaseConnection.add(STORES.player, player);
     }

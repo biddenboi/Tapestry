@@ -24,17 +24,22 @@ export default NiceModal.create(() => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleTodoSubmit = async (e) => {
+    const handleTodoSubmit = async (e) => {
     e.preventDefault();
-    const task = databaseConnection.get(STORES.todo, activeTask.UUID);
-
+    const task = await databaseConnection.get(STORES.todo, activeTask.UUID || "");
+    
     if (task) {
+      
       const durationDifference = activeTask.estimatedDuration - task.estimatedDuration;
       const currentplayer = await databaseConnection.getCurrentPlayer();
+      const delta = parseInt(durationDifference) / parseInt(getDaysUntilDue(task));
 
-      currentplayer.minWorkedToday += durationDifference / getDaysUntilDue(task);
+      //whenever duration of an existing task is changed, it needs to update its time
+      //contribution relative to the remaining work of the task.
+      currentplayer.minutesClearedToday += delta;
       await databaseConnection.add(STORES.player, currentplayer);
     }
+    
 
     await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 

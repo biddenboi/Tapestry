@@ -46,12 +46,12 @@ export default NiceModal.create(() => {
         const multiplier = getSessionMultiplier(duration, task.estimatedDuration * MINUTE);
         task.points = Math.floor(msToPoints(duration) * multiplier);
         
-
         const tokensGained = Math.floor(msToPoints(duration) / 6);
+
         databaseConnection.add(STORES.player, {
             ...parent,
             tokens: Math.floor(parent.tokens + tokensGained),
-            minutesWorkedToday: parent.minutesWorkedToday + sessionDuration,
+            minutesClearedToday: parent.minutesClearedToday + parseFloat(sessionDuration || 0),
         });
 
         await databaseConnection.add(STORES.task, task);
@@ -63,7 +63,7 @@ export default NiceModal.create(() => {
         NiceModal.show(SessionResults, {
             duration,
             tokens: tokensGained,
-            sessionDuration: task.sessionDuration,
+            sessionDuration: sessionDuration,
             showTaskCreation: save,
         });
 

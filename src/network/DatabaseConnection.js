@@ -42,7 +42,7 @@ class DatabaseConnection {
         players.createIndex("wakeTime", "wakeTime", { unique:false })
         players.createIndex("sleepTime", "sleepTime", { unique:false })
         //stored, but temporary index to keep track of a players work per day. Caching.
-        players.createIndex("minutesWorkedToday", "minutesWorkedToday", { unique:false })
+        players.createIndex("minutesClearedToday", "minutesClearedToday", { unique:false })
 
 
         const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });
@@ -275,12 +275,12 @@ class DatabaseConnection {
 
             const request = objectStore.put(data);
 
-            transaction.onsuccess = (event) => {
+            request.onsuccess = (event) => {
                 if (!request) resolve(null);
                 resolve(request.result);
             }
 
-            transaction.onerror = (event) => {
+            request.onerror = (event) => {
                 reject(request.error);
             }
         })
