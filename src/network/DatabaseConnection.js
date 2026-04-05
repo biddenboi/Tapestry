@@ -240,6 +240,7 @@ class DatabaseConnection {
 
             request.onsuccess = (e) => {
                 const cursor = e.target.result;
+                if (!cursor) resolve(null);
                 resolve(cursor.value);
             }
 

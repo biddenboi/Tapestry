@@ -67,11 +67,12 @@ function Settings() {
     const handleProfileCreation = async (e) => {
         // will fail if no player data: BUG
         const currentPlayer = await databaseConnection.getCurrentPlayer();
-        await databaseConnection.add(STORES.player, {
+        if (currentPlayer) {
+            await databaseConnection.add(STORES.player, {
             ...currentPlayer,
             completedAt:  new Date().toISOString()
-        })
-
+            })
+        }
         const player = {
             username: "Guest",
             UUID: uuid(),

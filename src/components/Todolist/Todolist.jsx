@@ -60,7 +60,6 @@ export default function TodoList({ style }) {
             })))
             
             //check if nextTodo has not been used yet
-            if (nextTodo != null || todoArray.length === 0) return;
             setNextTodo(getNextTodo(todoArray, weightArray));
         }
         reload();
