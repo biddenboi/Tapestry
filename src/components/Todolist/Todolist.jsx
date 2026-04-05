@@ -2,16 +2,17 @@ import './Todolist.css'
 import { useState, useEffect, useContext, act } from "react";
 import { AppContext } from '../../App.jsx';
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-import { getWeights, getNextTodo, getTodoWPD } from '../../utils/Helpers/Tasks.js'
+import { getWeights, getNextTodo, getTodoWPD, getAllWPDFromArray } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
-import { prettyPrintDate } from '../../utils/Helpers/Time.js';
+import { prettyPrintDate, formatDuration } from '../../utils/Helpers/Time.js';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import { useInterval } from '../../utils/useInterval.js';
 
 function TodoItem({element}) {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+    
 
     const handleSelectTodo = async (todo) => {
         //review
@@ -48,11 +49,15 @@ export default function TodoList({ style }) {
 
     const [todos, setTodos] = useState([]);
     const [nextTodo, setNextTodo] = useState(null);
+    const [minLeftToWork, setMinLeftToWork] = useState(null);
 
     useEffect(() => {
         const reload = async () => {
             const todoArray = await databaseConnection.getAll(STORES.todo);
-            const weightArray = getWeights(todoArray)
+            const AllTodoWPD = await getAllWPDFromArray(todoArray);
+            const weightArray = getWeights(todoArray);
+
+            setMinLeftToWork(AllTodoWPD.reduce((a, c) => a+c, 0));
 
             setTodos(todoArray.map((element, i) => ({
                 ...element,
@@ -86,6 +91,7 @@ export default function TodoList({ style }) {
     return <div className="todo-creation-menu" style={style}>
         <div className="header">
             <p>Todo List</p>
+            <p>{formatDuration(minLeftToWork*MINUTE)} Left</p>
             <button 
                 onClick={() => handleGetNextTodo()} 
                 disabled={!nextTodo}

@@ -64,10 +64,13 @@ export default NiceModal.create(() => {
         });
 
         if (save) {
-            activeTask.estimatedDuration -= activeTask.sessionDuration;
+            const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
+            const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
+            const elapsedTime = parseFloat(activeTask.elapsedTime) || 0;
+            console.log(elapsedTime);
+            activeTask.estimatedDuration = estimatedDuration - sessionDuration;
+            activeTask.elapsedTime = sessionDuration + elapsedTime;
 
-            //not an index in tasks, if save mode it should exist as object.
-            activeTask.elapsedTime += activeTask.sessionDuration;
             setActiveTask({...activeTask, createdAt: null});
         }else {
             setActiveTask({});

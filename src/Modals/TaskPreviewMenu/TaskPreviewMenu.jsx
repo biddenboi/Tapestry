@@ -13,7 +13,7 @@ export default NiceModal.create(() => {
   const modal = useModal()
 
   const startSession = () => {
-    //What is parent?
+    const parent = databaseConnection.getCurrentPlayer();
     const task = {
         ...activeTask,
         createdAt: new Date().toISOString(),
@@ -54,38 +54,38 @@ export default NiceModal.create(() => {
           <label>
             Task Name:
             <input type="text" name="name" 
-            defaultValue={activeTask.name || ""}
+            value={activeTask.name || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
           </label>
           <label>
             Why did you pick this task?
             <textarea name="reasonToSelect"
-            defaultValue={activeTask.reasonToSelect || ""}
+            value={activeTask.reasonToSelect || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
           </label>
           <label>
             How will you use the time?
             <textarea name="efficiency"
-            defaultValue={activeTask.efficiency || ""}
+            value={activeTask.efficiency || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
           <label>
             Session (min):
             <input type="number" name="sessionDuration" min="1"
-            defaultValue={Math.floor(getTodoWPD(activeTask)) || 0}
+            value={Math.floor(getTodoWPD(activeTask)) || 0}
             onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
           </label> 
           <label>
             Due Date:
             <input type="date" name="dueDate"
-            defaultValue={activeTask.dueDate || ""}
+            value={activeTask.dueDate || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
           </label>
           <label>
             Difficulty:
             <select name="difficulty"
               onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}
-              defaultValue={activeTask.difficulty || ""}>
+              value={activeTask.difficulty || ""}>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
               <option value="hard">Hard</option>
