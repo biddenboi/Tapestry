@@ -13,8 +13,23 @@ export default NiceModal.create(() => {
   const modal = useModal()
 
   useEffect(() => {
-    activeTask.sessionDuration = Math.floor(getTodoWPD(activeTask));
+    //limit session to 60 minutes to emphasize quick scrolling through tasks
+    activeTask.sessionDuration = Math.min(Math.floor(getTodoWPD(activeTask)), 60);
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowLeft" && canSubmitTodo()) {
+        handleTodoSubmit()
+      }
+      if (e.key === "ArrowRight") {
+        startSession()
+      }
+    };
+      
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [activeTask]);
 
   const startSession = async () => {
     const parent = await databaseConnection.getCurrentPlayer();
@@ -32,21 +47,6 @@ export default NiceModal.create(() => {
   }
 
   const handleTodoSubmit = async (e) => {
-    e.preventDefault();
-    const task = await databaseConnection.get(STORES.todo, activeTask.UUID || "");
-    
-    if (task) {
-      const durationDifference = activeTask.estimatedDuration - task.estimatedDuration;
-      const currentplayer = await databaseConnection.getCurrentPlayer();
-      const delta = parseInt(durationDifference) / parseInt(getDaysUntilDue(task));
-
-      //whenever duration of an existing task is changed, it needs to update its time
-      //contribution relative to the remaining work of the task.
-      currentplayer.minutesClearedToday += delta;
-      await databaseConnection.add(STORES.player, currentplayer);
-    }
-    
-
     await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 
     setActiveTask({});
@@ -75,44 +75,18 @@ export default NiceModal.create(() => {
             onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
           </label>
           <label>
-            Why did you pick this task?
-            <textarea name="reasonToSelect"
-            value={activeTask.reasonToSelect || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
-          </label>
+            Session Duration ({activeTask.sessionDuration || ""} minutes):
+            <input type="range" name="sessionDuration" min="1" max="60"
+            value={activeTask.sessionDuration || ""}
+            onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
+          </label>  
           <label>
             How will you use the time?
             <textarea name="efficiency"
             value={activeTask.efficiency || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
           </label>
-          <label>
-            Session (min):
-            <input type="number" name="sessionDuration" min="1"
-            value={activeTask.sessionDuration | ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
-          </label> 
-          <label>
-            Due Date:
-            <input type="date" name="dueDate"
-            value={activeTask.dueDate || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
-          </label>
-          <label>
-            Difficulty:
-            <select name="difficulty"
-              onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}
-              value={activeTask.difficulty || ""}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </label>
         </div>
-      </div>
-      <div className="task-planning-buttons">
-        <button onClick={startSession} className="task-form-buttons" type="button">Start</button> 
-        <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={!canSubmitTodo()}>Store</button>
       </div>
     </form>
   </ div> : ""

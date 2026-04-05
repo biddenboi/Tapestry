@@ -14,44 +14,48 @@ export default NiceModal.create(() => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        modal.hide()
-        modal.remove();
+      if (e.key === "ArrowRight" && canSubmitTodo()) {
+        handleTodoSubmit()
+      }
+      if (e.key === "ArrowLeft") {
+        handleDelete()
       }
     };
       
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [activeTask]);
 
-    const handleTodoSubmit = async (e) => {
-    e.preventDefault();
-    const task = await databaseConnection.get(STORES.todo, activeTask.UUID || "");
-    
-    if (task) {
-      
-      const durationDifference = activeTask.estimatedDuration - task.estimatedDuration;
-      const currentplayer = await databaseConnection.getCurrentPlayer();
-      const delta = parseInt(durationDifference) / parseInt(getDaysUntilDue(task));
+    const handleTodoSubmit = async () => {
 
-      //whenever duration of an existing task is changed, it needs to update its time
-      //contribution relative to the remaining work of the task.
-      currentplayer.minutesClearedToday += delta;
-      await databaseConnection.add(STORES.player, currentplayer);
-    }
-    
+      if (activeTask.originalDuration !== undefined) {
+          const durationDifference = activeTask.estimatedDuration - activeTask.originalDuration;
+          const currentPlayer = await databaseConnection.getCurrentPlayer();
+          const daysUntil = getDaysUntilDue(activeTask);
+          const delta = daysUntil > 0 ? parseInt(durationDifference) / daysUntil : 0;
 
-    await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
+          await databaseConnection.add(STORES.player, {
+              ...currentPlayer,
+              minutesClearedToday: currentPlayer.minutesClearedToday - delta
+          });
+      }
 
-    setActiveTask({});
-    modal.hide();
-    modal.remove();
+      await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
+      setActiveTask({});
+      modal.hide();
+      modal.remove();
   }
 
   const canSubmitTodo = () => {
     if (!activeTask.dueDate) return false;
     if (!activeTask.estimatedDuration) return false;
     return true; 
+  }
+
+  const handleDelete = () => {
+    setActiveTask({});
+    modal.hide();
+    modal.remove();
   }
 
   return modal.visible ? <div className="task-creation-menu">
@@ -103,9 +107,6 @@ export default NiceModal.create(() => {
             </select>
           </label>
         </div>
-      </div>
-      <div className="task-planning-buttons">
-        <button className="task-form-buttons" onClick={handleTodoSubmit} disabled={!canSubmitTodo()}>Store</button>
       </div>
     </form>
   </ div> : ""

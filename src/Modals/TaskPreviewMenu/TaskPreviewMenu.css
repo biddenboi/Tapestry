@@ -29,7 +29,7 @@ form.task-preview-form label {
   flex-direction: column;
 }
 
-div.task-form-inputs p {
+form.task-preview-form div.task-form-inputs p {
   background-color: var(--bg-dark);
   padding: 0.5%;
   border: var(--border-card);
@@ -37,61 +37,38 @@ div.task-form-inputs p {
   font-weight: 700;
 }
 
-div.task-form-inputs > div.inputs {
+form.task-preview-form div.task-form-inputs > div.inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 5%;
   row-gap: 2%;
   grid-template-rows: auto;
   padding: 1% 5% 7% 5%;
-  
 }
 
-div.task-form-inputs > div *:first-child {
-  grid-column-start: span 2;
-}
-
-div.task-form-inputs > input {
+form.task-preview-form div.task-form-inputs > input {
   border: var(--border-card);
 }
 
-div.task-form-inputs select {
+form.task-preview-form div.task-form-inputs select {
   padding: 4px 0px;
 }
 
-div.task-form-inputs label {
+form.task-preview-form div.task-form-inputs label {
   color: var(--text-muted);
 }
 
-div.task-form-inputs label:focus-within {
+form.task-preview-form div.task-form-inputs label:focus-within {
   color: var(--text);
 }
 
-div.task-form-inputs label > textarea {
-  grid-row: span 2;
+form.task-preview-form div.task-form-inputs label > textarea {
   resize: none;
   height: 30vh;
   white-space: pre-wrap;
   border: var(--border-card);
 }
 
-div.task-planning-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 5%;
-}
-
-button.task-form-buttons {
-  width: 30%;
-  padding: 12px;
-  border: var(--border-card);
-}
-
-button.task-form-buttons:nth-child(1) {
-  width: 60%;
-}
-
-div.task-planning-buttons > button.task-form-buttons {
-  background-color: var(--bg-dark);
-  box-shadow: var(--box-shadow);
+form.task-preview-form div.task-form-inputs label:has(textarea) {
+  grid-column: span 2;
 }

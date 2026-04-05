@@ -21,15 +21,28 @@ export default NiceModal.create(() => {
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
     const modal = useModal()
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+        if (e.key === "ArrowLeft") {
+            handleGiveUpTask()
+        }
+        if (e.key === "ArrowRight") {
+            handleTaskSubmit()
+        }
+        };
+        
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [activeTask]);
+
     const handleGiveUpTask = async (e) => {
-        e.target.form.reset();
         setActiveTask({...activeTask, createdAt: null});
         NiceModal.show(TaskCreationMenu)
         modal.hide();
         modal.remove();
     }
 
-    const handleTaskSubmit = async (save=false) => {
+    const handleTaskSubmit = async () => {
         const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
         const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
         const parent = await databaseConnection.getCurrentPlayer();
@@ -64,15 +77,11 @@ export default NiceModal.create(() => {
             duration,
             tokens: tokensGained,
             sessionDuration: sessionDuration,
-            showTaskCreation: save,
+            showTaskCreation: true,
         });
 
-        if (save) {
-            activeTask.estimatedDuration = estimatedDuration - sessionDuration;
-            setActiveTask({...activeTask, createdAt: null});
-        }else {
-            setActiveTask({});
-        }
+        activeTask.estimatedDuration = estimatedDuration - sessionDuration;
+        setActiveTask({...activeTask, createdAt: null});
         
         //async for setting location without causing popup open delay - possibly unnecessary
         getCurrentLocation()
@@ -94,26 +103,10 @@ export default NiceModal.create(() => {
                     <p>{activeTask.name}</p>
                     <p>{activeTask.reasonToSelect}</p>
                 </div>
-                {activeTask.efficiency ?
-                    <>
-                        <p>Plan</p>
-                        <span>
-                            <Markdown remarkPlugins={[remarkWikiLink]}>{activeTask.efficiency}</Markdown>
-                        </span>
-                    </>
-                    : ""
-                }
-            </div>
-            <div className="task-session-container">
-                {/**<Timer showPoints={true} 
-                    startTime={new Date(activeTask.createdAt).getTime()} 
-                    duration={activeTask.estimatedDuration} />*/}
-                <div className="task-session-buttons">
-                    <button type="button" onClick={() => handleTaskSubmit(true)}>⎋</button>
-                    <button type="button" onClick={() => handleTaskSubmit(false)}>Complete</button>
-                    {/**temporary button just to hold off on breaks until shop is implemented */}
-                    <button type="button" onClick={handleGiveUpTask}>End Attempt</button>
-                </div>
+                <p>Plan</p>
+                <span>
+                    <Markdown remarkPlugins={[remarkWikiLink]}>{activeTask.efficiency}</Markdown>
+                </span>
             </div>
         </form>
     </div> : ""

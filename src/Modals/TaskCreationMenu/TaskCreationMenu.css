@@ -12,7 +12,7 @@ div.task-creation-menu {
   justify-content: center;
 }
 
-form.task-creation-form {
+div.task-creation-menu form.task-creation-form {
   position: relative; 
   z-index: 1;
   min-width:60%;
@@ -24,12 +24,12 @@ form.task-creation-form {
   box-shadow: var(--box-shadow);
 }
 
-form.task-creation-form label {
+div.task-creation-menu form.task-creation-form label {
   display: flex;
   flex-direction: column;
 }
 
-div.task-form-inputs p {
+div.task-creation-menu div.task-form-inputs p {
   background-color: var(--bg-dark);
   padding: 0.5%;
   border: var(--border-card);
@@ -37,7 +37,7 @@ div.task-form-inputs p {
   font-weight: 700;
 }
 
-div.task-form-inputs > div.inputs {
+div.task-creation-menu div.task-form-inputs > div.inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 5%;
@@ -47,51 +47,30 @@ div.task-form-inputs > div.inputs {
   
 }
 
-div.task-form-inputs > div *:first-child {
+div.task-creation-menu div.task-form-inputs > div *:first-child {
   grid-column-start: span 2;
 }
 
-div.task-form-inputs > input {
+div.task-creation-menu div.task-form-inputs > input {
   border: var(--border-card);
 }
 
-div.task-form-inputs select {
+div.task-creation-menu div.task-form-inputs select {
   padding: 4px 0px;
 }
 
-div.task-form-inputs label {
+div.task-creation-menu div.task-form-inputs label {
   color: var(--text-muted);
 }
 
-div.task-form-inputs label:focus-within {
+div.task-creation-menu iv.task-form-inputs label:focus-within {
   color: var(--text);
 }
 
-div.task-form-inputs label > textarea {
+div.task-creation-menu div.task-form-inputs label > textarea {
   grid-row: span 2;
   resize: none;
   height: 30vh;
   white-space: pre-wrap;
   border: var(--border-card);
-}
-
-div.task-planning-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 5%;
-}
-
-button.task-form-buttons {
-  width: 30%;
-  padding: 12px;
-  border: var(--border-card);
-}
-
-button.task-form-buttons:nth-child(1) {
-  width: 60%;
-}
-
-div.task-planning-buttons > button.task-form-buttons {
-  background-color: var(--bg-dark);
-  box-shadow: var(--box-shadow);
 }

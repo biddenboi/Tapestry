@@ -17,6 +17,22 @@ function Dashboard() {
   const [scheduleStage, setScheduleStage] = useState(null);
   const isSyncing = useRef(false);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "+") {
+        handleAddSession()
+      }
+      if (e.key === "ArrowDown") {
+        scheduleStage.type == EVENT.wake ? 
+        handleEndWorkDay() :
+        () => NiceModal.show(EndDayConfirm)
+      }
+    };
+      
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [scheduleStage]);
+
   //possibly patchy hierarchy level of syncAndUpdateEvents. Possibly Hoist into App.jsx and create buffer function
   useEffect(() => {
     const syncAndUpdateEvents = async () => {
@@ -79,15 +95,8 @@ function Dashboard() {
   return <div className="dashboard">
     {/**activeTask.createdAt == null ? <TaskCreationMenu /> : <TaskSessionMenu />*/}
     <div>
-      <button type="button" onClick={handleAddSession}>Add Session</button>
-      {scheduleStage.type == EVENT.wake ? 
-      <button type="button" onClick={handleEndWorkDay}>End Workday</button> : 
-      <button type="button" onClick={() => NiceModal.show(EndDayConfirm)}>End Day</button>}
-      
       <TodoList style={{width: "100vh", height:"64vh"}} />
     </div>
-    
-    
   </div>
 }
 

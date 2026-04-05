@@ -1,10 +1,11 @@
 import './SessionResults.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../TaskCreationMenu/TaskCreationMenu.jsx';
 import { MINUTE } from '../../utils/Constants.js';
 import { getSessionMultiplier } from '../../utils/Helpers/Tasks.js';
 import { msToPoints } from '../../utils/Helpers/Time.js';
+import { AppContext } from '../../App.jsx';
 
 function formatDuration(ms) {
     const totalSeconds = Math.floor(ms / 1000);
@@ -38,6 +39,7 @@ function useCountUp(target, duration = 1200, delay = 0) {
 }
 
 export default NiceModal.create(({ duration, tokens, sessionDuration, showTaskCreation }) => {
+
     const modal = useModal();
 
     const sessionDurationMs = sessionDuration * MINUTE;
@@ -52,6 +54,18 @@ export default NiceModal.create(({ duration, tokens, sessionDuration, showTaskCr
     const animatedPoints = useCountUp(points, 1000, 300);
     const animatedTokens = useCountUp(tokens, 800, 600);
     const animatedMultiplier = useCountUp(Math.round(multiplier * 100), 900, 450);
+    const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "ArrowRight") {
+                handleConfirm()
+            }
+        };
+        
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [activeTask]);
 
     const getEfficiencyLabel = () => {
         if (ratio <= 0.75) return { label: 'Way Ahead', className: 'efficiency-great' };
@@ -122,10 +136,6 @@ export default NiceModal.create(({ duration, tokens, sessionDuration, showTaskCr
                         </span>
                     </div>
                 </div>
-
-                <button className="results-confirm" onClick={handleConfirm}>
-                    Continue
-                </button>
             </div>
         </div>
     ) : "";

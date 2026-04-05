@@ -18,7 +18,6 @@ form.task-session-form {
   display: flex;
   flex-direction: column;
   background-color: var(--bg);
-  padding:1%;
   border: var(--border-card);
 }
 
@@ -28,14 +27,11 @@ div.task-session-description {
   flex-direction: column;
   align-items: center;
   padding: 5%;
-  background-color: var(--bg-light);
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
   height: 67%;
 }
 
 div.task-session-description div.task-titlebar {
-  margin-bottom: 5%;
+  margin-bottom: 3%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -58,7 +54,7 @@ div.task-session-description span {
   white-space: pre-wrap;
   line-height: 1.5;
   width: 90%;
-  height: 100%;
+  height: 50vh;
   overflow-y: scroll;
   background-color: var(--bg-light);
 }
@@ -71,21 +67,4 @@ div.task-session-description > p {
   border-bottom: none;
   padding: 5px;
   font-weight: 700;
-}
-
-div.task-session-buttons {
-  display: flex;
-  justify-content: space-evenly;
-}
-
-div.task-session-buttons button {
-  padding: 12px;
-  width: 25%;
-  background-color: var(--bg-dark);
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
-}
-
-div.task-session-buttons button:nth-child(1) {
-  width: 60px;
 }
