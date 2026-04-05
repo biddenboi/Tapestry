@@ -12,8 +12,12 @@ export default NiceModal.create(() => {
   const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
   const modal = useModal()
 
-  const startSession = () => {
-    const parent = databaseConnection.getCurrentPlayer();
+  useEffect(() => {
+    activeTask.sessionDuration = Math.floor(getTodoWPD(activeTask));
+  }, [])
+
+  const startSession = async () => {
+    const parent = await databaseConnection.getCurrentPlayer();
     const task = {
         ...activeTask,
         createdAt: new Date().toISOString(),
@@ -72,7 +76,7 @@ export default NiceModal.create(() => {
           <label>
             Session (min):
             <input type="number" name="sessionDuration" min="1"
-            value={Math.floor(getTodoWPD(activeTask)) || 0}
+            value={activeTask.sessionDuration | ""}
             onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
           </label> 
           <label>

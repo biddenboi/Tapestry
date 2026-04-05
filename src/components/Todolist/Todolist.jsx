@@ -72,18 +72,7 @@ export default function TodoList({ style }) {
 
     const handleGetNextTodo = async () => {
         NiceModal.show(TaskPreviewMenu, { start: true})
-        setActiveTask(prev => ({
-            ...prev,
-            name: nextTodo.name,
-            location: nextTodo.location,
-            distractions: nextTodo.distractions,
-            reasonToSelect: nextTodo.reasonToSelect,
-            efficiency: nextTodo.efficiency,
-            estimatedDuration: nextTodo.estimatedDuration,
-            estimatedBuffer: nextTodo.estimatedBuffer,
-            dueDate: nextTodo.dueDate,
-            difficulty: nextTodo.difficulty,
-        }));
+        setActiveTask(nextTodo);
         await databaseConnection.remove(STORES.todo, nextTodo.UUID); 
         setNextTodo(null);
     }

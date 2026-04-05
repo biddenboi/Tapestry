@@ -80,8 +80,9 @@ export const getAllWPDFromArray = (data, relative=false) => {
 //if relative is true, only consider the actual time left, elsewise take into consideration elapsed time
 export const getTodoWPD = (task, relative=false) => {
   const now = getLocalDate(new Date());
-  const dur = relative ? parseFloat(task.estimatedDuration) || 0 :
-    parseFloat(task.estimatedDuration) || 0  + parseFloat(task.elapsedTime) || 0;
+  const dur = relative ? 
+    (parseFloat(task.estimatedDuration) || 0) :
+    (parseFloat(task.estimatedDuration) || 0)  + (parseFloat(task.elapsedTime) || 0);
   const due = new Date(task.dueDate + 'T00:00:00');
   const daysUntilDue = Math.max((due - now) / DAY, 0) + 1;
   return (dur) / daysUntilDue;
