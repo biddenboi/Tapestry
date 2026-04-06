@@ -1,4 +1,4 @@
-import { DAY, WEEK, STRING_DAYS } from "../Constants";
+    import { DAY, WEEK, STRING_DAYS } from "../Constants";
 
 export const timeAsHHMMSS = (ms) => {
     const totalSeconds = msToSeconds(ms);
