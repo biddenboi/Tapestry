@@ -30,7 +30,12 @@ export default NiceModal.create(() => {
     }
 
     const handleTaskSubmit = async (save=false) => {
+        const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
+        const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
         const parent = await databaseConnection.getCurrentPlayer();
+
+        console.log("estimatedDuration:", activeTask.estimatedDuration);
+        console.log("sessionDuration:", activeTask.sessionDuration);
 
         const task = {
             ...activeTask,
@@ -43,11 +48,13 @@ export default NiceModal.create(() => {
         const duration = getTaskDuration(task);
         const multiplier = getSessionMultiplier(duration, task.estimatedDuration * MINUTE);
         task.points = Math.floor(msToPoints(duration) * multiplier);
+        
 
         const tokensGained = Math.floor(msToPoints(duration) / 6);
         databaseConnection.add(STORES.player, {
             ...parent,
-            tokens: Math.floor(parent.tokens + tokensGained)
+            tokens: Math.floor(parent.tokens + tokensGained),
+            minutesWorkedToday: parent.minutesWorkedToday + sessionDuration,
         });
 
         await databaseConnection.add(STORES.task, task);
@@ -64,13 +71,7 @@ export default NiceModal.create(() => {
         });
 
         if (save) {
-            const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
-            const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
-            const elapsedTime = parseFloat(activeTask.elapsedTime) || 0;
-            console.log(elapsedTime);
             activeTask.estimatedDuration = estimatedDuration - sessionDuration;
-            activeTask.elapsedTime = sessionDuration + elapsedTime;
-
             setActiveTask({...activeTask, createdAt: null});
         }else {
             setActiveTask({});

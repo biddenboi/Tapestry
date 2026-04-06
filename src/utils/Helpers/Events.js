@@ -8,6 +8,7 @@ import { STORES, EVENT } from '../../utils/Constants.js'
 export const endDay = async (db, player, early) => {
     const rightBeforeMidnight = new Date(getMidnightOfDate(new Date()).getTime() - MINUTE);
     player.tokens = early ? player.tokens / 2 : 0;
+    //player.minutesWorkedToday = 0;
 
     await db.add(STORES.event, {
         type: EVENT.sleep,

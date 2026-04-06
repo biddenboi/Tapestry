@@ -5,7 +5,7 @@ export const getTaskDuration = (task) => {
   return new Date(task.completedAt).getTime() - new Date(task.createdAt).getTime();
 }
 
-export const getNextTodo = (todoArray, weightArray) => {
+export const getNextTodo = (todoArray, weightArray = []) => {
   const rng = 1 + Math.random() * 99;
   let remaining = rng;
   let selected = todoArray[todoArray.length - 1];
@@ -69,20 +69,18 @@ export const getWeights = (todoArray) => {
   } 
 }
 
-export const getAllWPDFromArray = (data, relative=false) => {
+export const getAllWPDFromArray = (data) => {
   const AllWPD = data.map(t => {
-      return getTodoWPD(t, relative);
+      return getTodoWPD(t);
   });
   return AllWPD;
 }
 
 //calculates "Work per Day" or the area of task duration to complete each day
 //if relative is true, only consider the actual time left, elsewise take into consideration elapsed time
-export const getTodoWPD = (task, relative=false) => {
+export const getTodoWPD = (task) => {
   const now = getLocalDate(new Date());
-  const dur = relative ? 
-    (parseFloat(task.estimatedDuration) || 0) :
-    (parseFloat(task.estimatedDuration) || 0)  + (parseFloat(task.elapsedTime) || 0);
+  const dur = parseFloat(task.estimatedDuration) || 0
   const due = new Date(task.dueDate + 'T00:00:00');
   const daysUntilDue = Math.max((due - now) / DAY, 0) + 1;
   return (dur) / daysUntilDue;

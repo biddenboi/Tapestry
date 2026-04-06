@@ -41,6 +41,8 @@ class DatabaseConnection {
         players.createIndex("tokens", "tokens", { unique:false })
         players.createIndex("wakeTime", "wakeTime", { unique:false })
         players.createIndex("sleepTime", "sleepTime", { unique:false })
+        //stored, but temporary index to keep track of a players work per day. Caching.
+        //players.createIndex("minutesWorkedToday", "minutesWorkedToday", { unique:false })
 
 
         const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });
@@ -60,7 +62,6 @@ class DatabaseConnection {
         todos.createIndex("dueDate", "dueDate", { unique: false });
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-        todos.createIndex("elapsedTime", "elapsedTime", { unique: false });
         todos.createIndex("name", "name", { unique: false });
 
         const transactions = this.database.createObjectStore(STORES.transaction, { keyPath: "UUID" });
@@ -172,7 +173,7 @@ class DatabaseConnection {
 
         const msElapsed = dateMS - dateMidnightMS;
 
-        const startDate = player.competitionStartDate;
+        const startDate = 0 // method currently depreciated
         const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
 
         const data = await this.getStoreFromRange(store, startDate, endDate);

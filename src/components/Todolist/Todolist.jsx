@@ -15,20 +15,7 @@ function TodoItem({element}) {
     
 
     const handleSelectTodo = async (todo) => {
-        //review
-        
-        setActiveTask(prev => ({
-            ...prev,
-            name: todo.name,
-            location: todo.location,
-            distractions: todo.distractions,
-            reasonToSelect: todo.reasonToSelect,
-            efficiency: todo.efficiency,
-            estimatedDuration: todo.estimatedDuration,
-            estimatedBuffer: todo.estimatedBuffer,
-            dueDate: todo.dueDate,
-            difficulty: todo.difficulty,
-        }));
+        setActiveTask(todo);
         await databaseConnection.remove(STORES.todo, todo.UUID); 
 
         NiceModal.show(TaskCreationMenu, { start: false})
@@ -54,10 +41,13 @@ export default function TodoList({ style }) {
     useEffect(() => {
         const reload = async () => {
             const todoArray = await databaseConnection.getAll(STORES.todo);
-            const AllTodoWPD = await getAllWPDFromArray(todoArray);
+            const currentPlayer = await databaseConnection.getCurrentPlayer();
             const weightArray = getWeights(todoArray);
 
-            setMinLeftToWork(AllTodoWPD.reduce((a, c) => a+c, 0));
+            const AllTodoWPD = await getAllWPDFromArray(todoArray);
+            const SumTodoWPD = AllTodoWPD.reduce((a, c) => a+c, 0);
+
+            setMinLeftToWork(SumTodoWPD);
 
             setTodos(todoArray.map((element, i) => ({
                 ...element,
@@ -66,6 +56,7 @@ export default function TodoList({ style }) {
             
             //check if nextTodo has not been used yet
             setNextTodo(getNextTodo(todoArray, weightArray));
+            console.log(minLeftToWork);
         }
         reload();
     }, [databaseConnection, activeTask])
@@ -80,7 +71,7 @@ export default function TodoList({ style }) {
     return <div className="todo-creation-menu" style={style}>
         <div className="header">
             <p>Todo List</p>
-            <p>{formatDuration(minLeftToWork*MINUTE)} Left</p>
+            {minLeftToWork > 0 && <p>{formatDuration(minLeftToWork*MINUTE)} Left</p>}
             <button 
                 onClick={() => handleGetNextTodo()} 
                 disabled={!nextTodo}
