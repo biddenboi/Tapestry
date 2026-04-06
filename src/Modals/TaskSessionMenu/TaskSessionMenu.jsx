@@ -33,10 +33,7 @@ export default NiceModal.create(() => {
         const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
         const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
         const parent = await databaseConnection.getCurrentPlayer();
-
-        console.log("estimatedDuration:", activeTask.estimatedDuration);
-        console.log("sessionDuration:", activeTask.sessionDuration);
-
+        
         const task = {
             ...activeTask,
             points: null,

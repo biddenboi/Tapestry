@@ -79,11 +79,15 @@ export const getAllWPDFromArray = (data) => {
 //calculates "Work per Day" or the area of task duration to complete each day
 //if relative is true, only consider the actual time left, elsewise take into consideration elapsed time
 export const getTodoWPD = (task) => {
-  const now = getLocalDate(new Date());
   const dur = parseFloat(task.estimatedDuration) || 0
-  const due = new Date(task.dueDate + 'T00:00:00');
-  const daysUntilDue = Math.max((due - now) / DAY, 0) + 1;
+  const daysUntilDue = getDaysUntilDue(task)
   return (dur) / daysUntilDue;
+}
+
+export const getDaysUntilDue = (task) => {
+  const now = getLocalDate(new Date());
+  const due = new Date(task.dueDate + 'T00:00:00');
+  return Math.max((due - now) / DAY, 0) + 1;
 }
 
 /**calculates the estimated points based on a gaussian function centered at d.

@@ -5,6 +5,7 @@ import { v4 as uuid } from "uuid";
 import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
+import { getDaysUntilDue } from '../../utils/Helpers/Tasks.js';
 
 export default NiceModal.create(() => {    
   const databaseConnection = useContext(AppContext).databaseConnection;
@@ -25,6 +26,15 @@ export default NiceModal.create(() => {
 
   const handleTodoSubmit = async (e) => {
     e.preventDefault();
+    const task = databaseConnection.get(STORES.todo, activeTask.UUID);
+
+    if (task) {
+      const durationDifference = activeTask.estimatedDuration - task.estimatedDuration;
+      const currentplayer = await databaseConnection.getCurrentPlayer();
+
+      currentplayer.minWorkedToday += durationDifference / getDaysUntilDue(task);
+      await databaseConnection.add(STORES.player, currentplayer);
+    }
 
     await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
 
