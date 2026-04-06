@@ -96,16 +96,6 @@ export default NiceModal.create(() => {
             defaultValue={activeTask.dueDate || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
           </label>
-          <label>
-            Difficulty:
-            <select name="difficulty"
-              defaultValue={activeTask.difficulty || ""}
-              onChange={e => setActiveTask(prev => ({ ...prev, difficulty: e.target.value }))}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </label>
         </div>
       </div>
     </form>

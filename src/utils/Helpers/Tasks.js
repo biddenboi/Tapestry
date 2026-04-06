@@ -33,16 +33,11 @@ export const getWeights = (todoArray) => {
 
   if (dueTodayTasks.length > 0) {
     dueTodayTasks.sort((a, b) => {
-      const aDifficulty = difficultyOrder[a.difficulty];
-      const bDifficulty = difficultyOrder[b.difficulty];
-          
       const aDate = new Date(a.dueDate)
       const bDate = new Date(b.dueDate)
 
       if (aDate > bDate) return 1;
       if (aDate < bDate) return -1;
-      if (aDifficulty > bDifficulty) return -1;
-      if (aDifficulty < bDifficulty) return 1;
       return 0;
     });
 

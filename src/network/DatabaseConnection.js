@@ -58,7 +58,6 @@ class DatabaseConnection {
         shops.createIndex("type", "type", { unique:false })
        
         const todos = this.database.createObjectStore(STORES.todo, { keyPath: "UUID" });
-        todos.createIndex("difficulty", "difficulty", { unique: false });
         todos.createIndex("dueDate", "dueDate", { unique: false });
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
