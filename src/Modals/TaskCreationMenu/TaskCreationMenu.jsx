@@ -28,6 +28,10 @@ export default NiceModal.create(() => {
 
     const handleTodoSubmit = async () => {
 
+
+      /**sent from todolist, contains the duration prior to changes to calculate delta
+       * needed to changed time. 
+      */
       if (activeTask.originalDuration !== undefined) {
           const durationDifference = activeTask.estimatedDuration - activeTask.originalDuration;
           const currentPlayer = await databaseConnection.getCurrentPlayer();
@@ -40,7 +44,11 @@ export default NiceModal.create(() => {
           });
       }
 
-      await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
+      await databaseConnection.add(STORES.todo, {
+        ...activeTask, 
+        UUID: uuid(),
+        
+      });
       setActiveTask({});
       modal.hide();
       modal.remove();

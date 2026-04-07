@@ -55,8 +55,8 @@ export default NiceModal.create(() => {
         }
 
         //calculating point gain logic
-        const duration = getTaskDuration(task);
-        const multiplier = getSessionMultiplier(duration, task.estimatedDuration * MINUTE);
+        const duration = getTaskDuration(task); //in ms
+        const multiplier = getSessionMultiplier(duration, task.sessionDuration * MINUTE); //in ms
         task.points = Math.floor(msToPoints(duration) * multiplier);
         
         const tokensGained = Math.floor(msToPoints(duration) / 6);

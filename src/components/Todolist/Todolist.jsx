@@ -51,7 +51,7 @@ export default function TodoList({ style }) {
      * The fix for that was adding/subtracting from M the value of Q delta / D, such that the new difference in area is spread over the days needed to work, but im likewise worried this double counts as well.
      */
     const [minLeftToWork, setMinLeftToWork] = useState(null);
-    const [minWorked, setMinWorked] = useState(null);
+    const [timeCleared, setTimeCleared] = useState(null);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -73,8 +73,9 @@ export default function TodoList({ style }) {
             const AllTodoWPD = await getAllWPDFromArray(todoArray);
             const SumTodoWPD = AllTodoWPD.reduce((a, c) => a+c, 0);
 
-            setMinLeftToWork(SumTodoWPD);
-            setMinWorked(currentPlayer.minutesClearedToday);
+            const difference = SumTodoWPD - currentPlayer.minutesClearedToday;
+
+            setTimeCleared(formatDuration(difference * MINUTE));
 
             setTodos(todoArray.map((element, i) => ({
                 ...element,
@@ -99,8 +100,7 @@ export default function TodoList({ style }) {
     return <div className="todo-creation-menu" style={style}>
         <div className="header">
             <p>Todo List</p>
-            {minLeftToWork > 0 && <p>{formatDuration(minLeftToWork*MINUTE)} Left</p>}
-            <p>{formatDuration(minWorked*MINUTE) || 0} Worked</p>
+            <p>{timeCleared}</p>
         </div>
         <div className="content">
             {
