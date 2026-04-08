@@ -22,15 +22,36 @@ export const getNextTodo = (todoArray, weightArray = []) => {
 
 // returns the scaled individual % chance of selection
 export const getWeights = (todoArray) => {
+  //creating object enum to handle sorting
+  const difficultyOrder = { hard: 3, medium: 2, easy: 1};
+
   //SVT returns YYYY-MM-DD
   const today = getLocalDate(new Date());
   const dueTodayTasks = todoArray.filter(t => new Date(t.dueDate).getTime() < today);
   //when a task is pulled it doesn't exist, it reloads the next most urgent without that in the arr.
   //this is a bug, but its fine since we don't want the two same tasks to show up anyways.
 
-  const weights = dueTodayTasks.length > 0 ? 
-    getAllWPDFromArray(dueTodayTasks) :
-    getAllWPDFromArray(todoArray)
+  if (dueTodayTasks.length > 0) {
+    dueTodayTasks.sort((a, b) => {
+      const aDate = new Date(a.dueDate)
+      const bDate = new Date(b.dueDate)
+
+      if (aDate > bDate) return 1;
+      if (aDate < bDate) return -1;
+      return 0;
+    });
+
+    const weights = todoArray.map(t => {
+      if (dueTodayTasks[0] != t) return 0;
+      return 100; //sends 100% send likihood automatically making it such that the task is selected
+    })
+
+    return weights;
+  }else {
+    //maybe remove this line so more granular time controls are possible.
+    today.setHours(0, 0, 0, 0);
+          
+    const weights = getAllWPDFromArray(todoArray);
 
     const total = weights.reduce((sum, w) => sum + w, 0);
 
@@ -40,7 +61,9 @@ export const getWeights = (todoArray) => {
 
     const scaled = weights.map(w => (w / total) * 100);
     return scaled;
+  } 
 }
+
 
 export const getAllWPDFromArray = (data) => {
   const AllWPD = data.map(t => {
