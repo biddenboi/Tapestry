@@ -5,7 +5,7 @@ import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
 import { getWeights, getNextTodo, getTodoWPD, getAllWPDFromArray } from '../../utils/Helpers/Tasks.js'
 import NiceModal from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
-import { prettyPrintDate, formatDuration } from '../../utils/Helpers/Time.js';
+import { prettyPrintDate, formatDuration, formatDateAsLocalString } from '../../utils/Helpers/Time.js';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import { useInterval } from '../../utils/useInterval.js';
 
@@ -14,7 +14,12 @@ function TodoItem({element}) {
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
 
     const handleSelectTodo = async (todo) => {
-        setActiveTask({...todo, originalDuration: todo.estimatedDuration}); 
+        //after complete, convert date back to proper format for submi
+        setActiveTask({
+            ...todo, 
+            originalDuration: todo.estimatedDuration,
+            dueDate: formatDateAsLocalString(new Date(todo.dueDate)).slice(0, 16),
+        }); 
         await databaseConnection.remove(STORES.todo, todo.UUID);
         NiceModal.show(TaskCreationMenu)
     };
@@ -24,7 +29,7 @@ function TodoItem({element}) {
             <span style={{color: `hsl(145, ${element.weight}%, 42%`}}>{element.name}</span>
             <p>{element.difficulty} · {element.weight}%</p>
         </div>
-        <span>{prettyPrintDate(element.dueDate)}</span>
+        <span>{prettyPrintDate(formatDateAsLocalString(element.dueDate))}</span>
     </div>
 }
 

@@ -22,9 +22,6 @@ export const getNextTodo = (todoArray, weightArray = []) => {
 
 // returns the scaled individual % chance of selection
 export const getWeights = (todoArray) => {
-  //creating object enum to handle sorting
-  const difficultyOrder = { hard: 3, medium: 2, easy: 1};
-
   //SVT returns YYYY-MM-DD
   const today = getLocalDate(new Date());
   const dueTodayTasks = todoArray.filter(t => new Date(t.dueDate).getTime() < today);

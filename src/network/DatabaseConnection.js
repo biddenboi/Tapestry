@@ -27,6 +27,7 @@ class DatabaseConnection {
         tasks.createIndex("points", "points", { unique: false });
         tasks.createIndex("name", "name", { unique: false });
         tasks.createIndex("completedAt", "completedAt", { unique: false });
+        tasks.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
 
         const journals = this.database.createObjectStore(STORES.journal, { keyPath: "UUID"});
         journals.createIndex("createdAt", "createdAt", { unique: false });
@@ -62,6 +63,7 @@ class DatabaseConnection {
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
         todos.createIndex("name", "name", { unique: false });
+        tasks.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
 
         const transactions = this.database.createObjectStore(STORES.transaction, { keyPath: "UUID" });
         transactions.createIndex("name", "name", { unique: false });
