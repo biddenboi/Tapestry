@@ -81,7 +81,7 @@ class DatabaseConnection {
 
         this.ready = new Promise((resolve, reject) => {
 
-            //Reminder: when testing version updates change db version and version update if functions at same time
+            //Reminder: when testing version updates change db version and version update if functions at same time.
             const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERSION);
 
             request.onerror = (event) => {
