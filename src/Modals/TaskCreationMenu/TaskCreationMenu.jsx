@@ -26,32 +26,31 @@ export default NiceModal.create(() => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [activeTask]);
 
-    const handleTodoSubmit = async () => {
-
-
+  const handleTodoSubmit = async () => {
       /**sent from todolist, contains the duration prior to changes to calculate delta
        * needed to changed time. 
       */
-      if (activeTask.originalDuration !== undefined) {
-          const durationDifference = activeTask.estimatedDuration - activeTask.originalDuration;
-          const currentPlayer = await databaseConnection.getCurrentPlayer();
-          const daysUntil = getDaysUntilDue(activeTask);
-          const delta = daysUntil > 0 ? parseInt(durationDifference) / daysUntil : 0;
+    if (activeTask.originalDuration !== undefined) {
+      const durationDifference = activeTask.estimatedDuration - activeTask.originalDuration;
+      const currentPlayer = await databaseConnection.getCurrentPlayer();
+      const daysUntil = getDaysUntilDue(activeTask);
+      const delta = daysUntil > 0 ? parseInt(durationDifference) / daysUntil : 0;
 
-          await databaseConnection.add(STORES.player, {
-              ...currentPlayer,
-              minutesClearedToday: currentPlayer.minutesClearedToday - delta
-          });
-      }
-
-      await databaseConnection.add(STORES.todo, {
-        ...activeTask, 
-        UUID: uuid(),
-        
+      await databaseConnection.add(STORES.player, {
+        ...currentPlayer,
+        minutesClearedToday: currentPlayer.minutesClearedToday - delta
       });
-      setActiveTask({});
-      modal.hide();
-      modal.remove();
+    }
+     await databaseConnection.add(STORES.todo, {
+      ...activeTask, 
+      dueDate: new Date(activeTask.dueDate).toISOString(),
+      UUID: uuid(),
+      
+    });
+
+    setActiveTask({});
+    modal.hide();
+    modal.remove();
   }
 
   const canSubmitTodo = () => {
@@ -100,7 +99,7 @@ export default NiceModal.create(() => {
           </label>
           <label>
             Due Date:
-            <input type="date" name="dueDate"
+            <input type="datetime-local" name="dueDate"
             defaultValue={activeTask.dueDate || ""}
             onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
           </label>

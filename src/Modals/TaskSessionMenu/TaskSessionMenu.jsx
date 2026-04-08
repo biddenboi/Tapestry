@@ -3,7 +3,7 @@ import './TaskSessionMenu.css'
 import { useState, useEffect, useContext, act } from 'react'
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
-import { msToPoints } from '../../utils/Helpers/Time.js';
+import { formatDateAsLocalString, getLocalDate, msToPoints } from '../../utils/Helpers/Time.js';
 import Markdown from 'react-markdown';
 import remarkWikiLink from 'remark-wiki-link';
 import { v4 as uuid } from "uuid";
@@ -81,7 +81,12 @@ export default NiceModal.create(() => {
         });
 
         activeTask.estimatedDuration = estimatedDuration - sessionDuration;
-        setActiveTask({...activeTask, createdAt: null});
+
+        //after complete, convert date back to proper format for submit.
+        setActiveTask({...{
+            ...activeTask,
+            dueDate: formatDateAsLocalString(new Date(activeTask.dueDate)).slice(0, 16),
+        }, createdAt: null});
         
         //async for setting location without causing popup open delay - possibly unnecessary
         getCurrentLocation()

@@ -27,6 +27,7 @@ class DatabaseConnection {
         tasks.createIndex("points", "points", { unique: false });
         tasks.createIndex("name", "name", { unique: false });
         tasks.createIndex("completedAt", "completedAt", { unique: false });
+        tasks.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
 
         const journals = this.database.createObjectStore(STORES.journal, { keyPath: "UUID"});
         journals.createIndex("createdAt", "createdAt", { unique: false });
@@ -62,6 +63,7 @@ class DatabaseConnection {
         todos.createIndex("efficiency", "efficiency", { unique: false });
         todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
         todos.createIndex("name", "name", { unique: false });
+        tasks.createIndex("reasonToSelect", "reasonToSelect", { unique: false });
 
         const transactions = this.database.createObjectStore(STORES.transaction, { keyPath: "UUID" });
         transactions.createIndex("name", "name", { unique: false });
@@ -79,7 +81,7 @@ class DatabaseConnection {
 
         this.ready = new Promise((resolve, reject) => {
 
-            //Reminder: when testing version updates change db version and version update if functions at same time
+            //Reminder: when testing version updates change db version and version update if functions at same time.
             const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERSION);
 
             request.onerror = (event) => {

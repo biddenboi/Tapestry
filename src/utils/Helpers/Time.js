@@ -54,12 +54,13 @@ export function prettyPrintDate(date) {
     const dateObj = new Date(date);
     const timeTill = dateObj.getTime() - currentTime;
 
-    if (timeTill < -DAY) return date;
-    if (timeTill < 0) return "Today";
-    if (timeTill < DAY) return "Tomorrow";
-    if (timeTill < WEEK) return STRING_DAYS[dateObj.getDay()];
+    if (timeTill < 0) return "Overdue";
+    if (timeTill < DAY) return getTimeAsString(formatDateAsLocalString(new Date(date)));
+    if (timeTill < 2 * DAY) return "Tomorrow";
+    if (timeTill < WEEK-DAY) return STRING_DAYS[dateObj.getDay()];
+    if (timeTill < 2 * WEEK-DAY) return "Next " + STRING_DAYS[dateObj.getDay()];
 
-    return date;
+    return date.split("T")[0];
 }
 
 export function formatDuration(ms) {
