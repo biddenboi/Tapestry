@@ -60,7 +60,7 @@ export default function TodoList({ style }) {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-          if (e.key === "ArrowUp") {
+          if (e.key === "ArrowRight" && e.altKey) {
             handleGetNextTodo()
           }
         };

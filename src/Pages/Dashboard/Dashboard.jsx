@@ -19,10 +19,10 @@ function Dashboard() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "+") {
+      if (e.key === "ArrowUp" && e.altKey) {
         handleAddSession()
       }
-      if (e.key === "ArrowDown") {
+      if (e.key === "ArrowLeft" && e.altKey) {
         scheduleStage.type == EVENT.wake ? 
         handleEndWorkDay() :
         () => NiceModal.show(EndDayConfirm)

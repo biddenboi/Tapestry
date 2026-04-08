@@ -17,8 +17,11 @@ export default NiceModal.create(() => {
       if (e.key === "ArrowRight" && canSubmitTodo()) {
         handleTodoSubmit()
       }
-      if (e.key === "ArrowLeft") {
+      if (e.key === "ArrowDown") {
         handleDelete()
+      }
+      if (e.key === "ArrowLeft") {
+        handleReturn()
       }
     };
       
@@ -61,6 +64,11 @@ export default NiceModal.create(() => {
 
   const handleDelete = () => {
     setActiveTask({});
+    modal.hide();
+    modal.remove();
+  }
+
+  const handleReturn = () => {
     modal.hide();
     modal.remove();
   }
