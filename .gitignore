@@ -60,3 +60,4 @@ dist/
 release/
 .env
 .env.local
+combined.txt
