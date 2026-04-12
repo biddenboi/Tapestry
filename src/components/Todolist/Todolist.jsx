@@ -345,9 +345,9 @@ function TodoList() {
           <span className="next-banner-lock">+</span>
           <div className="next-banner-body">
             <span className="label-sm" style={{ color: '#b8922a' }}>suggested next</span>
-            <span className="todolist-next-name">Unlock smart task suggestions</span>
+            <span className="todolist-next-name" style={{ color: '#b8922a' }}>Unlock smart task suggestions</span>
           </div>
-          <div className="next-banner-right"><span className="todolist-next-arrow">&#8250;</span></div>
+          <div className="next-banner-right"><span className="todolist-next-arrow" style={{ color: '#b8922a' }}>&#8250;</span></div>
         </div>
       ) : null}
 
