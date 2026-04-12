@@ -1,17 +1,6 @@
-/* Dashboard.css */
 
-div.dashboard {
-  height: 100%;
-  background-color: var(--bg);
-  display:flex;
-  align-items: center;
-  justify-content: space-evenly;
-}
-
-.dashboard > div > button {
-  border: var(--border-card);
-  background-color: var(--bg-dark);
-  padding: 5px 13px;
-  margin-right:20px;
-  margin-bottom:10px;
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

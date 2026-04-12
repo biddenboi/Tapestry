@@ -54,3 +54,9 @@ dist/linux-unpacked/
 .env
 .env.local
 .env.*.local
+
+node_modules/
+dist/
+release/
+.env
+.env.local

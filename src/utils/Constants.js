@@ -1,25 +1,17 @@
-export const DATABASE_VERSION = 1;
 
-export const SECOND = 1000;
-export const MINUTE = SECOND * 60;
-export const HOUR = MINUTE * 60;
-export const DAY = HOUR * 24;
-export const WEEK = DAY * 7;
-
-export const STRING_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
+// ── Store identifiers ─────────────────────────────────────────────────────────
+// These are used as keys throughout the app. SupabaseConnection maps them
+// to the correct Supabase table names internally.
 export const STORES = {
-    task: "taskObjectStore",
-    player: "playerObjectStore",
-    journal: "journalObjectStore",
-    event: "eventObjectStore",
-    shop: "shopObjectStore",
-    todo: "todoObjectStore",
-    transaction: "transactionObjectStore",
-}
+  task:        'taskObjectStore',
+  journal:     'journalObjectStore',
+  player:      'playerObjectStore',
+  todo:        'todoObjectStore',
+  transaction: 'transactionObjectStore',
+};
 
-export const EVENT = {
-    wake: "enter",
-    sleep: "exit",
-    end_work: "end-work"
-}
+export const DAY         = 86400000;
+export const WEEK        = 604800000;
+export const MINUTE      = 60000;
+export const SECOND      = 1000;
+export const STRING_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

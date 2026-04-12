@@ -1,76 +1,129 @@
-/* TaskCreationMenu.css */
+.tcm-blanker { z-index: 300; }
 
-/* NOTE: The form in TaskCreationMenu.jsx should use className="task-creation-form"
-   instead of "task-creation-menu" to distinguish it from TaskSessionMenu's form. */
-
-div.task-creation-menu {
-  position: fixed; 
-  inset: 0;
-  z-index:1;
-  display: flex;
-  align-items: center;     
-  justify-content: center;
+.tcm-card {
+  width: min(860px, 96vw);
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  padding: 0; overflow: hidden;
 }
 
-div.task-creation-menu form.task-creation-form {
-  position: relative; 
-  z-index: 1;
-  min-width:60%;
-  padding-bottom:2vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-light);
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
+.tcm-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 0.5px solid var(--border); flex-shrink: 0;
+}
+.tcm-close { padding: 4px 8px; font-size: 13px; color: var(--text3); }
+.tcm-back  { padding: 4px 8px; font-size: 15px; color: var(--text2); margin-right: 4px; }
+
+.tcm-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+.tcm-left {
+  flex: 1; min-width: 0; padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto; border-right: 0.5px solid var(--border);
 }
 
-div.task-creation-menu form.task-creation-form label {
-  display: flex;
-  flex-direction: column;
+.tcm-right {
+  width: 280px; flex-shrink: 0; padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
 }
 
-div.task-creation-menu div.task-form-inputs p {
-  background-color: var(--bg-dark);
-  padding: 0.5%;
-  border: var(--border-card);
+/* ── Name row ────────────────────────────────────── */
+.tcm-name-row { display: flex; align-items: center; gap: 8px; }
+.tcm-name-row .tcm-smart-wrap { flex: 1; }
 
-  font-weight: 700;
+.tcm-complete-check {
+  width: 20px; height: 20px; min-width: 20px;
+  border-radius: 5px; border: 1.5px solid var(--border2);
+  background: transparent; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; color: var(--green-text);
+  transition: background 0.1s, border-color 0.1s;
+}
+.tcm-complete-check:hover, .tcm-complete-check--done {
+  background: var(--green-bg); border-color: var(--green-border);
 }
 
-div.task-creation-menu div.task-form-inputs > div.inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 5%;
-  row-gap: 2%;
-  grid-template-rows: auto;
-  padding: 1% 5% 7% 5%;
-  
+/* Smart name input — plain input, no backdrop overlay */
+
+/* ── Chips row ───────────────────────────────────── */
+.tcm-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: -4px;
 }
 
-div.task-creation-menu div.task-form-inputs > div *:first-child {
-  grid-column-start: span 2;
+.tcm-chip {
+  display:      inline-flex;
+  align-items:  center;
+  gap:          5px;
+  font-size:    11px;
+  font-weight:  500;
+  padding:      4px 8px 4px 12px;
+  border-radius: 8px;
+  border:       0.5px solid;
+  user-select:  none;
+}
+.tcm-chip--date { background: var(--blue-bg);  border-color: var(--blue-border);  color: var(--blue-text);  }
+.tcm-chip--dur  { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+
+.tcm-chip-x {
+  width: 16px; height: 16px; padding: 0;
+  border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 1; cursor: pointer;
+  opacity: 0.55; transition: opacity 0.1s;
+}
+.tcm-chip--date .tcm-chip-x { background: var(--blue-bg);  color: var(--blue-text);  }
+.tcm-chip--dur  .tcm-chip-x { background: var(--green-bg); color: var(--green-text); }
+.tcm-chip-x:hover { opacity: 1; }
+
+/* ── Other form elements ─────────────────────────── */
+.tcm-field-row { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+
+.tcm-actions {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 12px; border-top: 0.5px solid var(--border);
+  margin-top: auto;
 }
 
-div.task-creation-menu div.task-form-inputs > input {
-  border: var(--border-card);
+/* ── Subtask section ─────────────────────────────── */
+.tcm-subtasks-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
 }
+.tcm-subtask-btns { display: flex; gap: 4px; }
+.tcm-add-child-btn { font-size: 15px; line-height: 1; padding: 2px 7px; color: var(--text2); }
 
-div.task-creation-menu div.task-form-inputs select {
-  padding: 4px 0px;
+.tcm-quick-add {
+  background: var(--bg2); border-radius: var(--radius);
+  padding: 10px; margin-bottom: 6px;
+  display: flex; flex-direction: column; gap: 6px;
 }
+.tcm-quick-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.tcm-quick-actions button { font-size: 11px; padding: 5px 10px; }
 
-div.task-creation-menu div.task-form-inputs label {
-  color: var(--text-muted);
-}
+.tcm-subtasks-list { display: flex; flex-direction: column; gap: 1px; }
+.tcm-empty-subtasks { font-size: 12px; color: var(--text3); padding: 8px 0; }
 
-div.task-creation-menu iv.task-form-inputs label:focus-within {
-  color: var(--text);
+/* Subtask rows */
+.subtask-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 5px; border-radius: var(--radius); transition: background 0.1s;
 }
+.subtask-row:hover { background: var(--bg2); }
 
-div.task-creation-menu div.task-form-inputs label > textarea {
-  grid-row: span 2;
-  resize: none;
-  height: 30vh;
-  white-space: pre-wrap;
-  border: var(--border-card);
+.subtask-check {
+  width: 15px; height: 15px; min-width: 15px;
+  border-radius: 3px; border: 1.5px solid var(--border2);
+  background: transparent; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px; color: var(--green-text);
 }
+.subtask-check:hover, .subtask-check--done { background: var(--green-bg); border-color: var(--green-border); }
+
+.subtask-body               { flex: 1; cursor: pointer; min-width: 0; }
+.subtask-body--done .subtask-name { text-decoration: line-through; color: var(--text3); }
+.subtask-name               { font-size: 13px; font-weight: 500; display: block; margin-bottom: 2px; }
+.subtask-meta               { display: flex; gap: 6px; align-items: center; }
+.subtask-tag                { font-size: 10px; padding: 1px 5px; border-radius: 3px; }
+.subtask-tag--label         { background: var(--amber-bg); color: var(--amber-text); }
+.subtask-date, .subtask-dur { font-size: 11px; color: var(--text3); }

@@ -1,64 +1,62 @@
-import { AppContext } from "../../App";
-import { useContext, useEffect } from "react";
-import { v4 as uuid } from "uuid";
-import './JournalPopup.css'
+
+import { AppContext } from '../../App';
+import { useContext, useEffect } from 'react';
+import { v4 as uuid } from 'uuid';
+import './JournalPopup.css';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import { STORES } from '../../utils/Constants'
+import { STORES } from '../../utils/Constants';
 
-export default NiceModal.create(({title}) => {
-    const databaseConnection = useContext(AppContext).databaseConnection;
-    const modal = useModal()
+export default NiceModal.create(({ title }) => {
+  const { databaseConnection: db } = useContext(AppContext);
+  const modal = useModal();
 
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === "Escape") {
-                modal.hide()
-                modal.remove();
-            }
-        };
-    
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, []);
+  useEffect(() => {
+    const k = e => {
+      if (e.key === 'Escape') { modal.hide(); modal.remove(); }
+    };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, []);
 
-    const handleJournalSubmit = (async (e) => {
-        //prevent default needed so data does not refresh on click.
-        e.preventDefault()
-        const form = e.currentTarget;
-        const formData = new FormData(form);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData   = new FormData(e.currentTarget);
+    const entryTitle = formData.get('entry-title');
+    const entryText  = formData.get('entry-text');
+    await db.add(STORES.journal, {
+      UUID:      uuid(),
+      title:     entryTitle,
+      entry:     entryText,
+      createdAt: new Date().toISOString(),
+    });
 
-        const entryTitle = formData.get("entry-title");
-        const entryText = formData.get("entry-text");
-    
-        const parent = await databaseConnection.getCurrentPlayer();
+    e.target.reset();
+    modal.hide();
+    modal.remove();
+  };
 
-        const journal = {
-            title: entryTitle,
-            entry: entryText,
-            //create methods for local time for tasks too in helper
-            createdAt: new Date().toISOString(),
-            parent: parent.UUID,
-            UUID: uuid(),
-        }
-        e.target.reset();
-        modal.hide()
-        modal.remove();
-        await databaseConnection.add(STORES.journal, journal);
-    })
-
-    return modal.visible ? (<div className="journal-popup"
-        title="Entry Popup">
-        <div className="blanker"></div>
-        <div className="content">
-            <p>Entry</p>
-            <form action="" onSubmit={handleJournalSubmit}>
-                <input type="text" name="entry-title" 
-                    defaultValue={title ? title : ""} 
-                    placeholder={title ? title : "Entry Title"}/>
-                <textarea name="entry-text" id=""
-                    placeholder="Enter your log here..."></textarea>
-                <button type="submit">Publish</button>
-            </form>
+  return modal.visible ? (
+    <div className="modal-blanker jp-blanker">
+      <div className="modal-card jp-card">
+        <div className="jp-header">
+          <span className="modal-title">New entry</span>
+          <button className="btn-ghost" onClick={() => { modal.hide(); modal.remove(); }}>✕</button>
         </div>
-    </div>) : ""
-}) 
+        <form onSubmit={handleSubmit} className="jp-form">
+          <input
+            type="text"
+            name="entry-title"
+            defaultValue={title || ''}
+            placeholder={title || 'Entry title'}
+          />
+          <textarea
+            name="entry-text"
+            placeholder="Write your entry here…"
+            rows={6}
+          />
+          <button type="submit" className="btn-primary jp-submit">Publish</button>
+        </form>
+      </div>
+    </div>
+  ) : null;
+});

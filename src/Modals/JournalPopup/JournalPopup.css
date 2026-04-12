@@ -1,55 +1,30 @@
 
-/* ----- Popup ----- */
+.jp-blanker { z-index: 300; }
 
-div.journal-popup {
-    position: fixed; 
-    inset: 0;
-    z-index:1;
-    display: flex;
-    align-items: center;     
-    justify-content: center;
+.jp-card {
+  width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
 }
 
-div.journal-popup > div.content {
-    position: relative; 
-    z-index: 1;
-    width: 50%;
-    height: 50%;
-    background-color: var(--bg-light);
-    border: var(--border-card);
-    box-shadow:var(--box-shadow);
+.jp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 0.5px solid var(--border);
 }
 
-div.journal-popup > div.content > p {
-    background-color: var(--bg-dark);
-    border-bottom: var(--border-card);
-    padding: 1%;
-    font-weight:700;
+.jp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 22px 20px;
 }
 
-div.journal-popup form {
-    display:flex;
-    flex-direction: column;
-    padding:40px;
-    gap:20px;
-    width:100%;
-    height:100%;
+.jp-submit {
+  align-self: flex-end;
+  padding: 7px 20px;
 }
-
-div.journal-popup textarea {
-    height:70%;
-    resize:none;
-    overflow-y: scroll;
-}
-
-div.journal-popup textarea, div.journal-popup input {
-    border:var(--border-card);
-}
-
-div.journal-popup button {
-    margin-left: auto;
-    background-color: var(--bg-dark);
-    border:var(--border-card);
-    padding: 8px 50px;
-}
-

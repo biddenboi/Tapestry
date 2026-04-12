@@ -1,0 +1,96 @@
+.jed-card {
+  width: 560px;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.jed-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 14px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.jed-header .modal-title {
+  margin-bottom: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.jed-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.jed-title-input {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--bg2);
+  padding: 6px 10px;
+}
+
+.jed-close {
+  padding: 4px 8px;
+  color: var(--text3);
+}
+
+.jed-date {
+  display: block;
+  padding: 10px 24px 0;
+  flex-shrink: 0;
+}
+
+.jed-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px 24px;
+}
+
+.jed-line {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text2);
+  margin: 0;
+  min-height: 1.75em;
+}
+
+.jed-empty {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.jed-textarea {
+  flex: 1;
+  min-height: 240px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 12px 24px 0;
+  width: calc(100% - 48px);
+}
+
+.jed-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 24px 20px;
+  flex-shrink: 0;
+  border-top: 0.5px solid var(--border);
+}
+
+.jed-delete-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+}

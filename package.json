@@ -1,7 +1,7 @@
 {
   "name": "Tapestry",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "@ebay/nice-modal-react": "^1.2.13",
+    "@supabase/supabase-js": "^2.103.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.0",
+    "reactflow": "^11.11.4",
     "remark-wiki-link": "^2.0.1",
     "uuid": "^13.0.0"
   },

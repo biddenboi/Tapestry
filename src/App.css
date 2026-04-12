@@ -1,21 +1,269 @@
-/* ----- Styling navigation bar ----- */
-div.navigation-bar {
-  position:fixed;
-  width:100%;
-  padding:10px 0px;
-  display:flex;
-  justify-content: space-evenly;
-  font-weight: 700;
-  font-size:20px;
-  cursor:pointer;
-  border-bottom: 1px solid gray;
-  top:0;
-  left:0;
-  background-color: var(--bg);
+/* ── Reset & tokens ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #fafaf8;
+  --bg2:         #f2f1ed;
+  --bg3:         #e8e6e0;
+  --surface:     #ffffff;
+  --text:        #1c1c1a;
+  --text2:       #6b6a65;
+  --text3:       #aaaaa0;
+  --border:      rgba(0,0,0,0.09);
+  --border2:     rgba(0,0,0,0.16);
+  --green:       #1d9e75;
+  --green-bg:    #e1f5ee;
+  --green-text:  #0f6e56;
+  --green-border:rgba(29,158,117,0.3);
+  --blue:        #185fa5;
+  --blue-bg:     #e6f1fb;
+  --blue-text:   #185fa5;
+  --blue-border: rgba(24,95,165,0.3);
+  --red-bg:      #fcebeb;
+  --red-text:    #a32d2d;
+  --red-border:  rgba(163,45,45,0.25);
+  --amber-bg:    #fef3dc;
+  --amber-text:  #8a5a00;
+  --radius:      8px;
+  --radius-lg:   12px;
+  --nav-h:       48px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
 }
 
-/*disable navigation bar when task in session*/
-div.navigation-bar.task-in-session {
-  color:gray;
-  cursor:not-allowed;
+body { min-height: 100vh; }
+
+/* ── Navigation ─────────────────────────────────────────────────────── */
+.nav-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--border2);
+  z-index: 100;
+}
+
+.nav-logo {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-right: 24px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.nav-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--text3);
+}
+
+.nav-status-dot--online { background: var(--green); }
+.nav-status-dot--offline { background: var(--red-text); }
+
+.nav-status-queue {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+
+.nav-links a {
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-decoration: none;
+}
+.nav-links a:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+/* ── Page wrapper ───────────────────────────────────────────────────── */
+.page {
+  margin-top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  overflow: hidden;
+}
+
+/* ── Global form elements ───────────────────────────────────────────── */
+input, textarea, select {
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--blue);
+}
+textarea { resize: vertical; line-height: 1.5; }
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text);
+  padding: 7px 14px;
+  transition: background 0.1s;
+}
+button:hover { background: var(--bg3); }
+
+/* ── Modal blanker ──────────────────────────────────────────────────── */
+.modal-blanker {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border2);
+  padding: 24px;
+  width: 420px;
+  max-width: 94vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+/* ── Utility classes ────────────────────────────────────────────────── */
+.label-sm {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.btn-primary {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue-text);
+}
+.btn-primary:hover { background: #d5e8f8; }
+
+.btn-success {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green-text);
+}
+.btn-success:hover { background: #c8f0e2; }
+
+.btn-danger {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red-text);
+}
+.btn-danger:hover { background: #f8d8d8; }
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text2);
+}
+.btn-ghost:hover { background: var(--bg2); }
+/* ── Access-revoked banner ─────────────────────────────── */
+.access-revoked-banner {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0; right: 0;
+  z-index: 99;
+  background: var(--red-bg);
+  border-bottom: 0.5px solid var(--red-border);
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--red-text);
+}
+
+.access-revoked-banner a {
+  color: var(--red-text);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.access-revoked-dismiss {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  font-size: 13px;
+  color: var(--red-text);
+}
+
+.nav-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 0.5px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+.nav-help-btn:hover {
+  background: var(--bg3);
+  color: var(--text);
 }

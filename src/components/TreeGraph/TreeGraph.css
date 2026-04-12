@@ -1,0 +1,277 @@
+
+.tree-graph-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* React Flow internals */
+.react-flow__background { background: var(--bg) !important; }
+.react-flow__controls {
+  background: var(--surface) !important;
+  border: 0.5px solid var(--border2) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+}
+.react-flow__controls-button {
+  background: var(--surface) !important;
+  border-bottom-color: var(--border) !important;
+  color: var(--text2) !important;
+}
+.react-flow__controls-button:hover { background: var(--bg2) !important; }
+.react-flow__edge-path { stroke-width: 1.5px !important; }
+.react-flow, .react-flow__renderer,
+.react-flow__viewport-container { width: 100% !important; height: 100% !important; }
+
+/* ── Custom node ─────────────────────────────────────── */
+.cnode {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  min-width: 180px;
+  max-width: 300px;
+  width: max-content;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.1s;
+  box-sizing: border-box;
+}
+.cnode:hover            { border-color: var(--blue); }
+.cnode--selected        { border-color: var(--blue); background: var(--blue-bg); }
+.cnode--root            { border-width: 1.5px; border-color: var(--text2); }
+.cnode--root.cnode--selected { border-color: var(--blue); background: var(--blue-bg); }
+.cnode--label           { background: var(--amber-bg); border-color: rgba(138,90,0,0.2); }
+.cnode--completed       { opacity: 0.5; }
+/* Disconnected: identical to a normal node except for the "disconnected" badge */
+/* No opacity/color change — the badge text makes the state clear */
+
+.cnode-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+.cnode--selected .cnode-name { color: var(--blue-text); }
+
+.cnode-meta  { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.cnode-date  { font-size: 11px; color: var(--green-text); }
+.cnode-dur   { font-size: 11px; color: var(--text3); }
+
+.cnode-badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; margin-top: 5px; display: inline-block; }
+.cnode-badge--label { background: var(--amber-bg); color: var(--amber-text); }
+.cnode-badge--done  { background: var(--green-bg);  color: var(--green-text); }
+.cnode-badge--disc  { background: var(--bg3);        color: var(--text3); }
+
+/* Handles */
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--border2) !important;
+  border: none !important;
+  transition: background 0.15s, transform 0.15s !important;
+}
+/* Bottom handle glows blue on node hover to hint at drag-to-create */
+.cnode:hover .react-flow__handle[data-handlepos="bottom"] {
+  background: var(--blue) !important;
+  transform: scale(1.4) !important;
+}
+
+/* ── Settings overlay ────────────────────────────────── */
+.tg-settings-anchor {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tg-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: var(--radius) !important;
+  background: var(--surface) !important;
+  border: 0.5px solid var(--border2) !important;
+  color: var(--text3);
+  transition: color 0.15s;
+}
+.tg-settings-btn:hover,
+.tg-settings-btn--active {
+  color: var(--text) !important;
+  background: var(--bg2) !important;
+}
+
+.tg-settings-popup {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 210px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  animation: tg-popup-in 0.12s ease;
+}
+
+@keyframes tg-popup-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tg-settings-heading {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.tg-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+}
+.tg-settings-row input[type="checkbox"] {
+  accent-color: var(--blue);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tg-settings-row:hover { color: var(--text); }
+
+.tg-settings-tip {
+  font-size: 11px;
+  color: var(--text3);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Side panel ──────────────────────────────────────── */
+.tg-panel {
+  position: absolute; top: 12px; right: 12px;
+  width: 260px;
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 16px;
+  z-index: 10;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  animation: tg-popup-in 0.12s ease;
+}
+.tg-panel-header   { display: flex; align-items: center; justify-content: space-between; }
+.tg-panel-title    { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; margin-right: 8px; word-break: break-word; }
+.tg-panel-close    { padding: 2px 6px; color: var(--text3); font-size: 12px; flex-shrink: 0; }
+
+.tg-view           { display: flex; flex-direction: column; gap: 8px; }
+.tg-info-row       { display: flex; flex-direction: column; gap: 2px; }
+.tg-info-val       { font-size: 13px; color: var(--text); }
+.tg-info-desc      { color: var(--text2); font-size: 12px; line-height: 1.5; }
+.tg-dblclick-hint  { font-size: 10px; color: var(--text3); font-style: italic; }
+.tg-view-actions   { display: flex; gap: 4px; flex-wrap: wrap; }
+.tg-view-actions button { font-size: 11px; padding: 5px 8px; }
+
+.tg-add-actions    { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.tg-add-actions button { font-size: 11px; padding: 5px 10px; }
+/* ── Sticky-note node ────────────────────────────────── */
+.cnode-note {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 2px;
+  padding: 10px 14px 12px;
+  min-width: 160px;
+  max-width: 260px;
+  width: max-content;
+  font-family: inherit;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 0.1s, border-color 0.1s;
+}
+.cnode-note:hover           { box-shadow: 2px 4px 12px rgba(0,0,0,0.12); }
+.cnode-note--selected       { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.25); }
+
+.cnode-note-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 6px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.cnode-note-body {
+  font-size: 12px;
+  color: #78350f;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cnode-note-placeholder {
+  font-size: 11px;
+  color: #d97706;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ── Right-click context menu ────────────────────────── */
+.tg-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 4px;
+  min-width: 160px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  animation: tg-popup-in 0.08s ease;
+}
+
+.tg-context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 12px;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.tg-context-item:hover { background: var(--bg2); color: var(--text); }
+.tg-context-item svg   { flex-shrink: 0; color: var(--text3); }
+
+.tg-context-divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 3px 6px;
+}
+
+/* Edge delete: SVG circle button rendered directly in DeletableEdge component */
+
+/* Edge deletion: drag to empty canvas to unlink */
