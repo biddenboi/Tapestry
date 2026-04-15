@@ -1,109 +1,217 @@
-/**https://www.youtube.com/watch?v=vvPklRN0Tco*/
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ── Solo Leveling / Tactical Dark UI ──────────────────── */
 :root {
-  --bg-light: hsl(60, 5%, 100%);
-  --bg: hsl(60, 5%, 95%);
-  --bg-dark: hsl(60, 5%, 90%);
+  /* Backgrounds */
+  --bg-void:    #060c18;
+  --bg:         #0a1020;
+  --bg-surface: #0f1829;
+  --bg-card:    #141f35;
+  --bg-raised:  #1a2844;
+  --bg-hover:   #1f3356;
 
-  --border: hsl(0, 0%, 30%);
+  /* Blue accents */
+  --accent:        #1a6ef5;
+  --accent-bright: #4da3ff;
+  --accent-dim:    #0d3d8c;
+  --accent-glow:   rgba(77, 163, 255, 0.18);
+  --accent-border: rgba(77, 163, 255, 0.35);
 
-  --text: hsl(0, 0%, 5%);
-  --text-muted: hsl(0, 0%, 30%);
+  /* Text */
+  --text:        #c8dcf8;
+  --text-bright: #e8f2ff;
+  --text-muted:  #5a7898;
+  --text-dim:    #2e4560;
 
-  /**set programmatically?*/
-  --light-blue-color: hsl(206, 16%, 65%);
-  --dark-blue-color: hsl(238, 12%, 55%);
-  --red-orange-color: hsl(8, 72%, 72%);
-  --lemonade-yellow-color: hsl(48, 81%, 75%);
-  --light-green-color: hsl(98, 49%, 82%);
+  /* Status */
+  --green:      #00d68f;
+  --green-dim:  rgba(0, 214, 143, 0.15);
+  --red:        #ff3d57;
+  --red-dim:    rgba(255, 61, 87, 0.15);
+  --gold:       #ffb800;
+  --gold-dim:   rgba(255, 184, 0, 0.15);
+  --purple:     #9b6dff;
 
-  /**possibly semantic colors*/
+  /* Borders */
+  --border:        rgba(77, 163, 255, 0.2);
+  --border-strong: rgba(77, 163, 255, 0.45);
+  --border-subtle: rgba(77, 163, 255, 0.1);
 
-  --border-card: solid 1px var(--border);
-  --box-shadow: 2px 5px 8px -3px rgba(0, 0, 0, 0.293);
-  --background-dim: hsla(206, 33%, 12%, 0.414);
+  /* Legacy compatibility */
+  --bg-light:            var(--bg-card);
+  --bg-dark:             var(--bg-raised);
+  --light-blue-color:    var(--accent-bright);
+  --dark-blue-color:     var(--accent);
+  --red-orange-color:    var(--red);
+  --lemonade-yellow-color: var(--gold);
+  --light-green-color:   var(--green);
+
+  --border-card:    solid 1px var(--border);
+  --box-shadow:     0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-subtle);
+  --background-dim: rgba(6, 12, 24, 0.88);
+
+  /* Glow effects */
+  --glow-blue:  0 0 20px rgba(77, 163, 255, 0.3);
+  --glow-green: 0 0 20px rgba(0, 214, 143, 0.3);
+  --glow-red:   0 0 20px rgba(255, 61, 87, 0.3);
 }
 
-/**player rank colors - possibly migrate for cleaner codebase?*/
-.newbie               { color: #7a8694; }
-.pupil                { color: #2cb67d; }
-.specialist           { color: #0ea5e9; }
-.expert               { color: #6366f1; }
-.candidate-master     { color: #a855f7; }
-.master               { color: #f97316; }
-.international-master { color: #ea580c; }
-.grandmaster          { color: #ff4655; }
+/* ── Player rank colors ─────────────────────────────────── */
+.newbie               { color: #4a5568; }
+.pupil                { color: var(--green); }
+.specialist           { color: var(--accent-bright); }
+.expert               { color: var(--purple); }
+.candidate-master     { color: #c084fc; }
+.master               { color: var(--gold); }
+.international-master { color: #fb923c; }
+.grandmaster          { color: var(--red); }
 .international-grandmaster { color: #e11d48; }
-.legendary-grandmaster { color: #e11d48; display: inline-block; }
-.legendary-grandmaster::first-letter { color: #000000; }
-.legendary { color: #000000; }
+.legendary-grandmaster { color: #ff4d6d; display: inline-block; }
+.legendary-grandmaster::first-letter { color: var(--accent-bright); }
 
+/* ── Overlay blanker ────────────────────────────────────── */
 div.blanker {
-    position: absolute; 
-    inset: 0;
-    background-color: var(--background-dim);
+  position: absolute;
+  inset: 0;
+  background-color: var(--background-dim);
+  backdrop-filter: blur(4px);
 }
 
-body.dark {
-  /**dark mode*/
+/* ── CSS Reset ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+*:not(dialog) { margin: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { interpolate-size: allow-keywords; }
 }
 
 html, body, div#root {
   height: 100%;
-  font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-}
-
-/* 1. Use a more-intuitive box-sizing model */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-/* 2. Remove default margin */
-*:not(dialog) {
-  margin: 0;
-}
-
-/* 3. Enable keyword animations */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    interpolate-size: allow-keywords;
-  }
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 body {
-  /* 4. Add accessible line-height */
   line-height: 1.5;
-  /* 5. Improve text rendering */
   -webkit-font-smoothing: antialiased;
 }
 
-/* 6. Improve media defaults */
 img, picture, video, canvas, svg {
   display: block;
-  
   max-width: 100%;
 }
 
-/* 7. Inherit fonts for form controls */
 input, button, textarea, select {
   font: inherit;
+  color: inherit;
 }
 
-/* 8. Avoid text overflows */
 p, h1, h2, h3, h4, h5, h6 {
   overflow-wrap: break-word;
 }
 
-/* 9. Improve line wrapping */
-p {
-  text-wrap: pretty;
-}
-h1, h2, h3, h4, h5, h6 {
-  text-wrap: balance;
+p { text-wrap: pretty; }
+h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
+
+#root, #__next { isolation: isolate; }
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Global button base ─────────────────────────────────── */
+button {
+  cursor: pointer;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 16px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
 }
 
-/*
-  10. Create a root stacking context
-*/
-#root, #__next {
-  isolation: isolate;
+button:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-border);
+  color: var(--text-bright);
+  box-shadow: var(--glow-blue);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent-bright);
+  color: var(--text-bright);
+}
+
+button.primary:hover {
+  background: #2278ff;
+  box-shadow: 0 0 24px rgba(77, 163, 255, 0.5);
+}
+
+button.danger {
+  background: rgba(255, 61, 87, 0.15);
+  border-color: rgba(255, 61, 87, 0.4);
+  color: var(--red);
+}
+
+button.danger:hover {
+  background: rgba(255, 61, 87, 0.25);
+  box-shadow: var(--glow-red);
+}
+
+/* ── Global input base ──────────────────────────────────── */
+input, textarea, select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Section header pattern ─────────────────────────────── */
+.section-header {
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Card pattern ───────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--box-shadow);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--box-shadow), var(--glow-blue);
+}
+
+/* ── Scanline overlay (decorative) ─────────────────────── */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }

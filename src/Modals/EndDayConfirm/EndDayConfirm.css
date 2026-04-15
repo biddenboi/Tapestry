@@ -1,43 +1,113 @@
-.end-day-confirm {
-  position: fixed; 
-  inset: 0;
-  z-index:1;
-  display: flex;
-  align-items: center;     
-  justify-content: center;
+/* ── Confirm overlay ─────────────────────────────────────── */
+
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.end-day-confirm .container {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  position: relative; 
-  z-index: 1;
-  min-width:40%;
-  padding-bottom:2vh;
-  gap:5vh;
-  background-color: var(--bg-light);
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
+.confirm-card {
+    position: relative;
+    z-index: 1;
+    width: min(460px, 88vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.end-day-confirm .button-row {
-    display:flex;
-    justify-content:center;
-    gap:20%;
-    width:100%;
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.end-day-confirm .container > p {
-    width:100%;
-    background-color: var(--bg-dark);
-    border-bottom:var(--border-card);
-    padding:5px 13px;
-    font-weight:600;
+.confirm-header {
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
 }
 
-.end-day-confirm .button-row > button {
-    border: var(--border-card);
-    padding:10px 20px;
+.confirm-body {
+    padding: 22px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
+.confirm-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.03em;
+}
+
+.confirm-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.confirm-desc strong { color: var(--text); }
+
+.confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+/* ── Purgatory variant ───────────────────────────────────── */
+.purgatory-card {
+    position: relative;
+    z-index: 1;
+    width: min(460px, 88vw);
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 61, 87, 0.35);
+    box-shadow: 0 0 24px rgba(255, 61, 87, 0.15), var(--box-shadow);
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.purgatory-header {
+    background: var(--bg-raised);
+    border-bottom: 1px solid rgba(255, 61, 87, 0.25);
+    padding: 12px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--red);
+}
+
+.purgatory-body {
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.purgatory-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 0.06em;
+}
+
+.purgatory-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}

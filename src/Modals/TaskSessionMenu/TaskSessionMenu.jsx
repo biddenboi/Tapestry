@@ -1,67 +1,49 @@
-import './TaskSessionMenu.css'
-
-import { useState, useEffect, useContext, act } from 'react'
+import '../TaskCreationMenu/TaskCreationMenu.css';
+import './TaskSessionMenu.css';
+import { useContext } from 'react';
 import { AppContext } from '../../App.jsx';
 import Timer from '../../Components/Timer/Timer.jsx';
 import { msToPoints } from '../../utils/Helpers/Time.js';
-import Markdown from 'react-markdown';
-import remarkWikiLink from 'remark-wiki-link';
-import { v4 as uuid } from "uuid";
-import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
-
-import { getCurrentLocation } from '../../utils/Helpers/Location.js'
-import { getSessionMultiplier, getTaskDuration } from '../../utils/Helpers/Tasks.js'
+import { v4 as uuid } from 'uuid';
+import { MINUTE, STORES } from '../../utils/Constants.js';
+import { getCurrentLocation } from '../../utils/Helpers/Location.js';
+import { getSessionMultiplier, getTaskDuration } from '../../utils/Helpers/Tasks.js';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskCreationMenu from '../TaskCreationMenu/TaskCreationMenu.jsx';
 import SessionResults from '../SessionResults/SessionResults.jsx';
-
+import MarkdownEditor from '../../Components/MarkdownEditor/MarkdownEditor.jsx';
 
 export default NiceModal.create(() => {
     const databaseConnection = useContext(AppContext).databaseConnection;
     const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-    const modal = useModal()
+    const modal = useModal();
 
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-        if (e.key === "ArrowLeft") {
-            handleGiveUpTask()
-        }
-        if (e.key === "ArrowRight") {
-            handleTaskSubmit()
-        }
-        };
-        
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [activeTask]);
-
-    const handleGiveUpTask = async (e) => {
-        setActiveTask({...activeTask, createdAt: null});
-        NiceModal.show(TaskCreationMenu)
+    const handleGiveUpTask = async () => {
+        setActiveTask({ ...activeTask, createdAt: null });
         modal.hide();
         modal.remove();
-    }
+        NiceModal.show(TaskCreationMenu);
+    };
 
     const handleTaskSubmit = async () => {
         const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
-        const sessionDuration = parseFloat(activeTask.sessionDuration) || 0;
+        const sessionDuration   = parseFloat(activeTask.sessionDuration)   || 0;
         const parent = await databaseConnection.getCurrentPlayer();
-        
+
         const task = {
             ...activeTask,
             points: null,
             completedAt: new Date().toISOString(),
-            location: null
-        }
+            location: null,
+        };
 
-        //calculating point gain logic
-        const duration = getTaskDuration(task); //in ms
-        const multiplier = getSessionMultiplier(duration, task.sessionDuration * MINUTE); //in ms
+        const duration = getTaskDuration(task);
+        const multiplier = getSessionMultiplier(duration, sessionDuration * MINUTE);
         task.points = Math.floor(msToPoints(duration) * multiplier);
-        
+
         const tokensGained = Math.floor(msToPoints(duration) / 6);
 
-        databaseConnection.add(STORES.player, {
+        await databaseConnection.add(STORES.player, {
             ...parent,
             tokens: Math.floor(parent.tokens + tokensGained),
             minutesClearedToday: parent.minutesClearedToday + parseFloat(sessionDuration || 0),
@@ -72,42 +54,70 @@ export default NiceModal.create(() => {
         modal.hide();
         modal.remove();
 
-        //showing results
         NiceModal.show(SessionResults, {
             duration,
             tokens: tokensGained,
-            sessionDuration: sessionDuration,
+            sessionDuration,
             showTaskCreation: true,
         });
 
         activeTask.estimatedDuration = estimatedDuration - sessionDuration;
-        setActiveTask({...activeTask, createdAt: null});
-        
-        //async for setting location without causing popup open delay - possibly unnecessary
+        setActiveTask({ ...activeTask, createdAt: null });
+
         getCurrentLocation()
             .then(async (location) => {
                 if (!location) return;
                 await databaseConnection.add(STORES.task, { ...task, location });
             })
-            .catch((err) => {
-                console.error("Background location update failed:", err);
-            });
-    }
+            .catch(err => console.error('Background location update failed:', err));
+    };
 
-    return modal.visible ? <div className="task-session-menu">
-        <div className="blanker"></div>
-        {/**maybe not make it a form, is it necessary? it only really exists as indicator.*/}
-        <form action="" className="task-session-form" onSubmit={handleTaskSubmit}>
-            <div className="task-session-description">
-                <div className="task-titlebar">
-                    <p>{activeTask.name}</p>
-                    <p>{activeTask.reasonToSelect}</p>
+    return modal.visible ? (
+        <div className="task-modal-overlay">
+            <div className="blanker" />
+            <div className="task-modal session-modal">
+
+                <div className="task-modal-header">
+                    <span>IN SESSION</span>
+                    <span className="session-duration-badge">
+                        {activeTask.sessionDuration} min
+                    </span>
                 </div>
-                <p>Plan</p>
-                <span>
-                    <Markdown remarkPlugins={[remarkWikiLink]}>{activeTask.efficiency}</Markdown>
-                </span>
+
+                {/* Task identity */}
+                <div className="session-task-info">
+                    <p className="session-task-name">{activeTask.name}</p>
+                    {activeTask.reasonToSelect && (
+                        <p className="session-task-reason">{activeTask.reasonToSelect}</p>
+                    )}
+                </div>
+
+                {/* Plan (read-only markdown) */}
+                <div className="session-plan-wrap">
+                    <div className="session-plan-label">Plan</div>
+                    <div className="session-plan-content">
+                        <MarkdownEditor
+                            value={activeTask.efficiency || ''}
+                            readOnly={true}
+                        />
+                    </div>
+                </div>
+
+                {/* Timer */}
+                <div className="session-timer-bar">
+                    <Timer />
+                </div>
+
+                {/* Action buttons */}
+                <div className="task-modal-footer">
+                    <button className="danger" onClick={handleGiveUpTask}>
+                        ← GIVE UP
+                    </button>
+                    <button className="primary" onClick={handleTaskSubmit}>
+                        COMPLETE →
+                    </button>
+                </div>
             </div>
-        </form>
-    </div> : ""
-})
+        </div>
+    ) : null;
+});

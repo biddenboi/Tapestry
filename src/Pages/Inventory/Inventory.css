@@ -1,0 +1,269 @@
+/* ── Inventory Page ─────────────────────────────────────── */
+
+.inventory-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg);
+    padding-top: 52px;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.inv-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px 0;
+    flex-shrink: 0;
+}
+
+.inv-header-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.inv-title-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--accent-bright);
+}
+
+.inv-token-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--gold-dim);
+    padding: 4px 12px;
+    border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+.inv-filter-nav {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+}
+
+.filter-tab {
+    padding: 6px 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.14s;
+}
+
+.filter-tab:hover {
+    color: var(--text);
+    border-color: var(--border);
+    background: var(--bg-card);
+    box-shadow: none;
+}
+
+.filter-tab.active {
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    border-bottom-color: transparent;
+    background: var(--accent-glow);
+}
+
+/* ── Body ───────────────────────────────────────────────── */
+.inv-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.inv-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 8px;
+}
+
+.inv-empty-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+}
+
+.inv-empty-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ── Sections ───────────────────────────────────────────── */
+.inv-section {}
+
+.inv-section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inv-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+}
+
+.inv-section-label.depleted-label { color: var(--text-dim); }
+
+/* ── Item grid ──────────────────────────────────────────── */
+.inv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+/* ── Inventory card ─────────────────────────────────────── */
+.inv-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.18s ease;
+}
+
+.inv-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.inv-card:hover {
+    border-color: var(--accent-border);
+    box-shadow: var(--glow-blue);
+    transform: translateY(-1px);
+}
+
+.inv-card:hover::before { opacity: 1; }
+
+.inv-card.depleted {
+    opacity: 0.4;
+    cursor: default;
+    filter: grayscale(0.6);
+}
+
+.inv-card-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+}
+
+.inv-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inv-card-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.inv-card-cat {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.inv-card-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-bright);
+    background: var(--accent-glow);
+    padding: 1px 5px;
+    border: 1px solid var(--accent-border);
+    display: inline-block;
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.inv-card-qty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.qty-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--green);
+    line-height: 1;
+}
+
+.qty-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+}
+
+.inv-card-hover-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 110, 245, 0.08);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    color: var(--accent-bright);
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+}
+
+.inv-card:hover .inv-card-hover-hint { opacity: 1; }

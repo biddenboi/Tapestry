@@ -1,74 +1,232 @@
-/* TaskCreationMenu.css */
+/* ── Shared Task Modal layout ────────────────────────────── */
 
-/* NOTE: The form in TaskCreationMenu.jsx should use className="task-creation-form"
-   instead of "task-creation-menu" to distinguish it from TaskSessionMenu's form. */
-
-div.task-preview-menu {
-  position: fixed; 
-  inset: 0;
-  z-index:1;
-  display: flex;
-  align-items: center;     
-  justify-content: center;
+.task-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-form.task-preview-form {
-  position: relative; 
-  z-index: 1;
-  min-width:60%;
-  padding-bottom:2vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-light);
-  border: var(--border-card);
-  box-shadow: var(--box-shadow);
+.task-modal {
+    position: relative;
+    z-index: 1;
+    width: min(600px, 90vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    max-height: 90vh;
 }
 
-form.task-preview-form label {
-  display: flex;
-  flex-direction: column;
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-form.task-preview-form div.task-form-inputs p {
-  background-color: var(--bg-dark);
-  padding: 0.5%;
-  border: var(--border-card);
-
-  font-weight: 700;
+/* ── Header ─────────────────────────────────────────────── */
+.task-modal-header {
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 
-form.task-preview-form div.task-form-inputs > div.inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 5%;
-  row-gap: 2%;
-  grid-template-rows: auto;
-  padding: 1% 5% 7% 5%;
+/* ── Body ───────────────────────────────────────────────── */
+.task-form-body {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
 }
 
-form.task-preview-form div.task-form-inputs > input {
-  border: var(--border-card);
+.task-form-body label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
-form.task-preview-form div.task-form-inputs select {
-  padding: 4px 0px;
+.task-form-body label:focus-within {
+    color: var(--accent-bright);
 }
 
-form.task-preview-form div.task-form-inputs label {
-  color: var(--text-muted);
+.task-form-body label.full-width { width: 100%; }
+
+.task-form-body input[type="text"],
+.task-form-body input[type="number"],
+.task-form-body input[type="date"],
+.task-form-body textarea {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13.5px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
 }
 
-form.task-preview-form div.task-form-inputs label:focus-within {
-  color: var(--text);
+.task-form-body input:focus,
+.task-form-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
-form.task-preview-form div.task-form-inputs label > textarea {
-  resize: none;
-  height: 30vh;
-  white-space: pre-wrap;
-  border: var(--border-card);
+.task-form-body textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
 }
 
-form.task-preview-form div.task-form-inputs label:has(textarea) {
-  grid-column: span 2;
+/* Two-column row */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+/* ── Range input (session duration slider) ──────────────── */
+.range-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bg-raised);
+    border: none !important;
+    outline: none;
+    padding: 0 !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
+.range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-bright);
+    border: 2px solid var(--bg-card);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.12s;
+    box-shadow: var(--glow-blue);
+}
+
+.range-input::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.range-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+/* ── Plan editor (MarkdownEditor inside task form) ──────── */
+.plan-editor {
+    min-height: 120px;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.task-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+}
+
+/* ── Session-specific: title bar in session view ────────── */
+.session-task-info {
+    padding: 16px 22px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.session-task-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+.session-task-reason {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ── Plan view in session (read-only markdown) ──────────── */
+.session-plan-wrap {
+    padding: 16px 22px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.session-plan-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.session-plan-label::before {
+    content: '';
+    width: 3px;
+    height: 10px;
+    background: var(--accent);
+    display: inline-block;
+}
+
+.session-plan-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    min-height: 120px;
+}
+
+/* ── Timer inside session modal ─────────────────────────── */
+.session-timer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 22px 14px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
 }

@@ -1,37 +1,115 @@
-/* ----- Settings ----- */
+/* ── Settings Page ───────────────────────────────────────── */
+
 form.settings {
-    margin-top:10vh;
-    justify-self: center;
-    width:50%;
+    max-width: 520px;
+    margin: 72px auto 40px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
 }
 
-form.settings label {
-    display:flex;
-    margin:20px 10%;
-    justify-content: space-between;
-}
-
-form.settings button.save-changes {
-    margin-top:15px;
-    margin-left:auto;
-    margin-right:10%;
-    display:block;
-}
-
-
-/* ----- Settings Group ----- */
-
+/* ── Settings group ──────────────────────────────────────── */
 div.settings-group {
-    font-size:17px;
-    font-weight:600;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
 }
 
 div.settings-group h3 {
-    margin-bottom:5px;
-    margin-left:20%;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    padding: 10px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    margin: 0;
 }
 
-div.settings-group input, div.settings-group button {
-    font-weight: 400;
+div.settings-group hr {
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    margin: 0;
 }
 
+/* ── Labels ──────────────────────────────────────────────── */
+form.settings label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 20px;
+}
+
+form.settings label:last-child { border-bottom: none; }
+
+form.settings label:focus-within { color: var(--accent-bright); }
+
+/* ── Inputs ──────────────────────────────────────────────── */
+form.settings input[type="text"],
+form.settings input[type="time"],
+form.settings input[type="file"] {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 180px;
+}
+
+form.settings input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+form.settings button {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 6px 16px;
+}
+
+button.save-changes {
+    align-self: flex-end;
+    padding: 10px 28px !important;
+    background: var(--accent) !important;
+    border-color: var(--accent-bright) !important;
+    color: var(--text-bright) !important;
+    font-size: 12px !important;
+    transition: all 0.15s;
+}
+
+button.save-changes:hover {
+    background: #2278ff !important;
+    box-shadow: 0 0 24px rgba(77, 163, 255, 0.5) !important;
+}
+
+/* ── Data upload row ─────────────────────────────────────── */
+form.settings label > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+form.settings input[type="file"] {
+    min-width: unset;
+    font-size: 11px;
+    padding: 4px 6px;
+}

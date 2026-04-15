@@ -1,0 +1,210 @@
+/* ── Markdown Editor ─────────────────────────────────────── */
+
+.md-editor-wrap {
+    position: relative;
+    min-height: 80px;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.md-editor-wrap.focused {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Shared text styling (mirror + preview must match exactly) ── */
+.md-mirror,
+.md-preview,
+.md-textarea {
+    font: 400 13.5px/1.6 'DM Sans', system-ui, sans-serif;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    tab-size: 4;
+}
+
+/* ── Mirror overlay ─────────────────────────────────────── */
+.md-mirror {
+    position: absolute;
+    inset: 0;
+    overflow: hidden; /* scroll driven by textarea */
+    pointer-events: none;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    z-index: 0;
+}
+
+/* ── Textarea ────────────────────────────────────────────── */
+.md-textarea {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    overflow-y: auto;
+    z-index: 1;
+    color: transparent;
+    caret-color: var(--accent-bright);
+    selection-color: rgba(77, 163, 255, 0.3);
+}
+
+.md-textarea::selection {
+    background: rgba(77, 163, 255, 0.25);
+    color: transparent;
+}
+
+.md-textarea.hidden {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.md-textarea.visible {
+    position: absolute;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+}
+
+/* ── Preview (non-focused) ──────────────────────────────── */
+.md-preview {
+    cursor: text;
+    color: var(--text);
+    min-height: 80px;
+    position: relative;
+    z-index: 0;
+}
+
+.md-placeholder {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* ── Read-only mode ─────────────────────────────────────── */
+.md-editor.readonly {
+    color: var(--text);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+    font-size: 13.5px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Markdown token styles (shared across mirror & preview) */
+
+/* Bold */
+strong {
+    font-weight: 700;
+    color: var(--text-bright);
+}
+
+/* Italic */
+em {
+    font-style: italic;
+    color: var(--text-bright);
+}
+
+/* Inline code */
+.md-mirror code,
+.md-preview code,
+.md-editor.readonly code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    background: var(--bg-raised);
+    color: var(--accent-bright);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+
+/* Links */
+.md-link {
+    color: var(--accent-bright);
+    text-decoration: underline;
+    text-decoration-color: rgba(77, 163, 255, 0.4);
+    text-underline-offset: 2px;
+    transition: color 0.12s;
+    cursor: pointer;
+}
+
+.md-link:hover {
+    color: var(--text-bright);
+    text-decoration-color: var(--accent-bright);
+}
+
+/* Headings */
+.md-h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.04em;
+    display: block;
+}
+
+.md-h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25em;
+    font-weight: 700;
+    color: var(--text-bright);
+    display: block;
+}
+
+.md-h3 {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text-bright);
+    display: block;
+}
+
+/* Raw syntax (shown when cursor inside token) */
+.md-raw {
+    opacity: 0.7;
+    font-style: normal !important;
+    font-weight: inherit;
+}
+
+/* Heading prefix shown in raw mode */
+.md-raw.md-h1,
+.md-raw.md-h2,
+.md-raw.md-h3 {
+    color: var(--text-muted);
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+/* ── Toolbar (optional, can be toggled) ─────────────────── */
+.md-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+}
+
+.md-tool-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 3px 7px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.12s;
+}
+
+.md-tool-btn:hover {
+    background: var(--accent-glow);
+    color: var(--accent-bright);
+    border: none;
+    box-shadow: none;
+}

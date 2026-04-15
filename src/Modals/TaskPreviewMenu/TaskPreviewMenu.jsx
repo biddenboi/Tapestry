@@ -1,93 +1,103 @@
-import './TaskPreviewMenu.css'
-import { useContext, useEffect } from 'react'
+import './TaskPreviewMenu.css';
+import { useContext, useEffect } from 'react';
 import { AppContext } from '../../App.jsx';
-import { v4 as uuid } from "uuid";
-import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
+import { v4 as uuid } from 'uuid';
+import { STORES } from '../../utils/Constants.js';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
-import { getTodoWPD, getDaysUntilDue } from '../../utils/Helpers/Tasks.js';
+import { getTodoWPD } from '../../utils/Helpers/Tasks.js';
+import MarkdownEditor from '../../Components/MarkdownEditor/MarkdownEditor.jsx';
 
-export default NiceModal.create(() => {    
-  const databaseConnection = useContext(AppContext).databaseConnection;
-  const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-  const modal = useModal()
+export default NiceModal.create(() => {
+    const databaseConnection = useContext(AppContext).databaseConnection;
+    const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+    const modal = useModal();
 
-  useEffect(() => {
-    //limit session to 60 minutes to emphasize quick scrolling through tasks
-    activeTask.sessionDuration = Math.min(Math.floor(getTodoWPD(activeTask)), 60);
-  }, [])
+    useEffect(() => {
+        const suggested = Math.min(Math.floor(getTodoWPD(activeTask)), 60);
+        if (!activeTask.sessionDuration) {
+            setActiveTask(prev => ({ ...prev, sessionDuration: suggested }));
+        }
+    }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "ArrowLeft" && canSubmitTodo()) {
-        handleTodoSubmit()
-      }
-      if (e.key === "ArrowRight") {
-        startSession()
-      }
+    const canStart = () => !!(activeTask.dueDate && activeTask.estimatedDuration);
+    const canSave = canStart;
+
+    const startSession = async () => {
+        const parent = await databaseConnection.getCurrentPlayer();
+        setActiveTask(prev => ({
+            ...prev,
+            createdAt: new Date().toISOString(),
+            parent: parent.UUID,
+            UUID: uuid(),
+        }));
+        modal.hide();
+        modal.remove();
+        NiceModal.show(TaskSessionMenu);
     };
-      
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [activeTask]);
 
-  const startSession = async () => {
-    const parent = await databaseConnection.getCurrentPlayer();
-    const task = {
-        ...activeTask,
-        createdAt: new Date().toISOString(),
-        parent: parent.UUID,
-        UUID: uuid(),
-    }
-    setActiveTask(task);
+    const handleSaveTodo = async () => {
+        await databaseConnection.add(STORES.todo, { ...activeTask, UUID: uuid() });
+        setActiveTask({});
+        modal.hide();
+        modal.remove();
+    };
 
-    modal.hide();
-    modal.remove();
-    NiceModal.show(TaskSessionMenu)
-  }
+    const sessionDuration = activeTask.sessionDuration || 25;
 
-  const handleTodoSubmit = async (e) => {
-    await databaseConnection.add(STORES.todo, {...activeTask, UUID: uuid()});
+    return modal.visible ? (
+        <div className="task-modal-overlay">
+            <div className="blanker" />
+            <div className="task-modal">
+                <div className="task-modal-header">
+                    <span>SESSION PREVIEW</span>
+                </div>
 
-    setActiveTask({});
-    modal.hide();
-    modal.remove();
-  }
+                <div className="task-form-body">
+                    <label className="full-width">
+                        Task Name
+                        <input
+                            type="text"
+                            value={activeTask.name || ''}
+                            onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                    </label>
 
-  const canSubmitTodo = () => {
-    if (!activeTask.dueDate) return false;
-    if (!activeTask.estimatedDuration) return false;
-    return true; 
-  }
+                    <label className="full-width">
+                        Session Duration — <strong>{sessionDuration} min</strong>
+                        <input
+                            type="range"
+                            min="1"
+                            max="60"
+                            value={sessionDuration}
+                            onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}
+                            className="range-input"
+                        />
+                        <div className="range-ticks">
+                            <span>1</span><span>15</span><span>30</span><span>45</span><span>60</span>
+                        </div>
+                    </label>
 
-  return modal.visible ? <div className="task-preview-menu">
-    <div className="blanker"></div>
-    <form action="" className="task-preview-form">   
-      <div className="task-form-inputs">
-      <div className="button-bar">
-      </div>
-      <p>Preview</p>
-        <div className="inputs">
-          <label>
-            Task Name:
-            <input type="text" name="name" 
-            value={activeTask.name || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
-          </label>
-          <label>
-            Session Duration ({activeTask.sessionDuration || ""} minutes):
-            <input type="range" name="sessionDuration" min="1" max="60"
-            value={activeTask.sessionDuration || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, sessionDuration: e.target.value }))}/>
-          </label>  
-          <label>
-            How will you use the time?
-            <textarea name="efficiency"
-            value={activeTask.efficiency || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
-          </label>
+                    <label className="full-width">
+                        Session Plan
+                        <MarkdownEditor
+                            value={activeTask.efficiency || ''}
+                            onChange={v => setActiveTask(prev => ({ ...prev, efficiency: v }))}
+                            placeholder="How will you use the time? (supports **bold**, *italic*, `code`, [links](url))"
+                            className="plan-editor"
+                        />
+                    </label>
+                </div>
+
+                <div className="task-modal-footer">
+                    <button onClick={handleSaveTodo} disabled={!canSave()}>
+                        ← BACK TO TODO
+                    </button>
+                    <button className="primary" onClick={startSession} disabled={!canStart()}>
+                        START SESSION →
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </form>
-  </ div> : ""
-})
+    ) : null;
+});

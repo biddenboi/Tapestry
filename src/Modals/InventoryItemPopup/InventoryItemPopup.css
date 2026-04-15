@@ -1,0 +1,246 @@
+/* ── Inventory Item Popup ────────────────────────────────── */
+
+.inv-popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inv-popup {
+    position: relative;
+    z-index: 1;
+    width: min(460px, 90vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    animation: popup-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes popup-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.inv-popup-header {
+    padding: 14px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.inv-popup-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.inv-popup-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.04em;
+}
+
+.inv-popup-category {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 4px 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.12s;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.close-btn:hover {
+    color: var(--red);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* ── Description ────────────────────────────────────────── */
+.inv-popup-desc {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    line-height: 1.5;
+}
+
+/* ── Stats row ──────────────────────────────────────────── */
+.inv-popup-stats {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    gap: 2px;
+}
+
+.stat-chip.cost-chip {
+    background: var(--red-dim);
+    border-color: rgba(255, 61, 87, 0.3);
+}
+
+.chip-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    line-height: 1;
+}
+
+.stat-chip.cost-chip .chip-val {
+    font-size: 14px;
+    color: var(--red);
+}
+
+.chip-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+}
+
+/* ── Consumer area ──────────────────────────────────────── */
+.inv-popup-consumer {
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── Duration consumer ──────────────────────────────────── */
+.consumer-duration {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.consumer-hint {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.consumer-hint strong { color: var(--text); }
+
+.consume-start-btn {
+    min-width: 160px;
+    padding: 12px 24px;
+    font-size: 13px;
+}
+
+/* ── Timer display ──────────────────────────────────────── */
+.timer-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.timer-big {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 42px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    transition: color 0.3s;
+}
+
+.timer-display.in-time .timer-big { color: var(--green); }
+.timer-display.overtime .timer-big { color: var(--red); }
+
+.timer-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+}
+
+/* ── Progress bar ───────────────────────────────────────── */
+.progress-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-raised);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.5s linear, background 0.3s;
+    border-radius: 2px;
+}
+
+.progress-bar-fill.over { background: var(--red); }
+
+/* ── Penalty notice ─────────────────────────────────────── */
+.penalty-notice {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--red);
+    letter-spacing: 0.06em;
+    text-align: center;
+    background: var(--red-dim);
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 61, 87, 0.3);
+    width: 100%;
+}
+
+.end-btn {
+    min-width: 160px;
+    padding: 12px 24px;
+    font-size: 13px;
+}
+
+.done-msg {
+    font-size: 13px;
+    color: var(--green);
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.08em;
+}
+
+/* ── Quantity consumer ──────────────────────────────────── */
+.consumer-quantity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}

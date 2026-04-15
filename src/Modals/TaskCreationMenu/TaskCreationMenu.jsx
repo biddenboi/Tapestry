@@ -1,111 +1,115 @@
-import './TaskCreationMenu.css'
-import { useContext, useEffect } from 'react'
+import './TaskCreationMenu.css';
+import { useContext } from 'react';
 import { AppContext } from '../../App.jsx';
-import { v4 as uuid } from "uuid";
-import { DAY, MINUTE, STORES } from '../../utils/Constants.js'
+import { v4 as uuid } from 'uuid';
+import { STORES } from '../../utils/Constants.js';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
 import { getDaysUntilDue } from '../../utils/Helpers/Tasks.js';
 
-export default NiceModal.create(() => {    
-  const databaseConnection = useContext(AppContext).databaseConnection;
-  const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-  const modal = useModal()
+export default NiceModal.create(() => {
+    const databaseConnection = useContext(AppContext).databaseConnection;
+    const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
+    const modal = useModal();
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "ArrowRight" && canSubmitTodo()) {
-        handleTodoSubmit()
-      }
-      if (e.key === "ArrowLeft") {
-        handleDelete()
-      }
+    const canSave = () => !!(activeTask.dueDate && activeTask.estimatedDuration);
+
+    const handleSaveTodo = async () => {
+        if (!canSave()) return;
+
+        if (activeTask.originalDuration !== undefined) {
+            const durationDiff = activeTask.estimatedDuration - activeTask.originalDuration;
+            const currentPlayer = await databaseConnection.getCurrentPlayer();
+            const daysUntil = getDaysUntilDue(activeTask);
+            const delta = daysUntil > 0 ? parseInt(durationDiff) / daysUntil : 0;
+            await databaseConnection.add(STORES.player, {
+                ...currentPlayer,
+                minutesClearedToday: currentPlayer.minutesClearedToday - delta,
+            });
+        }
+
+        await databaseConnection.add(STORES.todo, { ...activeTask, UUID: uuid() });
+        setActiveTask({});
+        modal.hide();
+        modal.remove();
     };
-      
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [activeTask]);
 
-    const handleTodoSubmit = async () => {
+    const handleDiscard = () => {
+        setActiveTask({});
+        modal.hide();
+        modal.remove();
+    };
 
+    return modal.visible ? (
+        <div className="task-modal-overlay">
+            <div className="blanker" onClick={handleDiscard} />
+            <div className="task-modal">
+                <div className="task-modal-header">
+                    <span>TASK CREATION</span>
+                </div>
 
-      /**sent from todolist, contains the duration prior to changes to calculate delta
-       * needed to changed time. 
-      */
-      if (activeTask.originalDuration !== undefined) {
-          const durationDifference = activeTask.estimatedDuration - activeTask.originalDuration;
-          const currentPlayer = await databaseConnection.getCurrentPlayer();
-          const daysUntil = getDaysUntilDue(activeTask);
-          const delta = daysUntil > 0 ? parseInt(durationDifference) / daysUntil : 0;
+                <div className="task-form-body">
+                    <label className="full-width">
+                        Task Name
+                        <input
+                            type="text"
+                            placeholder="What are you working on?"
+                            defaultValue={activeTask.name || ''}
+                            onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                    </label>
 
-          await databaseConnection.add(STORES.player, {
-              ...currentPlayer,
-              minutesClearedToday: currentPlayer.minutesClearedToday - delta
-          });
-      }
+                    <label className="full-width">
+                        Why did you pick this task?
+                        <textarea
+                            rows={2}
+                            placeholder="Reason for selecting this task..."
+                            defaultValue={activeTask.reasonToSelect || ''}
+                            onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}
+                        />
+                    </label>
 
-      await databaseConnection.add(STORES.todo, {
-        ...activeTask, 
-        UUID: uuid(),
-        
-      });
-      setActiveTask({});
-      modal.hide();
-      modal.remove();
-  }
+                    <label className="full-width">
+                        How will you use the time?
+                        <textarea
+                            rows={4}
+                            placeholder="Session plan, approach, steps... (supports markdown)"
+                            defaultValue={activeTask.efficiency || ''}
+                            onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}
+                        />
+                    </label>
 
-  const canSubmitTodo = () => {
-    if (!activeTask.dueDate) return false;
-    if (!activeTask.estimatedDuration) return false;
-    return true; 
-  }
+                    <div className="form-row">
+                        <label>
+                            Duration (min)
+                            <input
+                                type="number"
+                                min="1"
+                                defaultValue={Math.max(activeTask.estimatedDuration || 0, 0)}
+                                onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}
+                            />
+                        </label>
+                        <label>
+                            Due Date
+                            <input
+                                type="date"
+                                defaultValue={activeTask.dueDate || ''}
+                                onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}
+                            />
+                        </label>
+                    </div>
+                </div>
 
-  const handleDelete = () => {
-    setActiveTask({});
-    modal.hide();
-    modal.remove();
-  }
-
-  return modal.visible ? <div className="task-creation-menu">
-    <div className="blanker"></div>
-    <form action="" className="task-creation-form">   
-      <div className="task-form-inputs">
-      <div className="button-bar">
-      </div>
-      <p>Task Creation</p>
-        <div className="inputs">
-          <label>
-            Task Name:
-            <input type="text" name="name" 
-            defaultValue={activeTask.name || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, name: e.target.value }))}/>
-          </label>
-          <label>
-            Why did you pick this task?
-            <textarea name="reasonToSelect"
-            defaultValue={activeTask.reasonToSelect || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, reasonToSelect: e.target.value }))}/>
-          </label>
-          <label>
-            How will you use the time?
-            <textarea name="efficiency"
-            defaultValue={activeTask.efficiency || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, efficiency: e.target.value }))}/>
-          </label>
-          <label>
-            Duration (min):
-            <input type="number" name="estimatedDuration" min="1"
-            defaultValue={Math.max(activeTask.estimatedDuration, 0) || 0}
-            onChange={e => setActiveTask(prev => ({ ...prev, estimatedDuration: e.target.value }))}/>
-          </label>
-          <label>
-            Due Date:
-            <input type="date" name="dueDate"
-            defaultValue={activeTask.dueDate || ""}
-            onChange={e => setActiveTask(prev => ({ ...prev, dueDate: e.target.value }))}/>
-          </label>
+                <div className="task-modal-footer">
+                    <button className="danger" onClick={handleDiscard}>DISCARD</button>
+                    <button
+                        className={`primary ${canSave() ? '' : 'disabled'}`}
+                        onClick={handleSaveTodo}
+                        disabled={!canSave()}
+                    >
+                        SAVE TO TODO →
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </form>
-  </ div> : ""
-})
+    ) : null;
+});

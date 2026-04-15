@@ -1,21 +1,89 @@
-/* ----- Styling navigation bar ----- */
-div.navigation-bar {
-  position:fixed;
-  width:100%;
-  padding:10px 0px;
-  display:flex;
-  justify-content: space-evenly;
-  font-weight: 700;
-  font-size:20px;
-  cursor:pointer;
-  border-bottom: 1px solid gray;
-  top:0;
-  left:0;
-  background-color: var(--bg);
+/* ── Navigation bar ──────────────────────────────────────── */
+
+.nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    z-index: 100;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
-/*disable navigation bar when task in session*/
-div.navigation-bar.task-in-session {
-  color:gray;
-  cursor:not-allowed;
+.nav-bar.nav-in-session {
+    border-bottom-color: rgba(255, 184, 0, 0.35);
+    box-shadow: 0 2px 12px rgba(255, 184, 0, 0.1);
+}
+
+/* ── Logo ────────────────────────────────────────────────── */
+.nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--accent-bright);
+    margin-right: 32px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+/* ── Nav links ───────────────────────────────────────────── */
+.nav-links {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    gap: 0;
+    flex: 1;
+}
+
+a.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.14s, border-color 0.14s;
+    user-select: none;
+}
+
+a.nav-link:hover {
+    color: var(--text);
+    border-bottom-color: var(--accent-dim);
+}
+
+a.nav-link.active {
+    color: var(--accent-bright);
+    border-bottom-color: var(--accent-bright);
+}
+
+/* ── In-session badge ────────────────────────────────────── */
+.nav-session-badge {
+    margin-left: auto;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    background: var(--gold-dim);
+    border: 1px solid rgba(255, 184, 0, 0.35);
+    padding: 3px 10px;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
 }

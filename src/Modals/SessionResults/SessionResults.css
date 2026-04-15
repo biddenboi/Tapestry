@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
 
-/* ── Overlay ────────────────────────────────────────────── */
+/* ── Overlay ─────────────────────────────────────────────── */
 div.session-results {
     position: fixed;
     inset: 0;
@@ -10,94 +10,87 @@ div.session-results {
     justify-content: center;
 }
 
-/* ── Card ───────────────────────────────────────────────── */
+/* ── Card ────────────────────────────────────────────────── */
 div.results-card {
     position: relative;
     z-index: 1;
-    width: min(520px, 88vw);
-    background-color: var(--bg-light);
-    border: var(--border-card);
-    box-shadow:
-        var(--box-shadow),
-        0 0 0 4px var(--bg-dark),
-        0 0 0 5px var(--border);
-    padding: 0;
+    width: min(520px, 90vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
     overflow: hidden;
-
-    animation: card-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: card-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes card-rise {
-    from { opacity: 0; transform: translateY(28px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0)   scale(1); }
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 div.results-header {
-    background-color: var(--bg-dark);
-    border-bottom: var(--border-card);
-    padding: 18px 28px 14px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px 14px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-
-    animation: fade-down 0.4s 0.1s ease both;
+    animation: fade-down 0.4s 0.05s ease both;
 }
 
-span.results-label {
-    font-family: 'DM Mono', monospace;
+span.results-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
     font-size: 10px;
-    letter-spacing: 0.18em;
+    font-weight: 700;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--accent-bright);
 }
 
 h1.results-title {
     font-family: 'DM Serif Display', serif;
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 400;
-    color: var(--text);
+    color: var(--text-bright);
     line-height: 1;
 }
 
-/* ── Duration band ──────────────────────────────────────── */
+/* ── Duration band ───────────────────────────────────────── */
 div.results-duration {
-    background-color: var(--bg);
-    border-bottom: var(--border-card);
-    padding: 16px 28px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
     display: flex;
     flex-direction: column;
-    gap: 3px;
-
-    animation: fade-down 0.4s 0.18s ease both;
+    gap: 4px;
+    animation: fade-down 0.4s 0.1s ease both;
 }
 
-span.duration-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 26px;
+span.dur-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
     font-weight: 500;
-    color: var(--text);
+    color: var(--text-bright);
     letter-spacing: -0.02em;
 }
 
-span.duration-sub {
-    font-size: 12px;
+span.dur-sub {
+    font-size: 11.5px;
     color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
 }
 
-.efficiency-great { color: hsl(98, 49%, 45%); font-weight: 500; }
-.efficiency-good  { color: hsl(206, 40%, 45%); font-weight: 500; }
-.efficiency-warn  { color: hsl(38, 80%, 45%);  font-weight: 500; }
-.efficiency-bad   { color: hsl(8, 72%, 52%);   font-weight: 500; }
+.eff-great { color: var(--green); font-weight: 600; }
+.eff-good  { color: var(--accent-bright); font-weight: 600; }
+.eff-warn  { color: var(--gold); font-weight: 600; }
+.eff-bad   { color: var(--red); font-weight: 600; }
 
-/* ── Stat row ───────────────────────────────────────────── */
+/* ── Stat row ────────────────────────────────────────────── */
 div.results-stats {
     display: flex;
     align-items: stretch;
-    border-bottom: var(--border-card);
-
-    animation: fade-down 0.4s 0.26s ease both;
+    border-bottom: 1px solid var(--border);
+    animation: fade-down 0.4s 0.16s ease both;
 }
 
 div.stat-block {
@@ -106,35 +99,35 @@ div.stat-block {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 12px 20px;
+    padding: 20px 12px 16px;
     gap: 5px;
 }
 
-div.stat-divider {
+div.stat-sep {
     width: 1px;
-    background-color: var(--border);
+    background: var(--border);
     align-self: stretch;
 }
 
-span.stat-value {
+span.stat-val {
     font-family: 'DM Serif Display', serif;
-    font-size: 34px;
+    font-size: 30px;
     font-weight: 400;
-    color: var(--text);
+    color: var(--text-bright);
     line-height: 1;
 }
 
-span.stat-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
+span.stat-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--text-muted);
 }
 
-/* highlight the points block slightly */
 div.stat-points {
-    background-color: hsl(48, 81%, 96%);
+    background: var(--gold-dim);
     position: relative;
 }
 
@@ -142,69 +135,74 @@ div.stat-points::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--lemonade-yellow-color);
+    height: 2px;
+    background: var(--gold);
 }
 
-/* ── Breakdown ──────────────────────────────────────────── */
+div.stat-tokens { }
+div.stat-mult { }
+
+/* ── Gaussian curve ──────────────────────────────────────── */
+.gaussian-wrap {
+    padding: 12px 24px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    animation: fade-down 0.4s 0.22s ease both;
+}
+
+.gaussian-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.gaussian-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ── Breakdown ───────────────────────────────────────────── */
 div.results-breakdown {
-    padding: 14px 28px;
+    padding: 12px 24px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    border-bottom: var(--border-card);
-    background-color: var(--bg);
-
-    animation: fade-down 0.4s 0.34s ease both;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    animation: fade-down 0.4s 0.28s ease both;
 }
 
-div.breakdown-row {
+div.bk-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
 }
 
-span.breakdown-key {
-    color: var(--text-muted);
-}
+span.bk-key { color: var(--text-muted); }
+span.bk-val { color: var(--text); font-weight: 500; }
+span.diff-pos { color: var(--green); }
+span.diff-neg { color: var(--red); }
 
-span.breakdown-val {
-    color: var(--text);
-    font-weight: 500;
-}
-
-span.diff-pos { color: hsl(98, 49%, 40%); }
-span.diff-neg { color: hsl(8, 72%, 52%);  }
-
-/* ── Confirm button ─────────────────────────────────────── */
+/* ── Confirm button ──────────────────────────────────────── */
 button.results-confirm {
     display: block;
     width: 100%;
-    padding: 16px;
-    background-color: var(--bg-dark);
-    border: none;
-    border-top: var(--border-card);
-    font-family: 'DM Mono', monospace;
+    padding: 15px;
     font-size: 13px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text);
+    letter-spacing: 0.16em;
+    animation: fade-down 0.4s 0.34s ease both;
+    border: none;
+    border-top: 1px solid var(--border);
     cursor: pointer;
-    transition: background-color 0.15s ease, letter-spacing 0.2s ease;
-    box-shadow: none;
-
-    animation: fade-down 0.4s 0.42s ease both;
 }
 
-button.results-confirm:hover {
-    background-color: var(--text);
-    color: var(--bg-light);
-    letter-spacing: 0.18em;
-}
-
-/* ── Shared entrance animation ──────────────────────────── */
+/* ── Entrance animation ──────────────────────────────────── */
 @keyframes fade-down {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }

@@ -1,56 +1,140 @@
-div.todo-creation-menu {
-  display:flex;
-  flex-direction: column;
+/* ── Todo List ───────────────────────────────────────────── */
+
+div.todo-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    width: min(600px, 100%);
+    height: 100%;
+    overflow: hidden;
 }
 
-div.todo-creation-menu div.header {
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight:700;
-  padding:1%;
-  border: var(--border-card);
-  border-bottom:none;
-  background-color: var(--bg-dark);
+/* ── Header ─────────────────────────────────────────────── */
+div.todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
 }
 
-div.todo-creation-menu > div.content {
-  width:100%;
-  height:100%;
-  overflow-y: scroll;
-  border:var(--border-card);
-  background-color: var(--bg-light);
-  box-shadow:var(--box-shadow);
+span.todo-header-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
 }
 
-div.todo-creation-menu button {
-  display: flex;
-  font-weight:500;
-  background-color: var(--bg-light);
-  border: var(--border-card);
+span.todo-header-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
 }
 
-.todo-item {
-  margin:5px;
-  padding:10px;
-  border:var(--border-card);
-  border-radius:3px;
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
-  color:gray;
+/* ── Items container ─────────────────────────────────────── */
+div.todo-items {
+    flex: 1;
+    overflow-y: auto;
 }
 
-.todo-item > div {
-  display:flex;
-  flex-direction: column;
+p.todo-empty {
+    padding: 24px 18px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.08em;
 }
 
-.todo-item > div > span {
-  font-size:15px;
+/* ── Todo item ───────────────────────────────────────────── */
+div.todo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer;
+    gap: 12px;
+    transition: background 0.12s;
+    position: relative;
 }
 
-.todo-item p {
-  
-  font-size:10px;
+div.todo-item:hover {
+    background: var(--bg-hover);
+}
+
+div.todo-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+
+div.todo-item:hover::before { opacity: 1; }
+
+div.todo-item-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+span.todo-item-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* color set inline based on weight */
+    transition: color 0.2s;
+}
+
+span.todo-item-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+span.todo-item-due {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* ── Footer (Next task button) ──────────────────────────── */
+div.todo-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+}
+
+button.next-task-btn {
+    width: 100%;
+    padding: 11px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+}
+
+button.next-task-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: var(--bg-raised);
+    border-color: var(--border);
+    box-shadow: none;
 }
