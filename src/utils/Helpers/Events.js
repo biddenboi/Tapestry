@@ -28,20 +28,36 @@ export async function endWorkDay(db, player) {
   await writeEvent(db, player, EVENT.end_work, 'Ended work day');
 }
 
-export async function endDay(db, player, early = false) {
+/**
+ * End the day.
+ * loseAll = false → user manually ended before sleep time → keep all tokens
+ * loseAll = true  → sleep time passed without ending → lose all tokens
+ */
+export async function endDay(db, player, loseAll = false) {
   if (!player) return;
-  const remainingLoad = Math.max(0, Math.ceil((player.minutesClearedToday || 0) / 15));
-  const penalty = early ? Math.ceil(remainingLoad / 2) : remainingLoad;
+
+  const newTokens = loseAll ? 0 : (player.tokens || 0);
+  const description = loseAll
+    ? `Sleep time passed — all tokens forfeited`
+    : `Day ended — tokens preserved`;
 
   await db.add(STORES.player, {
     ...player,
-    tokens: Math.max(0, (player.tokens || 0) - penalty),
+    tokens: newTokens,
   });
 
-  await writeEvent(
-    db,
-    player,
-    EVENT.sleep,
-    early ? `Ended day early (-${penalty} tokens)` : `Ended day (-${penalty} tokens)`,
-  );
+  await writeEvent(db, player, EVENT.sleep, description);
+}
+
+/**
+ * Parse player sleepTime ("HH:MM") into today's Date object.
+ * Returns null if sleepTime is not set.
+ */
+export function getSleepDateToday(sleepTime) {
+  if (!sleepTime) return null;
+  const [h, m] = sleepTime.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
 }

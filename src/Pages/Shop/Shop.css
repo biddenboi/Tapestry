@@ -611,3 +611,22 @@
     color: var(--gold);
     font-family: 'JetBrains Mono', monospace;
 }
+
+/* ── Cosmetic card ──────────────────────────────────────── */
+.cosmetic-card { position: relative; overflow: hidden; }
+.cosmetic-swatch {
+  width: 4px;
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+}
+.cosmetic-card.owned { border-color: var(--accent-border); background: linear-gradient(135deg, rgba(77,163,255,0.05), var(--bg-card)); }
+.cosmetic-owned-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 2px 6px;
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-bright);
+}

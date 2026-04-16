@@ -267,3 +267,33 @@
 }
 
 .inv-card:hover .inv-card-hover-hint { opacity: 1; }
+
+/* ── Cosmetic items ──────────────────────────────────────── */
+.inv-cosmetic-card {
+  border-color: var(--border-subtle);
+  cursor: default;
+  justify-content: space-between;
+}
+.inv-cosmetic-card:hover { box-shadow: none; border-color: var(--border); transform: none; }
+
+.inv-cosmetic-active {
+  border-color: var(--accent-border);
+  background: linear-gradient(135deg, rgba(77,163,255,0.06), var(--bg-card));
+}
+
+.inv-cosmetic-control { flex-shrink: 0; }
+
+.inv-toggle-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 5px 12px;
+}
+.inv-toggle-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent-border);
+  color: var(--accent-bright);
+}
+
+.inv-section-label--cosmetics { color: var(--purple); }

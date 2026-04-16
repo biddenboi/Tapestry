@@ -230,3 +230,22 @@
     background: var(--bg-surface);
     border-top: 1px solid var(--border);
 }
+
+/* Delete button in task creation header */
+.tcm-delete-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 61, 87, 0.4);
+  color: var(--red);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tcm-delete-btn:hover {
+  background: rgba(255, 61, 87, 0.12);
+  border-color: var(--red);
+  box-shadow: 0 0 10px rgba(255, 61, 87, 0.3);
+}

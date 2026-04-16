@@ -1,7 +1,7 @@
 import './Shop.css';
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AppContext } from '../../App.jsx';
-import { STORES, ITEM_TYPE } from '../../utils/Constants.js';
+import { STORES, ITEM_TYPE, COSMETIC_THEMES, COSMETIC_FONTS } from '../../utils/Constants.js';
 import { calculateItemCost, SHOP_CATEGORIES } from '../../utils/Helpers/Shop.js';
 import { v4 as uuid } from 'uuid';
 
@@ -126,6 +126,35 @@ function AddItemForm({ onAdd, onClose, categories }) {
     );
 }
 
+/* ── Cosmetics shop section ─────────────────────────────── */
+function CosmeticItem({ item, owned, onBuy, tokens }) {
+  const colorMap = { default: '#4da3ff', crimson: '#ff6b6b', emerald: '#34d399', violet: '#a78bfa', gold: '#fbbf24', shadow: '#818cf8' };
+  const c = colorMap[item.id];
+  const canAfford = tokens >= item.cost;
+
+  return (
+    <div className={`shop-card cosmetic-card ${owned ? 'owned' : ''}`}>
+      {c && <div className="cosmetic-swatch" style={{ background: c }} />}
+      <div className="shop-card-body">
+        <div className="shop-card-header">
+          <span className="shop-card-name">{item.label}</span>
+          {owned && <span className="cosmetic-owned-badge">OWNED</span>}
+        </div>
+        <p className="shop-card-desc">{item.id === 'default' ? 'Default theme — always available.' : `Unlocks the ${item.label} color theme.`}</p>
+      </div>
+      <div className="shop-card-purchase">
+        <span className="shop-card-cost">
+          <span className="cost-icon">◈</span>{item.cost}
+        </span>
+        {item.free || owned
+          ? <span className="add-btn" style={{ background: 'transparent', color: 'var(--text-dim)', cursor: 'default', border: '1px solid var(--border-subtle)' }}>{item.free ? 'FREE' : '✓'}</span>
+          : <button type="button" className="add-btn" onClick={() => onBuy(item)} disabled={!canAfford} title={!canAfford ? 'Not enough tokens' : ''}>BUY</button>
+        }
+      </div>
+    </div>
+  );
+}
+
 function CartSidebar({ cart, tokens, onRemove, onPurchase, onClear }) {
     const totalCost = cart.reduce((sum, entry) => sum + entry.totalCost, 0);
     const canAfford = tokens >= totalCost;
@@ -182,19 +211,40 @@ function Shop() {
     const [cart, setCart] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [purchaseFlash, setPurchaseFlash] = useState(false);
+    const [ownedCosmetics, setOwnedCosmetics] = useState([]);
 
     const loadShop = useCallback(async () => {
         const items = await databaseConnection.getAll(STORES.shop);
         setShopItems(items);
         const player = await databaseConnection.getCurrentPlayer();
         setCurrentPlayer(player);
+        if (player) {
+            const inv = await databaseConnection.getPlayerStore(STORES.inventory, player.UUID);
+            setOwnedCosmetics(inv.filter(i => i.type === 'cosmetic_theme' || i.type === 'cosmetic_font').map(i => i.itemId || i.name));
+        }
     }, [databaseConnection]);
 
     useEffect(() => {
         loadShop();
     }, [loadShop, timestamp]);
 
-    const navCategories = ['All', ...new Set(shopItems.map(i => i.category).filter(Boolean))];
+    const handleBuyCosmetic = async (item) => {
+        if (!currentPlayer) return;
+        if (currentPlayer.tokens < item.cost) return;
+        await databaseConnection.add(STORES.player, { ...currentPlayer, tokens: currentPlayer.tokens - item.cost });
+        await databaseConnection.add(STORES.inventory, {
+            UUID: uuid(), parent: currentPlayer.UUID,
+            itemId: item.id, name: item.label,
+            type: item.font != null ? 'cosmetic_font' : 'cosmetic_theme',
+            quantity: 1, cost: item.cost,
+            createdAt: new Date().toISOString(),
+        });
+        refreshApp();
+        notify?.({ title: 'Cosmetic unlocked!', message: `${item.label} is now available in Settings.`, kind: 'success', persist: false });
+        loadShop();
+    };
+
+    const navCategories = ['All', ...new Set(shopItems.map(i => i.category).filter(Boolean)), 'Cosmetics'];
     const formCategories = [...new Set([...SHOP_CATEGORIES, ...shopItems.map(i => i.category).filter(Boolean)])];
 
     useEffect(() => {
@@ -319,7 +369,26 @@ function Shop() {
 
             <div className="shop-body">
                 <main className="shop-grid-area">
-                    {filtered.length === 0 ? (
+                    {activeCategory === 'Cosmetics' ? (
+                        <div>
+                            <section className="shop-category-section">
+                                <div className="category-label">THEMES</div>
+                                <div className="shop-grid">
+                                    {COSMETIC_THEMES.map(t => (
+                                        <CosmeticItem key={t.id} item={t} owned={t.free || ownedCosmetics.includes(t.id)} onBuy={handleBuyCosmetic} tokens={currentPlayer?.tokens ?? 0} />
+                                    ))}
+                                </div>
+                            </section>
+                            <section className="shop-category-section">
+                                <div className="category-label">FONTS</div>
+                                <div className="shop-grid">
+                                    {COSMETIC_FONTS.map(f => (
+                                        <CosmeticItem key={f.id} item={{ ...f, font: true }} owned={f.free || ownedCosmetics.includes(f.id)} onBuy={(item) => handleBuyCosmetic({ ...item, type: 'cosmetic_font' })} tokens={currentPlayer?.tokens ?? 0} />
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    ) : filtered.length === 0 ? (
                         <p className="cart-empty">No shop items yet.</p>
                     ) : visibleCategories.map(category => {
                         const items = filtered.filter(i => i.category === category);

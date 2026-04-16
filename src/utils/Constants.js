@@ -43,4 +43,29 @@ export const EVENT = {
 export const ITEM_TYPE = {
   duration: 'duration',
   quantity: 'quantity',
+  cosmetic_theme: 'cosmetic_theme',
+  cosmetic_font: 'cosmetic_font',
+  cosmetic_banner: 'cosmetic_banner',
 };
+
+export const ITEM_CLASS = {
+  consumable: 'consumable',
+  toggle: 'toggle',
+  unlock: 'unlock',
+};
+
+export const COSMETIC_THEMES = [
+  { id: 'default', label: 'Steel Blue',   cost: 0,    free: true  },
+  { id: 'crimson', label: 'Crimson',      cost: 500,  free: false },
+  { id: 'emerald', label: 'Emerald',      cost: 500,  free: false },
+  { id: 'violet',  label: 'Violet',       cost: 500,  free: false },
+  { id: 'gold',    label: 'Gold Emperor', cost: 1000, free: false },
+  { id: 'shadow',  label: 'Shadow Black', cost: 750,  free: false },
+];
+
+export const COSMETIC_FONTS = [
+  { id: 'default',  label: 'Rajdhani',  cost: 0,   free: true  },
+  { id: 'mono',     label: 'Mono',      cost: 200, free: false },
+  { id: 'orbitron', label: 'Orbitron',  cost: 350, free: false },
+  { id: 'exo',      label: 'Exo 2',     cost: 200, free: false },
+];

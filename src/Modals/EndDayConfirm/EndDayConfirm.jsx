@@ -14,7 +14,7 @@ export default NiceModal.create(() => {
   };
 
   const handleAccept = async () => {
-    await endDay(databaseConnection, currentPlayer, true);
+    await endDay(databaseConnection, currentPlayer, false);
     refreshApp();
     close();
   };
@@ -25,17 +25,17 @@ export default NiceModal.create(() => {
     <div className="confirm-overlay">
       <div className="blanker" onClick={close} />
       <div className="confirm-card">
-        <div className="confirm-header"><span>END DAY EARLY</span></div>
+        <div className="confirm-header"><span>END DAY</span></div>
         <div className="confirm-body">
-          <p className="confirm-title">End the day early?</p>
+          <p className="confirm-title">End the day now?</p>
           <p className="confirm-desc">
-            You will lose the ability to create additional tasks today. In exchange, only <strong>half your tokens</strong>
-            will be deducted rather than the full amount.
+            Ending the day manually will <strong>preserve all your tokens</strong>.
+            If you miss your scheduled sleep time, all tokens are forfeited — so end the day before then!
           </p>
         </div>
         <div className="confirm-footer">
           <button onClick={close}>RETURN</button>
-          <button className="danger" onClick={handleAccept}>CONFIRM END DAY</button>
+          <button className="primary" onClick={handleAccept}>CONFIRM END DAY</button>
         </div>
       </div>
     </div>

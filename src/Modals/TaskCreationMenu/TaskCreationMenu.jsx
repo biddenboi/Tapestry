@@ -44,6 +44,15 @@ export default NiceModal.create(() => {
     close();
   };
 
+  const handleDelete = async () => {
+    if (activeTask.UUID) {
+      await databaseConnection.remove(STORES.todo, activeTask.UUID);
+      refreshApp();
+    }
+    setActiveTask({});
+    close();
+  };
+
   const handleDiscard = () => {
     setActiveTask({});
     close();
@@ -57,6 +66,11 @@ export default NiceModal.create(() => {
       <div className="task-modal">
         <div className="task-modal-header">
           <span>TASK CREATION</span>
+          {activeTask.UUID && (
+            <button className="tcm-delete-btn" onClick={handleDelete} title="Delete this task">
+              ✕ DELETE
+            </button>
+          )}
         </div>
 
         <div className="task-form-body">
@@ -67,16 +81,6 @@ export default NiceModal.create(() => {
               placeholder="What are you working on?"
               value={activeTask.name || ''}
               onChange={(event) => setActiveTask((previous) => ({ ...previous, name: event.target.value }))}
-            />
-          </label>
-
-          <label className="full-width">
-            Why did you pick this task?
-            <textarea
-              rows={2}
-              placeholder="Reason for selecting this task..."
-              value={activeTask.reasonToSelect || ''}
-              onChange={(event) => setActiveTask((previous) => ({ ...previous, reasonToSelect: event.target.value }))}
             />
           </label>
 

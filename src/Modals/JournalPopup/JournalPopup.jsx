@@ -29,8 +29,10 @@ export default NiceModal.create(({ title }) => {
 
   const handleJournalSubmit = async (event) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const parent = await databaseConnection.getCurrentPlayer();
+    if (!parent?.UUID) return;
 
     await databaseConnection.add(STORES.journal, {
       title: formData.get('entry-title'),
@@ -40,7 +42,7 @@ export default NiceModal.create(({ title }) => {
       UUID: uuid(),
     });
 
-    event.currentTarget.reset();
+    form.reset();
     refreshApp();
     close();
   };

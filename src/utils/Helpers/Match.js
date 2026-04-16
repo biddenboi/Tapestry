@@ -19,6 +19,24 @@ function seededRandom(seed) {
   return x - Math.floor(x);
 }
 
+const GHOST_ACTIVITIES = [
+  'doing calculus', 'debugging code', 'reading research', 'writing an essay',
+  'reviewing lecture notes', 'solving equations', 'practicing algorithms',
+  'studying biology', 'writing documentation', 'working on a project',
+  'grinding problem sets', 'learning German', 'reading a textbook', 'doing physics',
+  'coding a new feature', 'studying history', 'writing a report', 'prepping for exam',
+  'practicing piano', 'doing chemistry labs', 'reading philosophy', 'language drills',
+  'working through proofs', 'studying anatomy', 'drafting architecture designs',
+  'working on linear algebra', 'reading case studies', 'memorizing flashcards',
+];
+
+/** Returns a deterministic activity string for a ghost player at a given point in time */
+export function getGhostActivity(ghost, elapsedRatio = 0) {
+  const windowIndex = Math.floor(clamp(elapsedRatio, 0, 0.999) * 10);
+  const seed = hashString(`${ghost.UUID}-act-${windowIndex}`);
+  return GHOST_ACTIVITIES[seed % GHOST_ACTIVITIES.length];
+}
+
 async function estimateGhostPower(databaseConnection, player, durationHours) {
   const tasks = await databaseConnection.getPlayerStore(STORES.task, player.UUID);
   const completed = tasks

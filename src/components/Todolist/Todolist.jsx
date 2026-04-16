@@ -71,9 +71,13 @@ export default function TodoList({ style }) {
     };
 
     setActiveTask(taskDraft);
-    await databaseConnection.remove(STORES.todo, todo.UUID);
+
+    if (inSessionMode) {
+      await databaseConnection.remove(STORES.todo, todo.UUID);
+      refreshApp();
+    }
+
     closePanel();
-    refreshApp();
 
     requestAnimationFrame(() => {
       NiceModal.show(inSessionMode ? TaskPreviewMenu : TaskCreationMenu);
