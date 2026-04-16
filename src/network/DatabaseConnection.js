@@ -1,305 +1,420 @@
-import { DATABASE_VERSION, STORES } from '../utils/Constants.js'
+import { DATABASE_VERSION, STORES } from '../utils/Constants.js';
 import { addDurationToDate, getMidnightOfDate } from '../utils/Helpers/Time.js';
 
+function getStore(instance, storeName, event) {
+  if (event?.oldVersion != null && event.oldVersion < DATABASE_VERSION) {
+    return event.target.transaction.objectStore(storeName);
+  }
+  return instance.database.transaction(storeName, 'readonly').objectStore(storeName);
+}
+
 class DatabaseConnection {
-    database = null;
+  database = null;
 
-    isCompatable() {
-        return window.indexedDB;
+  isCompatable() {
+    return window.indexedDB;
+  }
+
+  createStore(name, keyPath, indexes, event) {
+    const store = this.database.objectStoreNames.contains(name)
+      ? event.target.transaction.objectStore(name)
+      : this.database.createObjectStore(name, { keyPath });
+
+    indexes.forEach(([indexName, keyPathValue, options = { unique: false }]) => {
+      if (!store.indexNames.contains(indexName)) {
+        store.createIndex(indexName, keyPathValue, options);
+      }
+    });
+
+    return store;
+  }
+
+  async handleVersionUpgrades(event) {
+    this.database = event.target.result;
+    const oldVersion = event.oldVersion;
+
+    if (DATABASE_VERSION >= 1 && oldVersion < 1) {
+      this.createStore(STORES.task, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['parent', 'parent'],
+        ['efficiency', 'efficiency'],
+        ['estimatedDuration', 'estimatedDuration'],
+        ['location', 'location'],
+        ['points', 'points'],
+        ['name', 'name'],
+        ['completedAt', 'completedAt'],
+      ], event);
+
+      this.createStore(STORES.journal, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['title', 'title'],
+        ['entry', 'entry'],
+        ['parent', 'parent'],
+      ], event);
+
+      this.createStore(STORES.player, 'UUID', [
+        ['username', 'username'],
+        ['createdAt', 'createdAt'],
+        ['description', 'description'],
+        ['tokens', 'tokens'],
+        ['wakeTime', 'wakeTime'],
+        ['sleepTime', 'sleepTime'],
+        ['minutesClearedToday', 'minutesClearedToday'],
+        ['elo', 'elo'],
+      ], event);
+
+      this.createStore(STORES.event, 'UUID', [
+        ['type', 'type'],
+        ['description', 'description'],
+        ['createdAt', 'createdAt'],
+        ['parent', 'parent'],
+      ], event);
+
+      this.createStore(STORES.shop, 'UUID', [
+        ['name', 'name'],
+        ['description', 'description'],
+        ['type', 'type'],
+        ['category', 'category'],
+        ['enjoyment', 'enjoyment'],
+      ], event);
+
+      this.createStore(STORES.todo, 'UUID', [
+        ['dueDate', 'dueDate'],
+        ['efficiency', 'efficiency'],
+        ['estimatedDuration', 'estimatedDuration'],
+        ['name', 'name'],
+      ], event);
+
+      this.createStore(STORES.transaction, 'UUID', [
+        ['name', 'name'],
+        ['createdAt', 'createdAt'],
+        ['completedAt', 'completedAt'],
+        ['cost', 'cost'],
+        ['duration', 'duration'],
+        ['location', 'location'],
+        ['parent', 'parent'],
+      ], event);
     }
 
-    async handleVersionUpgrades(event) {
+    if (DATABASE_VERSION >= 2 && oldVersion < 2) {
+      this.createStore(STORES.inventory, 'UUID', [
+        ['parent', 'parent'],
+        ['itemUUID', 'itemUUID'],
+        ['name', 'name'],
+        ['type', 'type'],
+        ['quantity', 'quantity'],
+      ], event);
+    }
+
+    if (DATABASE_VERSION >= 3 && oldVersion < 3) {
+      this.createStore(STORES.match, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['status', 'status'],
+        ['parent', 'parent'],
+      ], event);
+    }
+
+    if (DATABASE_VERSION >= 4 && oldVersion < 4) {
+      this.createStore(STORES.friendship, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['status', 'status'],
+        ['players', 'players', { unique: false, multiEntry: true }],
+      ], event);
+
+      this.createStore(STORES.notification, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['parent', 'parent'],
+        ['readAt', 'readAt'],
+      ], event);
+    }
+
+    if (DATABASE_VERSION >= 5 && oldVersion < 5) {
+      const todoStore = event.target.transaction.objectStore(STORES.todo);
+      if (!todoStore.indexNames.contains('parent')) {
+        todoStore.createIndex('parent', 'parent', { unique: false });
+      }
+    }
+  }
+
+  constructor() {
+    if (!this.isCompatable()) {
+      throw new Error('Browser incompatibility with IndexedDB.');
+    }
+
+    this.ready = new Promise((resolve, reject) => {
+      const request = window.indexedDB.open('CheckpointDatabase', DATABASE_VERSION);
+      request.onerror = (event) => reject(event.target.error || request.error);
+      request.onupgradeneeded = async (event) => {
+        await this.handleVersionUpgrades(event);
+      };
+      request.onsuccess = (event) => {
         this.database = event.target.result;
-        const oldVersion = event.oldVersion;
+        resolve();
+      };
+    });
+  }
 
-        if (DATABASE_VERSION >= 1 && oldVersion < 1) {
-            const tasks = this.database.createObjectStore(STORES.task, { keyPath: "UUID" });
-            tasks.createIndex("createdAt", "createdAt", { unique: false });
-            tasks.createIndex("parent", "parent", { unique: false });
-            tasks.createIndex("efficiency", "efficiency", { unique: false });
-            tasks.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-            tasks.createIndex("location", "location", { unique: false });
-            tasks.createIndex("points", "points", { unique: false });
-            tasks.createIndex("name", "name", { unique: false });
-            tasks.createIndex("completedAt", "completedAt", { unique: false });
+  async getDataAsJSON() {
+    await this.ready;
+    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications] = await Promise.all([
+      this.getAll(STORES.task),
+      this.getAll(STORES.player),
+      this.getAll(STORES.journal),
+      this.getAll(STORES.event),
+      this.getAll(STORES.shop),
+      this.getAll(STORES.todo),
+      this.getAll(STORES.transaction),
+      this.getAll(STORES.inventory),
+      this.getAll(STORES.match),
+      this.getAll(STORES.friendship),
+      this.getAll(STORES.notification),
+    ]);
 
-            const journals = this.database.createObjectStore(STORES.journal, { keyPath: "UUID" });
-            journals.createIndex("createdAt", "createdAt", { unique: false });
-            journals.createIndex("title", "title", { unique: false });
-            journals.createIndex("entry", "entry", { unique: false });
-            journals.createIndex("parent", "parent", { unique: false });
+    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications };
+    const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'tapestry-dataset.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
-            const players = this.database.createObjectStore(STORES.player, { keyPath: "UUID" });
-            players.createIndex("username", "username", { unique: false });
-            players.createIndex("createdAt", "createdAt", { unique: false });
-            players.createIndex("description", "description", { unique: false });
-            players.createIndex("tokens", "tokens", { unique: false });
-            players.createIndex("wakeTime", "wakeTime", { unique: false });
-            players.createIndex("sleepTime", "sleepTime", { unique: false });
-            players.createIndex("minutesClearedToday", "minutesClearedToday", { unique: false });
+  async dataUpload(fileContents) {
+    const data = JSON.parse(fileContents);
+    for (const storeName of Object.values(STORES)) {
+      await this.clear(storeName).catch(() => undefined);
+    }
 
-            const events = this.database.createObjectStore(STORES.event, { keyPath: "UUID" });
-            events.createIndex("type", "type", { unique: false });
-            events.createIndex("description", "description", { unique: false });
-            events.createIndex("createdAt", "createdAt", { unique: false });
-            events.createIndex("UUID", "UUID", { unique: false });
-            events.createIndex("parent", "parent", { unique: false });
+    const mapping = {
+      tasks: STORES.task,
+      players: STORES.player,
+      journals: STORES.journal,
+      events: STORES.event,
+      shop: STORES.shop,
+      todos: STORES.todo,
+      transactions: STORES.transaction,
+      inventory: STORES.inventory,
+      matches: STORES.match,
+      friendships: STORES.friendship,
+      notifications: STORES.notification,
+    };
 
-            const shops = this.database.createObjectStore(STORES.shop, { keyPath: "UUID" });
-            shops.createIndex("name", "name", { unique: false });
-            shops.createIndex("description", "description", { unique: false });
-            shops.createIndex("type", "type", { unique: false });
-            shops.createIndex("enjoyment", "enjoyment", { unique: false });
+    for (const [key, storeName] of Object.entries(mapping)) {
+      for (const entry of data[key] || []) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.add(storeName, entry);
+      }
+    }
+  }
 
-            const todos = this.database.createObjectStore(STORES.todo, { keyPath: "UUID" });
-            todos.createIndex("dueDate", "dueDate", { unique: false });
-            todos.createIndex("efficiency", "efficiency", { unique: false });
-            todos.createIndex("estimatedDuration", "estimatedDuration", { unique: false });
-            todos.createIndex("name", "name", { unique: false });
+  async getRelativePlayerStore(store, player) {
+    const dateMS = new Date().getTime();
+    const dateMidnightMS = getMidnightOfDate(new Date()).getTime();
+    const msElapsed = dateMS - dateMidnightMS;
+    const startDate = 0;
+    const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
+    const values = await this.getStoreFromRange(store, startDate, endDate);
+    return values.filter((entry) => entry.parent === player.UUID);
+  }
 
-            const transactions = this.database.createObjectStore(STORES.transaction, { keyPath: "UUID" });
-            transactions.createIndex("name", "name", { unique: false });
-            transactions.createIndex("createdAt", "createdAt", { unique: false });
-            transactions.createIndex("completedAt", "completedAt", { unique: false });
-            transactions.createIndex("cost", "cost", { unique: false });
-            transactions.createIndex("duration", "duration", { unique: false });
-            transactions.createIndex("location", "location", { unique: false });
+  async getStoreFromRange(store, startDate, endDate) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readonly');
+      const objectStore = transaction.objectStore(store);
+      const index = store === STORES.task && objectStore.indexNames.contains('completedAt')
+        ? objectStore.index('completedAt')
+        : objectStore.index('createdAt');
+      const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
+      const results = [];
+      index.openCursor(dateRange).onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
         }
+      };
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
 
-        if (DATABASE_VERSION >= 2 && oldVersion < 2) {
-            const inventory = this.database.createObjectStore(STORES.inventory, { keyPath: "UUID" });
-            inventory.createIndex("parent", "parent", { unique: false });
-            inventory.createIndex("itemUUID", "itemUUID", { unique: false });
-            inventory.createIndex("name", "name", { unique: false });
-            inventory.createIndex("type", "type", { unique: false });
-            inventory.createIndex("quantity", "quantity", { unique: false });
+  async getPlayerStore(store, UUID) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readonly');
+      const objectStore = transaction.objectStore(store);
+      if (!objectStore.indexNames.contains('parent')) {
+        resolve([]);
+        return;
+      }
+      const request = objectStore.index('parent').getAll(UUID);
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+
+  isLegacyBootstrapPlayer(player) {
+    if (!player) return false;
+    return player.username === 'Agent'
+      && player.description === 'A fresh challenger enters the hub.'
+      && Number(player.tokens || 0) === 0
+      && Number(player.minutesClearedToday || 0) === 0
+      && Number(player.elo || 0) === 1000;
+  }
+
+  async getCurrentPlayer() {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.player, 'readonly');
+      const objectStore = transaction.objectStore(STORES.player);
+      const request = objectStore.index('createdAt').openCursor(null, 'prev');
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) {
+          resolve(null);
+          return;
         }
-
-        if (DATABASE_VERSION >= 3 && oldVersion < 3) {
-            const avatars = this.database.createObjectStore(STORES.avatar, { keyPath: "UUID" });
-            avatars.createIndex("parent", "parent", { unique: true });
-            avatars.createIndex("updatedAt", "updatedAt", { unique: false });
-            avatars.createIndex("byteSize", "byteSize", { unique: false });
+        if (this.isLegacyBootstrapPlayer(cursor.value)) {
+          cursor.continue();
+          return;
         }
-    }
+        resolve(cursor.value);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-    constructor() {
-        if (!this.isCompatable()) {
-            alert("Browser incompatability with IndexDB.");
+  async getAllPlayers() {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.player, 'readonly');
+      const objectStore = transaction.objectStore(STORES.player);
+      const results = [];
+      objectStore.index('createdAt').openCursor(null, 'prev').onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          if (!this.isLegacyBootstrapPlayer(cursor.value)) {
+            results.push(cursor.value);
+          }
+          cursor.continue();
+        } else {
+          resolve(results);
         }
+      };
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
 
-        this.ready = new Promise((resolve, reject) => {
-            const request = window.indexedDB.open("CheckpointDatabase", DATABASE_VERSION);
+  async getMatchesForPlayer(playerUUID) {
+    return this.getPlayerStore(STORES.match, playerUUID);
+  }
 
-            request.onerror = (event) => {
-                console.error(`Database error: ${event.target.error?.message}`);
-                reject(request.error);
-            }
+  async getFriendshipsForPlayer(playerUUID) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.friendship, 'readonly');
+      const objectStore = transaction.objectStore(STORES.friendship);
+      const request = objectStore.index('players').getAll(playerUUID);
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-            request.onupgradeneeded = async (event) => {
-                await this.handleVersionUpgrades(event);
-            }
+  async getNotificationsForPlayer(playerUUID) {
+    return this.getPlayerStore(STORES.notification, playerUUID);
+  }
 
-            request.onsuccess = (event) => {
-                this.database = event.target.result;
-                resolve();
-            }
-        })
-    }
+  async searchPlayers(query) {
+    const allPlayers = await this.getAllPlayers();
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return allPlayers;
+    return allPlayers.filter((player) => {
+      const username = String(player.username || '').toLowerCase();
+      const description = String(player.description || '').toLowerCase();
+      return username.includes(q) || description.includes(q);
+    });
+  }
 
-    /** general methods */
+  async get(store, UUID) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readonly');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.get(UUID);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-    async getDataAsJSON() {
-        await this.ready;
+  async add(store, data) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readwrite');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.put(data);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-        return new Promise(async (resolve, reject) => {
-            try {
-                const tasks        = await this.getAll(STORES.task);
-                const players      = await this.getAll(STORES.player);
-                const journals     = await this.getAll(STORES.journal);
-                const events       = await this.getAll(STORES.event);
-                const shop         = await this.getAll(STORES.shop);
-                const todos        = await this.getAll(STORES.todo);
-                const transactions = await this.getAll(STORES.transaction);
-                const inventory    = await this.getAll(STORES.inventory);
-                const avatars      = await this.getAll(STORES.avatar);
+  async remove(store, UUID) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readwrite');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.delete(UUID);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-                const data = { tasks, players, journals, events, shop, todos, transactions, inventory, avatars };
+  async clear(store) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readwrite');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-                const replacer = (key, value) => (value === null || value === '') ? undefined : value;
-                const json = JSON.stringify(data, replacer);
-                const blob = new Blob([json], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tapestry-dataset.json';
-                link.click();
-                URL.revokeObjectURL(url);
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        })
-    }
+  async getAll(store) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readonly');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
 
-    async dataUpload(file) {
-        await this.ready;
-
-        const parsed = JSON.parse(file);
-        const dataByStore = {
-            [STORES.task]: parsed.tasks ?? [],
-            [STORES.player]: parsed.players ?? [],
-            [STORES.journal]: parsed.journals ?? [],
-            [STORES.event]: parsed.events ?? [],
-            [STORES.shop]: parsed.shop ?? [],
-            [STORES.todo]: parsed.todos ?? [],
-            [STORES.transaction]: parsed.transactions ?? [],
-            [STORES.inventory]: parsed.inventory ?? [],
-            [STORES.avatar]: parsed.avatars ?? [],
-        };
-
-        for (const [store, rows] of Object.entries(dataByStore)) {
-            await this.clear(store);
-            for (const row of rows) {
-                await this.add(store, row);
-            }
+  async getLastEventType(types) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.event, 'readonly');
+      const objectStore = transaction.objectStore(STORES.event);
+      const request = objectStore.index('createdAt').openCursor(null, 'prev');
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) {
+          resolve(null);
+          return;
         }
-    }
-
-    async getRelativePlayerStore(store, player) {
-        const dateMS = (new Date()).getTime();
-        const dateMidnightMS = getMidnightOfDate(new Date()).getTime();
-        const msElapsed = dateMS - dateMidnightMS;
-        const startDate = 0;
-        const endDate = addDurationToDate(new Date(startDate), msElapsed).toISOString();
-        return await this.getStoreFromRange(store, startDate, endDate);
-    }
-
-    async getStoreFromRange(store, startDate, endDate) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readonly");
-            const objectStore = transaction.objectStore(store);
-            const index = store == STORES.task
-                ? objectStore.index("completedAt")
-                : objectStore.index("createdAt");
-            const dateRange = IDBKeyRange.bound(startDate, endDate, false, false);
-            const results = [];
-            index.openCursor(dateRange).onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) { results.push(cursor.value); cursor.continue(); }
-                else { resolve(results); }
-            }
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getPlayerStore(store, UUID) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readonly");
-            const objectStore = transaction.objectStore(store);
-            const index = objectStore.index("parent");
-            const request = index.getAll(UUID);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        })
-    }
-
-    async getCurrentPlayer() {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("playerObjectStore", "readonly");
-            const objectStore = transaction.objectStore("playerObjectStore");
-            const index = objectStore.index("createdAt");
-            const request = index.openCursor(null, "prev");
-            request.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (!cursor) resolve(null);
-                else resolve(cursor.value);
-            }
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    async get(store, UUID) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readonly");
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.get(UUID);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        });
-    }
-
-    async add(store, data) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readwrite");
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.put(data);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        })
-    }
-
-    async remove(store, UUID) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readwrite");
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.delete(UUID);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async clear(store) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readwrite");
-            const objectStore = transaction.objectStore(store);
-            const req = objectStore.clear();
-            req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
-        })
-    }
-
-    async getAll(store) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction(store, "readonly");
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-            transaction.onerror = () => reject(transaction.error);
-        })
-    }
-
-    async getLastEventType(types) {
-        await this.ready;
-        return new Promise((resolve, reject) => {
-            const transaction = this.database.transaction("eventObjectStore", "readonly");
-            const objectStore = transaction.objectStore("eventObjectStore");
-            const index = objectStore.index("createdAt");
-            const request = index.openCursor(null, "prev");
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const type = cursor.value.type;
-                    const matches = Array.isArray(types) ? types.includes(type) : types == type;
-                    if (matches) resolve(cursor.value);
-                    else cursor.continue();
-                } else {
-                    resolve(null);
-                }
-            };
-            request.onerror = (err) => reject(err);
-        });
-    }
+        const type = cursor.value.type;
+        const matches = Array.isArray(types) ? types.includes(type) : types === type;
+        if (matches) resolve(cursor.value);
+        else cursor.continue();
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 export default DatabaseConnection;

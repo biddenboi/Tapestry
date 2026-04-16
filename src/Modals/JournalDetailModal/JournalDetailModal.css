@@ -1,0 +1,6 @@
+@import '../TodoDetailModal/TodoDetailModal.css';
+
+.detail-journal-copy {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}

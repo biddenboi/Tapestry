@@ -1,6 +1,6 @@
 import './Timer.css';
 import { useState, useEffect } from 'react';
-import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time';
+import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time.js';
 
 /**
  * Visually handles 

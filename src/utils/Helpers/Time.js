@@ -1,100 +1,80 @@
-    import { DAY, WEEK, STRING_DAYS } from "../Constants";
+import { DAY, WEEK, STRING_DAYS } from '../Constants.js';
 
-export const timeAsHHMMSS = (ms) => {
-    const totalSeconds = msToSeconds(ms);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+export const timeAsHHMMSS = (ms = 0) => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
-export const msToSeconds = (ms) => {
-    return Math.floor(ms / 1000);
-}
+export const msToSeconds = (ms = 0) => Math.floor(ms / 1000);
+export const msToPoints = (ms = 0) => Math.max(0, Math.floor(ms / 10000));
 
-export const msToPoints = (ms) => {
-    return Math.floor(ms / 10000);
-}
+export const addDurationToDate = (date, durationMs) =>
+  new Date(new Date(date).getTime() + Number(durationMs || 0));
 
-export const getMidnightOfDate = (date) => {
-    return new Date(date.toLocaleString('sv').split(' ')[0] + "T00:00:00");
-}
+export const getLocalDate = (input = new Date()) => {
+  const d = input instanceof Date ? new Date(input) : new Date(input);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
-export const getMidnightInUTC = (date) => {
-    const d = new Date(date);
-    return new Date(d.toLocaleString('sv').split(' ')[0] + "T00:00:00").toISOString();
-}
+export const getMidnightOfDate = (input = new Date()) => getLocalDate(input);
 
-export const getLocalDate = (date) => {
-    return new Date(date.toLocaleString('sv').replace(' ', "T"));
-}
+export const getMsUntilMidnight = () => {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime() - now.getTime();
+};
 
 export const formatDateAsLocalString = (date) => {
-    return date.toLocaleString('sv').replace(' ', "T");
-}
+  const d = date instanceof Date ? date : new Date(date);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+};
 
-export const addDurationToDate = (date, ms) => {
-    return new Date(date.getTime() + ms);
-}
+export const getTimeAsString = (value) => value;
 
-export function getTimeAsString(date) {
-    const time = date.split('T')[1].split('Z')[0];
-    const hours = parseInt(time.split(":")[0]);
-    let minutes = time.split(":")[1];
-
-    return hours > 12 ? hours % 12 + ":" + minutes + "pm" : 
-    hours + ":" + minutes + " am";
-}
-
-//pretty prints dates in MM-DD-YYYY
 export function prettyPrintDate(date) {
-    
-    const currentTime = new Date().getTime();
-    const dateObj = new Date(date);
-    const timeTill = dateObj.getTime() - currentTime;
-
-    if (timeTill < -DAY) return date;
-    if (timeTill < 0) return "Today";
-    if (timeTill < DAY) return "Tomorrow";
-    if (timeTill < WEEK) return STRING_DAYS[dateObj.getDay()];
-
-    return date;
+  if (!date) return 'No due date';
+  const dateObj = new Date(date);
+  const today = getLocalDate(new Date());
+  const timeTill = getLocalDate(dateObj).getTime() - today.getTime();
+  if (timeTill < 0) return 'Overdue';
+  if (timeTill < DAY) return 'Today';
+  if (timeTill < 2 * DAY) return 'Tomorrow';
+  if (timeTill < WEEK - DAY) return STRING_DAYS[dateObj.getDay()];
+  if (timeTill < 2 * WEEK - DAY) return `Next ${STRING_DAYS[dateObj.getDay()]}`;
+  return date.split('T')[0];
 }
 
 export function formatDuration(ms) {
-    if (!ms || ms < 5000) return null;
-    const totalMin = Math.floor(ms / 60000);
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    if (h === 0) return `${m}m`;
-    return m === 0 ? `${h}h` : `${h}h ${m}m`;
-}
-
-export function getDateAsString(date) {
-    const d = date.split('T')[0];
-    return d;
+  if (ms == null) return null;
+  const abs = Math.abs(ms);
+  if (abs < 5000) return '0m';
+  const totalMinutes = Math.floor(abs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
 export function UTCStringToLocalTime(dateString) {
-    return getTimeAsString(formatDateAsLocalString(new Date(dateString)));
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function UTCStringToLocalDate(dateString) {
-    const date = new Date(dateString); 
-
-    const formattedDate = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    })
-
-    return formattedDate;
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
-export const getMsUntilMidnight = () => {
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    return midnight.getTime() - now.getTime();
+export function getDateAsString(date) {
+  return date.split('T')[0];
 }

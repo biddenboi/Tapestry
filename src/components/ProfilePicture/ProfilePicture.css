@@ -1,0 +1,61 @@
+/* ProfilePicture.css */
+
+.pfp-wrap {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.pfp-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pfp-initials {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    color: var(--accent-bright);
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.pfp-editable {
+    cursor: pointer;
+    border-color: var(--accent-border);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pfp-editable:hover {
+    border-color: var(--accent-bright);
+    box-shadow: var(--glow-blue);
+}
+
+.pfp-editable:hover .pfp-overlay {
+    opacity: 1;
+}
+
+.pfp-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 16, 32, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.pfp-upload-icon {
+    font-size: 1.4em;
+    color: var(--accent-bright);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+}

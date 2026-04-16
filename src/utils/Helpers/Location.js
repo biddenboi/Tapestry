@@ -1,26 +1,21 @@
 export function getCurrentLocation() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (!navigator.geolocation) {
-        //returns null, see if i should replace it with something like err
-        resolve(null);
+      resolve(null);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          capturedAt: new Date().toISOString(),
         });
       },
-      () => {
-        resolve(null);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 60000,
-        maximumAge: 300000,
-      }
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 },
     );
   });
 }

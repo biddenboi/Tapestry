@@ -522,7 +522,7 @@
     inset: 0;
     background: var(--background-dim);
     backdrop-filter: blur(4px);
-    z-index: 100;
+    z-index: 140;
     display: flex;
     align-items: center;
     justify-content: center;

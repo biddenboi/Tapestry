@@ -11,7 +11,6 @@ const itemsMatch = (left, right) => {
     return left.name === right.name;
 };
 
-// ── Enjoyment display ────────────────────────────────────
 function EnjoymentDots({ level }) {
     return (
         <div className="enjoyment-dots" title={`Distraction level ${level}/3`}>
@@ -22,7 +21,6 @@ function EnjoymentDots({ level }) {
     );
 }
 
-// ── Individual shop card ─────────────────────────────────
 function ShopItemCard({ item, cartQty, onAdd, onRemove, onDelete }) {
     const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
     const isDuration = item.type === ITEM_TYPE.duration;
@@ -52,20 +50,19 @@ function ShopItemCard({ item, cartQty, onAdd, onRemove, onDelete }) {
                 </span>
                 {cartQty > 0 ? (
                     <div className="cart-controls">
-                        <button className="qty-btn" onClick={() => onRemove(item)}>−</button>
+                        <button type="button" className="qty-btn" onClick={() => onRemove(item)}>−</button>
                         <span className="cart-qty">{cartQty}</span>
-                        <button className="qty-btn" onClick={() => onAdd(item)}>+</button>
+                        <button type="button" className="qty-btn" onClick={() => onAdd(item)}>+</button>
                     </div>
                 ) : (
-                    <button className="add-btn" onClick={() => onAdd(item)}>ADD</button>
+                    <button type="button" className="add-btn" onClick={() => onAdd(item)}>ADD</button>
                 )}
-                <button className="clear-btn" onClick={() => onDelete(item)}>DELETE</button>
+                <button type="button" className="clear-btn" onClick={() => onDelete(item)}>DELETE</button>
             </div>
         </div>
     );
 }
 
-// ── Add item to shop form ────────────────────────────────
 function AddItemForm({ onAdd, onClose, categories }) {
     const [form, setForm] = useState({
         name: '', description: '', type: ITEM_TYPE.duration,
@@ -76,11 +73,11 @@ function AddItemForm({ onAdd, onClose, categories }) {
     const cost = calculateItemCost(form.type, form.duration, form.quantity, form.enjoyment);
 
     return (
-        <div className="add-item-overlay">
-            <div className="add-item-form">
+        <div className="add-item-overlay" onClick={onClose}>
+            <div className="add-item-form" onClick={e => e.stopPropagation()}>
                 <div className="form-header">
                     <span>NEW ITEM</span>
-                    <button className="close-btn" onClick={onClose}>✕</button>
+                    <button type="button" className="close-btn" onClick={onClose}>✕</button>
                 </div>
                 <div className="form-grid">
                     <label>Icon
@@ -105,21 +102,11 @@ function AddItemForm({ onAdd, onClose, categories }) {
                     </label>
                     {form.type === ITEM_TYPE.duration ? (
                         <label>Duration (min)
-                            <input
-                                type="number"
-                                min={1}
-                                value={form.duration}
-                                onChange={e => set('duration', e.target.value)}
-                            />
+                            <input type="number" min={1} value={form.duration} onChange={e => set('duration', e.target.value)} />
                         </label>
                     ) : (
                         <label>Quantity
-                            <input
-                                type="number"
-                                min={1}
-                                value={form.quantity}
-                                onChange={e => set('quantity', e.target.value)}
-                            />
+                            <input type="number" min={1} value={form.quantity} onChange={e => set('quantity', e.target.value)} />
                         </label>
                     )}
                     <label>Distraction
@@ -132,16 +119,13 @@ function AddItemForm({ onAdd, onClose, categories }) {
                 </div>
                 <div className="form-footer">
                     <span className="preview-cost">Cost preview: <strong>◈ {cost}</strong></span>
-                    <button className="primary" onClick={() => { onAdd(form); onClose(); }}>
-                        CREATE ITEM
-                    </button>
+                    <button type="button" className="primary" onClick={() => { onAdd(form); onClose(); }}>CREATE ITEM</button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Cart sidebar ─────────────────────────────────────────
 function CartSidebar({ cart, tokens, onRemove, onPurchase, onClear }) {
     const totalCost = cart.reduce((sum, entry) => sum + entry.totalCost, 0);
     const canAfford = tokens >= totalCost;
@@ -151,16 +135,13 @@ function CartSidebar({ cart, tokens, onRemove, onPurchase, onClear }) {
             <div className="cart-header">
                 <span>CART</span>
                 {cart.length > 0 && (
-                    <button className="clear-btn" onClick={onClear}>CLEAR</button>
+                    <button type="button" className="clear-btn" onClick={onClear}>CLEAR</button>
                 )}
             </div>
 
             <div className="cart-token-balance">
                 <span className="balance-label">BALANCE</span>
-                <span className="balance-value">
-                    <span className="cost-icon">◈</span>
-                    {tokens ?? 0}
-                </span>
+                <span className="balance-value"><span className="cost-icon">◈</span>{tokens ?? 0}</span>
             </div>
 
             <div className="cart-items">
@@ -174,7 +155,7 @@ function CartSidebar({ cart, tokens, onRemove, onPurchase, onClear }) {
                             <span className="cart-line-sub">×{entry.qty}</span>
                         </div>
                         <span className="cart-line-cost">◈ {entry.totalCost}</span>
-                        <button className="cart-remove" onClick={() => onRemove(entry.item, entry.qty)}>✕</button>
+                        <button type="button" className="cart-remove" onClick={() => onRemove(entry.item, entry.qty)}>✕</button>
                     </div>
                 ))}
             </div>
@@ -185,25 +166,16 @@ function CartSidebar({ cart, tokens, onRemove, onPurchase, onClear }) {
                         <span>TOTAL</span>
                         <span className={canAfford ? 'cost-ok' : 'cost-over'}>◈ {totalCost}</span>
                     </div>
-                    {!canAfford && (
-                        <p className="cart-warning">Insufficient tokens</p>
-                    )}
-                    <button
-                        className={`purchase-btn ${canAfford ? 'primary' : 'disabled'}`}
-                        onClick={canAfford ? onPurchase : undefined}
-                        disabled={!canAfford}
-                    >
-                        PURCHASE
-                    </button>
+                    {!canAfford && <p className="cart-warning">Insufficient tokens</p>}
+                    <button type="button" className={`purchase-btn ${canAfford ? 'primary' : 'disabled'}`} onClick={canAfford ? onPurchase : undefined} disabled={!canAfford}>PURCHASE</button>
                 </div>
             )}
         </aside>
     );
 }
 
-// ── Main Shop page ────────────────────────────────────────
 function Shop() {
-    const { databaseConnection, timestamp } = useContext(AppContext);
+    const { databaseConnection, timestamp, refreshApp, notify } = useContext(AppContext);
     const [shopItems, setShopItems] = useState([]);
     const [currentPlayer, setCurrentPlayer] = useState(null);
     const [activeCategory, setActiveCategory] = useState('All');
@@ -214,7 +186,6 @@ function Shop() {
     const loadShop = useCallback(async () => {
         const items = await databaseConnection.getAll(STORES.shop);
         setShopItems(items);
-
         const player = await databaseConnection.getCurrentPlayer();
         setCurrentPlayer(player);
     }, [databaseConnection]);
@@ -232,9 +203,7 @@ function Shop() {
         }
     }, [activeCategory, navCategories]);
 
-    const filtered = activeCategory === 'All'
-        ? shopItems
-        : shopItems.filter(i => i.category === activeCategory);
+    const filtered = activeCategory === 'All' ? shopItems : shopItems.filter(i => i.category === activeCategory);
 
     const getCartQty = (item) => {
         const entry = cart.find(e => itemsMatch(e.item, item));
@@ -270,15 +239,15 @@ function Shop() {
 
     const handleDeleteItem = async (item) => {
         if (!item?.UUID) return;
-
         await databaseConnection.remove(STORES.shop, item.UUID);
         setCart(prev => prev.filter(entry => !itemsMatch(entry.item, item)));
+        refreshApp();
+        notify?.({ title: 'Shop updated', message: `${item.name} removed from the catalog.`, kind: 'info', persist: false });
         loadShop();
     };
 
     const handlePurchase = async () => {
         if (!currentPlayer) return;
-
         const totalCost = cart.reduce((sum, e) => sum + e.totalCost, 0);
         if (currentPlayer.tokens < totalCost) return;
 
@@ -288,19 +257,12 @@ function Shop() {
         });
 
         const allInventory = await databaseConnection.getAll(STORES.inventory);
-
         for (const entry of cart) {
-            const existing = allInventory.find(
-                inv => inv.parent === currentPlayer.UUID && inv.itemUUID === entry.item.UUID
-            ) || allInventory.find(
-                inv => inv.parent === currentPlayer.UUID && inv.name === entry.item.name
-            );
+            const existing = allInventory.find(inv => inv.parent === currentPlayer.UUID && inv.itemUUID === entry.item.UUID)
+                || allInventory.find(inv => inv.parent === currentPlayer.UUID && inv.name === entry.item.name);
 
             if (existing) {
-                await databaseConnection.add(STORES.inventory, {
-                    ...existing,
-                    quantity: existing.quantity + entry.qty,
-                });
+                await databaseConnection.add(STORES.inventory, { ...existing, quantity: existing.quantity + entry.qty });
             } else {
                 await databaseConnection.add(STORES.inventory, {
                     UUID: uuid(),
@@ -319,7 +281,10 @@ function Shop() {
             }
         }
 
+        const itemCount = cart.reduce((sum, entry) => sum + entry.qty, 0);
         setCart([]);
+        refreshApp();
+        notify?.({ title: 'Purchase complete', message: `Added ${itemCount} item${itemCount === 1 ? '' : 's'} to inventory.`, kind: 'success', persist: false });
         setPurchaseFlash(true);
         setTimeout(() => setPurchaseFlash(false), 800);
         loadShop();
@@ -327,36 +292,29 @@ function Shop() {
 
     const handleAddItem = async (formData) => {
         const cost = calculateItemCost(formData.type, formData.duration, formData.quantity, formData.enjoyment);
-        await databaseConnection.add(STORES.shop, {
+        const created = {
             ...formData,
             UUID: uuid(),
             cost,
             duration: formData.type === ITEM_TYPE.duration ? parseFloat(formData.duration) : null,
             quantity: formData.type === ITEM_TYPE.quantity ? parseFloat(formData.quantity) : null,
             enjoyment: parseInt(formData.enjoyment, 10),
-        });
+        };
+        await databaseConnection.add(STORES.shop, created);
+        refreshApp();
+        notify?.({ title: 'Shop updated', message: `${created.name} added to the shop.`, kind: 'success', persist: false });
         loadShop();
     };
 
-    const visibleCategories = activeCategory === 'All'
-        ? [...new Set(filtered.map(item => item.category).filter(Boolean))]
-        : [activeCategory];
+    const visibleCategories = activeCategory === 'All' ? [...new Set(filtered.map(item => item.category).filter(Boolean))] : [activeCategory];
 
     return (
         <div className={`shop-page ${purchaseFlash ? 'purchase-flash' : ''}`}>
             <nav className="shop-category-nav">
                 {navCategories.map(cat => (
-                    <button
-                        key={cat}
-                        className={`cat-tab ${activeCategory === cat ? 'active' : ''}`}
-                        onClick={() => setActiveCategory(cat)}
-                    >
-                        {cat}
-                    </button>
+                    <button key={cat} type="button" className={`cat-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
                 ))}
-                <button className="cat-tab add-tab" onClick={() => setShowAddForm(true)}>
-                    + NEW ITEM
-                </button>
+                <button type="button" className="cat-tab add-tab" onClick={() => setShowAddForm(true)}>+ NEW ITEM</button>
             </nav>
 
             <div className="shop-body">
@@ -366,7 +324,6 @@ function Shop() {
                     ) : visibleCategories.map(category => {
                         const items = filtered.filter(i => i.category === category);
                         if (items.length === 0) return null;
-
                         return (
                             <section key={category} className="shop-category-section">
                                 <div className="category-label">{category}</div>
@@ -387,22 +344,10 @@ function Shop() {
                     })}
                 </main>
 
-                <CartSidebar
-                    cart={cart}
-                    tokens={currentPlayer?.tokens ?? 0}
-                    onRemove={removeFromCart}
-                    onPurchase={handlePurchase}
-                    onClear={() => setCart([])}
-                />
+                <CartSidebar cart={cart} tokens={currentPlayer?.tokens ?? 0} onRemove={removeFromCart} onPurchase={handlePurchase} onClear={() => setCart([])} />
             </div>
 
-            {showAddForm && (
-                <AddItemForm
-                    onAdd={handleAddItem}
-                    onClose={() => setShowAddForm(false)}
-                    categories={formCategories}
-                />
-            )}
+            {showAddForm && <AddItemForm onAdd={handleAddItem} onClose={() => setShowAddForm(false)} categories={formCategories} />}
         </div>
     );
 }

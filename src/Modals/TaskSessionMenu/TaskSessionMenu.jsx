@@ -1,118 +1,123 @@
 import '../TaskCreationMenu/TaskCreationMenu.css';
 import './TaskSessionMenu.css';
 import { useContext } from 'react';
+import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import Timer from '../../Components/Timer/Timer.jsx';
-import { msToPoints } from '../../utils/Helpers/Time.js';
-import { v4 as uuid } from 'uuid';
 import { MINUTE, STORES } from '../../utils/Constants.js';
+import { msToPoints } from '../../utils/Helpers/Time.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js';
 import { getSessionMultiplier, getTaskDuration } from '../../utils/Helpers/Tasks.js';
-import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor.jsx';
+import Timer from '../../components/Timer/Timer.jsx';
 import TaskCreationMenu from '../TaskCreationMenu/TaskCreationMenu.jsx';
 import SessionResults from '../SessionResults/SessionResults.jsx';
-import MarkdownEditor from '../../Components/MarkdownEditor/MarkdownEditor.jsx';
 
 export default NiceModal.create(() => {
-    const databaseConnection = useContext(AppContext).databaseConnection;
-    const [activeTask, setActiveTask] = useContext(AppContext).activeTask;
-    const modal = useModal();
+  const {
+    databaseConnection,
+    refreshApp,
+    activeTask: [activeTask, setActiveTask],
+  } = useContext(AppContext);
+  const modal = useModal();
 
-    const handleGiveUpTask = async () => {
-        setActiveTask({ ...activeTask, createdAt: null });
-        modal.hide();
-        modal.remove();
-        NiceModal.show(TaskCreationMenu);
+  const close = () => {
+    modal.hide();
+    modal.remove();
+  };
+
+  const handleGiveUpTask = async () => {
+    setActiveTask((previous) => ({ ...previous, createdAt: null }));
+    close();
+    requestAnimationFrame(() => NiceModal.show(TaskCreationMenu));
+  };
+
+  const handleTaskSubmit = async () => {
+    const estimatedDuration = Number(activeTask.estimatedDuration || 0);
+    const sessionDuration = Number(activeTask.sessionDuration || 0);
+    const parent = await databaseConnection.getCurrentPlayer();
+
+    const task = {
+      ...activeTask,
+      parent: parent.UUID,
+      completedAt: new Date().toISOString(),
+      location: null,
     };
 
-    const handleTaskSubmit = async () => {
-        const estimatedDuration = parseFloat(activeTask.estimatedDuration) || 0;
-        const sessionDuration   = parseFloat(activeTask.sessionDuration)   || 0;
-        const parent = await databaseConnection.getCurrentPlayer();
+    const duration = getTaskDuration(task);
+    const multiplier = getSessionMultiplier(duration, sessionDuration * MINUTE);
+    task.points = Math.floor(msToPoints(duration) * multiplier);
 
-        const task = {
-            ...activeTask,
-            points: null,
-            completedAt: new Date().toISOString(),
-            location: null,
-        };
+    const tokensGained = Math.floor(msToPoints(duration) / 6);
 
-        const duration = getTaskDuration(task);
-        const multiplier = getSessionMultiplier(duration, sessionDuration * MINUTE);
-        task.points = Math.floor(msToPoints(duration) * multiplier);
+    await databaseConnection.add(STORES.player, {
+      ...parent,
+      tokens: Math.floor((parent.tokens || 0) + tokensGained),
+      minutesClearedToday: (parent.minutesClearedToday || 0) + sessionDuration,
+    });
 
-        const tokensGained = Math.floor(msToPoints(duration) / 6);
+    await databaseConnection.add(STORES.task, task);
 
-        await databaseConnection.add(STORES.player, {
-            ...parent,
-            tokens: Math.floor(parent.tokens + tokensGained),
-            minutesClearedToday: parent.minutesClearedToday + parseFloat(sessionDuration || 0),
-        });
+    const remainingEstimate = Math.max(0, estimatedDuration - sessionDuration);
+    setActiveTask((previous) => ({
+      ...previous,
+      estimatedDuration: remainingEstimate,
+      createdAt: null,
+      lastCompletedTask: task,
+    }));
 
-        await databaseConnection.add(STORES.task, task);
+    refreshApp();
+    close();
 
-        modal.hide();
-        modal.remove();
+    requestAnimationFrame(() => {
+      NiceModal.show(SessionResults, {
+        duration,
+        tokens: tokensGained,
+        sessionDuration,
+        showTaskCreation: remainingEstimate > 0,
+      });
+    });
 
-        NiceModal.show(SessionResults, {
-            duration,
-            tokens: tokensGained,
-            sessionDuration,
-            showTaskCreation: true,
-        });
+    getCurrentLocation()
+      .then(async (location) => {
+        if (!location) return;
+        await databaseConnection.add(STORES.task, { ...task, location });
+        refreshApp();
+      })
+      .catch(() => undefined);
+  };
 
-        activeTask.estimatedDuration = estimatedDuration - sessionDuration;
-        setActiveTask({ ...activeTask, createdAt: null });
+  if (!modal.visible) return null;
 
-        getCurrentLocation()
-            .then(async (location) => {
-                if (!location) return;
-                await databaseConnection.add(STORES.task, { ...task, location });
-            })
-            .catch(err => console.error('Background location update failed:', err));
-    };
-
-    return modal.visible ? (
-        <div className="task-modal-overlay">
-            <div className="blanker" />
-            <div className="task-modal session-modal">
-
-                <div className="task-modal-header">
-                    <span>IN SESSION</span>
-                    <span className="session-duration-badge">
-                        {activeTask.sessionDuration} min
-                    </span>
-                </div>
-
-                {/* Task identity */}
-                <div className="session-task-info">
-                    <p className="session-task-name">{activeTask.name}</p>
-                    {activeTask.reasonToSelect && (
-                        <p className="session-task-reason">{activeTask.reasonToSelect}</p>
-                    )}
-                </div>
-
-                {/* Plan (read-only markdown) */}
-                <div className="session-plan-wrap">
-                    <div className="session-plan-label">Plan</div>
-                    <div className="session-plan-content">
-                        <MarkdownEditor
-                            value={activeTask.efficiency || ''}
-                            readOnly={true}
-                        />
-                    </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="task-modal-footer">
-                    <button className="danger" onClick={handleGiveUpTask}>
-                        ← GIVE UP
-                    </button>
-                    <button className="primary" onClick={handleTaskSubmit}>
-                        COMPLETE →
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="task-modal-overlay">
+      <div className="blanker" />
+      <div className="task-modal session-modal">
+        <div className="task-modal-header">
+          <span>IN SESSION</span>
+          <span className="session-duration-badge">{activeTask.sessionDuration} min</span>
         </div>
-    ) : null;
+
+        <div className="session-task-info">
+          <p className="session-task-name">{activeTask.name}</p>
+          {activeTask.reasonToSelect && <p className="session-task-reason">{activeTask.reasonToSelect}</p>}
+        </div>
+
+        <div className="session-timer-bar">
+          <Timer showPoints={false} startTime={new Date(activeTask.createdAt).getTime()} duration={activeTask.sessionDuration} />
+        </div>
+
+        <div className="session-plan-wrap">
+          <div className="session-plan-label">Plan</div>
+          <div className="session-plan-content">
+            <MarkdownEditor value={activeTask.efficiency || ''} readOnly />
+          </div>
+        </div>
+
+        <div className="task-modal-footer">
+          <button className="danger" onClick={handleGiveUpTask}>← GIVE UP</button>
+          <button className="primary" onClick={handleTaskSubmit}>COMPLETE →</button>
+        </div>
+      </div>
+    </div>
+  );
 });

@@ -1,0 +1,261 @@
+/* GameHub.css */
+
+.game-hub {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+}
+
+.hub-sidebar {
+    background: var(--bg-void);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0 16px;
+    gap: 4px;
+    z-index: 80;
+    position: relative;
+}
+
+.hub-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent-bright);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-glow);
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.hub-logo::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--accent-dim);
+    transform: translate(2px, 2px);
+    pointer-events: none;
+}
+
+.hub-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 0 6px;
+    flex: 1;
+}
+
+.hub-nav-btn {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    position: relative;
+    border-radius: 2px;
+}
+
+.hub-nav-btn:hover {
+    background: var(--bg-raised);
+    border-color: var(--border-subtle);
+    color: var(--text-muted);
+    box-shadow: none;
+}
+
+.hub-nav-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent-border);
+    color: var(--accent-bright);
+    box-shadow: none;
+}
+
+.hub-nav-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: var(--accent-bright);
+    border-radius: 0 2px 2px 0;
+}
+
+.hub-nav-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.hub-nav-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1;
+}
+
+.hub-sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.hub-session-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 8px rgba(255, 184, 0, 0.6);
+    animation: session-pulse 2s ease-in-out infinite;
+}
+
+@keyframes session-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.8); }
+}
+
+.hub-sidebar-avatar-wrap {
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.hub-sidebar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.12s;
+}
+
+.hub-sidebar-avatar:hover {
+    border-color: var(--accent-border);
+    box-shadow: var(--glow-blue);
+}
+
+.hub-sidebar-avatar--init {
+    background: var(--bg-raised);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-bright);
+}
+
+.game-hub.hub-in-session .hub-sidebar {
+    border-right-color: rgba(255, 184, 0, 0.2);
+}
+
+.hub-main {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.hub-panel-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 12, 24, 0.55);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    animation: fade-in 0.2s ease both;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.hub-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(500px, 90%);
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
+    animation: panel-slide-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hub-panel--full {
+    left: 0;
+    width: auto;
+}
+
+@keyframes panel-slide-in {
+    from { transform: translateX(100%); opacity: 0.4; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
+.hub-panel-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    z-index: 10;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: color 0.12s;
+}
+
+.hub-panel-close:hover {
+    color: var(--red);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.hub-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+}
+
+.hub-panel-content .shop-page,
+.hub-panel-content .inventory-page {
+    padding-top: 0;
+}
+
+.hub-panel-content .profile,
+.hub-panel-content .profile-page {
+    height: auto;
+    min-height: 100%;
+    display: block;
+}

@@ -1,64 +1,63 @@
-import { AppContext } from "../../App";
-import { useContext, useEffect } from "react";
-import { v4 as uuid } from "uuid";
-import './JournalPopup.css'
+import { useContext, useEffect } from 'react';
+import { v4 as uuid } from 'uuid';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import { STORES } from '../../utils/Constants'
+import { AppContext } from '../../App.jsx';
+import { STORES } from '../../utils/Constants.js';
+import './JournalPopup.css';
 
-export default NiceModal.create(({title}) => {
-    const databaseConnection = useContext(AppContext).databaseConnection;
-    const modal = useModal()
+export default NiceModal.create(({ title }) => {
+  const { databaseConnection, refreshApp } = useContext(AppContext);
+  const modal = useModal();
 
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === "Escape") {
-                modal.hide()
-                modal.remove();
-            }
-        };
-    
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, []);
+  const close = () => {
+    modal.hide();
+    modal.remove();
+  };
 
-    const handleJournalSubmit = (async (e) => {
-        //prevent default needed so data does not refresh on click.
-        e.preventDefault()
-        const form = e.currentTarget;
-        const formData = new FormData(form);
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') close();
+    };
+    const handleForceClose = () => close();
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('force-close-journal', handleForceClose);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('force-close-journal', handleForceClose);
+    };
+  }, []);
 
-        const entryTitle = formData.get("entry-title");
-        const entryText = formData.get("entry-text");
-    
-        const parent = await databaseConnection.getCurrentPlayer();
+  const handleJournalSubmit = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const parent = await databaseConnection.getCurrentPlayer();
 
-        const journal = {
-            title: entryTitle,
-            entry: entryText,
-            //create methods for local time for tasks too in helper
-            createdAt: new Date().toISOString(),
-            parent: parent.UUID,
-            UUID: uuid(),
-        }
-        e.target.reset();
-        modal.hide()
-        modal.remove();
-        await databaseConnection.add(STORES.journal, journal);
-    })
+    await databaseConnection.add(STORES.journal, {
+      title: formData.get('entry-title'),
+      entry: formData.get('entry-text'),
+      createdAt: new Date().toISOString(),
+      parent: parent.UUID,
+      UUID: uuid(),
+    });
 
-    return modal.visible ? (<div className="journal-popup"
-        title="Entry Popup">
-        <div className="blanker"></div>
-        <div className="content">
-            <p>Entry</p>
-            <form action="" onSubmit={handleJournalSubmit}>
-                <input type="text" name="entry-title" 
-                    defaultValue={title ? title : ""} 
-                    placeholder={title ? title : "Entry Title"}/>
-                <textarea name="entry-text" id=""
-                    placeholder="Enter your log here..."></textarea>
-                <button type="submit">Publish</button>
-            </form>
-        </div>
-    </div>) : ""
-}) 
+    event.currentTarget.reset();
+    refreshApp();
+    close();
+  };
+
+  if (!modal.visible) return null;
+
+  return (
+    <div className="journal-popup" title="Entry Popup">
+      <div className="blanker" onClick={close} />
+      <div className="content">
+        <p>Entry</p>
+        <form onSubmit={handleJournalSubmit}>
+          <input type="text" name="entry-title" defaultValue={title || ''} placeholder={title || 'Entry Title'} />
+          <textarea name="entry-text" placeholder="Enter your log here..." />
+          <button type="submit">Publish</button>
+        </form>
+      </div>
+    </div>
+  );
+});

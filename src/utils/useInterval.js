@@ -1,25 +1,15 @@
-//pulled from: https://www.geeksforgeeks.org/reactjs/reactjs-useinterval-custom-hook/
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
-// creating the custom useInterval hook 
 export function useInterval(callback, delay) {
-    // Creating a ref 
-    const savedCallback = useRef();
+  const savedCallback = useRef(callback);
 
-    // To remember the latest callback .
-    useEffect(() => {
-        savedCallback.current = callback;
-    }, [callback]);
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
 
-    // combining the setInterval and 
-    //clearInterval methods based on delay.
-    useEffect(() => {
-        function func() {
-            savedCallback.current();
-        }
-        if (delay !== null) {
-            let id = setInterval(func, delay);
-            return () => clearInterval(id);
-        }
-    }, [delay]);
+  useEffect(() => {
+    if (delay == null) return undefined;
+    const id = setInterval(() => savedCallback.current?.(), delay);
+    return () => clearInterval(id);
+  }, [delay]);
 }

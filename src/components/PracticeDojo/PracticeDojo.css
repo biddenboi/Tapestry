@@ -1,0 +1,326 @@
+/* PracticeDojo.css */
+
+.dojo {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg-void);
+    overflow: hidden;
+}
+
+/* ── Decorative background ───────────────────────────────── */
+.dojo-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 60%, rgba(26, 110, 245, 0.06) 0%, transparent 70%),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 47px,
+            var(--border-subtle) 48px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 47px,
+            var(--border-subtle) 48px
+        );
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.dojo-header {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(15, 24, 41, 0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
+}
+
+.dojo-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.dojo-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    color: var(--accent-bright);
+    text-transform: uppercase;
+}
+
+.dojo-session-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.dojo-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dojo-add-btn, .dojo-queue-btn, .dojo-exit-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    padding: 6px 14px;
+}
+
+/* ── Arena ───────────────────────────────────────────────── */
+.dojo-arena {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow: hidden;
+}
+
+/* ── Player pod ─────────────────────────────────────────── */
+.dojo-pod {
+    position: relative;
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 32px 24px;
+    background: rgba(15, 24, 41, 0.8);
+    border-right: 1px solid var(--border);
+    transition: all 0.4s ease;
+}
+
+.dojo-pod--active {
+    border-right-color: rgba(77, 163, 255, 0.5);
+    background: rgba(26, 110, 245, 0.04);
+}
+
+.dojo-pod-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(77, 163, 255, 0.08) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.dojo-pod--active .dojo-pod-glow { opacity: 1; }
+
+.dojo-pod-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dojo-pod-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+}
+
+.pod-status-active {
+    color: var(--green);
+    text-shadow: 0 0 8px rgba(0, 214, 143, 0.4);
+    animation: active-pulse 1.5s infinite;
+}
+
+.pod-status-idle { color: var(--text-dim); }
+
+@keyframes active-pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+}
+
+.dojo-score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    margin-top: 8px;
+    padding: 12px 24px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+}
+
+.dojo-score-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 16px rgba(255, 184, 0, 0.3);
+    transition: color 0.3s;
+}
+
+.dojo-score-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--text-dim);
+}
+
+/* ── Task panel ─────────────────────────────────────────── */
+.dojo-task-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px 32px;
+    overflow-y: auto;
+}
+
+/* Current task */
+.dojo-current-task {
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: task-appear 0.25s ease both;
+}
+
+@keyframes task-appear {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.dct-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    color: var(--accent-bright);
+}
+
+.dct-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.03em;
+}
+
+.dct-reason {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.dct-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+/* Next panel */
+.dojo-next-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dnp-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    color: var(--text-muted);
+}
+
+.dnp-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.03em;
+}
+
+.dnp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
+
+.dnp-start {
+    margin-top: 8px;
+    align-self: flex-start;
+    padding: 10px 20px;
+    font-size: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+}
+
+.dnp-empty {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.08em;
+}
+
+/* Task history */
+.dojo-history {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.dojo-history-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+
+.dojo-history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12.5px;
+}
+
+.dojo-history-row:last-child { border-bottom: none; }
+
+.dhr-name { color: var(--text-muted); }
+
+.dhr-pts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 600;
+}

@@ -1,45 +1,47 @@
-import { v4 as uuid } from "uuid";
-import { addDurationToDate, getMidnightOfDate } from '../../utils/Helpers/Time.js';
-import { DAY, MINUTE } from "../Constants.js";
-import JournalPopup from "../../Modals/JournalPopup/JournalPopup.jsx";
-import NiceModal from '@ebay/nice-modal-react';
-import { STORES, EVENT } from '../../utils/Constants.js'
+import { v4 as uuid } from 'uuid';
+import { EVENT, STORES } from '../Constants.js';
 
-export const endDay = async (db, player, early) => {
-    const rightBeforeMidnight = new Date(getMidnightOfDate(new Date()).getTime() - MINUTE);
-    player.tokens = early ? player.tokens / 2 : 0;
-    player.minutesClearedToday = 0;
-
-    await db.add(STORES.event, {
-        type: EVENT.sleep,
-        description: early ? "Early!" : "Exited On Time",
-        UUID: uuid(),
-        parent: player.UUID,
-        createdAt: early ? new Date().toISOString() : rightBeforeMidnight.toISOString(),
-    })
-
-    await db.add(STORES.player, player);
+async function writeEvent(db, player, type, description) {
+  if (!player) return null;
+  const entry = {
+    UUID: uuid(),
+    parent: player.UUID,
+    type,
+    description,
+    createdAt: new Date().toISOString(),
+  };
+  await db.add(STORES.event, entry);
+  return entry;
 }
 
-export const startDay = async (db, player) => {
-    console.log("new day");
-    
-    await db.add(STORES.event, {
-        type: EVENT.wake,
-        description: "Started the Day",
-        UUID: uuid(),
-        parent: player.UUID,
-        createdAt: new Date().toISOString()
-    });
-};
+export async function startDay(db, player) {
+  if (!player) return;
+  await db.add(STORES.player, {
+    ...player,
+    minutesClearedToday: 0,
+  });
+  await writeEvent(db, player, EVENT.wake, 'Started the day');
+}
 
-export const endWorkDay = (async (db, player) => {
-    NiceModal.show(JournalPopup, { title: "End of Workday Conclusions"})
-    await db.add(STORES.event, {
-        type: EVENT.end_work,
-        description: "Ended the Workday",
-        UUID: uuid(),
-        parent: player.UUID,
-        createdAt: new Date().toISOString()
-    })
-})
+export async function endWorkDay(db, player) {
+  if (!player) return;
+  await writeEvent(db, player, EVENT.end_work, 'Ended work day');
+}
+
+export async function endDay(db, player, early = false) {
+  if (!player) return;
+  const remainingLoad = Math.max(0, Math.ceil((player.minutesClearedToday || 0) / 15));
+  const penalty = early ? Math.ceil(remainingLoad / 2) : remainingLoad;
+
+  await db.add(STORES.player, {
+    ...player,
+    tokens: Math.max(0, (player.tokens || 0) - penalty),
+  });
+
+  await writeEvent(
+    db,
+    player,
+    EVENT.sleep,
+    early ? `Ended day early (-${penalty} tokens)` : `Ended day (-${penalty} tokens)`,
+  );
+}

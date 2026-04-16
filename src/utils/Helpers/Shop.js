@@ -1,25 +1,57 @@
 import { ITEM_TYPE } from '../Constants.js';
 
-export function calculateItemCost(type, duration, quantity, enjoyment) {
-    const e = Math.max(1, Math.min(3, Number(enjoyment) || 1));
+export const SHOP_CATEGORIES = ['Rest', 'Exercise', 'Focus', 'Entertainment', 'Social', 'Food', 'Misc'];
 
-    if (type === ITEM_TYPE.duration) {
-        const dur = Math.max(0, Number(duration) || 0);
-        if (dur <= 0) return 0;
+export const DEFAULT_SHOP_ITEMS = [
+  {
+    UUID: 'shop-focus-25',
+    name: 'Focus Sprint',
+    description: 'A 25-minute intentional break replacement. Use it to structure a focused off-task reset.',
+    type: ITEM_TYPE.duration,
+    duration: 25,
+    quantity: 1,
+    enjoyment: 2,
+    category: 'Focus',
+    icon: '⏱',
+  },
+  {
+    UUID: 'shop-walk-15',
+    name: 'Walk Break',
+    description: 'Short outside reset to clear your head.',
+    type: ITEM_TYPE.duration,
+    duration: 15,
+    quantity: 1,
+    enjoyment: 2,
+    category: 'Rest',
+    icon: '🚶',
+  },
+  {
+    UUID: 'shop-snack',
+    name: 'Snack',
+    description: 'Simple instant reward. One-time use.',
+    type: ITEM_TYPE.quantity,
+    duration: 0,
+    quantity: 1,
+    enjoyment: 1,
+    category: 'Food',
+    icon: '🍫',
+  },
+  {
+    UUID: 'shop-game-45',
+    name: 'Game Session',
+    description: 'Longer recharge block. Going over time becomes expensive.',
+    type: ITEM_TYPE.duration,
+    duration: 45,
+    quantity: 1,
+    enjoyment: 4,
+    category: 'Entertainment',
+    icon: '🎮',
+  },
+];
 
-        const perMinuteRate = 0.35 + (0.15 * e); // 0.50, 0.65, 0.80
-        return Math.max(1, Math.ceil(dur * perMinuteRate));
-    }
-
-    if (type === ITEM_TYPE.quantity) {
-        const qty = Math.max(0, Number(quantity) || 0);
-        if (qty <= 0) return 0;
-
-        const perUnitCost = 2 + (2 * e); // 4, 6, 8
-        return Math.max(1, Math.ceil(qty * perUnitCost));
-    }
-
-    return 0;
+export function calculateItemCost(type, duration = 0, quantity = 1, enjoyment = 1) {
+  if (type === ITEM_TYPE.duration) {
+    return Math.max(1, Math.round((Number(duration || 0) / 10) * (0.75 + Number(enjoyment || 1) * 0.55)));
+  }
+  return Math.max(1, Math.round(Number(quantity || 1) * (1 + Number(enjoyment || 1) * 0.5)));
 }
-
-export const SHOP_CATEGORIES = ['Movement', 'Nutrition', 'Entertainment', 'Rest'];

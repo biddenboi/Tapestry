@@ -7,7 +7,7 @@ import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
 
 // ── Duration consumption sub-component ──────────────────
 function DurationConsumer({ item, onFinish, onClose }) {
-    const { databaseConnection } = useContext(AppContext);
+    const { databaseConnection, refreshApp, notify } = useContext(AppContext);
     const [phase, setPhase] = useState('idle'); // idle | running | overtime | done
     const [elapsed, setElapsed] = useState(0);
     const [penaltiesApplied, setPenaltiesApplied] = useState(0);
@@ -46,6 +46,7 @@ function DurationConsumer({ item, onFinish, onClose }) {
                             ...player,
                             tokens: Math.max(0, player.tokens - deduction),
                         });
+                        refreshApp();
                     }
                 }
             }
@@ -131,7 +132,7 @@ function QuantityConsumer({ item, onFinish }) {
 // ── Main popup ───────────────────────────────────────────
 export default NiceModal.create(({ item, onConsumed }) => {
     const modal = useModal();
-    const { databaseConnection } = useContext(AppContext);
+    const { databaseConnection, refreshApp, notify } = useContext(AppContext);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -148,6 +149,8 @@ export default NiceModal.create(({ item, onConsumed }) => {
             quantity: Math.max(0, item.quantity - 1),
         });
         onConsumed?.();
+        refreshApp();
+        notify({ title: 'Item consumed', message: `${item.name} resolved successfully.`, kind: 'success', persist: false });
         modal.hide();
         modal.remove();
     };
