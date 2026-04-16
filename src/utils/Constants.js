@@ -1,4 +1,4 @@
-export const DATABASE_VERSION = 2;
+export const DATABASE_VERSION = 3;
 
 export const SECOND = 1000;
 export const MINUTE = SECOND * 60;
@@ -17,6 +17,7 @@ export const STORES = {
     todo:        "todoObjectStore",
     transaction: "transactionObjectStore",
     inventory:   "inventoryObjectStore",
+    avatar:      "profileAvatarObjectStore",
 }
 
 export const EVENT = {

@@ -2,8 +2,14 @@ import './Shop.css';
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AppContext } from '../../App.jsx';
 import { STORES, ITEM_TYPE } from '../../utils/Constants.js';
-import { calculateItemCost, DEFAULT_SHOP_ITEMS, SHOP_CATEGORIES } from '../../utils/Helpers/Shop.js';
+import { calculateItemCost, SHOP_CATEGORIES } from '../../utils/Helpers/Shop.js';
 import { v4 as uuid } from 'uuid';
+
+const itemsMatch = (left, right) => {
+    if (!left || !right) return false;
+    if (left.UUID && right.UUID) return left.UUID === right.UUID;
+    return left.name === right.name;
+};
 
 // ── Enjoyment display ────────────────────────────────────
 function EnjoymentDots({ level }) {
@@ -17,7 +23,7 @@ function EnjoymentDots({ level }) {
 }
 
 // ── Individual shop card ─────────────────────────────────
-function ShopItemCard({ item, cartQty, onAdd, onRemove }) {
+function ShopItemCard({ item, cartQty, onAdd, onRemove, onDelete }) {
     const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
     const isDuration = item.type === ITEM_TYPE.duration;
 
@@ -53,16 +59,17 @@ function ShopItemCard({ item, cartQty, onAdd, onRemove }) {
                 ) : (
                     <button className="add-btn" onClick={() => onAdd(item)}>ADD</button>
                 )}
+                <button className="clear-btn" onClick={() => onDelete(item)}>DELETE</button>
             </div>
         </div>
     );
 }
 
 // ── Add item to shop form ────────────────────────────────
-function AddItemForm({ onAdd, onClose }) {
+function AddItemForm({ onAdd, onClose, categories }) {
     const [form, setForm] = useState({
         name: '', description: '', type: ITEM_TYPE.duration,
-        duration: 30, quantity: 1, enjoyment: 1, category: 'Rest', icon: '⭐',
+        duration: 30, quantity: 1, enjoyment: 1, category: categories[0] || 'Rest', icon: '⭐',
     });
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -93,22 +100,30 @@ function AddItemForm({ onAdd, onClose }) {
                     </label>
                     <label>Category
                         <select value={form.category} onChange={e => set('category', e.target.value)}>
-                            {SHOP_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                            {categories.map(c => <option key={c}>{c}</option>)}
                         </select>
                     </label>
                     {form.type === ITEM_TYPE.duration ? (
                         <label>Duration (min)
-                            <input type="number" min={1} value={form.duration}
-                                onChange={e => set('duration', e.target.value)} />
+                            <input
+                                type="number"
+                                min={1}
+                                value={form.duration}
+                                onChange={e => set('duration', e.target.value)}
+                            />
                         </label>
                     ) : (
                         <label>Quantity
-                            <input type="number" min={1} value={form.quantity}
-                                onChange={e => set('quantity', e.target.value)} />
+                            <input
+                                type="number"
+                                min={1}
+                                value={form.quantity}
+                                onChange={e => set('quantity', e.target.value)}
+                            />
                         </label>
                     )}
                     <label>Distraction
-                        <select value={form.enjoyment} onChange={e => set('enjoyment', parseInt(e.target.value))}>
+                        <select value={form.enjoyment} onChange={e => set('enjoyment', parseInt(e.target.value, 10))}>
                             <option value={1}>1 — Focus-safe</option>
                             <option value={2}>2 — Moderate</option>
                             <option value={3}>3 — High</option>
@@ -196,45 +211,42 @@ function Shop() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [purchaseFlash, setPurchaseFlash] = useState(false);
 
-    // Seed default items if shop is empty
     const loadShop = useCallback(async () => {
         const items = await databaseConnection.getAll(STORES.shop);
-        if (items.length === 0) {
-            for (const item of DEFAULT_SHOP_ITEMS) {
-                await databaseConnection.add(STORES.shop, {
-                    ...item,
-                    UUID: uuid(),
-                    cost: calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment),
-                });
-            }
-            const seeded = await databaseConnection.getAll(STORES.shop);
-            setShopItems(seeded);
-        } else {
-            setShopItems(items);
-        }
+        setShopItems(items);
+
         const player = await databaseConnection.getCurrentPlayer();
         setCurrentPlayer(player);
     }, [databaseConnection]);
 
-    useEffect(() => { loadShop(); }, [loadShop, timestamp]);
+    useEffect(() => {
+        loadShop();
+    }, [loadShop, timestamp]);
 
-    const categories = ['All', ...new Set(shopItems.map(i => i.category).filter(Boolean))];
+    const navCategories = ['All', ...new Set(shopItems.map(i => i.category).filter(Boolean))];
+    const formCategories = [...new Set([...SHOP_CATEGORIES, ...shopItems.map(i => i.category).filter(Boolean)])];
+
+    useEffect(() => {
+        if (activeCategory !== 'All' && !navCategories.includes(activeCategory)) {
+            setActiveCategory('All');
+        }
+    }, [activeCategory, navCategories]);
 
     const filtered = activeCategory === 'All'
         ? shopItems
         : shopItems.filter(i => i.category === activeCategory);
 
     const getCartQty = (item) => {
-        const entry = cart.find(e => e.item.UUID === item.UUID || e.item.name === item.name);
+        const entry = cart.find(e => itemsMatch(e.item, item));
         return entry ? entry.qty : 0;
     };
 
     const addToCart = (item) => {
         const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
         setCart(prev => {
-            const existing = prev.find(e => e.item.name === item.name);
+            const existing = prev.find(e => itemsMatch(e.item, item));
             if (existing) {
-                return prev.map(e => e.item.name === item.name
+                return prev.map(e => itemsMatch(e.item, item)
                     ? { ...e, qty: e.qty + 1, totalCost: (e.qty + 1) * cost }
                     : e
                 );
@@ -246,33 +258,44 @@ function Shop() {
     const removeFromCart = (item, removeAll = false) => {
         const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
         setCart(prev => {
-            const existing = prev.find(e => e.item.name === item.name);
+            const existing = prev.find(e => itemsMatch(e.item, item));
             if (!existing) return prev;
-            if (removeAll || existing.qty <= 1) return prev.filter(e => e.item.name !== item.name);
-            return prev.map(e => e.item.name === item.name
+            if (removeAll || existing.qty <= 1) return prev.filter(e => !itemsMatch(e.item, item));
+            return prev.map(e => itemsMatch(e.item, item)
                 ? { ...e, qty: e.qty - 1, totalCost: (e.qty - 1) * cost }
                 : e
             );
         });
     };
 
+    const handleDeleteItem = async (item) => {
+        if (!item?.UUID) return;
+
+        await databaseConnection.remove(STORES.shop, item.UUID);
+        setCart(prev => prev.filter(entry => !itemsMatch(entry.item, item)));
+        loadShop();
+    };
+
     const handlePurchase = async () => {
         if (!currentPlayer) return;
+
         const totalCost = cart.reduce((sum, e) => sum + e.totalCost, 0);
         if (currentPlayer.tokens < totalCost) return;
 
-        // Deduct tokens
         await databaseConnection.add(STORES.player, {
             ...currentPlayer,
             tokens: currentPlayer.tokens - totalCost,
         });
 
-        // Add to inventory (merge with existing stacks)
+        const allInventory = await databaseConnection.getAll(STORES.inventory);
+
         for (const entry of cart) {
-            const allInventory = await databaseConnection.getAll(STORES.inventory);
             const existing = allInventory.find(
+                inv => inv.parent === currentPlayer.UUID && inv.itemUUID === entry.item.UUID
+            ) || allInventory.find(
                 inv => inv.parent === currentPlayer.UUID && inv.name === entry.item.name
             );
+
             if (existing) {
                 await databaseConnection.add(STORES.inventory, {
                     ...existing,
@@ -310,17 +333,19 @@ function Shop() {
             cost,
             duration: formData.type === ITEM_TYPE.duration ? parseFloat(formData.duration) : null,
             quantity: formData.type === ITEM_TYPE.quantity ? parseFloat(formData.quantity) : null,
-            enjoyment: parseInt(formData.enjoyment),
+            enjoyment: parseInt(formData.enjoyment, 10),
         });
         loadShop();
     };
 
+    const visibleCategories = activeCategory === 'All'
+        ? [...new Set(filtered.map(item => item.category).filter(Boolean))]
+        : [activeCategory];
+
     return (
         <div className={`shop-page ${purchaseFlash ? 'purchase-flash' : ''}`}>
-
-            {/* Category nav */}
             <nav className="shop-category-nav">
-                {categories.map(cat => (
+                {navCategories.map(cat => (
                     <button
                         key={cat}
                         className={`cat-tab ${activeCategory === cat ? 'active' : ''}`}
@@ -335,11 +360,13 @@ function Shop() {
             </nav>
 
             <div className="shop-body">
-                {/* Item grid */}
                 <main className="shop-grid-area">
-                    {SHOP_CATEGORIES.filter(c => activeCategory === 'All' || c === activeCategory).map(category => {
+                    {filtered.length === 0 ? (
+                        <p className="cart-empty">No shop items yet.</p>
+                    ) : visibleCategories.map(category => {
                         const items = filtered.filter(i => i.category === category);
                         if (items.length === 0) return null;
+
                         return (
                             <section key={category} className="shop-category-section">
                                 <div className="category-label">{category}</div>
@@ -351,6 +378,7 @@ function Shop() {
                                             cartQty={getCartQty(item)}
                                             onAdd={addToCart}
                                             onRemove={removeFromCart}
+                                            onDelete={handleDeleteItem}
                                         />
                                     ))}
                                 </div>
@@ -359,7 +387,6 @@ function Shop() {
                     })}
                 </main>
 
-                {/* Cart */}
                 <CartSidebar
                     cart={cart}
                     tokens={currentPlayer?.tokens ?? 0}
@@ -370,7 +397,11 @@ function Shop() {
             </div>
 
             {showAddForm && (
-                <AddItemForm onAdd={handleAddItem} onClose={() => setShowAddForm(false)} />
+                <AddItemForm
+                    onAdd={handleAddItem}
+                    onClose={() => setShowAddForm(false)}
+                    categories={formCategories}
+                />
             )}
         </div>
     );

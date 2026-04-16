@@ -1,7 +1,6 @@
 import { DATABASE_VERSION, STORES } from '../utils/Constants.js'
 import { addDurationToDate, getMidnightOfDate } from '../utils/Helpers/Time.js';
 
-
 class DatabaseConnection {
     database = null;
 
@@ -75,6 +74,13 @@ class DatabaseConnection {
             inventory.createIndex("type", "type", { unique: false });
             inventory.createIndex("quantity", "quantity", { unique: false });
         }
+
+        if (DATABASE_VERSION >= 3 && oldVersion < 3) {
+            const avatars = this.database.createObjectStore(STORES.avatar, { keyPath: "UUID" });
+            avatars.createIndex("parent", "parent", { unique: true });
+            avatars.createIndex("updatedAt", "updatedAt", { unique: false });
+            avatars.createIndex("byteSize", "byteSize", { unique: false });
+        }
     }
 
     constructor() {
@@ -107,37 +113,56 @@ class DatabaseConnection {
         await this.ready;
 
         return new Promise(async (resolve, reject) => {
-            const tasks        = await this.getAll(STORES.task);
-            const players      = await this.getAll(STORES.player);
-            const journals     = await this.getAll(STORES.journal);
-            const events       = await this.getAll(STORES.event);
-            const shop         = await this.getAll(STORES.shop);
-            const todos        = await this.getAll(STORES.todo);
-            const transactions = await this.getAll(STORES.transaction);
-            const inventory    = await this.getAll(STORES.inventory);
+            try {
+                const tasks        = await this.getAll(STORES.task);
+                const players      = await this.getAll(STORES.player);
+                const journals     = await this.getAll(STORES.journal);
+                const events       = await this.getAll(STORES.event);
+                const shop         = await this.getAll(STORES.shop);
+                const todos        = await this.getAll(STORES.todo);
+                const transactions = await this.getAll(STORES.transaction);
+                const inventory    = await this.getAll(STORES.inventory);
+                const avatars      = await this.getAll(STORES.avatar);
 
-            const data = { tasks, players, journals, events, shop, todos, transactions, inventory };
+                const data = { tasks, players, journals, events, shop, todos, transactions, inventory, avatars };
 
-            const replacer = (key, value) => (value === null || value === '') ? undefined : value;
-            const json = JSON.stringify(data, replacer);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'tapestry-dataset.json';
-            link.click();
-            URL.revokeObjectURL(url);
-            resolve();
+                const replacer = (key, value) => (value === null || value === '') ? undefined : value;
+                const json = JSON.stringify(data, replacer);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tapestry-dataset.json';
+                link.click();
+                URL.revokeObjectURL(url);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
         })
     }
 
     async dataUpload(file) {
-        const dataArray = Object.values(JSON.parse(file));
-        let i = 0;
-        for (const [key, value] of Object.entries(STORES)) {
-            this.clear(value);
-            dataArray[i]?.forEach((data) => { this.add(value, data); });
-            i++;
+        await this.ready;
+
+        const parsed = JSON.parse(file);
+        const dataByStore = {
+            [STORES.task]: parsed.tasks ?? [],
+            [STORES.player]: parsed.players ?? [],
+            [STORES.journal]: parsed.journals ?? [],
+            [STORES.event]: parsed.events ?? [],
+            [STORES.shop]: parsed.shop ?? [],
+            [STORES.todo]: parsed.todos ?? [],
+            [STORES.transaction]: parsed.transactions ?? [],
+            [STORES.inventory]: parsed.inventory ?? [],
+            [STORES.avatar]: parsed.avatars ?? [],
+        };
+
+        for (const [store, rows] of Object.entries(dataByStore)) {
+            await this.clear(store);
+            for (const row of rows) {
+                await this.add(store, row);
+            }
         }
     }
 

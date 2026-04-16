@@ -103,11 +103,6 @@ export default NiceModal.create(() => {
                     </div>
                 </div>
 
-                {/* Timer */}
-                <div className="session-timer-bar">
-                    <Timer />
-                </div>
-
                 {/* Action buttons */}
                 <div className="task-modal-footer">
                     <button className="danger" onClick={handleGiveUpTask}>

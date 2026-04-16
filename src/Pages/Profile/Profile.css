@@ -12,15 +12,149 @@ div.profile {
 /* ── Banner ──────────────────────────────────────────────── */
 div.profile-banner {
     grid-column: 2 / span 8;
-    grid-row: 2 / span 4;
+    grid-row: 2 / span 5;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    background: var(--bg-card);
+    grid-template-columns: 280px 1fr 240px;
+    background: linear-gradient(180deg, rgba(77, 163, 255, 0.08), rgba(0, 0, 0, 0)) , var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+div.profile-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(135deg, rgba(77, 163, 255, 0.09), transparent 35%),
+        linear-gradient(315deg, rgba(255, 184, 0, 0.05), transparent 40%);
+    pointer-events: none;
+}
+
+/* ── Avatar panel ────────────────────────────────────────── */
+div.profile-avatar-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 22px 18px;
+    border-right: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.16);
+}
+
+div.profile-avatar-frame {
+    position: relative;
+    width: 190px;
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 20%, rgba(77, 163, 255, 0.2), rgba(11, 18, 32, 0.95));
+    border: 1px solid rgba(77, 163, 255, 0.3);
+    box-shadow: 0 0 24px rgba(77, 163, 255, 0.18);
+    overflow: hidden;
+}
+
+div.profile-avatar-ring {
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(255, 184, 0, 0.35);
+    pointer-events: none;
+}
+
+img.profile-avatar-image,
+div.profile-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+div.profile-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 58px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent-bright);
+    text-transform: uppercase;
+    background:
+        linear-gradient(180deg, rgba(77, 163, 255, 0.08), rgba(11, 18, 32, 0.9)),
+        var(--bg-surface);
+}
+
+div.profile-avatar-meta {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+span.profile-avatar-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--gold);
+    text-transform: uppercase;
+}
+
+div.profile-avatar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+div.profile-avatar-actions > button {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 6px 14px;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-border);
+    color: var(--accent-bright);
+    cursor: pointer;
+    transition: all 0.14s;
+}
+
+div.profile-avatar-actions > button:hover {
+    background: var(--accent);
+    color: white;
+}
+
+button.secondary-avatar-btn {
+    background: var(--bg-surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+}
+
+button.secondary-avatar-btn:hover {
+    border-color: rgba(255, 61, 87, 0.4) !important;
+    color: var(--red) !important;
+    background: rgba(255, 61, 87, 0.08) !important;
+}
+
+input.profile-avatar-input {
+    display: none;
+}
+
+span.profile-avatar-status {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 220px;
 }
 
 div.stats-subsection {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -47,7 +181,16 @@ div.stats-subsection > span:nth-child(2) {
     letter-spacing: 0.04em;
 }
 
+div.stats-subsection > span:nth-child(3) {
+    max-width: 320px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
 div.profile-banner div.description-subsection {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -118,7 +261,7 @@ div.history-display > div.section-header > button:hover {
 /* ── History display ─────────────────────────────────────── */
 div.history-display {
     grid-column: 1 / span 10;
-    grid-row: 7 / span 13;
+    grid-row: 8 / span 12;
     width: 100%;
     background: var(--bg);
     display: flex;
