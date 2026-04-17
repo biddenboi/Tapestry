@@ -39,6 +39,49 @@
   animation: float-in-left 0.35s ease both;
   position: relative;
   overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Dark vignette + subtle theme-accent rim when a custom banner is set */
+.lobby-player-card.has-banner {
+  box-shadow:
+    inset 0 0 0 1px var(--accent-border),
+    inset 0 0 80px rgba(0,0,0,0.35),
+    0 0 28px var(--accent-glow);
+}
+.lobby-player-card.has-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--bg-surface) 65%,
+    var(--bg-void) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* On banner backgrounds, ensure text is legible against any image or gradient */
+.lobby-player-card.has-banner .lpc-username,
+.lobby-player-card.has-banner .lpc-elo,
+.lobby-player-card.has-banner .lpc-stat-val,
+.lobby-player-card.has-banner .lpc-stat-lbl,
+.lobby-player-card.has-banner .rank-name,
+.lobby-player-card.has-banner .rank-progress-label {
+  color: var(--text-bright);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.6);
+}
+.lobby-player-card.has-banner .lpc-stat-val.lpc-tokens {
+  color: var(--gold);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.6);
+}
+
+/* Ensure all children sit above the overlay */
+.lobby-player-card.has-banner > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* top-right corner cut */
@@ -50,6 +93,7 @@
   border-style: solid;
   border-width: 0 24px 24px 0;
   border-color: transparent var(--bg-void) transparent transparent;
+  z-index: 2;
 }
 
 /* ── Avatar ─────────────────────────────────────────────── */
@@ -245,14 +289,29 @@
   gap: 16px;
 }
 
+.lobby-modes--solo {
+  display: block;
+}
+
 .lobby-mode-card {
   position: relative;
-  height: 240px;
+  height: 200px;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
 }
+
+.lobby-mode-card--full {
+  height: 132px;
+  max-width: 520px;
+}
+
+.lobby-mode-card--full .lmc-content { padding: 14px 22px; gap: 4px; }
+.lobby-mode-card--full .lmc-icon    { font-size: 22px; }
+.lobby-mode-card--full .lmc-title   { font-size: 22px; }
+.lobby-mode-card--full .lmc-desc    { font-size: 11px; max-width: 360px; }
+.lobby-mode-card--full .lmc-btn     { margin-top: 2px; padding: 6px 16px; font-size: 10px; }
 
 .lobby-mode-card:hover {
   transform: translateY(-3px);
@@ -265,15 +324,6 @@
   transition: transform 0.4s ease;
 }
 .lobby-mode-card:hover .lmc-bg { transform: scale(1.04); }
-
-.lmc-bg--practice {
-  background: linear-gradient(135deg,
-    var(--bg-raised) 0%,
-    rgba(77,163,255,0.08) 50%,
-    var(--bg-card) 100%
-  );
-  border: 1px solid var(--border);
-}
 
 .lmc-bg--match {
   background: linear-gradient(135deg,
@@ -446,8 +496,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4,8,15,0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.55);
   animation: fade-in 0.2s ease both;
 }
 
@@ -513,4 +562,266 @@
   gap: 10px;
   padding: 16px 20px;
   border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Dojo mode card ─────────────────────────────────────── */
+.lmc-bg--dojo {
+  background: linear-gradient(135deg,
+    var(--bg-raised) 0%,
+    rgba(0,214,143,0.08) 50%,
+    rgba(34,211,238,0.05) 100%
+  );
+  border: 1px solid rgba(0,214,143,0.2);
+}
+
+.lmc-icon--dojo  { color: #00d68f; opacity: 0.9; }
+.lmc-title--dojo { color: #00d68f; text-shadow: 0 0 20px rgba(0,214,143,0.3); }
+
+.lmc-btn--dojo {
+  border-color: rgba(0,214,143,0.4);
+  color: #00d68f;
+  background: transparent;
+}
+.lmc-btn--dojo:hover {
+  background: rgba(0,214,143,0.1);
+  border-color: #00d68f;
+  box-shadow: 0 0 14px rgba(0,214,143,0.25);
+}
+
+/* ── Data Hub ───────────────────────────────────────────── */
+.data-hub {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  overflow: hidden;
+}
+
+.data-hub-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+}
+
+.data-hub-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--accent-bright);
+}
+
+.data-hub-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.data-hub-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 460px) 1fr;
+  gap: 0;
+}
+
+/* ── Data cards ─────────────────────────────────────────── */
+.data-card {
+  padding: 16px 20px;
+}
+
+.data-card--chart {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.data-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.data-card-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.data-card-note {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+/* ── ELO chart ──────────────────────────────────────────── */
+.elo-chart-svg {
+  display: block;
+  display: block;
+  width: 100%;
+  height: 200px;
+}
+
+.elo-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 120px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.elo-empty-icon { font-size: 22px; opacity: 0.3; }
+
+.elo-current-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ecb-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-bright);
+}
+
+.ecb-lbl {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+}
+
+/* ── Leaderboard ────────────────────────────────────────── */
+.leader-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  margin: -16px -20px 12px;
+}
+
+.leader-tab {
+  flex: 1;
+  padding: 10px 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.14s;
+  text-align: center;
+}
+
+.leader-tab:hover { color: var(--text-muted); }
+
+.leader-tab.active {
+  color: var(--accent-bright);
+  border-bottom-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.leader-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.leader-list::-webkit-scrollbar { width: 3px; }
+.leader-list::-webkit-scrollbar-track { background: transparent; }
+.leader-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.leader-empty {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.leader-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  cursor: pointer;
+}
+
+.leader-row:hover {
+  background: var(--bg-raised);
+  border-color: var(--border-subtle);
+}
+
+.leader-row--self,
+.leader-row--self:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent-border);
+}
+
+.leader-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 24px;
+  text-align: right;
+}
+
+.leader-rank--1 { color: #fde047; }
+.leader-rank--2 { color: #c0c8d8; }
+.leader-rank--3 { color: #c87941; }
+
+.leader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.leader-name {
+  font-size: 11px;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.leader-tier {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+.leader-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-bright);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.leader-label {
+  font-size: 8px;
+  color: var(--text-dim);
+  font-weight: 400;
+  letter-spacing: 0.1em;
 }

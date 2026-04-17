@@ -324,3 +324,120 @@
     color: var(--gold);
     font-weight: 600;
 }
+/* ── Top Sessions Leaderboard ───────────────────────────── */
+.dojo-leaderboard {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    padding: 14px 16px;
+    min-width: 240px;
+    max-width: 280px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin: 20px 20px 20px 0;
+}
+
+.dojo-lb-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #00d68f;
+    margin-bottom: 2px;
+}
+
+.dojo-lb-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+}
+
+.dojo-lb-empty {
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 12px 0;
+    text-align: center;
+}
+
+.dojo-lb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.dojo-lb-list::-webkit-scrollbar { width: 2px; }
+.dojo-lb-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.dojo-lb-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border: 1px solid transparent;
+    transition: all 0.12s;
+}
+
+.dojo-lb-row:hover { background: var(--bg-raised); border-color: var(--border-subtle); }
+
+.dojo-lb-row--self,
+.dojo-lb-row--self:hover {
+    background: rgba(0,214,143,0.05);
+    border-color: rgba(0,214,143,0.2);
+}
+
+.dojo-lb-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: 22px;
+    text-align: right;
+}
+.dojo-lb-rank--1 { color: #fde047; }
+.dojo-lb-rank--2 { color: #c0c8d8; }
+.dojo-lb-rank--3 { color: #c87941; }
+
+.dojo-lb-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+
+.dojo-lb-name {
+    font-size: 11px;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.dojo-lb-date {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+}
+
+.dojo-lb-pts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: #00d68f;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dojo-lb-pts-lbl {
+    font-size: 8px;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+}
+
+/* ── Leaderboard positioning in arena ───────────────────── */

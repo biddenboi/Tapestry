@@ -33,7 +33,7 @@ export default NiceModal.create(({ match, currentPlayerUUID, onOpenProfile }) =>
 
   const team1 = match.teams?.[0] || [];
   const team2 = match.teams?.[1] || [];
-  const myOnTeam1 = team1.some((player) => player.UUID === currentPlayerUUID);
+  const myOnTeam1 = team1.some((player) => String(player.UUID) === String(currentPlayerUUID));
   const winner = match.result?.winner;
   const outcome = winner == null ? 'In progress' : (winner === 1 && myOnTeam1) || (winner === 2 && !myOnTeam1) ? 'Victory' : 'Defeat';
 

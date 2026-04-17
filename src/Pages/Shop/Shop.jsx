@@ -1,7 +1,7 @@
 import './Shop.css';
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AppContext } from '../../App.jsx';
-import { STORES, ITEM_TYPE, COSMETIC_THEMES, COSMETIC_FONTS } from '../../utils/Constants.js';
+import { STORES, ITEM_TYPE, COSMETIC_THEMES, COSMETIC_FONTS, COSMETIC_PASSES } from '../../utils/Constants.js';
 import { calculateItemCost, SHOP_CATEGORIES } from '../../utils/Helpers/Shop.js';
 import { v4 as uuid } from 'uuid';
 
@@ -22,7 +22,8 @@ function EnjoymentDots({ level }) {
 }
 
 function ShopItemCard({ item, cartQty, onAdd, onRemove, onDelete }) {
-    const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
+    // Use stored cost; formula is fallback for legacy items
+    const cost = item.cost ?? calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
     const isDuration = item.type === ITEM_TYPE.duration;
 
     return (
@@ -68,9 +69,38 @@ function AddItemForm({ onAdd, onClose, categories }) {
         name: '', description: '', type: ITEM_TYPE.duration,
         duration: 30, quantity: 1, enjoyment: 1, category: categories[0] || 'Rest', icon: '⭐',
     });
+    const [costInput, setCostInput] = useState(
+        String(calculateItemCost(ITEM_TYPE.duration, 30, 1, 1))
+    );
+    const [costLocked, setCostLocked] = useState(false);
 
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-    const cost = calculateItemCost(form.type, form.duration, form.quantity, form.enjoyment);
+    const set = (k, v) => {
+        const next = { ...form, [k]: v };
+        setForm(next);
+        // Auto-update cost when relevant fields change and user hasn't overridden
+        if (!costLocked && (k === 'duration' || k === 'quantity' || k === 'enjoyment' || k === 'type')) {
+            const auto = calculateItemCost(
+                k === 'type'      ? v : next.type,
+                k === 'duration'  ? v : next.duration,
+                k === 'quantity'  ? v : next.quantity,
+                k === 'enjoyment' ? v : next.enjoyment,
+            );
+            setCostInput(String(auto));
+        }
+    };
+
+    const handleCostChange = (e) => {
+        setCostInput(e.target.value);
+        setCostLocked(true);
+    };
+
+    const resetCost = () => {
+        const auto = calculateItemCost(form.type, form.duration, form.quantity, form.enjoyment);
+        setCostInput(String(auto));
+        setCostLocked(false);
+    };
+
+    const finalCost = Math.max(1, parseInt(costInput, 10) || 1);
 
     return (
         <div className="add-item-overlay" onClick={onClose}>
@@ -116,10 +146,33 @@ function AddItemForm({ onAdd, onClose, categories }) {
                             <option value={3}>3 — High</option>
                         </select>
                     </label>
+                    <label className="span2 cost-label">
+                        <span className="cost-label-row">
+                            Token Cost
+                            {costLocked
+                                ? <span className="cost-badge cost-badge-manual">MANUAL</span>
+                                : <span className="cost-badge cost-badge-auto">AUTO</span>
+                            }
+                            {costLocked && (
+                                <button type="button" className="cost-reset-btn" onClick={resetCost}>↺ reset</button>
+                            )}
+                        </span>
+                        <div className="cost-input-wrap">
+                            <span className="cost-input-icon">◈</span>
+                            <input
+                                type="number"
+                                min={1}
+                                value={costInput}
+                                onChange={handleCostChange}
+                                className={costLocked ? 'cost-input-locked' : ''}
+                            />
+                        </div>
+                    </label>
                 </div>
                 <div className="form-footer">
-                    <span className="preview-cost">Cost preview: <strong>◈ {cost}</strong></span>
-                    <button type="button" className="primary" onClick={() => { onAdd(form); onClose(); }}>CREATE ITEM</button>
+                    <button type="button" className="primary" onClick={() => { onAdd({ ...form, cost: finalCost }); onClose(); }}>
+                        CREATE ITEM
+                    </button>
                 </div>
             </div>
         </div>
@@ -261,7 +314,7 @@ function Shop() {
     };
 
     const addToCart = (item) => {
-        const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
+        const cost = item.cost ?? calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
         setCart(prev => {
             const existing = prev.find(e => itemsMatch(e.item, item));
             if (existing) {
@@ -275,7 +328,7 @@ function Shop() {
     };
 
     const removeFromCart = (item, removeAll = false) => {
-        const cost = calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
+        const cost = item.cost ?? calculateItemCost(item.type, item.duration, item.quantity, item.enjoyment);
         setCart(prev => {
             const existing = prev.find(e => itemsMatch(e.item, item));
             if (!existing) return prev;
@@ -341,11 +394,10 @@ function Shop() {
     };
 
     const handleAddItem = async (formData) => {
-        const cost = calculateItemCost(formData.type, formData.duration, formData.quantity, formData.enjoyment);
         const created = {
             ...formData,
             UUID: uuid(),
-            cost,
+            cost: formData.cost ?? calculateItemCost(formData.type, formData.duration, formData.quantity, formData.enjoyment),
             duration: formData.type === ITEM_TYPE.duration ? parseFloat(formData.duration) : null,
             quantity: formData.type === ITEM_TYPE.quantity ? parseFloat(formData.quantity) : null,
             enjoyment: parseInt(formData.enjoyment, 10),
@@ -384,6 +436,19 @@ function Shop() {
                                 <div className="shop-grid">
                                     {COSMETIC_FONTS.map(f => (
                                         <CosmeticItem key={f.id} item={{ ...f, font: true }} owned={f.free || ownedCosmetics.includes(f.id)} onBuy={(item) => handleBuyCosmetic({ ...item, type: 'cosmetic_font' })} tokens={currentPlayer?.tokens ?? 0} />
+                                    ))}
+                                </div>
+                            </section>
+                            <section className="shop-category-section">
+                                <div className="category-label">PASSES</div>
+                                <div className="shop-grid">
+                                    {COSMETIC_PASSES.map(pass => (
+                                        <CosmeticItem key={pass.id}
+                                            item={{ id: pass.id, label: pass.label, cost: pass.cost, desc: pass.desc, icon: pass.icon }}
+                                            owned={ownedCosmetics.includes(pass.id) || ownedCosmetics.includes(pass.type)}
+                                            onBuy={() => handleBuyCosmetic({ id: pass.id, label: pass.label, cost: pass.cost, type: pass.type })}
+                                            tokens={currentPlayer?.tokens ?? 0}
+                                        />
                                     ))}
                                 </div>
                             </section>

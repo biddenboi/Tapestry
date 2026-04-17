@@ -1,4 +1,29 @@
-import { DAY, WEEK, STRING_DAYS } from '../Constants.js';
+import { DAY, HOUR, WEEK, STRING_DAYS } from '../Constants.js';
+
+/**
+ * Compute the current in-game time (ms) for a player.
+ * Active players accumulate time since utcTimeAtStart.
+ * Inactive players just return their stored inGameTime.
+ */
+export function getCurrentIGT(player) {
+  if (!player) return 0;
+  const base = player.inGameTime || 0;
+  if (!player.utcTimeAtStart) return base;
+  return base + (Date.now() - new Date(player.utcTimeAtStart).getTime());
+}
+
+/**
+ * Format in-game time (ms) as "Day N · HH:MM"
+ */
+export function formatInGameTime(ms) {
+  if (!ms && ms !== 0) return 'Day 1 · 00:00';
+  const safeMs = Math.max(0, ms);
+  const day = Math.floor(safeMs / DAY) + 1;
+  const rem = safeMs % DAY;
+  const hours = Math.floor(rem / HOUR);
+  const minutes = Math.floor((rem % HOUR) / 60000);
+  return `Day ${day} · ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
 
 export const timeAsHHMMSS = (ms = 0) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));

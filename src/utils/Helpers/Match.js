@@ -30,10 +30,15 @@ const GHOST_ACTIVITIES = [
   'working on linear algebra', 'reading case studies', 'memorizing flashcards',
 ];
 
-/** Returns a deterministic activity string for a ghost player at a given point in time */
+/** Returns a deterministic activity/task-name for a ghost player at a given point in time */
 export function getGhostActivity(ghost, elapsedRatio = 0) {
   const windowIndex = Math.floor(clamp(elapsedRatio, 0, 0.999) * 10);
   const seed = hashString(`${ghost.UUID}-act-${windowIndex}`);
+  // Use real task names from their history if available
+  if (ghost.recentTaskNames && ghost.recentTaskNames.length > 0) {
+    return ghost.recentTaskNames[seed % ghost.recentTaskNames.length];
+  }
+  // Fallback for synthetic ghosts: generic study activities
   return GHOST_ACTIVITIES[seed % GHOST_ACTIVITIES.length];
 }
 
@@ -58,6 +63,9 @@ async function estimateGhostPower(databaseConnection, player, durationHours) {
     pointsPerMs,
     estimatedTotal: Math.max(60, expectedTotal),
     isGenerated: false,
+    recentTaskNames: completed.filter((t) => t.name).map((t) => t.name).slice(0, 15),
+    playerTheme: player.activeCosmetics?.theme || 'default',
+    cardBanner: player.activeCosmetics?.cardBanner || null,
   };
 }
 

@@ -66,3 +66,14 @@ export function getRankGlow(elo = 0, size = 16) {
 export function getRankClass(elo = 0) {
   return getRank(elo).group.toLowerCase();
 }
+
+/**
+ * Returns the minimum elo of the current player's major rank group.
+ * e.g. Gold II (elo 750) → 675 (Gold I floor).
+ * Used to prevent dropping below a major rank boundary on a loss.
+ */
+export function getRankGroupFloor(elo = 0) {
+  const { group } = getRank(elo);
+  // TIERS is sorted ascending — the first entry for the group is the group's minimum
+  return TIERS.find((t) => t.group === group)?.minElo ?? 0;
+}

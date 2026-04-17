@@ -1,0 +1,314 @@
+.ps-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--background-dim);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.ps-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--box-shadow-lg);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ps-card-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.ps-card-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-top: 2px solid var(--accent-bright);
+  border-left: 2px solid var(--accent-bright);
+}
+
+.ps-card-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 16px;
+}
+
+/* ── Section ─────────────────────────────────────────────── */
+.ps-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-section--scroll {
+  min-height: 0;
+}
+
+.ps-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.ps-section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ps-new-btn {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent-bright);
+  background: transparent;
+  border: 1px solid var(--accent-border);
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.ps-new-btn:hover {
+  background: var(--accent-glow);
+}
+
+.ps-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 0 -4px;
+}
+
+/* ── Profile card ────────────────────────────────────────── */
+.ps-profile-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.14s ease;
+  color: var(--text);
+}
+
+.ps-profile-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-border);
+}
+
+.ps-profile-card--active {
+  border-color: var(--accent-border);
+  background: var(--accent-glow);
+}
+
+.ps-profile-card--active:hover {
+  background: var(--accent-glow);
+}
+
+.ps-profile-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ps-profile-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-profile-card-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-profile-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.ps-profile-card-rank {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ps-profile-card-igt {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.ps-profile-card-check {
+  font-size: 16px;
+  color: var(--accent-bright);
+  flex-shrink: 0;
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+.ps-search {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 9px 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.14s ease;
+}
+
+.ps-search:focus {
+  border-color: var(--accent-border);
+}
+
+.ps-search::placeholder {
+  color: var(--text-dim);
+}
+
+/* ── Profile list ────────────────────────────────────────── */
+.ps-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ps-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 20px 0;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* ── New profile form ────────────────────────────────────── */
+.ps-new-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.ps-new-form-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-bright);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.ps-new-input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.14s ease;
+}
+
+.ps-new-input:focus {
+  border-color: var(--accent-border);
+}
+
+.ps-new-input::placeholder {
+  color: var(--text-dim);
+}
+
+.ps-new-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.ps-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-transform: uppercase;
+}
+
+.ps-btn-secondary:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.ps-btn-primary {
+  background: var(--accent);
+  border: 1px solid transparent;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  text-transform: uppercase;
+}
+
+.ps-btn-primary:hover:not(:disabled) {
+  background: var(--accent-bright);
+}
+
+.ps-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

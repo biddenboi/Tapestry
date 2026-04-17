@@ -5,30 +5,38 @@ import { STORES } from '../../utils/Constants.js';
 import NiceModal from '@ebay/nice-modal-react';
 import InventoryItemPopup from '../../Modals/InventoryItemPopup/InventoryItemPopup.jsx';
 
-const COSMETIC_TYPES = new Set(['cosmetic_theme', 'cosmetic_font', 'cosmetic_banner']);
+const COSMETIC_TYPES = new Set(['cosmetic_theme', 'cosmetic_font', 'cosmetic_banner', 'cosmetic_card_banner', 'cosmetic_profile_banner', 'cosmetic_lobby_banner']);
 
 function CosmeticCard({ item, activeCosmetics, onToggle }) {
-  const isActive = item.type === 'cosmetic_theme'
+  const isPass = item.type === 'cosmetic_card_banner' || item.type === 'cosmetic_profile_banner';
+  const isActive = !isPass && (item.type === 'cosmetic_theme'
     ? activeCosmetics?.theme === item.itemId
     : item.type === 'cosmetic_font'
       ? activeCosmetics?.font === item.itemId
-      : false;
+      : false);
+
+  const iconMap = {
+    cosmetic_theme: '◈',
+    cosmetic_font:  '✎',
+    cosmetic_card_banner: '◉',
+    cosmetic_profile_banner: '⬡',
+  };
 
   return (
     <div className={`inv-card inv-cosmetic-card ${isActive ? 'inv-cosmetic-active' : ''}`}>
-      <div className="inv-card-icon">{item.type === 'cosmetic_theme' ? '◈' : item.type === 'cosmetic_font' ? '✎' : '⬡'}</div>
+      <div className="inv-card-icon">{iconMap[item.type] || '◈'}</div>
       <div className="inv-card-body">
         <span className="inv-card-name">{item.name}</span>
-        <span className="inv-card-cat">{item.type.replace('cosmetic_', '').toUpperCase()}</span>
+        <span className="inv-card-cat">{item.type.replace('cosmetic_', '').replace('_', ' ').toUpperCase()}</span>
       </div>
       <div className="inv-cosmetic-control">
-        <button
-          type="button"
-          className={`inv-toggle-btn ${isActive ? 'active' : ''}`}
-          onClick={() => onToggle(item, isActive)}
-        >
-          {isActive ? '✓ ACTIVE' : 'EQUIP'}
-        </button>
+        {isPass ? (
+          <span className="inv-pass-hint">Configure in Settings</span>
+        ) : (
+          <button type="button" className={`inv-toggle-btn ${isActive ? 'active' : ''}`} onClick={() => onToggle(item, isActive)}>
+            {isActive ? '✓ ACTIVE' : 'EQUIP'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -81,17 +89,19 @@ function Inventory() {
 
   const handleToggleCosmetic = async (item, isActive) => {
     if (!currentPlayer) return;
-    const key = item.type === 'cosmetic_theme' ? 'theme' : item.type === 'cosmetic_font' ? 'font' : null;
+    const typeMap = {
+      cosmetic_theme: 'theme',
+      cosmetic_font:  'font',
+    };
+    const key = typeMap[item.type];
+    // Pass items (card_banner, profile_banner) aren't toggleable here — managed in Settings
     if (!key) return;
 
     const newVal = isActive ? 'default' : (item.itemId || item.name?.toLowerCase());
     const updated = { ...currentPlayer, activeCosmetics: { ...(currentPlayer.activeCosmetics || {}), [key]: newVal } };
     await databaseConnection.add(STORES.player, updated);
     setCurrentPlayer(updated);
-
-    if (key === 'theme') {
-      document.documentElement.setAttribute('data-theme', newVal === 'default' ? '' : newVal);
-    }
+    if (key === 'theme') document.documentElement.setAttribute('data-theme', newVal === 'default' ? '' : newVal);
     refreshApp();
   };
 

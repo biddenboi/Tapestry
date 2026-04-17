@@ -1,6 +1,6 @@
 .game-hub {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 84px 1fr;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -30,9 +30,10 @@
     0deg,
     transparent,
     transparent 3px,
-    rgba(77,163,255,0.013) 3px,
-    rgba(77,163,255,0.013) 4px
+    var(--accent-glow) 3px,
+    var(--accent-glow) 4px
   );
+  opacity: 0.12;
   pointer-events: none;
 }
 
@@ -73,15 +74,15 @@
 
 .hub-nav-btn {
   width: 100%;
-  height: 50px;
+  height: 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-dim);
+  color: var(--text-muted);
   padding: 0;
   cursor: pointer;
   transition: all 0.14s ease;
@@ -94,7 +95,7 @@
 .hub-nav-btn:hover:not(:disabled) {
   background: var(--bg-raised);
   border-color: var(--border-subtle);
-  color: var(--text-muted);
+  color: var(--text);
   box-shadow: none;
 }
 
@@ -107,15 +108,16 @@
 }
 
 .hub-nav-icon {
-  font-size: 15px;
+  font-size: 19px;
   line-height: 1;
+  font-variant-emoji: text;
 }
 
 .hub-nav-label {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 7px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   line-height: 1;
 }
 
@@ -192,29 +194,30 @@
 
 /* ── Panel backdrop ──────────────────────────────────────── */
 .hub-panel-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(4,8,15,0.6);
-  backdrop-filter: blur(3px);
+  background: rgba(0,0,0,0.38);
   z-index: 90;
-  animation: fade-in 0.2s ease both;
+  animation: fade-in 0.15s ease both;
 }
 
 /* ── Slide-in panel ──────────────────────────────────────── */
 .hub-panel {
-  position: absolute;
+  position: fixed;
   top: 0; right: 0; bottom: 0;
-  width: min(520px, 92%);
+  width: min(520px, 92vw);
   background: var(--bg-surface);
   border-left: 1px solid var(--border);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: -12px 0 48px rgba(0,0,0,0.7);
-  animation: slide-right 0.26s cubic-bezier(0.22,1,0.36,1) both;
+  box-shadow: -12px 0 48px rgba(0,0,0,0.5);
+  animation: slide-right 0.24s cubic-bezier(0.22,1,0.36,1) both;
+  will-change: transform;
 }
 
-.hub-panel--full { left: 0; width: auto; }
+/* Full-width panels (shop, profile) start after the sidebar */
+.hub-panel--full { left: 84px; width: auto; }
 
 .hub-panel-close {
   position: absolute;
@@ -240,7 +243,67 @@
 
 .hub-panel-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Inbox panel variant ─────────────────────────────────── */
+.hub-panel--inbox {
+  width: min(380px, 92vw);
+}
+
+/* ── Inbox bell button ───────────────────────────────────── */
+.hub-inbox-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.14s ease;
+  border-radius: 4px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.hub-inbox-btn:hover {
+  background: var(--bg-raised);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.hub-inbox-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent-border);
+  color: var(--accent-bright);
+}
+
+.hub-inbox-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.hub-inbox-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+  box-shadow: 0 0 6px rgba(77,163,255,0.5);
 }

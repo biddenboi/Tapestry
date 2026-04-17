@@ -1,7 +1,8 @@
 /* App.css — game-hub overrides (global tokens live in index.css) */
 
 /* Remove old nav-bar animations if any linger */
-.nav-bar { display: none !important; }
+/* .nav-bar is a legacy element that should not render */
+.nav-bar { display: none; }
 
 /* Ensure full viewport coverage with no scrollbar on root */
 html, body, #root {

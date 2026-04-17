@@ -31,8 +31,8 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(4,8,15,0.4) 0%,
-    rgba(4,8,15,0.7) 60%,
+    transparent 0%,
+    var(--bg-surface) 60%,
     var(--bg-void) 100%
   );
 }
@@ -84,9 +84,8 @@
   align-items: center;
   gap: 5px;
   padding: 3px 10px;
-  background: rgba(4,8,15,0.6);
+  background: var(--bg-card);
   border: 1px solid;
-  backdrop-filter: blur(4px);
 }
 .profile-rank-badge.rank-iron      { border-color: rgba(136,146,160,0.4); }
 .profile-rank-badge.rank-bronze    { border-color: rgba(200,121,65,0.4); }
@@ -135,10 +134,49 @@
   color: var(--text-dim);
 }
 
-.profile-friend-btn {
+.profile-friend-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
   align-self: flex-end;
   margin-bottom: 4px;
+}
+
+.profile-friend-btn {
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 7px 14px;
+}
+
+.profile-friend-btn--pending {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 7px 14px;
+  cursor: default;
+  opacity: 0.7;
+}
+
+.profile-friend-btn--decline {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.profile-friend-btn--decline:hover {
+  background: var(--red-dim);
 }
 
 /* ── Grid ─────────────────────────────────────────────────── */
@@ -333,4 +371,165 @@
   .profile-hero-content { flex-direction: column; align-items: flex-start; }
   .profile-grid { padding: 0 16px 20px; }
   .profile-stats-row { flex-wrap: wrap; }
+}
+
+/* ── Banner overlay — stronger when custom bg set ─── */
+.profile-hero-overlay--strong {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, transparent 20%, var(--bg-void) 100%),
+    linear-gradient(180deg,
+      transparent 0%,
+      var(--bg-surface) 60%,
+      var(--bg-void) 100%
+    ) ;
+}
+
+/* Image banners: inner rim glow */
+.profile-hero--has-image {
+  box-shadow:
+    inset 0 0 0 1px var(--accent-border),
+    0 6px 24px var(--accent-glow);
+}
+
+/* Text on banners: use theme vars so contrast is correct on any theme */
+.profile-hero--has-banner .profile-name,
+.profile-hero--has-banner .profile-desc,
+.profile-hero--has-banner .prp-label,
+.profile-hero--has-banner .prb-label,
+.profile-hero--has-banner .rank-name,
+.profile-hero--has-banner .rank-progress-label {
+  color: var(--text-bright);
+}
+
+/* Edit banner button */
+.profile-banner-edit-btn {
+  position: absolute;
+  top: 12px;
+  right: 56px;
+  z-index: 2;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 5px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-bright);
+  cursor: pointer;
+  transition: all 0.14s;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.profile-banner-edit-btn:hover {
+  background: var(--accent-glow);
+  box-shadow: var(--glow-blue);
+  border: none;
+}
+
+/* ── Profile Banner Editor ──────────────────────────────── */
+.profile-banner-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.18s ease both;
+}
+
+.profile-banner-editor {
+  width: min(520px, 92vw);
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-surface));
+  border: 1px solid var(--border);
+  box-shadow: var(--box-shadow-lg);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  animation: modal-in 0.22s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.pbe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--accent-bright);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pbe-close {
+  background: transparent; border: none; color: var(--text-muted);
+  font-size: 12px; padding: 3px 6px; clip-path: none; cursor: pointer;
+}
+.pbe-close:hover { color: var(--red); background: transparent; box-shadow: none; border: none; }
+
+.pbe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.pbe-type-row { display: flex; gap: 6px; }
+.pbe-type-btn {
+  font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; padding: 5px 14px;
+}
+.pbe-type-btn.active {
+  background: var(--accent-glow); border-color: var(--accent-border); color: var(--accent-bright);
+}
+
+.pbe-gradient-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.pbe-gradient-chip {
+  height: 52px; border: 2px solid transparent; cursor: pointer;
+  transition: all 0.14s; clip-path: none; padding: 0; min-width: 0;
+}
+.pbe-gradient-chip:hover { border-color: var(--accent-bright); box-shadow: 0 0 12px var(--accent-glow); }
+.pbe-gradient-chip.selected { border-color: var(--accent-bright); box-shadow: 0 0 16px var(--accent-glow); }
+
+.pbe-color-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.pbe-color-chip {
+  height: 52px; border: 2px solid transparent; cursor: pointer;
+  transition: all 0.14s; clip-path: none; padding: 0; min-width: 0;
+}
+.pbe-color-chip:hover { border-color: var(--accent-bright); }
+.pbe-color-chip.selected { border-color: var(--accent-bright); }
+.pbe-color-custom {
+  height: 52px; width: 100%; cursor: pointer; border: 2px dashed var(--border);
+  background: var(--bg-raised); clip-path: none; padding: 0; grid-column: span 1;
+}
+
+.pbe-image-row { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.pbe-upload-label {
+  font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 7px 14px; background: var(--bg-raised); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; transition: all 0.14s;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  display: inline-block;
+}
+.pbe-upload-label:hover { border-color: var(--accent-border); color: var(--text-bright); background: var(--bg-hover); }
+.pbe-image-thumb { width: 100%; height: 80px; border: 1px solid var(--border); }
+
+.pbe-preview {
+  position: relative;
+  height: 72px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 14px 12px;
+  background: var(--bg-raised);
+}
+.pbe-preview-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(4,8,15,0.3) 0%, rgba(4,8,15,0.7) 100%);
+}
+.pbe-preview-name {
+  position: relative; z-index: 1;
+  font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700;
+  color: var(--text-bright); letter-spacing: 0.06em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+.pbe-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 14px 18px; border-top: 1px solid var(--border-subtle);
 }

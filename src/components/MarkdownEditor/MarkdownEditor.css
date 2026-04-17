@@ -168,7 +168,7 @@ em {
 /* Raw syntax (shown when cursor inside token) */
 .md-raw {
     opacity: 0.7;
-    font-style: normal !important;
+    font-style: normal;
     font-weight: inherit;
 }
 

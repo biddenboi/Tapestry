@@ -312,8 +312,8 @@
 .font-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 12px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   cursor: pointer;
@@ -322,8 +322,9 @@
   letter-spacing: 0;
   text-transform: none;
   color: var(--text-muted);
+  text-align: left;
 }
-.font-option:hover:not(.locked) {
+.font-option:hover:not(.locked):not(:disabled) {
   border-color: var(--accent-border);
   background: var(--bg-raised);
   box-shadow: 0 0 10px var(--accent-glow);
@@ -336,28 +337,54 @@
 .font-option.locked { opacity: 0.5; cursor: not-allowed; }
 
 .font-preview {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-bright);
   line-height: 1;
-  min-width: 28px;
+  min-width: 42px;
   text-align: center;
+  flex-shrink: 0;
+}
+
+.font-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .font-label {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  flex: 1;
+  color: var(--text-muted);
 }
+.font-option.active .font-label { color: var(--accent-bright); }
 
 .font-lock {
   font-size: 9px;
   color: var(--gold);
   font-family: 'JetBrains Mono', monospace;
 }
+
+.settings-font-preview-row {
+  padding: 10px 16px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  font-style: italic;
+}
+
+/* Light theme tag on swatch */
+.swatch-light-tag {
+  font-size: 10px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  opacity: 0.7;
+}
+.theme-swatch { position: relative; }
 
 /* ── Data section ──────────────────────────────────────────── */
 .settings-upload-row {
@@ -390,3 +417,167 @@
   color: var(--text-bright);
   background: var(--bg-hover);
 }
+
+/* ── Banner Editor ──────────────────────────────────────── */
+.banner-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.2s ease both;
+}
+
+.banner-editor {
+  width: min(480px, 92vw);
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-surface));
+  border: 1px solid var(--border);
+  box-shadow: var(--box-shadow-lg);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  animation: modal-in 0.22s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.be-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--accent-bright);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.be-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 3px 6px;
+  clip-path: none;
+  cursor: pointer;
+}
+.be-close:hover { color: var(--red); background: transparent; box-shadow: none; border: none; }
+
+.be-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.be-type-row { display: flex; gap: 6px; }
+.be-type-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 5px 12px;
+}
+.be-type-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent-border);
+  color: var(--accent-bright);
+}
+
+.be-gradients {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.be-gradient-chip, .be-color-chip {
+  height: 48px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.14s;
+  clip-path: none;
+  padding: 0;
+  min-width: 0;
+}
+.be-gradient-chip:hover, .be-color-chip:hover { border-color: var(--accent-bright); box-shadow: 0 0 12px var(--accent-glow); }
+.be-gradient-chip.selected, .be-color-chip.selected { border-color: var(--accent-bright); box-shadow: 0 0 16px var(--accent-glow); }
+
+.be-colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+.be-color-custom { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.be-custom-preview { width: 100%; height: 24px; border: 1px solid var(--border-subtle); }
+
+.be-image-upload { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.be-image-preview { width: 100%; height: 80px; background-size: cover; background-position: center; border: 1px solid var(--border); }
+
+.be-preview-wrap { display: flex; flex-direction: column; gap: 5px; }
+.be-preview-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+}
+
+.be-preview {
+  position: relative;
+  height: 60px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+.be-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4,8,15,0.55);
+}
+.be-preview-text {
+  position: relative;
+  z-index: 1;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+}
+
+.be-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Banner preview in settings rows */
+.banner-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.banner-thumb {
+  width: 80px; height: 40px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.banner-thumb--wide { width: 110px; }
+.banner-thumb-overlay { position: absolute; inset: 0; background: rgba(4,8,15,0.3); }
+.banner-thumb-none { font-family: 'Rajdhani', sans-serif; font-size: 9px; letter-spacing: 0.14em; color: var(--text-dim); }
+
+/* Locked pass rows */
+.settings-locked-pass {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.settings-locked-pass:last-child { border-bottom: none; }

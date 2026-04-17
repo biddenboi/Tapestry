@@ -134,6 +134,13 @@ class DatabaseConnection {
         todoStore.createIndex('parent', 'parent', { unique: false });
       }
     }
+
+    if (DATABASE_VERSION >= 6 && oldVersion < 6) {
+      this.createStore(STORES.chatMessage, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['playerUUID', 'playerUUID'],
+      ], event);
+    }
   }
 
   constructor() {
@@ -156,7 +163,7 @@ class DatabaseConnection {
 
   async getDataAsJSON() {
     await this.ready;
-    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications] = await Promise.all([
+    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages] = await Promise.all([
       this.getAll(STORES.task),
       this.getAll(STORES.player),
       this.getAll(STORES.journal),
@@ -168,9 +175,10 @@ class DatabaseConnection {
       this.getAll(STORES.match),
       this.getAll(STORES.friendship),
       this.getAll(STORES.notification),
+      this.getAll(STORES.chatMessage),
     ]);
 
-    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications };
+    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages };
     const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -199,6 +207,7 @@ class DatabaseConnection {
       matches: STORES.match,
       friendships: STORES.friendship,
       notifications: STORES.notification,
+      chatMessages: STORES.chatMessage,
     };
 
     for (const [key, storeName] of Object.entries(mapping)) {
@@ -258,6 +267,143 @@ class DatabaseConnection {
   }
 
 
+  /* ── Active Profile (localStorage) ─────────────────────── */
+
+  getActivePlayerUUID() {
+    return localStorage.getItem('tapestry_active_profile_uuid') || null;
+  }
+
+  setActivePlayerUUID(uuid) {
+    if (uuid) {
+      localStorage.setItem('tapestry_active_profile_uuid', uuid);
+    } else {
+      localStorage.removeItem('tapestry_active_profile_uuid');
+    }
+  }
+
+  async getCurrentPlayer() {
+    await this.ready;
+    // Try localStorage-tracked active profile first
+    const activeUUID = this.getActivePlayerUUID();
+    if (activeUUID) {
+      const player = await this.get(STORES.player, activeUUID);
+      if (player && !this.isLegacyBootstrapPlayer(player)) return player;
+    }
+    // Fallback: newest non-legacy player
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.player, 'readonly');
+      const objectStore = transaction.objectStore(STORES.player);
+      const request = objectStore.index('createdAt').openCursor(null, 'prev');
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) { resolve(null); return; }
+        if (this.isLegacyBootstrapPlayer(cursor.value)) { cursor.continue(); return; }
+        // Auto-register as active if nothing was set
+        this.setActivePlayerUUID(cursor.value.UUID);
+        resolve(cursor.value);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /* ── IGT helpers ────────────────────────────────────────── */
+
+  /** Snapshot IGT for a player and save, then activate a new player */
+  async switchProfile(fromPlayer, toPlayerUUID) {
+    const now = new Date().toISOString();
+    // Snapshot IGT for from-player
+    if (fromPlayer) {
+      const start = fromPlayer.utcTimeAtStart ? new Date(fromPlayer.utcTimeAtStart).getTime() : Date.now();
+      const accumulated = (fromPlayer.inGameTime || 0) + (Date.now() - start);
+      await this.add(STORES.player, { ...fromPlayer, inGameTime: accumulated, utcTimeAtStart: null });
+    }
+    // Activate to-player
+    const toPlayer = await this.get(STORES.player, toPlayerUUID);
+    if (toPlayer) {
+      await this.add(STORES.player, { ...toPlayer, utcTimeAtStart: now });
+    }
+    this.setActivePlayerUUID(toPlayerUUID);
+  }
+
+  /** Create a brand-new profile and make it active */
+  async createAndSwitchProfile(fromPlayer, newPlayerData) {
+    const now = new Date().toISOString();
+    if (fromPlayer) {
+      const start = fromPlayer.utcTimeAtStart ? new Date(fromPlayer.utcTimeAtStart).getTime() : Date.now();
+      const accumulated = (fromPlayer.inGameTime || 0) + (Date.now() - start);
+      await this.add(STORES.player, { ...fromPlayer, inGameTime: accumulated, utcTimeAtStart: null });
+    }
+    const newPlayer = { ...newPlayerData, inGameTime: 0, utcTimeAtStart: now, createdAt: now };
+    await this.add(STORES.player, newPlayer);
+    this.setActivePlayerUUID(newPlayer.UUID);
+    return newPlayer;
+  }
+
+  /* ── Chat ───────────────────────────────────────────────── */
+
+  async getChatMessages(currentPlayerIGT = Infinity, limit = 100) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.chatMessage, 'readonly');
+      const objectStore = transaction.objectStore(STORES.chatMessage);
+      const all = [];
+      // Collect all messages then filter — we can't index by inGameTimestamp efficiently
+      objectStore.index('createdAt').openCursor(null, 'prev').onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          all.push(cursor.value);
+          cursor.continue();
+        } else {
+          // Keep only messages whose IGT timestamp is <= the viewer's current IGT,
+          // then take the most recent `limit` of those, in chronological order.
+          const filtered = all
+            .filter((msg) => (msg.inGameTimestamp || 0) <= currentPlayerIGT)
+            .slice(0, limit)     // already newest-first from the cursor
+            .reverse();          // return oldest-first so chat renders top→bottom
+          resolve(filtered);
+        }
+      };
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  async sendChatMessage({ playerUUID, username, profilePicture, message, inGameTimestamp }) {
+    const entry = {
+      UUID: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      playerUUID,
+      username,
+      profilePicture: profilePicture || null,
+      message,
+      inGameTimestamp: inGameTimestamp || 0,
+      createdAt: new Date().toISOString(),
+    };
+    await this.add(STORES.chatMessage, entry);
+    return entry;
+  }
+
+  /* ── Friend Requests ────────────────────────────────────── */
+
+  async markNotificationRead(notifUUID) {
+    await this.ready;
+    const notif = await this.get(STORES.notification, notifUUID);
+    if (notif) {
+      await this.add(STORES.notification, { ...notif, readAt: new Date().toISOString() });
+    }
+  }
+
+  async getPendingFriendRequestsForPlayer(playerUUID) {
+    const friendships = await this.getFriendshipsForPlayer(playerUUID);
+    return friendships.filter(
+      (f) => f.status === 'pending' && f.requestedBy !== playerUUID
+    );
+  }
+
+  async getUnreadFriendRequestCount(playerUUID, currentPlayerIGT = Infinity) {
+    await this.ready;
+    const notifs = await this.getNotificationsForPlayer(playerUUID, currentPlayerIGT);
+    return notifs.filter((n) => n.kind === 'friend_request' && !n.readAt).length;
+  }
+
   isLegacyBootstrapPlayer(player) {
     if (!player) return false;
     return player.username === 'Agent'
@@ -265,28 +411,6 @@ class DatabaseConnection {
       && Number(player.tokens || 0) === 0
       && Number(player.minutesClearedToday || 0) === 0
       && Number(player.elo || 0) === 1000;
-  }
-
-  async getCurrentPlayer() {
-    await this.ready;
-    return new Promise((resolve, reject) => {
-      const transaction = this.database.transaction(STORES.player, 'readonly');
-      const objectStore = transaction.objectStore(STORES.player);
-      const request = objectStore.index('createdAt').openCursor(null, 'prev');
-      request.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (!cursor) {
-          resolve(null);
-          return;
-        }
-        if (this.isLegacyBootstrapPlayer(cursor.value)) {
-          cursor.continue();
-          return;
-        }
-        resolve(cursor.value);
-      };
-      request.onerror = () => reject(request.error);
-    });
   }
 
   async getAllPlayers() {
@@ -325,8 +449,12 @@ class DatabaseConnection {
     });
   }
 
-  async getNotificationsForPlayer(playerUUID) {
-    return this.getPlayerStore(STORES.notification, playerUUID);
+  async getNotificationsForPlayer(playerUUID, currentPlayerIGT = Infinity) {
+    const all = await this.getPlayerStore(STORES.notification, playerUUID);
+    // If no IGT ceiling, return everything (used internally for accept/decline lookups).
+    // Records with no inGameTimestamp (legacy/self-generated toasts) are always visible (treated as 0).
+    if (currentPlayerIGT === Infinity) return all;
+    return all.filter((n) => (n.inGameTimestamp || 0) <= currentPlayerIGT);
   }
 
   async searchPlayers(query) {

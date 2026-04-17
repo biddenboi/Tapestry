@@ -1,19 +1,20 @@
-import { useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useContext, useState, useEffect, useCallback } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import { GAME_STATE, STORES, MATCH_STATUS, HOUR } from '../../utils/Constants.js';
+import { GAME_STATE, STORES, MATCH_STATUS, HOUR, THEME_ACCENT_COLORS } from '../../utils/Constants.js';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import { getGhostScore, getGhostActivity } from '../../utils/Helpers/Match.js';
 import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
 import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
-import { getRankLabel, getRankGlow } from '../../utils/Helpers/Rank.js';
+import { getRank, getRankLabel, getRankClass, getRankGroupFloor } from '../../utils/Helpers/Rank.js';
 import './MatchArena.css';
 
+/* ── Timer hook ──────────────────────────────────────────── */
 function useMatchTimer(match) {
   const [remaining, setRemaining] = useState(null);
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed]     = useState(0);
 
   useEffect(() => {
     if (!match) { setRemaining(null); setElapsed(0); return undefined; }
@@ -32,27 +33,274 @@ function useMatchTimer(match) {
   return { remaining, elapsed };
 }
 
-/* ── Player node in the arena field ─────────────────────── */
-function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elapsedRatio }) {
-  const activity = player.isGenerated || !isCurrentPlayer
-    ? getGhostActivity(player, elapsedRatio)
-    : null;
-  const rankLabel = getRankLabel(player.elo || 0);
-  const glow = getRankGlow(player.elo || 0, 10);
+/* ── Banner style helper ─────────────────────────────────── */
+function getBannerStyle(cardBanner) {
+  if (!cardBanner) return null;
+  if (cardBanner.type === 'gradient') return { background: cardBanner.value };
+  if (cardBanner.type === 'color')    return { background: cardBanner.value };
+  if (cardBanner.type === 'image')    return { backgroundImage: `url(${cardBanner.value})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  return null;
+}
+
+/* ── Elo computation ─────────────────────────────────────── */
+/**
+ * Pure function — computes elo change and breakdown for every player.
+ * Winners:  +20 base + round(pct * 25) contribution [+ 5 overwhelm if diff > 300]
+ * Losers:   -20 base + round(pct * 15) recompensation
+ * Underdog: +round(20 * pct) if player is the lowest rank and everyone else is 150+ elo higher
+ */
+function computeEloChanges(teams, scores, forcedLoserTeamIdx = null) {
+  const allPlayers = [...teams[0], ...teams[1]];
+  const t1Total = teams[0].reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
+  const t2Total = teams[1].reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
+  const grandTotal = t1Total + t2Total;
+
+  let winnerTeamIdx = t1Total >= t2Total ? 0 : 1;
+  if (forcedLoserTeamIdx !== null) winnerTeamIdx = forcedLoserTeamIdx === 0 ? 1 : 0;
+
+  const overwhelm = Math.abs(t1Total - t2Total) > 300;
+
+  // Underdog: lowest elo player, only if ALL others are 150+ elo above them
+  const sortedByElo = [...allPlayers].sort((a, b) => (a.elo || 0) - (b.elo || 0));
+  const lowestPlayer = sortedByElo[0];
+  const lowestElo = lowestPlayer ? (lowestPlayer.elo || 0) : 0;
+  const allOthers150Plus = lowestPlayer && allPlayers
+    .filter(p => p.UUID !== lowestPlayer.UUID)
+    .every(p => (p.elo || 0) - lowestElo >= 150);
+  const underdogUUID = allOthers150Plus ? lowestPlayer.UUID : null;
+
+  const changes = {};
+
+  for (let ti = 0; ti < 2; ti++) {
+    const isWinnerTeam = ti === winnerTeamIdx;
+    for (const player of teams[ti]) {
+      const pts = Number(scores[player.UUID] || 0);
+      const pct = grandTotal > 0 ? pts / grandTotal : 0;
+      const pctDisplay = Math.round(pct * 100);
+
+      const breakdown = [];
+      let change;
+
+      if (isWinnerTeam) {
+        const contribBonus = Math.round(pct * 25);
+        change = 20 + contribBonus;
+        breakdown.push({ label: 'Win', value: +20 });
+        if (contribBonus > 0) breakdown.push({ label: `Contribution (${pctDisplay}%)`, value: +contribBonus });
+        if (overwhelm) { change += 5; breakdown.push({ label: 'Overwhelm bonus', value: +5 }); }
+      } else {
+        const recomp = Math.round(pct * 15);
+        change = -20 + recomp;
+        breakdown.push({ label: 'Loss', value: -20 });
+        if (recomp > 0) breakdown.push({ label: `Contribution (${pctDisplay}%)`, value: +recomp });
+      }
+
+      if (player.UUID === underdogUUID) {
+        const underdogBonus = Math.round(20 * pct);
+        if (underdogBonus > 0) { change += underdogBonus; breakdown.push({ label: 'Underdog bonus', value: +underdogBonus }); }
+      }
+
+      changes[player.UUID] = { change, breakdown, isWinner: isWinnerTeam };
+    }
+  }
+
+  return { changes, winnerTeamIdx, t1Total, t2Total };
+}
+
+/* ── Rank tier: drives visual intensity ──────────────────── */
+function getRankTier(elo = 0) {
+  const group = getRank(elo).group;
+  if (group === 'Radiant')                         return 'apex';
+  if (group === 'Immortal')                        return 'elite';
+  if (group === 'Ascendant')                       return 'high';
+  if (group === 'Diamond' || group === 'Platinum') return 'mid';
+  if (group === 'Gold'    || group === 'Silver')   return 'low';
+  return 'base';
+}
+
+/* ── Animated ELO counter ────────────────────────────────── */
+function AnimatedElo({ from, to, duration = 1800 }) {
+  const [display, setDisplay] = useState(from);
+  useEffect(() => {
+    const start = performance.now();
+    const diff  = to - from;
+    const frame = (now) => {
+      const t    = Math.min(1, (now - start) / duration);
+      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplay(Math.round(from + diff * ease));
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    const id = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(id);
+  }, [from, to, duration]);
+  return <>{display.toLocaleString()}</>;
+}
+
+/* ── Match End Screen overlay ────────────────────────────── */
+function MatchEndScreen({ match, currentPlayer, onReturn }) {
+  const result   = match.result || {};
+  const team1    = match.teams?.[0] || [];
+  const team2    = match.teams?.[1] || [];
+  // Use String coercion to match concludeMatch logic
+  const myOnT1   = team1.some(p => String(p.UUID) === String(currentPlayer?.UUID));
+  // Derive outcome from stored value; if undefined/null fall back to score comparison
+  const myTeamScoreRaw  = myOnT1 ? result.team1Total : result.team2Total;
+  const oppTeamScoreRaw = myOnT1 ? result.team2Total : result.team1Total;
+  const iWon     = result.iWon ?? (myTeamScoreRaw >= oppTeamScoreRaw);
+  const myTeam       = myOnT1 ? team1 : team2;
+  const oppTeam      = myOnT1 ? team2 : team1;
+  const myTeamScore  = myTeamScoreRaw;
+  const oppTeamScore = oppTeamScoreRaw;
+
+  const oldElo   = result.oldElo   ?? (Number(currentPlayer?.elo || 0) - (result.eloChange || 0));
+  const newElo   = result.newElo   ?? Number(currentPlayer?.elo || 0);
+  const breakdown = result.eloBreakdown || [];
+
+  const rankBefore = getRank(oldElo);
+  const rankAfter  = getRank(newElo);
+  const rankedUp   = rankAfter.minElo > rankBefore.minElo;
+  const rankColor  = rankAfter.color;
 
   return (
-    <div className={`apn ${isCurrentPlayer ? 'apn-self' : ''} ${isActive ? 'apn-active' : ''} apn-${side}`}>
-      <div className="apn-avatar-wrap" style={isCurrentPlayer ? { boxShadow: glow } : {}}>
+    <div className={`end-screen ${iWon ? 'end-screen-win' : 'end-screen-loss'}`}>
+      <div className="end-screen-scanlines" aria-hidden="true" />
+      <div className="end-screen-content">
+
+        {/* Outcome banner */}
+        <div className={`end-outcome-banner ${iWon ? 'eob-win' : 'eob-loss'}`}>
+          <span className="eob-icon">{iWon ? '▲' : '▼'}</span>
+          <span className="eob-label">
+            {iWon ? 'VICTORY' : (result.wasForfeited ? 'FORFEIT' : 'DEFEAT')}
+          </span>
+        </div>
+
+        {/* Team score breakdown */}
+        <div className="end-score-vs">
+          <div className="esv-side esv-mine">
+            <div className="esv-team-label">YOUR TEAM</div>
+            <div className="esv-score">{(myTeamScore || 0).toLocaleString()}</div>
+            <div className="esv-players">
+              {myTeam.map(p => (
+                <span key={p.UUID} className={`esv-player ${p.UUID === currentPlayer?.UUID ? 'esv-player-you' : ''}`}>
+                  {p.username}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className={`esv-vs-circle ${iWon ? 'esv-circle-win' : 'esv-circle-loss'}`}>VS</div>
+
+          <div className="esv-side esv-opp">
+            <div className="esv-team-label">OPPOSITION</div>
+            <div className="esv-score esv-score-opp">{(oppTeamScore || 0).toLocaleString()}</div>
+            <div className="esv-players">
+              {oppTeam.map(p => (
+                <span key={p.UUID} className="esv-player">{p.username}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Player ELO card */}
+        <div className={`end-player-card rank-tier-${getRankTier(newElo)}`} style={{ '--rank-color': rankColor }}>
+          <div className="epc-avatar-frame">
+            <ProfilePicture src={currentPlayer?.profilePicture} username={currentPlayer?.username} size={72} />
+            <div className="epc-avatar-ring" style={{ borderColor: rankColor, boxShadow: `0 0 18px ${rankColor}66` }} />
+            <div className="epc-rank-icon">{rankAfter.icon}</div>
+          </div>
+
+          <div className="epc-body">
+            <div className="epc-username" style={{ color: rankColor, textShadow: `0 0 24px ${rankColor}99` }}>
+              {currentPlayer?.username}
+            </div>
+
+            {rankedUp && (
+              <div className="epc-rankup">
+                ✦ RANK UP — {rankAfter.group.toUpperCase()}{rankAfter.sub ? ` ${rankAfter.sub}` : ''}
+              </div>
+            )}
+
+            <div className="epc-elo-transition">
+              <span className="epc-elo-old">{oldElo.toLocaleString()}</span>
+              <span className="epc-elo-arrow">→</span>
+              <span className="epc-elo-new" style={{ color: rankColor }}>
+                <AnimatedElo from={oldElo} to={newElo} />
+              </span>
+            </div>
+
+            <div className="epc-breakdown">
+              {breakdown.map((item, i) => (
+                <div
+                  key={i}
+                  className={`epc-bd-row ${item.value >= 0 ? 'bd-positive' : 'bd-negative'}`}
+                  style={{ animationDelay: `${0.35 + i * 0.08}s` }}
+                >
+                  <span className="bd-value">{item.value > 0 ? '+' : ''}{item.value}</span>
+                  <span className="bd-label">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button className="primary end-return-btn" onClick={onReturn}>
+          RETURN TO LOBBY →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Player node ─────────────────────────────────────────── */
+function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elapsedRatio, currentTaskName }) {
+  const rank       = getRank(player.elo || 0);
+  const rankLabel  = getRankLabel(player.elo || 0);
+  const rankTier   = getRankTier(player.elo || 0);
+  const accentColor = THEME_ACCENT_COLORS[player.playerTheme || 'default'] || '#4da3ff';
+  const bannerStyle = getBannerStyle(player.cardBanner);
+
+  // Outer glow scales with rank tier
+  const glowAlpha = { base: 0, low: 0.18, mid: 0.35, high: 0.55, elite: 0.72, apex: 0.9 }[rankTier];
+  const cardGlow  = glowAlpha > 0
+    ? `0 0 ${8 + glowAlpha * 22}px ${rank.glow}`
+    : undefined;
+
+  const activity = isCurrentPlayer
+    ? (currentTaskName || null)
+    : getGhostActivity(player, elapsedRatio);
+
+  return (
+    <div
+      className={`apn apn-${side} rank-tier-${rankTier} ${isCurrentPlayer ? 'apn-self' : ''} ${isActive ? 'apn-active' : ''}`}
+      style={{
+        '--apn-accent': accentColor,
+        '--rank-color': rank.color,
+        '--rank-glow':  rank.glow,
+        ...(cardGlow ? { boxShadow: cardGlow } : {}),
+        ...(bannerStyle || {}),
+      }}
+    >
+      {bannerStyle && <div className="apn-banner-overlay" />}
+      <div className="apn-avatar-wrap">
         <ProfilePicture src={player.profilePicture} username={player.username} size={48} />
         {isActive && <div className="apn-pulse-ring" />}
       </div>
       <div className="apn-info">
         <div className="apn-name-row">
-          <span className="apn-name">{player.username}</span>
+          <span
+            className="apn-name"
+            style={{
+              color: rank.color,
+              textShadow: glowAlpha > 0.3 ? `0 0 10px ${rank.glow}` : undefined,
+            }}
+          >
+            {player.username}
+          </span>
           {isCurrentPlayer && <span className="apn-tag apn-tag-you">YOU</span>}
           {player.isGenerated && <span className="apn-tag apn-tag-ghost">GHOST</span>}
         </div>
-        <div className="apn-rank">{rankLabel}</div>
+        <div className={`apn-rank rank-${getRankClass(player.elo || 0)}`}>
+          {rank.icon} {rankLabel}
+        </div>
         <div className="apn-score">{score.toLocaleString()} <span className="apn-pts">pts</span></div>
         {activity && <div className="apn-activity">→ {activity}</div>}
       </div>
@@ -61,79 +309,48 @@ function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elaps
 }
 
 /* ── SVG connector lines ─────────────────────────────────── */
-function ArenaConnector({ team1Pct, containerRef }) {
-  /* Fixed viewBox layout matching the CSS grid proportions */
+function ArenaConnector({ team1Pct }) {
   const W = 1000, H = 520;
   const leftX = 230, rightX = 770, centerX = 500, centerY = 260;
-  const playerYs = [90, 260, 430];
-
-  const myColor   = 'var(--accent-bright)';
-  const oppColor  = 'var(--red)';
-  const myOpacity = Math.max(0.25, team1Pct / 100);
-  const opOpacity = Math.max(0.25, (100 - team1Pct) / 100);
-
-  /* The gradient "winner" control: shift the midpoint of each line */
-  const midFrac = team1Pct / 100; /* 0–1 how far left team "owns" */
+  const playerYs  = [90, 260, 430];
+  const myOpacity  = Math.max(0.2, team1Pct / 100);
+  const oppOpacity = Math.max(0.2, (100 - team1Pct) / 100);
 
   return (
-    <svg
-      className="arena-connector-svg"
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
+    <svg className="arena-connector-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
       <defs>
         {playerYs.map((y, i) => (
           <linearGradient key={`gl${i}`} id={`gl${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={myColor} stopOpacity={myOpacity} />
-            <stop offset="100%" stopColor={myColor} stopOpacity={myOpacity * 0.2} />
+            <stop offset="0%" stopColor="#4da3ff" stopOpacity={myOpacity} />
+            <stop offset="100%" stopColor="#4da3ff" stopOpacity={myOpacity * 0.15} />
           </linearGradient>
         ))}
         {playerYs.map((y, i) => (
           <linearGradient key={`gr${i}`} id={`gr${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={oppColor} stopOpacity={opOpacity * 0.2} />
-            <stop offset="100%" stopColor={oppColor} stopOpacity={opOpacity} />
+            <stop offset="0%" stopColor="#ff3d57" stopOpacity={oppOpacity * 0.15} />
+            <stop offset="100%" stopColor="#ff3d57" stopOpacity={oppOpacity} />
           </linearGradient>
         ))}
       </defs>
-
-      {/* Left lines */}
       {playerYs.map((y, i) => (
-        <line
-          key={`l${i}`}
-          x1={leftX} y1={y}
-          x2={centerX} y2={centerY}
-          stroke={`url(#gl${i})`}
-          strokeWidth="1.5"
-        />
+        <line key={`l${i}`} x1={leftX} y1={y} x2={centerX} y2={centerY} stroke={`url(#gl${i})`} strokeWidth="1.5" />
       ))}
-
-      {/* Right lines */}
       {playerYs.map((y, i) => (
-        <line
-          key={`r${i}`}
-          x1={centerX} y1={centerY}
-          x2={rightX} y2={y}
-          stroke={`url(#gr${i})`}
-          strokeWidth="1.5"
-        />
+        <line key={`r${i}`} x1={centerX} y1={centerY} x2={rightX} y2={y} stroke={`url(#gr${i})`} strokeWidth="1.5" />
       ))}
-
-      {/* Center diamond outline */}
       <polygon
-        points={`${centerX},${centerY - 52} ${centerX + 52},${centerY} ${centerX},${centerY + 52} ${centerX - 52},${centerY}`}
-        fill="none"
-        stroke="var(--border)"
-        strokeWidth="1"
+        points={`${centerX},${centerY-52} ${centerX+52},${centerY} ${centerX},${centerY+52} ${centerX-52},${centerY}`}
+        fill="none" stroke="rgba(77,163,255,0.2)" strokeWidth="1"
       />
     </svg>
   );
 }
 
-/* ── Center score display ────────────────────────────────── */
+/* ── Center score diamond ─────────────────────────────────── */
 function CenterNode({ team1Total, team2Total, myOnTeam1 }) {
-  const grand = team1Total + team2Total;
-  const myPct = grand > 0 ? Math.round((myOnTeam1 ? team1Total : team2Total) / grand * 100) : 50;
+  const grand   = team1Total + team2Total;
+  const myTotal = myOnTeam1 ? team1Total : team2Total;
+  const myPct   = grand > 0 ? Math.round(myTotal / grand * 100) : 50;
   const isLeading = myPct > 50;
 
   return (
@@ -143,32 +360,33 @@ function CenterNode({ team1Total, team2Total, myOnTeam1 }) {
       </div>
       <div className="acn-label">{isLeading ? 'in the lead' : 'behind'}</div>
       <div className="acn-bar">
-        <div
-          className="acn-bar-fill"
-          style={{ width: `${myOnTeam1 ? (grand > 0 ? (team1Total / grand * 100) : 50) : (grand > 0 ? (team2Total / grand * 100) : 50)}%` }}
-        />
+        <div className="acn-bar-blue" style={{ width: `${myPct}%` }} />
+        <div className="acn-bar-red" />
+      </div>
+      <div className="acn-score-split">
+        <span className="acn-team-score acn-mine">{myTotal.toLocaleString()}</span>
+        <span className="acn-vs">vs</span>
+        <span className="acn-team-score acn-opp">{(grand - myTotal).toLocaleString()}</span>
       </div>
     </div>
   );
 }
 
+/* ── Main component ──────────────────────────────────────── */
 export default function MatchArena() {
   const {
-    databaseConnection,
-    timestamp,
-    currentPlayer,
-    refreshApp,
+    databaseConnection, timestamp, currentPlayer, refreshApp,
     gameState: [, setGameState],
     activeMatch: [activeMatch, setActiveMatch],
-    activeTask: [activeTask, setActiveTask],
+    activeTask:  [activeTask, setActiveTask],
     openPanel,
   } = useContext(AppContext);
 
   const { remaining, elapsed } = useMatchTimer(activeMatch);
-  const [scores, setScores] = useState({});
-  const [nextTodo, setNextTodo] = useState(null);
-  const [isConcluding, setIsConcluding] = useState(false);
-  const containerRef = useRef(null);
+  const [scores, setScores]               = useState({});
+  const [nextTodo, setNextTodo]           = useState(null);
+  const [isConcluding, setIsConcluding]   = useState(false);
+  const [showEndScreen, setShowEndScreen] = useState(false);
 
   const elapsedRatio = activeMatch
     ? Math.min(1, elapsed / (Number(activeMatch.duration || 1) * HOUR))
@@ -176,31 +394,36 @@ export default function MatchArena() {
 
   const buildScores = useCallback(async () => {
     if (!activeMatch || !currentPlayer) return null;
-    const nextScores = {};
-    const allPlayers = [...(activeMatch.teams?.[0] || []), ...(activeMatch.teams?.[1] || [])];
-
-    for (const player of allPlayers) {
-      if (player.UUID === currentPlayer.UUID) continue;
-      nextScores[player.UUID] = getGhostScore(player, activeMatch.createdAt, activeMatch.duration);
+    const next = {};
+    const all  = [...(activeMatch.teams?.[0] || []), ...(activeMatch.teams?.[1] || [])];
+    for (const p of all) {
+      if (p.UUID === currentPlayer.UUID) continue;
+      next[p.UUID] = getGhostScore(p, activeMatch.createdAt, activeMatch.duration);
     }
-
     const tasks = await databaseConnection.getStoreFromRange(STORES.task, activeMatch.createdAt, new Date().toISOString());
-    nextScores[currentPlayer.UUID] = tasks
-      .filter((task) => task.parent === currentPlayer.UUID)
-      .reduce((sum, task) => sum + Number(task.points || 0), 0);
-
-    return nextScores;
+    next[currentPlayer.UUID] = tasks
+      .filter((t) => t.parent === currentPlayer.UUID)
+      .reduce((s, t) => s + Number(t.points || 0), 0);
+    return next;
   }, [activeMatch, currentPlayer, databaseConnection]);
 
   const refreshScores = useCallback(async () => {
-    const nextScores = await buildScores();
-    if (!nextScores) return;
-    setScores(nextScores);
+    const next = await buildScores();
+    if (!next) return;
+    setScores(next);
     const todos = await databaseConnection.getAll(STORES.todo);
     setNextTodo(getNextTodo(todos, getWeights(todos)));
   }, [buildScores, databaseConnection]);
 
   useEffect(() => { refreshScores(); }, [refreshScores, timestamp]);
+
+  // Auto-show endscreen when match completes (give arena a beat to render first)
+  useEffect(() => {
+    if (activeMatch?.status === MATCH_STATUS.complete) {
+      const timer = setTimeout(() => setShowEndScreen(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [activeMatch?.status]);
 
   const concludeMatch = useCallback(async (forcedLoss = false) => {
     if (!activeMatch || !currentPlayer || isConcluding || activeMatch.status !== MATCH_STATUS.active) return;
@@ -212,45 +435,64 @@ export default function MatchArena() {
 
       const team1 = activeMatch.teams?.[0] || [];
       const team2 = activeMatch.teams?.[1] || [];
-      const myOnTeam1 = team1.some((p) => p.UUID === currentPlayer.UUID);
-      const team1Total = team1.reduce((s, p) => s + Number(finalScores[p.UUID] || 0), 0);
-      const team2Total = team2.reduce((s, p) => s + Number(finalScores[p.UUID] || 0), 0);
 
-      let winner = team1Total >= team2Total ? 1 : 2;
-      if (forcedLoss) winner = myOnTeam1 ? 2 : 1;
-      const iWon = (winner === 1 && myOnTeam1) || (winner === 2 && !myOnTeam1);
-      const eloChange = iWon ? 25 : -20;
+      // Player is always placed on teams[0] at match creation (see Lobby.jsx).
+      // Use String coercion for the UUID comparison to guard against number/string type drift.
+      const myOnTeam1 = team1.some((p) => String(p.UUID) === String(currentPlayer.UUID));
 
-      /* Update current player ELO */
+      const forcedLoserTeamIdx = forcedLoss ? (myOnTeam1 ? 0 : 1) : null;
+      const { changes, winnerTeamIdx, t1Total, t2Total } =
+        computeEloChanges([team1, team2], finalScores, forcedLoserTeamIdx);
+
+      // iWon: did the current player's team win?
+      // Since player is always on team1, this simplifies — but we keep the general form
+      // in case that ever changes, and cross-check with myOnTeam1.
+      const iWon = myOnTeam1
+        ? winnerTeamIdx === 0
+        : winnerTeamIdx === 1;
+      const myChange = changes[currentPlayer.UUID];
+
+      // Apply elo to current player, respecting the rank-group floor
       const player = await databaseConnection.getCurrentPlayer();
-      await databaseConnection.add(STORES.player, {
-        ...player,
-        elo: Math.max(0, Number(player.elo || 0) + eloChange),
-      });
+      const oldElo = Math.max(0, Number(player.elo || 0));
+      const floor  = getRankGroupFloor(oldElo);
+      const newElo = Math.max(floor, oldElo + (myChange?.change || 0));
+      await databaseConnection.add(STORES.player, { ...player, elo: newElo });
 
-      /* Update ghost players that are real player records */
-      const allRealPlayers = await databaseConnection.getAllPlayers();
-      const allTeamMembers = [...team1, ...team2];
-      for (const ghost of allTeamMembers) {
-        if (ghost.UUID === currentPlayer.UUID) continue;
+      // Apply elo to real ghost players (skip synthesised ghosts), with their own floor
+      const allReal = await databaseConnection.getAllPlayers();
+      for (const ghost of [...team1, ...team2]) {
+        if (String(ghost.UUID) === String(currentPlayer.UUID)) continue;
         if (String(ghost.UUID).startsWith('ghost-')) continue;
-        const realPlayer = allRealPlayers.find((rp) => rp.UUID === ghost.UUID);
-        if (!realPlayer) continue;
-        const ghostOnTeam1 = team1.some((p) => p.UUID === ghost.UUID);
-        const ghostWon = (winner === 1 && ghostOnTeam1) || (winner === 2 && !ghostOnTeam1);
+        const rp = allReal.find((r) => String(r.UUID) === String(ghost.UUID));
+        if (!rp) continue;
+        const gc = changes[ghost.UUID];
+        const ghostOldElo = Math.max(0, Number(rp.elo || 0));
+        const ghostFloor  = getRankGroupFloor(ghostOldElo);
         await databaseConnection.add(STORES.player, {
-          ...realPlayer,
-          elo: Math.max(0, Number(realPlayer.elo || 0) + (ghostWon ? 25 : -20)),
+          ...rp,
+          elo: Math.max(ghostFloor, ghostOldElo + (gc?.change || 0)),
         });
       }
 
-      const updatedMatch = {
+      const updated = {
         ...activeMatch,
         status: MATCH_STATUS.complete,
-        result: { winner, team1Total, team2Total, iWon, eloChange, concludedAt: new Date().toISOString() },
+        result: {
+          winner: winnerTeamIdx + 1,
+          team1Total: t1Total,
+          team2Total: t2Total,
+          iWon,
+          eloChange:    newElo - oldElo,
+          eloBreakdown: myChange?.breakdown || [],
+          oldElo,
+          newElo,
+          wasForfeited: forcedLoss,
+          concludedAt: new Date().toISOString(),
+        },
       };
-      await databaseConnection.add(STORES.match, updatedMatch);
-      setActiveMatch(updatedMatch);
+      await databaseConnection.add(STORES.match, updated);
+      setActiveMatch(updated);
       refreshApp();
     } finally {
       setIsConcluding(false);
@@ -258,60 +500,46 @@ export default function MatchArena() {
   }, [activeMatch, currentPlayer, isConcluding, buildScores, databaseConnection, refreshApp, setActiveMatch]);
 
   useEffect(() => {
-    if (!activeMatch || activeMatch.status !== MATCH_STATUS.active) return;
-    if (remaining === null) return;
+    if (!activeMatch || activeMatch.status !== MATCH_STATUS.active || remaining === null) return;
     if (remaining === 0) concludeMatch(false);
   }, [remaining, activeMatch, concludeMatch]);
 
-  const handleForfeit = async () => {
-    if (activeTask.createdAt) return;
-    if (!window.confirm('Forfeit match? You will lose ELO.')) return;
-    await concludeMatch(true);
-  };
+  if (!activeMatch) return null;
 
-  const handleExitCompleted = () => {
+  const team1      = activeMatch.teams?.[0] || [];
+  const team2      = activeMatch.teams?.[1] || [];
+  const t1Total    = team1.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
+  const t2Total    = team2.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
+  const grand      = t1Total + t2Total;
+  const team1Pct   = grand > 0 ? Math.round(t1Total / grand * 100) : 50;
+  const inTask     = !!activeTask.createdAt;
+  const myOnT1     = team1.some((p) => p.UUID === currentPlayer?.UUID);
+  const matchEnded = activeMatch.status !== MATCH_STATUS.active;
+  const iWon       = matchEnded && activeMatch.result?.iWon;
+  const currentTaskName = inTask ? (activeTask.name || null) : null;
+
+  const handleReturn = () => {
+    setShowEndScreen(false);
     setActiveMatch(null);
     setGameState(GAME_STATE.idle);
     refreshApp();
   };
 
-  const handleGetNext = async () => {
-    if (!nextTodo) return;
-    setActiveTask({ ...nextTodo, originalDuration: Number(nextTodo.estimatedDuration || 0) });
-    await databaseConnection.remove(STORES.todo, nextTodo.UUID);
-    refreshApp();
-    NiceModal.show(TaskPreviewMenu);
-  };
-
-  if (!activeMatch) return null;
-
-  const team1 = activeMatch.teams?.[0] || [];
-  const team2 = activeMatch.teams?.[1] || [];
-  const t1Total = team1.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const t2Total = team2.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const grand   = t1Total + t2Total;
-  const team1Pct = grand > 0 ? Math.round(t1Total / grand * 100) : 50;
-  const inTask   = !!activeTask.createdAt;
-  const myOnT1   = team1.some((p) => p.UUID === currentPlayer?.UUID);
-  const matchEnded = activeMatch.status !== MATCH_STATUS.active;
-  const iWon = matchEnded && activeMatch.result?.iWon;
-
   return (
     <div className={`match-arena ${matchEnded ? 'arena-ended' : ''}`}>
       <div className="arena-scanlines" aria-hidden="true" />
 
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* Header */}
       <div className="arena-header">
         <div className="arena-header-left">
           <div className="arena-status-dot" />
           <span className="arena-eyebrow">{matchEnded ? 'MATCH COMPLETE' : 'MATCH IN PROGRESS'}</span>
           <span className="arena-duration-badge">{activeMatch.duration}H MATCH</span>
         </div>
-
         <div className="arena-timer-wrap">
           {matchEnded ? (
             <span className={`arena-result-label ${iWon ? 'result-win' : 'result-loss'}`}>
-              {iWon ? '▲ VICTORY' : '▼ DEFEAT'}
+              {iWon ? '▲ VICTORY' : (activeMatch.result?.wasForfeited ? '▼ FORFEIT' : '▼ DEFEAT')}
               {activeMatch.result?.eloChange != null && (
                 <span className="result-elo">
                   {activeMatch.result.eloChange > 0 ? '+' : ''}{activeMatch.result.eloChange} ELO
@@ -325,79 +553,92 @@ export default function MatchArena() {
             </>
           )}
         </div>
-
         <div className="arena-header-right">
           {!matchEnded ? (
             <>
               <button onClick={() => NiceModal.show(TaskCreationMenu)}>+ TASK</button>
               <button onClick={() => openPanel('tasks')}>QUEUE</button>
-              <button className="primary" onClick={handleGetNext} disabled={!nextTodo || inTask}>↑ NEXT</button>
-              <button className="danger" onClick={handleForfeit} disabled={inTask || isConcluding}>FORFEIT</button>
+              <button className="primary" onClick={async () => {
+                if (!nextTodo || inTask) return;
+                setActiveTask({ ...nextTodo, originalDuration: Number(nextTodo.estimatedDuration || 0) });
+                await databaseConnection.remove(STORES.todo, nextTodo.UUID);
+                refreshApp();
+                NiceModal.show(TaskPreviewMenu);
+              }} disabled={!nextTodo || inTask}>↑ NEXT</button>
+              <button className="danger" onClick={async () => {
+                if (inTask || isConcluding) return;
+                if (!window.confirm('Forfeit match? You will lose ELO.')) return;
+                await concludeMatch(true);
+              }} disabled={inTask || isConcluding}>FORFEIT</button>
             </>
           ) : (
-            <button className="primary" onClick={handleExitCompleted}>RETURN TO LOBBY →</button>
+            <button className="primary" onClick={() => setShowEndScreen(true)}>
+              VIEW RESULTS
+            </button>
           )}
         </div>
       </div>
 
-      {/* ── Team score totals bar ────────────────────────────── */}
+      {/* Score bar */}
       <div className="arena-score-bar">
         <span className={`asb-total ${myOnT1 ? 'asb-my' : 'asb-opp'}`}>{t1Total.toLocaleString()}</span>
         <div className="asb-track">
-          <div className="asb-fill" style={{ width: `${team1Pct}%` }} />
-          <div className="asb-midmark" />
+          <div className="asb-fill-blue" style={{ width: `${team1Pct}%` }} />
+          <div className="asb-fill-red" />
         </div>
         <span className={`asb-total ${!myOnT1 ? 'asb-my' : 'asb-opp'}`}>{t2Total.toLocaleString()}</span>
       </div>
 
-      {/* ── Field: oval gestalt layout ────────────────────────── */}
-      <div className="arena-field" ref={containerRef}>
-        {/* SVG connection lines underneath players */}
-        <ArenaConnector team1Pct={team1Pct} containerRef={containerRef} />
+      {/* Field */}
+      <div className="arena-field">
+        <ArenaConnector team1Pct={team1Pct} />
 
-        {/* Left team */}
         <div className="arena-side arena-side--left">
           <div className="arena-side-label">YOUR TEAM</div>
-          {team1.map((player) => (
-            <ArenaPlayerNode
-              key={player.UUID}
-              player={player}
-              score={Number(scores[player.UUID] || 0)}
-              isCurrentPlayer={player.UUID === currentPlayer?.UUID}
-              isActive={player.UUID === currentPlayer?.UUID && inTask}
-              side="left"
-              elapsedRatio={elapsedRatio}
-            />
-          ))}
+          {team1.map((player) => {
+            const isMe = player.UUID === currentPlayer?.UUID;
+            const enriched = isMe ? {
+              ...player,
+              cardBanner:  currentPlayer?.activeCosmetics?.cardBanner  ?? player.cardBanner  ?? null,
+              playerTheme: currentPlayer?.activeCosmetics?.theme        ?? player.playerTheme ?? 'default',
+            } : player;
+            return (
+              <ArenaPlayerNode key={player.UUID} player={enriched} score={Number(scores[player.UUID] || 0)}
+                isCurrentPlayer={isMe} isActive={isMe && inTask}
+                side="left" elapsedRatio={elapsedRatio}
+                currentTaskName={isMe ? currentTaskName : null}
+              />
+            );
+          })}
         </div>
 
-        {/* Center */}
         <div className="arena-field-center">
           <CenterNode team1Total={t1Total} team2Total={t2Total} myOnTeam1={myOnT1} />
           {inTask && (
             <div className="arena-in-session-badge">
               <div className="arena-session-dot" />
-              SESSION ACTIVE
+              {currentTaskName ? currentTaskName.slice(0, 20) : 'SESSION ACTIVE'}
             </div>
           )}
         </div>
 
-        {/* Right team */}
         <div className="arena-side arena-side--right">
           <div className="arena-side-label arena-side-label--right">OPPOSITION</div>
           {team2.map((player) => (
-            <ArenaPlayerNode
-              key={player.UUID}
-              player={player}
-              score={Number(scores[player.UUID] || 0)}
+            <ArenaPlayerNode key={player.UUID} player={player} score={Number(scores[player.UUID] || 0)}
               isCurrentPlayer={player.UUID === currentPlayer?.UUID}
               isActive={false}
-              side="right"
-              elapsedRatio={elapsedRatio}
+              side="right" elapsedRatio={elapsedRatio}
+              currentTaskName={null}
             />
           ))}
         </div>
       </div>
+
+      {/* End screen overlay */}
+      {showEndScreen && matchEnded && (
+        <MatchEndScreen match={activeMatch} currentPlayer={currentPlayer} onReturn={handleReturn} />
+      )}
     </div>
   );
 }

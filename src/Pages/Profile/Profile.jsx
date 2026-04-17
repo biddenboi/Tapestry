@@ -5,13 +5,28 @@ import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { STORES } from '../../utils/Constants.js';
 import ProfilePicture from '../../components/ProfilePicture/ProfilePicture.jsx';
-import { UTCStringToLocalDate, UTCStringToLocalTime, formatDuration } from '../../utils/Helpers/Time.js';
+import { UTCStringToLocalDate, UTCStringToLocalTime, formatDuration, getCurrentIGT, formatInGameTime } from '../../utils/Helpers/Time.js';
 import { getTaskDuration } from '../../utils/Helpers/Tasks.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
+import { BANNER_GRADIENTS } from '../../utils/Constants.js';
 import TodoDetailModal from '../../Modals/TodoDetailModal/TodoDetailModal.jsx';
 import JournalDetailModal from '../../Modals/JournalDetailModal/JournalDetailModal.jsx';
 import MatchDetailsModal from '../../Modals/MatchDetailsModal/MatchDetailsModal.jsx';
 import EventDetailModal from '../../Modals/EventDetailModal/EventDetailModal.jsx';
+
+/**
+ * Derives match outcome from the perspective of a specific player UUID.
+ * Uses team membership + stored winner field — works correctly on any player's
+ * profile, not just the logged-in viewer's.
+ */
+function matchOutcomeFor(match, playerUUID) {
+  if (match.status === 'active') return 'live';
+  const winner = match.result?.winner;
+  if (winner == null) return 'loss';
+  const team1 = match.teams?.[0] || [];
+  const onTeam1 = team1.some((p) => String(p.UUID) === String(playerUUID));
+  return (winner === 1 && onTeam1) || (winner === 2 && !onTeam1) ? 'win' : 'loss';
+}
 
 function HistoryItem({ item, onOpen }) {
   const iconMap = { task: 'TSK', journal: 'JNL', event: 'EVT' };
@@ -53,6 +68,99 @@ function PlayerRow({ entry, active, onClick }) {
   );
 }
 
+/* ── Inline Profile Banner Editor ───────────────────────── */
+function ProfileBannerEditor({ current, onSave, onClose }) {
+  const [type, setType]     = useState(current?.type || 'gradient');
+  const [value, setValue]   = useState(current?.type === 'gradient' ? current.value : BANNER_GRADIENTS[0].value);
+  const [colorVal, setColorVal] = useState(current?.type === 'color' ? current.value : '#0d1b2a');
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setValue(ev.target.result); };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    if (type === 'gradient') onSave({ type: 'gradient', value });
+    else if (type === 'color') onSave({ type: 'color', value: colorVal });
+    else if (type === 'image' && value) onSave({ type: 'image', value });
+  };
+
+  const previewStyle = type === 'gradient' ? { background: value }
+    : type === 'color' ? { background: colorVal }
+    : type === 'image' && value ? { backgroundImage: `url(${value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
+
+  return (
+    <div className="profile-banner-editor-overlay" onClick={onClose}>
+      <div className="profile-banner-editor" onClick={(e) => e.stopPropagation()}>
+        <div className="pbe-header">
+          <span>PROFILE BANNER</span>
+          <button className="pbe-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="pbe-body">
+          <div className="pbe-type-row">
+            {['gradient', 'color', 'image'].map((t) => (
+              <button key={t} className={`pbe-type-btn ${type === t ? 'active' : ''}`} onClick={() => setType(t)}>
+                {t.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {type === 'gradient' && (
+            <div className="pbe-gradient-grid">
+              {BANNER_GRADIENTS.map((g) => (
+                <button key={g.id}
+                  className={`pbe-gradient-chip ${value === g.value ? 'selected' : ''}`}
+                  style={{ background: g.value }}
+                  onClick={() => setValue(g.value)}
+                  title={g.label}
+                />
+              ))}
+            </div>
+          )}
+
+          {type === 'color' && (
+            <div className="pbe-color-grid">
+              {['#0d1b2a','#1a0507','#0a1a0d','#09090f','#1a0800','#1a1a2e','#100840','#1a1040'].map((c) => (
+                <button key={c}
+                  className={`pbe-color-chip ${colorVal === c ? 'selected' : ''}`}
+                  style={{ background: c }}
+                  onClick={() => setColorVal(c)}
+                />
+              ))}
+              <input type="color" value={colorVal} onChange={(e) => setColorVal(e.target.value)}
+                className="pbe-color-custom" title="Custom color" />
+            </div>
+          )}
+
+          {type === 'image' && (
+            <div className="pbe-image-row">
+              <input type="file" accept="image/*" id="profile-banner-upload" style={{ display: 'none' }}
+                onChange={handleImageUpload} />
+              <label htmlFor="profile-banner-upload" className="pbe-upload-label">CHOOSE IMAGE</label>
+              {value && type === 'image' && (
+                <div className="pbe-image-thumb" style={{ backgroundImage: `url(${value})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+              )}
+            </div>
+          )}
+
+          <div className="pbe-preview" style={previewStyle}>
+            <div className="pbe-preview-overlay" />
+            <span className="pbe-preview-name">Your Name</span>
+          </div>
+        </div>
+        <div className="pbe-footer">
+          <button onClick={onClose}>CANCEL</button>
+          <button className="primary" onClick={handleSave}>APPLY BANNER</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Profile({ uuid: targetUUID }) {
   const { databaseConnection, currentPlayer, timestamp, refreshApp, notify, openPanel } = useContext(AppContext);
   const [player, setPlayer]       = useState(null);
@@ -62,6 +170,8 @@ export default function Profile({ uuid: targetUUID }) {
   const [players, setPlayers]     = useState([]);
   const [matches, setMatches]     = useState([]);
   const [friendship, setFriendship] = useState(null);
+  const [ownedPassIds, setOwnedPassIds] = useState(new Set());
+  const [showBannerEditor, setShowBannerEditor] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -72,14 +182,16 @@ export default function Profile({ uuid: targetUUID }) {
       setPlayer(viewed || null);
       if (!viewed) return;
 
-      const [tasks, journals, events, matchList, allPlayers, friendships] = await Promise.all([
+      const [tasks, journals, events, matchList, allPlayers, friendships, inv] = await Promise.all([
         databaseConnection.getPlayerStore(STORES.task, viewed.UUID),
         databaseConnection.getPlayerStore(STORES.journal, viewed.UUID),
         databaseConnection.getPlayerStore(STORES.event, viewed.UUID),
         databaseConnection.getMatchesForPlayer(viewed.UUID),
         databaseConnection.getAllPlayers(),
         currentPlayer?.UUID ? databaseConnection.getFriendshipsForPlayer(currentPlayer.UUID) : Promise.resolve([]),
+        currentPlayer?.UUID ? databaseConnection.getPlayerStore(STORES.inventory, currentPlayer.UUID) : Promise.resolve([]),
       ]);
+      setOwnedPassIds(new Set(inv.map((i) => i.type).concat(inv.map((i) => i.itemId || i.name?.toLowerCase()))));
 
       const cleanedPlayers = allPlayers
         .filter((e) => e?.UUID)
@@ -98,7 +210,16 @@ export default function Profile({ uuid: targetUUID }) {
 
       setPlayers(cleanedPlayers);
       setFriends(cleanedPlayers.filter((e) => friendUUIDs.has(e.UUID)));
-      setFriendship(friendships.find((e) => e.players?.includes(viewed.UUID) && e.players?.includes(currentPlayer?.UUID)) || null);
+      // Gate pending requests by IGT: the recipient shouldn't see a request until
+      // their in-game time has reached the moment it was sent.
+      // The sender always sees it immediately (they know what they did).
+      const currentIGT = getCurrentIGT(currentPlayer);
+      const visibleFriendship = friendships.find((e) => {
+        if (!e.players?.includes(viewed.UUID) || !e.players?.includes(currentPlayer?.UUID)) return false;
+        if (e.requestedBy === currentPlayer.UUID) return true; // sender always sees it
+        return currentIGT >= (e.inGameTimestamp || 0);        // recipient waits for IGT
+      });
+      setFriendship(visibleFriendship || null);
       setHistory(combined);
       setMatches(matchList.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 10));
     };
@@ -112,17 +233,73 @@ export default function Profile({ uuid: targetUUID }) {
     return pool.filter((e) => String(e.username || '').toLowerCase().includes(q) || String(e.description || '').toLowerCase().includes(q)).slice(0, 8);
   }, [players, player, search]);
 
-  const isSelf     = player?.UUID === currentPlayer?.UUID;
-  const accepted   = friendship?.status === 'accepted';
+  const isSelf        = player?.UUID === currentPlayer?.UUID;
+  const accepted      = friendship?.status === 'accepted';
+  const isPending     = friendship?.status === 'pending';
+  const iRequested    = isPending && friendship?.requestedBy === currentPlayer?.UUID;
+  const theyRequested = isPending && friendship?.requestedBy === player?.UUID;
+  const hasBannerPass = ownedPassIds.has('cosmetic_profile_banner') || ownedPassIds.has('profile_banner');
   const totalPoints = useMemo(() => history.filter((i) => i.type === 'task').reduce((s, i) => s + Number(i.points || 0), 0), [history]);
 
+  // Send a friend request (pending)
   const handleAddFriend = async () => {
-    if (!player || !currentPlayer || isSelf || accepted) return;
-    const record = friendship || { UUID: uuid(), createdAt: new Date().toISOString(), players: [currentPlayer.UUID, player.UUID] };
-    await databaseConnection.add(STORES.friendship, { ...record, requestedBy: currentPlayer.UUID, status: 'accepted', acceptedAt: new Date().toISOString() });
-    await databaseConnection.add(STORES.notification, { UUID: uuid(), parent: currentPlayer.UUID, title: 'Friend added', message: `${player.username} joined your friends list.`, kind: 'success', createdAt: new Date().toISOString(), readAt: null });
+    if (!player || !currentPlayer || isSelf || accepted || isPending) return;
+    const now = new Date().toISOString();
+    const senderIGT = getCurrentIGT(currentPlayer);
+    const record = { UUID: uuid(), createdAt: now, players: [currentPlayer.UUID, player.UUID], requestedBy: currentPlayer.UUID, status: 'pending', inGameTimestamp: senderIGT };
+    await databaseConnection.add(STORES.friendship, record);
+    // Notify the recipient — only delivered once their IGT reaches senderIGT
+    await databaseConnection.add(STORES.notification, {
+      UUID: uuid(),
+      parent: player.UUID,
+      title: 'Friend Request',
+      message: `${currentPlayer.username} wants to be your friend.`,
+      kind: 'friend_request',
+      createdAt: now,
+      readAt: null,
+      inGameTimestamp: senderIGT,
+      meta: { friendshipUUID: record.UUID, requesterUUID: currentPlayer.UUID },
+    });
     refreshApp();
-    notify({ title: 'Friend added', message: `${player.username} joined your friends list.`, kind: 'success', persist: false });
+    notify({ title: 'Request sent', message: `Friend request sent to ${player.username}.`, kind: 'info', persist: false });
+  };
+
+  // Accept an incoming request
+  const handleAccept = async () => {
+    if (!friendship || !currentPlayer || !player) return;
+    const now = new Date().toISOString();
+    const accepterIGT = getCurrentIGT(currentPlayer);
+    await databaseConnection.add(STORES.friendship, { ...friendship, status: 'accepted', acceptedAt: now });
+    // Mark the inbox notification as read (use Infinity so we find it regardless of IGT)
+    const notifs = await databaseConnection.getNotificationsForPlayer(currentPlayer.UUID);
+    const reqNotif = notifs.find((n) => n.meta?.friendshipUUID === friendship.UUID);
+    if (reqNotif) await databaseConnection.markNotificationRead(reqNotif.UUID);
+    // Send acceptance notification back to the requester — delivered once their IGT reaches accepterIGT
+    await databaseConnection.add(STORES.notification, {
+      UUID: uuid(),
+      parent: player.UUID,
+      title: 'Friend Request Accepted',
+      message: `${currentPlayer.username} accepted your friend request. (${formatInGameTime(accepterIGT)})`,
+      kind: 'success',
+      createdAt: now,
+      readAt: null,
+      inGameTimestamp: accepterIGT,
+      meta: { friendshipUUID: friendship.UUID },
+    });
+    refreshApp();
+    notify({ title: 'Friends!', message: `You and ${player.username} are now friends.`, kind: 'success', persist: false });
+  };
+
+  // Decline an incoming request
+  const handleDecline = async () => {
+    if (!friendship || !currentPlayer) return;
+    const now = new Date().toISOString();
+    await databaseConnection.remove(STORES.friendship, friendship.UUID);
+    const notifs = await databaseConnection.getNotificationsForPlayer(currentPlayer.UUID);
+    const reqNotif = notifs.find((n) => n.meta?.friendshipUUID === friendship.UUID);
+    if (reqNotif) await databaseConnection.markNotificationRead(reqNotif.UUID);
+    refreshApp();
+    notify({ title: 'Request declined', message: `You declined ${player.username}'s friend request.`, kind: 'info', persist: false });
   };
 
   const openHistoryItem = (item) => {
@@ -140,11 +317,36 @@ export default function Profile({ uuid: targetUUID }) {
   const rankClass = getRankClass(elo);
   const rankGlow  = getRankGlow(elo, 20);
 
+  const profileBanner = player?.activeCosmetics?.profileBanner;
+  const heroBgStyle = profileBanner
+    ? profileBanner.type === 'gradient' ? { background: profileBanner.value }
+    : profileBanner.type === 'color'    ? { background: profileBanner.value }
+    : profileBanner.type === 'image'    ? { backgroundImage: `url(${profileBanner.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {}
+    : {};
+
+  const saveBanner = async (val) => {
+    if (!player || !isSelf) return;
+    const updated = { ...player, activeCosmetics: { ...(player.activeCosmetics || {}), profileBanner: val } };
+    await databaseConnection.add(STORES.player, updated);
+    setPlayer(updated);
+    refreshApp();
+    setShowBannerEditor(false);
+  };
+
   return (
     <div className="profile-page">
-      {/* ── Banner / hero ──────────────────────────────────── */}
-      <div className="profile-hero" style={player.bannerImage ? { backgroundImage: `url(${player.bannerImage})` } : {}}>
-        <div className="profile-hero-overlay" />
+      {/* ── Hero ── */}
+      <div
+        className={`profile-hero ${profileBanner ? 'profile-hero--has-banner' : ''} ${profileBanner?.type === 'image' ? 'profile-hero--has-image' : ''}`}
+        style={heroBgStyle}
+      >
+        <div className={`profile-hero-overlay ${profileBanner ? 'profile-hero-overlay--strong' : ''}`} />
+        {isSelf && hasBannerPass && (
+          <button className="profile-banner-edit-btn" onClick={() => setShowBannerEditor(true)}>
+            ✎ EDIT BANNER
+          </button>
+        )}
         <div className="profile-hero-content">
           <div className="profile-avatar-wrap" style={{ boxShadow: rankGlow }}>
             <ProfilePicture
@@ -177,9 +379,23 @@ export default function Profile({ uuid: targetUUID }) {
             </div>
           </div>
           {!isSelf && (
-            <button className="primary profile-friend-btn" onClick={handleAddFriend} disabled={accepted}>
-              {accepted ? '✓ FRIEND' : '+ ADD FRIEND'}
-            </button>
+            <div className="profile-friend-actions">
+              {accepted && (
+                <button className="primary profile-friend-btn" disabled>✓ FRIENDS</button>
+              )}
+              {iRequested && (
+                <button className="profile-friend-btn profile-friend-btn--pending" disabled>⏳ REQUEST SENT</button>
+              )}
+              {theyRequested && (
+                <>
+                  <button className="primary profile-friend-btn" onClick={handleAccept}>✓ ACCEPT</button>
+                  <button className="profile-friend-btn profile-friend-btn--decline" onClick={handleDecline}>✕ DECLINE</button>
+                </>
+              )}
+              {!accepted && !isPending && (
+                <button className="primary profile-friend-btn" onClick={handleAddFriend}>+ ADD FRIEND</button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -224,10 +440,10 @@ export default function Profile({ uuid: targetUUID }) {
                   ? <div className="profile-empty-row">No matches recorded.</div>
                   : matches.map((match) => (
                     <button key={match.UUID} className="profile-match-row"
-                      onClick={() => NiceModal.show(MatchDetailsModal, { match, currentPlayerUUID: currentPlayer?.UUID, onOpenProfile: (id) => openPanel('profile', id) })}
+                      onClick={() => NiceModal.show(MatchDetailsModal, { match, currentPlayerUUID: targetUUID, onOpenProfile: (id) => openPanel('profile', id) })}
                     >
-                      <span className={`pmr-result ${match.status === 'active' ? 'live' : match.result?.iWon ? 'win' : 'loss'}`}>
-                        {match.status === 'active' ? 'LIVE' : match.result?.iWon ? 'WIN' : 'LOSS'}
+                      <span className={`pmr-result ${matchOutcomeFor(match, targetUUID)}`}>
+                        {matchOutcomeFor(match, targetUUID).toUpperCase()}
                       </span>
                       <span className="pmr-info">{match.duration}h match</span>
                       <span className="pmr-date">{UTCStringToLocalDate(match.createdAt)}</span>
@@ -266,6 +482,15 @@ export default function Profile({ uuid: targetUUID }) {
           </div>
         </div>
       </div>
+
+      {/* Inline banner editor for profile hero */}
+      {showBannerEditor && (
+        <ProfileBannerEditor
+          current={profileBanner}
+          onSave={saveBanner}
+          onClose={() => setShowBannerEditor(false)}
+        />
+      )}
     </div>
   );
 }

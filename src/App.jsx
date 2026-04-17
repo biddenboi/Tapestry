@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import './App.css';
 import DatabaseConnection from './network/DatabaseConnection.js';
 import { SECOND, GAME_STATE, STORES } from './utils/Constants.js';
+import { getCurrentIGT } from './utils/Helpers/Time.js';
 import { useInterval } from './utils/useInterval.js';
 import NiceModal from '@ebay/nice-modal-react';
 import GameHub from './components/GameHub/GameHub.jsx';
@@ -56,7 +57,8 @@ function App() {
       setCurrentPlayer(player || null);
 
       if (player?.UUID && typeof databaseConnection.getNotificationsForPlayer === 'function') {
-        const playerNotifications = await databaseConnection.getNotificationsForPlayer(player.UUID);
+        const playerIGT = getCurrentIGT(player);
+        const playerNotifications = await databaseConnection.getNotificationsForPlayer(player.UUID, playerIGT);
         playerNotifications.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
         setNotifications(playerNotifications);
       } else {

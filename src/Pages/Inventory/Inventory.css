@@ -297,3 +297,12 @@
 }
 
 .inv-section-label--cosmetics { color: var(--purple); }
+
+.inv-pass-hint {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-dim);
+  white-space: nowrap;
+}

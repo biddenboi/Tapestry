@@ -35,6 +35,7 @@ export default function PracticeDojo() {
     const [todoCount, setTodoCount]         = useState(0);
     const [nextTodo, setNextTodo]           = useState(null);
     const [taskHistory, setTaskHistory]     = useState([]);
+    const [topSessions, setTopSessions]     = useState([]);
 
     const elapsed = useSessionTimer(sessionStart);
 
@@ -58,6 +59,24 @@ export default function PracticeDojo() {
             const weights = getWeights(todos);
             setNextTodo(getNextTodo(todos, weights));
             setTodoCount(todos.length);
+
+            // Top sessions: best single-day point totals across all players
+            const allPlayers = await databaseConnection.getAllPlayers();
+            const playerMap  = Object.fromEntries(allPlayers.map((p) => [p.UUID, p]));
+            const allTasks   = await databaseConnection.getAll(STORES.task);
+            const dayMap = {};
+            allTasks.filter((t) => t.completedAt && t.parent).forEach((t) => {
+                const day = t.completedAt.split('T')[0];
+                const key = `${t.parent}__${day}`;
+                if (!dayMap[key]) dayMap[key] = { playerUUID: t.parent, day, points: 0 };
+                dayMap[key].points += (t.points || 0);
+            });
+            const sessions = Object.values(dayMap)
+                .sort((a, b) => b.points - a.points)
+                .slice(0, 10)
+                .map((s) => ({ ...s, player: playerMap[s.playerUUID] }))
+                .filter((s) => s.player);
+            setTopSessions(sessions);
         };
         load();
     }, [timestamp, currentPlayer, sessionStart]);
@@ -174,6 +193,31 @@ export default function PracticeDojo() {
                                     <span className="dhr-pts">+{t.points ?? 0}</span>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>{/* end dojo-task-panel */}
+
+                {/* Top sessions leaderboard */}
+                <div className="dojo-leaderboard">
+                    <div className="dojo-lb-title">TOP SESSIONS</div>
+                    <div className="dojo-lb-sub">Best single-day point totals</div>
+                    {topSessions.length === 0 ? (
+                        <div className="dojo-lb-empty">Complete tasks to appear here.</div>
+                    ) : (
+                        <div className="dojo-lb-list">
+                            {topSessions.map((s, i) => {
+                                const isSelf = s.playerUUID === currentPlayer?.UUID;
+                                return (
+                                    <div key={`${s.playerUUID}-${s.day}`} className={`dojo-lb-row${isSelf ? ' dojo-lb-row--self' : ''}`}>
+                                        <span className={`dojo-lb-rank${i < 3 ? ` dojo-lb-rank--${i+1}` : ''}`}>#{i+1}</span>
+                                        <div className="dojo-lb-info">
+                                            <span className="dojo-lb-name">{s.player.username || 'Unknown'}</span>
+                                            <span className="dojo-lb-date">{new Date(s.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                        </div>
+                                        <span className="dojo-lb-pts">{s.points.toLocaleString()} <span className="dojo-lb-pts-lbl">pts</span></span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

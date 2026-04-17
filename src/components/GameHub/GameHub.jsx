@@ -1,26 +1,30 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, STORES } from '../../utils/Constants.js';
 import { getMidnightOfDate, getLocalDate } from '../../utils/Helpers/Time.js';
 import { endDay, startDay, getSleepDateToday } from '../../utils/Helpers/Events.js';
 import { getRankClass, getRankGlow } from '../../utils/Helpers/Rank.js';
-import Purgatory from '../../Modals/Purgatory/Purgatory.jsx';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
+import ProfileSwitcher from '../../Modals/ProfileSwitcher/ProfileSwitcher.jsx';
+import Purgatory from '../../Modals/Purgatory/Purgatory.jsx';
 import Lobby from '../Lobby/Lobby.jsx';
-import PracticeDojo from '../PracticeDojo/PracticeDojo.jsx';
 import MatchArena from '../MatchArena/MatchArena.jsx';
+import PracticeDojo from '../PracticeDojo/PracticeDojo.jsx';
 import TodoList from '../TodoList/TodoList.jsx';
 import Shop from '../../Pages/Shop/Shop.jsx';
 import Inventory from '../../Pages/Inventory/Inventory.jsx';
 import Settings from '../../Pages/Settings/Settings.jsx';
 import Profile from '../../Pages/Profile/Profile.jsx';
+import Inbox from '../Inbox/Inbox.jsx';
+import GlobalChat from '../GlobalChat/GlobalChat.jsx';
 import './GameHub.css';
 
 const NAV = [
   { id: 'hub',       label: 'HUB',  icon: '◎', title: 'Lobby' },
   { id: 'tasks',     label: 'TASK', icon: '☑', title: 'Task List' },
-  { id: 'shop',      label: 'SHOP', icon: '◈', title: 'Shop' },
+  { id: 'chat',      label: 'CHAT', icon: '◈', title: 'Global Chat' },
+  { id: 'shop',      label: 'SHOP', icon: '⬡', title: 'Shop' },
   { id: 'inventory', label: 'INV',  icon: '▤', title: 'Inventory' },
   { id: 'journal',   label: 'LOG',  icon: '✎', title: 'Journal' },
   { id: 'profile',   label: 'PRF',  icon: '◯', title: 'Profile' },
@@ -46,12 +50,24 @@ export default function GameHub() {
   } = useContext(AppContext);
 
   const sleepCheckFiredRef = useRef(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  /* Apply active cosmetic theme */
+  /* Apply active cosmetics (theme + font) from context player */
   useEffect(() => {
     const theme = currentPlayer?.activeCosmetics?.theme || 'default';
+    const font  = currentPlayer?.activeCosmetics?.font  || 'default';
     document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
+    document.documentElement.setAttribute('data-font',  font  === 'default' ? '' : font);
   }, [currentPlayer]);
+
+  /* Poll unread inbox count */
+  useEffect(() => {
+    if (!currentPlayer?.UUID) { setUnreadCount(0); return; }
+    databaseConnection.getUnreadFriendRequestCount(currentPlayer.UUID)
+      .then(setUnreadCount)
+      .catch(() => setUnreadCount(0));
+  }, [databaseConnection, currentPlayer, timestamp]);
 
   useEffect(() => {
     let running = false;
@@ -75,7 +91,6 @@ export default function GameHub() {
             sleepCheckFiredRef.current = false;
             await startDay(databaseConnection, player);
           } else {
-            /* Missed bedtime on previous day — lose tokens */
             await endDay(databaseConnection, player, true);
             await startDay(databaseConnection, player);
           }
@@ -94,12 +109,13 @@ export default function GameHub() {
               kind: 'error',
               persist: true,
             });
+            NiceModal.show(ProfileSwitcher);
             return;
           }
         }
 
         if (lastEvent.type === EVENT.sleep) {
-          NiceModal.show(Purgatory);
+          NiceModal.show(ProfileSwitcher);
         }
       } finally {
         running = false;
@@ -110,15 +126,21 @@ export default function GameHub() {
 
   const handleNavClick = (id) => {
     if (id !== 'journal') forceCloseJournal();
+    setInboxOpen(false);
     if (id === 'hub') { closePanel(); return; }
     if (id === 'journal') { closePanel(); NiceModal.show(JournalPopup); return; }
     if (activePanel === id) { closePanel(); return; }
     openPanel(id);
   };
 
+  const toggleInbox = () => {
+    setInboxOpen((v) => !v);
+    if (activePanel) closePanel();
+  };
+
   const renderMain = () => {
-    if (gameState === GAME_STATE.practice) return <PracticeDojo />;
-    if (gameState === GAME_STATE.match)    return <MatchArena />;
+    if (gameState === GAME_STATE.match) return <MatchArena />;
+    if (gameState === GAME_STATE.dojo)  return <PracticeDojo />;
     return <Lobby />;
   };
 
@@ -127,6 +149,7 @@ export default function GameHub() {
     const isFull = activePanel === 'shop' || activePanel === 'profile';
     let content = null;
     if (activePanel === 'tasks')     content = <TodoList />;
+    if (activePanel === 'chat')      content = <GlobalChat />;
     if (activePanel === 'shop')      content = <Shop />;
     if (activePanel === 'inventory') content = <Inventory />;
     if (activePanel === 'settings')  content = <Settings />;
@@ -154,7 +177,7 @@ export default function GameHub() {
 
         <nav className="hub-nav">
           {NAV.map(({ id, label, icon, title }) => {
-            const active = id === 'hub' ? !activePanel : activePanel === id;
+            const active = id === 'hub' ? !activePanel && !inboxOpen : activePanel === id;
             return (
               <button
                 key={id}
@@ -170,6 +193,18 @@ export default function GameHub() {
         </nav>
 
         <div className="hub-sidebar-bottom">
+          {/* Inbox bell */}
+          <button
+            className={`hub-inbox-btn ${inboxOpen ? 'active' : ''}`}
+            onClick={toggleInbox}
+            title="Inbox"
+          >
+            <span className="hub-inbox-icon">✉</span>
+            {unreadCount > 0 && (
+              <span className="hub-inbox-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+            )}
+          </button>
+
           {!!activeTask?.createdAt && <div className="hub-session-dot" title="Session active" />}
           <button
             className="hub-sidebar-avatar-wrap"
@@ -198,7 +233,20 @@ export default function GameHub() {
 
       <main className="hub-main">{renderMain()}</main>
 
-      {activePanel && (
+      {/* Inbox slide-in panel */}
+      {inboxOpen && (
+        <>
+          <div className="hub-panel-backdrop" onClick={() => setInboxOpen(false)} />
+          <div className="hub-panel open hub-panel--inbox">
+            <button className="hub-panel-close" onClick={() => setInboxOpen(false)} title="Close">✕</button>
+            <div className="hub-panel-content">
+              <Inbox onClose={() => setInboxOpen(false)} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {activePanel && !inboxOpen && (
         <>
           <div className="hub-panel-backdrop" onClick={closePanel} />
           {renderPanel()}

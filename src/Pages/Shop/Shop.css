@@ -596,20 +596,101 @@
     padding: 14px 20px;
     border-top: 1px solid var(--border);
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     background: var(--bg-surface);
 }
 
-.preview-cost {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 13px;
-    color: var(--text-muted);
+.cost-label-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.preview-cost strong {
+.cost-badge {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 1px 5px;
+    border: 1px solid;
+}
+
+.cost-badge-auto {
+    color: var(--green);
+    border-color: rgba(0,214,143,0.4);
+    background: rgba(0,214,143,0.07);
+}
+
+.cost-badge-manual {
     color: var(--gold);
+    border-color: rgba(255,184,0,0.4);
+    background: rgba(255,184,0,0.07);
+}
+
+.cost-reset-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.08em;
+    padding: 1px 4px;
+    cursor: pointer;
+    clip-path: none;
+    text-transform: lowercase;
+    font-weight: 600;
+    transition: color 0.15s;
+    margin-left: auto;
+}
+
+.cost-reset-btn:hover {
+    color: var(--accent-bright);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.cost-input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cost-input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.cost-input-icon {
+    padding: 0 8px;
+    color: var(--gold);
+    font-size: 13px;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.cost-input-wrap input {
+    border: none;
+    background: transparent;
+    padding: 6px 8px 6px 0;
+    flex: 1;
     font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-bright);
+    box-shadow: none;
+    outline: none;
+}
+
+.cost-input-wrap input:focus {
+    border: none;
+    box-shadow: none;
+}
+
+.cost-input-wrap input.cost-input-locked {
+    color: var(--gold);
 }
 
 /* ── Cosmetic card ──────────────────────────────────────── */
