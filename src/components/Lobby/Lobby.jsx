@@ -48,21 +48,78 @@ function MatchHistoryRow({ match, currentPlayerUUID, onOpen }) {
 }
 
 function MatchSetupOverlay({ onStart, onClose, isLoading }) {
+  const [mode, setMode] = useState('conquest');
   const [duration, setDuration] = useState(4);
+
+  // Breach is fixed at 2h (spec §4.1).
+  const effectiveDuration = mode === 'breach' ? 2 : duration;
+
   return (
     <div className="match-setup-overlay">
       <div className="match-setup-card">
-        <div className="match-setup-header"><div className="mso-corner" />MATCHMAKING</div>
+        <div className="match-setup-header">
+          <div className="mso-corner" />
+          MATCHMAKING
+        </div>
         <div className="match-setup-body">
-          <p className="match-setup-title">Select Match Duration</p>
-          <p className="match-setup-sub">Compete against ghost records of your past profiles. Complete tasks to earn points during the match window.</p>
-          <div className="match-duration-row">
-            {[2,3,4,5,6,8].map((h) => <button key={h} className={`duration-chip ${duration===h?'active':''}`} onClick={() => setDuration(h)}>{h}H</button>)}
+          <p className="match-setup-title">Select Mode</p>
+          <div className="match-mode-row" style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <button
+              className={`duration-chip ${mode === 'conquest' ? 'active' : ''}`}
+              onClick={() => setMode('conquest')}
+              style={{ flex: 1 }}
+            >
+              CONQUEST
+            </button>
+            <button
+              className={`duration-chip ${mode === 'breach' ? 'active' : ''}`}
+              onClick={() => setMode('breach')}
+              style={{ flex: 1 }}
+            >
+              BREACH (beta)
+            </button>
           </div>
+
+          {mode === 'conquest' ? (
+            <>
+              <p className="match-setup-title">Select Match Duration</p>
+              <p className="match-setup-sub">
+                Compete against ghost records of your past profiles. Complete
+                tasks to earn points during the match window.
+              </p>
+              <div className="match-duration-row">
+                {[2, 3, 4, 5, 6, 8].map((h) => (
+                  <button
+                    key={h}
+                    className={`duration-chip ${duration === h ? 'active' : ''}`}
+                    onClick={() => setDuration(h)}
+                  >
+                    {h}H
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="match-setup-title">Breach · 2 hours · 3v3</p>
+              <p className="match-setup-sub">
+                Plant, defend, rotate. Two 60-minute halves, sides swap at
+                halftime. Defenders place walls and mines during a 3-minute
+                setup phase. Only ghosts with ≥ 2h of match history can
+                appear — the rest are synthetic.
+              </p>
+            </>
+          )}
         </div>
         <div className="match-setup-footer">
           <button onClick={onClose}>CANCEL</button>
-          <button className="primary" onClick={() => onStart(duration)} disabled={isLoading}>{isLoading ? 'FINDING MATCH…' : 'FIND MATCH →'}</button>
+          <button
+            className="primary"
+            onClick={() => onStart(mode, effectiveDuration)}
+            disabled={isLoading}
+          >
+            {isLoading ? 'FINDING MATCH…' : 'FIND MATCH →'}
+          </button>
         </div>
       </div>
     </div>
@@ -261,27 +318,52 @@ export default function Lobby() {
     load();
   }, [databaseConnection, currentPlayer, timestamp, setActiveMatch, setGameState]);
 
-  const handleFindMatch = async (duration) => {
-    if (!currentPlayer) return;
-    setLoadingMatch(true);
-    try {
-      const allP = await databaseConnection.getAllPlayers();
-      const { teammates, opponents } = await buildGhostRoster(databaseConnection, allP, currentPlayer, duration);
-      const matchUUID = uuid();
-      const match = {
-        UUID: matchUUID, createdAt: new Date().toISOString(), duration,
-        parent: currentPlayer.UUID, status: MATCH_STATUS.active,
-        mapSeed: Math.abs(matchUUID.split('').reduce((h, c) => Math.imul(31, h) + c.charCodeAt(0) | 0, 0)),
-        teams: [[{ UUID: currentPlayer.UUID, username: currentPlayer.username, profilePicture: currentPlayer.profilePicture||null,
-          elo: currentPlayer.elo||0, isCurrentPlayer: true,
-          cardBanner: currentPlayer.activeCosmetics?.cardBanner||null,
-          playerTheme: currentPlayer.activeCosmetics?.theme||'default' }, ...teammates], opponents],
-        result: null,
-      };
-      await databaseConnection.add(STORES.match, match);
-      setActiveMatch(match); setGameState(GAME_STATE.match); setShowSetup(false); refreshApp();
-    } finally { setLoadingMatch(false); }
-  };
+const handleFindMatch = async (mode, duration) => {
+  if (!currentPlayer) return;
+  setLoadingMatch(true);
+  try {
+    const allP = await databaseConnection.getAllPlayers();
+    const { teammates, opponents } = await buildGhostRoster(
+      databaseConnection, allP, currentPlayer, duration,
+    );
+    const matchUUID = uuid();
+    const mapSeed = Math.abs(
+      matchUUID.split('').reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0),
+    );
+    const currentPlayerEntry = {
+      UUID: currentPlayer.UUID,
+      username: currentPlayer.username,
+      profilePicture: currentPlayer.profilePicture || null,
+      elo: currentPlayer.elo || 0,
+      isCurrentPlayer: true,
+      cardBanner: currentPlayer.activeCosmetics?.cardBanner || null,
+      playerTheme: currentPlayer.activeCosmetics?.theme || 'default',
+    };
+
+    const baseMatch = {
+      UUID: matchUUID,
+      createdAt: new Date().toISOString(),
+      duration,
+      parent: currentPlayer.UUID,
+      status: MATCH_STATUS.active,
+      mapSeed,
+      mode,                                   // 'conquest' | 'breach'
+      teams: [[currentPlayerEntry, ...teammates], opponents],
+      result: null,
+    };
+
+    // Breach's `match.breach` envelope is built by BreachArena during the
+    // Loading phase — the Lobby just stamps the mode and lets the arena
+    // take it from there. Conquest legacy state stays at the match root.
+    await databaseConnection.add(STORES.match, baseMatch);
+    setActiveMatch(baseMatch);
+    setGameState(GAME_STATE.match);
+    setShowSetup(false);
+    refreshApp();
+  } finally {
+    setLoadingMatch(false);
+  }
+};
 
   const openMatchDetails = (match) =>
     NiceModal.show(MatchDetailsModal, { match, currentPlayerUUID: currentPlayer?.UUID, onOpenProfile: (id) => openPanel('profile', id) });

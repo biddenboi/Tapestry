@@ -1,10 +1,10 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import { STORES, GAME_STATE, MATCH_STATUS, THEME_ACCENT_COLORS } from '../../utils/Constants.js';
+import { STORES, GAME_STATE, MATCH_STATUS, THEME_ACCENT_COLORS, COSMETIC_THEMES } from '../../utils/Constants.js';
 import {
   generateMap, hexToPixel, pixelToHex, hexCorners, getNeighbors, inBounds, tileKey, parseKey,
-  CANVAS_W, CANVAS_H, HEX_SIZE, TILE_HP, TEAM1_ZONE_END, TEAM2_ZONE_START, MAP_COLS, MAP_ROWS,
+  hexDist, CANVAS_W, CANVAS_H, HEX_SIZE, TILE_HP, TEAM1_ZONE_END, TEAM2_ZONE_START, MAP_COLS, MAP_ROWS,
 } from '../../utils/Helpers/MapGen.js';
 import {
   tickGhost, applyAction, applyProximityDamage,
@@ -12,7 +12,7 @@ import {
   getAttackTowerCost, getReinforceCost, getPlayerAttackCost,
 } from '../../utils/Helpers/GhostAI.js';
 import { computeEloChanges } from '../../utils/Helpers/Match.js';
-import { getRank, getRankLabel, getRankClass } from '../../utils/Helpers/Rank.js';
+import { getRank, getRankLabel, getRankClass, getRankGroupFloor } from '../../utils/Helpers/Rank.js';
 import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
@@ -35,24 +35,43 @@ const DPR          = typeof window !== 'undefined' ? (window.devicePixelRatio ||
 const DEV_EXTRA_POINTS = 10_000_000;
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Brighter palette — tiles need to read as terrain, not black voids
-const COLORS = {
-  bg:           '#0a0a14',
-  mountain:     '#272736',
-  mountainBrd:  '#4a4a66',
-  unclaimed:    '#1f4127',       // grass green, actually green this time
-  unclaimedBrd: '#3b7a48',
-  team1:        '#142f55',
-  team1Brd:     '#3878c0',
-  team2:        '#4a1318',
-  team2Brd:     '#b03a32',
-  fogWash:      'rgba(6,8,16,0.55)',   // overlay — tile underneath shows through
-  fogBrd:       'rgba(80,82,112,0.28)',
-  selected:     'rgba(224,213,255,0.95)',
-  meRing:       'rgba(255,255,255,0.9)',
-  towerGlow1:   'rgba(56,189,248,0.7)',
-  towerGlow2:   'rgba(248,113,113,0.7)',
-};
+// ── Theme-aware canvas colours ────────────────────────────────────────────────
+// Canvas can't read CSS variables directly, so we supply two palettes and pick
+// at render time based on whether the active cosmetic theme is dark or light.
+
+function makeColors(isDark) {
+  return isDark ? {
+    mountain:     '#272736',
+    mountainBrd:  '#4a4a66',
+    unclaimed:    '#1f4127',
+    unclaimedBrd: '#3b7a48',
+    team1:        '#142f55',
+    team1Brd:     '#3878c0',
+    team2:        '#4a1318',
+    team2Brd:     '#b03a32',
+    fogWash:      'rgba(6,8,16,0.62)',
+    fogBrd:       'rgba(80,82,112,0.28)',
+    selected:     'rgba(224,213,255,0.95)',
+    meRing:       'rgba(255,255,255,0.9)',
+    towerGlow1:   'rgba(56,189,248,0.7)',
+    towerGlow2:   'rgba(248,113,113,0.7)',
+  } : {
+    mountain:     '#8e8e7a',
+    mountainBrd:  '#6a6a58',
+    unclaimed:    '#bfd4b6',
+    unclaimedBrd: '#7aaa72',
+    team1:        '#b0ccee',
+    team1Brd:     '#3a78c8',
+    team2:        '#eec0b8',
+    team2Brd:     '#c84040',
+    fogWash:      'rgba(245,242,235,0.58)',
+    fogBrd:       'rgba(160,150,130,0.35)',
+    selected:     'rgba(60,40,200,0.9)',
+    meRing:       'rgba(0,0,0,0.85)',
+    towerGlow1:   'rgba(20,110,220,0.8)',
+    towerGlow2:   'rgba(200,50,50,0.8)',
+  };
+}
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -87,22 +106,109 @@ function placeTower(tiles, key, team) {
   return { ...tiles, [key]: { ...tiles[key], isTower: true, owner: team, hp: TILE_HP.tower, maxHp: TILE_HP.tower } };
 }
 
-function computeExplored(mapState, teamMap, uuid) {
-  const team = teamMap[uuid];
-  const set  = new Set(mapState.exploredTiles || []);
-  // Owned territory is always known
-  if (team && mapState.tiles) {
-    for (const [key, tile] of Object.entries(mapState.tiles)) {
-      if (tile.owner === team) set.add(key);
+// ── Cube-coordinate helpers for hex line-of-sight ─────────────────────────────
+
+function offsetToCube(q, r) {
+  const x = q - (r - (r & 1)) / 2;
+  return { x, y: -x - r, z: r };
+}
+function cubeToOffset(x, z) {
+  const r = z;
+  return { q: x + (r - (r & 1)) / 2, r };
+}
+
+/**
+ * If (tq,tr) lies on a straight hex axis from (sq,sr) and is more than 1 step away,
+ * returns the ordered path [{q,r}…] from step 1 through N (not including source).
+ * Returns null if not a straight hex line or only adjacent.
+ */
+export function getStraightLinePath(sq, sr, tq, tr) {
+  const a = offsetToCube(sq, sr), b = offsetToCube(tq, tr);
+  const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+  if (dx === 0 && dz === 0) return null;
+
+  const DIRS = [[1,-1,0],[1,0,-1],[0,1,-1],[-1,1,0],[-1,0,1],[0,-1,1]];
+  for (const [ddx, ddy, ddz] of DIRS) {
+    const Nx = ddx !== 0 ? dx / ddx : null;
+    const Ny = ddy !== 0 ? dy / ddy : null;
+    const Nz = ddz !== 0 ? dz / ddz : null;
+    const vals = [Nx, Ny, Nz].filter((v) => v !== null);
+    if (vals.length === 0) continue;
+    const N = vals[0];
+    if (!Number.isInteger(N) || N <= 1) continue;
+    if (vals.some((v) => v !== N)) continue;
+    if (dx !== ddx * N || dy !== ddy * N || dz !== ddz * N) continue;
+    const path = [];
+    for (let i = 1; i <= N; i++) path.push(cubeToOffset(a.x + ddx * i, a.z + ddz * i));
+    return path;
+  }
+  return null;
+}
+
+/**
+ * Shadow-casting LOS — processes every tile in BFS (shortest-hex-distance)
+ * order from the observer.  A non-mountain tile is fogged when ALL of its
+ * "parent" neighbours (those strictly closer to the observer) are either
+ * mountains or already fogged.  This propagates shadows correctly in every
+ * direction without any ray-casting or floating-point issues.
+ *
+ * Mountains are always visible (you see the wall; not past it).
+ */
+function computeSingleLOS(oq, or_, tiles) {
+  const obsKey = tileKey(oq, or_);
+  const visible = new Set([obsKey]);
+  const fogged  = new Set();
+  const visited = new Set([obsKey]);
+  const queue   = [{ q: oq, r: or_ }];
+
+  while (queue.length) {
+    const { q, r } = queue.shift();
+
+    for (const { q: nq, r: nr } of getNeighbors(q, r)) {
+      if (!inBounds(nq, nr)) continue;
+      const nKey = tileKey(nq, nr);
+      if (visited.has(nKey)) continue;
+      visited.add(nKey);
+      queue.push({ q: nq, r: nr });            // always expand to maintain BFS order
+
+      const nd    = hexDist(oq, or_, nq, nr);
+      const nTile = tiles[nKey];
+
+      // Parents = all in-bounds neighbours of (nq,nr) that are strictly
+      // closer to the observer.  BFS guarantees every parent has already
+      // been classified before we reach (nq,nr).
+      const parents = getNeighbors(nq, nr).filter(
+        ({ q: pq, r: pr }) => inBounds(pq, pr) && hexDist(oq, or_, pq, pr) < nd
+      );
+
+      const allBlocked = parents.length > 0 && parents.every(({ q: pq, r: pr }) => {
+        const pTile = tiles[tileKey(pq, pr)];
+        return pTile?.type === 'mountain' || fogged.has(tileKey(pq, pr));
+      });
+
+      if (nTile?.type === 'mountain' || !allBlocked) {
+        visible.add(nKey);  // mountains always visible; clear LoS → visible
+      } else {
+        fogged.add(nKey);   // all paths blocked → in shadow
+      }
     }
   }
-  // Radius-1 vision from each teammate
-  for (const [id, pos] of Object.entries(mapState.playerPositions)) {
-    if (teamMap[id] !== team || !inBounds(pos.q, pos.r)) continue;
-    set.add(tileKey(pos.q, pos.r));
-    for (const { q, r } of getNeighbors(pos.q, pos.r)) { if (inBounds(q, r)) set.add(tileKey(q, r)); }
+  return visible;
+}
+
+function computeLOS(mapState, teamMap, uuid) {
+  const team      = teamMap[uuid];
+  const tiles     = mapState.tiles || {};
+  const visible   = new Set();
+  const observers = Object.entries(mapState.playerPositions || {})
+    .filter(([id]) => teamMap[id] === team)
+    .map(([, pos]) => pos)
+    .filter((pos) => inBounds(pos.q, pos.r));
+
+  for (const obs of observers) {
+    for (const key of computeSingleLOS(obs.q, obs.r, tiles)) visible.add(key);
   }
-  return set;
+  return visible;
 }
 
 function towerTotals(tiles) {
@@ -219,28 +325,26 @@ function avatarLayout(n, cx, cy) {
 
 // ── Canvas draw helpers ───────────────────────────────────────────────────────
 
-function drawHex(ctx, cx, cy, tile, fogged, selected, inPlacement) {
+function drawHex(ctx, cx, cy, tile, fogged, selected, inPlacement, colors) {
   const pts = hexCorners(cx, cy);
   ctx.beginPath();
   pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
   ctx.closePath();
 
-  // Always paint the real terrain colour first so fog becomes a *wash*
-  // rather than a wall — the map outline stays readable everywhere.
   let fill, stroke;
-  if (tile.type === 'mountain')    { fill = COLORS.mountain; stroke = COLORS.mountainBrd; }
-  else if (!tile.owner)            { fill = COLORS.unclaimed; stroke = COLORS.unclaimedBrd; }
-  else if (tile.owner === 'team1') { fill = COLORS.team1;    stroke = COLORS.team1Brd; }
-  else                             { fill = COLORS.team2;    stroke = COLORS.team2Brd; }
+  if (tile.type === 'mountain')    { fill = colors.mountain; stroke = colors.mountainBrd; }
+  else if (!tile.owner)            { fill = colors.unclaimed; stroke = colors.unclaimedBrd; }
+  else if (tile.owner === 'team1') { fill = colors.team1;    stroke = colors.team1Brd; }
+  else                             { fill = colors.team2;    stroke = colors.team2Brd; }
 
   ctx.fillStyle   = fill;
   ctx.fill();
-  ctx.strokeStyle = selected ? COLORS.selected : (fogged ? COLORS.fogBrd : stroke);
+  ctx.strokeStyle = selected ? colors.selected : (fogged ? colors.fogBrd : stroke);
   ctx.lineWidth   = selected ? 2.2 : 0.8;
   ctx.stroke();
 
   if (fogged) {
-    ctx.fillStyle = COLORS.fogWash;
+    ctx.fillStyle = colors.fogWash;
     ctx.fill();
     return;
   }
@@ -274,9 +378,9 @@ function drawHex(ctx, cx, cy, tile, fogged, selected, inPlacement) {
   }
 }
 
-function drawTower(ctx, cx, cy, tile) {
+function drawTower(ctx, cx, cy, tile, colors) {
   const col  = tile.owner === 'team1' ? '#38bdf8' : '#f87171';
-  const glow = tile.owner === 'team1' ? COLORS.towerGlow1 : COLORS.towerGlow2;
+  const glow = tile.owner === 'team1' ? colors.towerGlow1 : colors.towerGlow2;
   ctx.shadowBlur  = 14;
   ctx.shadowColor = glow;
   const s = HEX_SIZE * 0.52;
@@ -301,7 +405,7 @@ function drawTower(ctx, cx, cy, tile) {
   }
 }
 
-function drawPlayerAvatar(ctx, cx, cy, hp, team, isMe, s = 1) {
+function drawPlayerAvatar(ctx, cx, cy, hp, team, isMe, s = 1, colors) {
   const col = team === 'team1' ? '#38bdf8' : '#f87171';
   const r   = HEX_SIZE * 0.38 * s;
   ctx.shadowBlur  = 6;
@@ -310,7 +414,7 @@ function drawPlayerAvatar(ctx, cx, cy, hp, team, isMe, s = 1) {
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fillStyle   = col;
   ctx.fill();
-  ctx.strokeStyle = isMe ? COLORS.meRing : 'rgba(255,255,255,0.6)';
+  ctx.strokeStyle = isMe ? colors.meRing : 'rgba(255,255,255,0.6)';
   ctx.lineWidth   = isMe ? 1.7 : 0.8;
   ctx.stroke();
   ctx.shadowBlur  = 0;
@@ -323,6 +427,159 @@ function drawPlayerAvatar(ctx, cx, cy, hp, team, isMe, s = 1) {
     ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
     ctx.fillRect(bx, by, bw * pct, 2);
   }
+}
+
+// ── Rank tier: maps ELO rank group to a visual-intensity tier ─────────────────
+
+function getRankTier(elo = 0) {
+  const group = getRank(elo).group;
+  if (group === 'Radiant')                         return 'apex';
+  if (group === 'Immortal')                        return 'elite';
+  if (group === 'Ascendant')                       return 'high';
+  if (group === 'Diamond' || group === 'Platinum') return 'mid';
+  if (group === 'Gold'    || group === 'Silver')   return 'low';
+  return 'base';
+}
+
+// ── Animated ELO counter ──────────────────────────────────────────────────────
+
+function AnimatedElo({ from, to, duration = 1800 }) {
+  const [display, setDisplay] = useState(from);
+  useEffect(() => {
+    const start = performance.now();
+    const diff  = to - from;
+    const frame = (now) => {
+      const t    = Math.min(1, (now - start) / duration);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + diff * ease));
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    const id = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(id);
+  }, [from, to, duration]);
+  return <>{display.toLocaleString()}</>;
+}
+
+// ── Match End Screen ──────────────────────────────────────────────────────────
+
+function MatchEndScreen({ matchResult, eloDeltas, currentPlayer, match, myTeam, onLeave }) {
+  const { iWon, reason, team1TowerHp, team2TowerHp } = matchResult;
+
+  const team1       = match.teams?.[0] || [];
+  const team2       = match.teams?.[1] || [];
+  const myOnT1      = myTeam === 'team1';
+  const myTeamList  = myOnT1 ? team1 : team2;
+  const oppTeamList = myOnT1 ? team2 : team1;
+  const myScore     = myOnT1 ? team1TowerHp : team2TowerHp;
+  const oppScore    = myOnT1 ? team2TowerHp : team1TowerHp;
+
+  const myDelta   = eloDeltas?.[currentPlayer.UUID] || 0;
+  const newElo    = currentPlayer.elo || 0;
+  const oldElo    = Math.max(0, newElo - myDelta);
+  const rankAfter = getRank(newElo);
+  const rankBefore= getRank(oldElo);
+  const rankTier  = getRankTier(newElo);
+  const rankedUp  = rankAfter.minElo > rankBefore.minElo;
+  const rankColor = rankAfter.color;
+
+  // Build a simple breakdown from the single K-factor delta
+  const breakdown = [];
+  if (iWon) {
+    breakdown.push({ label: 'Victory', value: myDelta > 0 ? myDelta : 0 });
+    if (myDelta <= 0) breakdown.push({ label: 'Underdog correction', value: myDelta });
+  } else {
+    breakdown.push({ label: 'Defeat', value: myDelta < 0 ? myDelta : 0 });
+    if (myDelta > 0) breakdown.push({ label: 'Strong performance', value: myDelta });
+  }
+
+  return (
+    <div className={`ma-end-overlay ${iWon ? 'ma-end-overlay--win' : 'ma-end-overlay--loss'}`}>
+      <div className="ma-end-scanlines" aria-hidden="true" />
+      <div className="ma-end-content">
+
+        {/* Outcome banner */}
+        <div className={`ma-end-outcome ${iWon ? 'ma-end-outcome--win' : 'ma-end-outcome--loss'}`}>
+          <span className="ma-end-outcome-icon">{iWon ? '▲' : '▼'}</span>
+          <span className="ma-end-outcome-label">
+            {iWon ? 'VICTORY' : reason === 'forfeit' ? 'FORFEIT' : 'DEFEAT'}
+          </span>
+        </div>
+
+        {reason === 'time' && (
+          <div className="ma-end-sub">Time expired — tower HP compared</div>
+        )}
+
+        {/* Tower HP comparison */}
+        <div className="ma-end-vs">
+          <div className="ma-end-vs-side ma-end-vs-mine">
+            <div className="ma-end-vs-label">YOUR TEAM</div>
+            <div className="ma-end-vs-score">{myScore}</div>
+            <div className="ma-end-vs-sub">tower HP</div>
+            <div className="ma-end-vs-players">
+              {myTeamList.map((p) => (
+                <span key={p.UUID} className={p.UUID === currentPlayer.UUID ? 'ma-end-vs-you' : ''}>
+                  {p.username}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className={`ma-end-vs-circle ${iWon ? 'ma-end-vs-circle--win' : 'ma-end-vs-circle--loss'}`}>VS</div>
+          <div className="ma-end-vs-side ma-end-vs-opp">
+            <div className="ma-end-vs-label">OPPOSITION</div>
+            <div className="ma-end-vs-score ma-end-vs-score--opp">{oppScore}</div>
+            <div className="ma-end-vs-sub">tower HP</div>
+            <div className="ma-end-vs-players">
+              {oppTeamList.map((p) => (
+                <span key={p.UUID}>{p.username}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ELO card */}
+        <div className={`ma-end-elocard rank-tier-${rankTier}`} style={{ '--rank-color': rankColor }}>
+          <div className="ma-end-avatar-frame">
+            <ProfilePicture src={currentPlayer.profilePicture} username={currentPlayer.username} size={72} />
+            <div className="ma-end-avatar-ring" style={{ borderColor: rankColor, boxShadow: `0 0 18px ${rankColor}55` }} />
+            <div className="ma-end-rank-icon">{rankAfter.icon}</div>
+          </div>
+          <div className="ma-end-elocard-body">
+            <div className="ma-end-username" style={{ color: rankColor, textShadow: `0 0 20px ${rankColor}88` }}>
+              {currentPlayer.username}
+            </div>
+            {rankedUp && (
+              <div className="ma-end-rankup">
+                ✦ RANK UP — {rankAfter.group.toUpperCase()}{rankAfter.sub ? ` ${rankAfter.sub}` : ''}
+              </div>
+            )}
+            <div className="ma-end-elo-row">
+              <span className="ma-end-elo-old">{oldElo.toLocaleString()}</span>
+              <span className="ma-end-elo-arrow">→</span>
+              <span className="ma-end-elo-new" style={{ color: rankColor }}>
+                <AnimatedElo from={oldElo} to={newElo} />
+              </span>
+            </div>
+            <div className="ma-end-breakdown">
+              {breakdown.map((item, i) => (
+                <div
+                  key={i}
+                  className={`ma-end-bd-row ${item.value >= 0 ? 'ma-end-bd--pos' : 'ma-end-bd--neg'}`}
+                  style={{ animationDelay: `${0.3 + i * 0.1}s` }}
+                >
+                  <span className="ma-end-bd-val">{item.value > 0 ? '+' : ''}{item.value}</span>
+                  <span className="ma-end-bd-label">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button className="ma-end-return" onClick={onLeave}>
+          RETURN TO LOBBY →
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -344,6 +601,7 @@ export default function MatchArena() {
   // Player's own theme color — drives the whole arena accent
   const myAccent = THEME_ACCENT_COLORS[currentPlayer?.activeCosmetics?.theme || 'default']
                 || THEME_ACCENT_COLORS.default;
+  const isDark   = COSMETIC_THEMES.find((t) => t.id === (currentPlayer?.activeCosmetics?.theme || 'default'))?.dark !== false;
   const inTask   = !!activeTask?.createdAt;
 
   // Next suggested todo (fetched alongside task-count polling)
@@ -430,13 +688,16 @@ export default function MatchArena() {
     // logical coords (CANVAS_W × CANVAS_H) and ignores scaling.
     ctx.setTransform(DPR * scale, 0, 0, DPR * scale, 0, 0);
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-    ctx.fillStyle = COLORS.bg;
+    // Canvas bg: read --bg-void from the live CSS variable so light/dark themes work.
+    const canvasBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-void').trim() || '#0a0a14';
+    ctx.fillStyle = canvasBg;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     if (!currentPlayer) return;
+    const COLORS  = makeColors(isDark);
     const explored = phase === PHASE.PLACEMENT
       ? null   // full visibility during placement
-      : computeExplored(mapState, teamMap, currentPlayer.UUID);
+      : computeLOS(mapState, teamMap, currentPlayer.UUID);
 
     const selKey = selectedTile ? tileKey(selectedTile.q, selectedTile.r) : '';
     const inPl   = phase === PHASE.PLACEMENT;
@@ -445,14 +706,14 @@ export default function MatchArena() {
     for (const tile of Object.values(mapState.tiles)) {
       const { x, y } = hexToPixel(tile.q, tile.r);
       const fogged   = explored ? !explored.has(tileKey(tile.q, tile.r)) : false;
-      drawHex(ctx, x, y, tile, fogged, tileKey(tile.q, tile.r) === selKey, inPl);
+      drawHex(ctx, x, y, tile, fogged, tileKey(tile.q, tile.r) === selKey, inPl, COLORS);
     }
     // Pass 2: towers
     for (const tile of Object.values(mapState.tiles)) {
       if (!tile.isTower) continue;
       if (explored && !explored.has(tileKey(tile.q, tile.r))) continue;
       const { x, y } = hexToPixel(tile.q, tile.r);
-      drawTower(ctx, x, y, tile);
+      drawTower(ctx, x, y, tile, COLORS);
     }
     // Pass 3: players — group so shared tiles fan out
     const byTile = {};
@@ -467,10 +728,10 @@ export default function MatchArena() {
       const layout = avatarLayout(group.length, x, y);
       group.forEach(({ uuid, pos }, i) => {
         const slot = layout[i] || layout[0];
-        drawPlayerAvatar(ctx, slot.x, slot.y, pos.hp ?? 100, teamMap[uuid], uuid === currentPlayer.UUID, slot.scale);
+        drawPlayerAvatar(ctx, slot.x, slot.y, pos.hp ?? 100, teamMap[uuid], uuid === currentPlayer.UUID, slot.scale, COLORS);
       });
     }
-  }, [mapState, selectedTile, phase, teamMap, currentPlayer, scale]);
+  }, [mapState, selectedTile, phase, teamMap, currentPlayer, scale, isDark]);
 
   useEffect(() => { render(); }, [render]);
 
@@ -527,14 +788,35 @@ export default function MatchArena() {
     if (Object.keys(placedTowers).length < allPlayers(match).length) return;
 
     let tiles = { ...mapState.tiles };
+
+    // ── Reset the 20% pre-owned start zones from map generation ─────
+    // generateMap pre-colours team zones for readability, but actual owned
+    // territory should only be a small radius around each placed tower.
+    for (const key of Object.keys(tiles)) {
+      if (tiles[key].owner && !tiles[key].isTower) {
+        tiles[key] = { ...tiles[key], owner: null, hp: 0, maxHp: 0 };
+      }
+    }
+
+    // ── Place towers and claim radius-3 starting territory ──────────
     const towerOwners = {}, playerPositions = {};
     for (const [uuid, key] of Object.entries(placedTowers)) {
       const team = teamMap[uuid];
       tiles = placeTower(tiles, key, team);
       towerOwners[key] = uuid;
-      const { q, r } = parseKey(key);
-      playerPositions[uuid] = { q, r, hp: 100, team };
+      const { q: tq, r: tr } = parseKey(key);
+      playerPositions[uuid] = { q: tq, r: tr, hp: 100, team };
+
+      // Claim all grass tiles within radius 3 of this tower for its team
+      for (const t of Object.values(tiles)) {
+        if (t.type !== 'grass' || t.isTower) continue;
+        if (hexDist(tq, tr, t.q, t.r) <= 3) {
+          const tk = tileKey(t.q, t.r);
+          tiles[tk] = { ...tiles[tk], owner: team, hp: TILE_HP.claimed, maxHp: TILE_HP.claimed };
+        }
+      }
     }
+
     const exploredTiles = Object.values(tiles)
       .filter((t) => t.owner === myTeam)
       .map((t) => tileKey(t.q, t.r));
@@ -584,6 +866,41 @@ export default function MatchArena() {
     if (!state || phase !== PHASE.ACTIVE) return;
     const d    = match.duration / 4;
     const mult = burstMultiplier(burstSpent);
+
+    // ── Multi-tile straight-line sprint ─────────────────────────
+    if (action.type === 'multi_move') {
+      const totalCost = action.cost;
+      if (spendable < totalCost) return;
+      const singleCost = Math.ceil(getMoveCost(d) * mult);
+      let { tiles, playerPositions, pointsSpent } = state;
+      for (const step of action.path) {
+        ({ tiles, playerPositions, pointsSpent } = applyAction(
+          { type: 'move', q: step.q, r: step.r, cost: singleCost },
+          tiles, playerPositions, pointsSpent, currentPlayer.UUID,
+        ));
+        // Auto-claim any unclaimed (neutral) tile the player passes through or lands on
+        const key  = tileKey(step.q, step.r);
+        const tile = tiles[key];
+        if (tile && !tile.owner && tile.type === 'grass' && !tile.isTower) {
+          tiles = { ...tiles, [key]: { ...tile, owner: myTeam, hp: TILE_HP.claimed, maxHp: TILE_HP.claimed } };
+        }
+      }
+      const myP = playerPositions[currentPlayer.UUID];
+      if (myP?.hp <= 0) {
+        const sp = respawn(myTeam, tiles);
+        if (sp) playerPositions = { ...playerPositions, [currentPlayer.UUID]: { ...myP, ...sp, hp: 100 } };
+      }
+      const newExp = computeLOS({ ...state, tiles, playerPositions }, teamMap, currentPlayer.UUID);
+      const ns = { ...state, tiles, playerPositions, pointsSpent, exploredTiles: [...newExp] };
+      setMapState(ns);
+      setSpendable((s) => s - totalCost);
+      setBurstSpent((b) => b + totalCost);
+      setSelectedTile(null);
+      const winner = checkWin(tiles);
+      if (winner) conclude(ns, winner);
+      return;
+    }
+
     const baseCosts = {
       move:          getMoveCost(d),
       claim:         getClaimCost(d),
@@ -605,7 +922,7 @@ export default function MatchArena() {
       if (sp) playerPositions = { ...playerPositions, [currentPlayer.UUID]: { ...myP, ...sp, hp: 100 } };
     }
 
-    const newExp = computeExplored({ ...state, tiles, playerPositions }, teamMap, currentPlayer.UUID);
+    const newExp = computeLOS({ ...state, tiles, playerPositions }, teamMap, currentPlayer.UUID);
     const ns = { ...state, tiles, playerPositions, pointsSpent, exploredTiles: [...newExp] };
     setMapState(ns);
     setSpendable((s) => s - cost);
@@ -667,7 +984,7 @@ export default function MatchArena() {
         }
       }
 
-      const exp = computeExplored({ ...state, tiles, playerPositions }, live.teamMap, live.currentPlayerUUID);
+      const exp = computeLOS({ ...state, tiles, playerPositions }, live.teamMap, live.currentPlayerUUID);
       const ns  = { ...state, tiles, playerPositions, pointsSpent, exploredTiles: [...exp] };
       setMapState(ns);
 
@@ -806,9 +1123,9 @@ export default function MatchArena() {
     return myTeam === 'team1' ? [t1, t2] : [t2, t1];
   }, [match, myTeam]);
 
-  // Shared explored set — sidebar + render both need it
+  // Shared LOS set — sidebar visibility + canvas render both need it
   const exploredSet = useMemo(() => (
-    mapState && currentPlayer ? computeExplored(mapState, teamMap, currentPlayer.UUID) : new Set()
+    mapState && currentPlayer ? computeLOS(mapState, teamMap, currentPlayer.UUID) : new Set()
   ), [mapState, teamMap, currentPlayer]);
 
   const playerOnTile = selectedTile
@@ -829,34 +1146,16 @@ export default function MatchArena() {
         <PreMatchBanner match={match} currentPlayerUUID={currentPlayer?.UUID} onComplete={onBannerDone} />
       )}
 
-      {phase === PHASE.COMPLETE && matchResult && (() => {
-        const friendlyHp = matchResult.iWon ? matchResult.team1TowerHp : matchResult.team2TowerHp;
-        const enemyHp    = matchResult.iWon ? matchResult.team2TowerHp : matchResult.team1TowerHp;
-        return (
-          <div className="ma-end-overlay">
-            <div className="ma-end-card">
-              <div className={`ma-end-verdict ${matchResult.iWon ? 'ma-end-verdict--win' : 'ma-end-verdict--loss'}`}>
-                {matchResult.iWon ? '⚡ VICTORY' : '💀 DEFEAT'}
-              </div>
-              {matchResult.reason !== 'towers' && (
-                <div className="ma-end-reason">
-                  {matchResult.reason === 'time' ? 'Time expired — tower HP compared' : 'Match forfeited'}
-                </div>
-              )}
-              <div className="ma-end-towers">
-                <div className="ma-end-tw-row"><span className="ma-end-tw-label friendly">Your towers</span><span className="ma-end-tw-hp">{friendlyHp} HP</span></div>
-                <div className="ma-end-tw-row"><span className="ma-end-tw-label enemy">Enemy towers</span><span className="ma-end-tw-hp">{enemyHp} HP</span></div>
-              </div>
-              {eloDeltas && (
-                <div className="ma-end-elo">
-                  ELO {(eloDeltas[currentPlayer.UUID] || 0) >= 0 ? '+' : ''}{eloDeltas[currentPlayer.UUID] || 0}
-                </div>
-              )}
-              <button className="ma-end-btn" onClick={leave}>Return to Lobby</button>
-            </div>
-          </div>
-        );
-      })()}
+      {phase === PHASE.COMPLETE && matchResult && (
+        <MatchEndScreen
+          matchResult={matchResult}
+          eloDeltas={eloDeltas}
+          currentPlayer={currentPlayer}
+          match={match}
+          myTeam={myTeam}
+          onLeave={leave}
+        />
+      )}
 
       <header className="ma-header">
         <span className={`ma-phase-label ${phase === PHASE.PLACEMENT ? 'placing' : ''}`}>
@@ -968,6 +1267,7 @@ export default function MatchArena() {
           {selectedTile && phase === PHASE.ACTIVE && (
             <TileActionPopup
               tile={selectedTile}
+              tiles={mapState?.tiles}
               playerOnTile={playerOnTile}
               currentPosition={myPos}
               currentTeam={myTeam}

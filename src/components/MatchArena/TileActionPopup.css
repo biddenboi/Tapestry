@@ -177,3 +177,17 @@
   text-align: center;
   padding: 6px 0;
 }
+
+/* ── Sprint action (straight-line multi-move) ─────────────────── */
+
+.tap-action--sprint {
+  background: rgba(167,139,250,0.06);
+  border-color: rgba(167,139,250,0.2);
+}
+.tap-action--sprint:hover:not(.tap-action--disabled) {
+  background: rgba(167,139,250,0.14);
+  border-color: rgba(167,139,250,0.45);
+}
+.tap-action--sprint .tap-action-label {
+  color: #c4b5fd;
+}

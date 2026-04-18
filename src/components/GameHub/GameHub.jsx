@@ -19,6 +19,8 @@ import Profile from '../../Pages/Profile/Profile.jsx';
 import Inbox from '../Inbox/Inbox.jsx';
 import GlobalChat from '../GlobalChat/GlobalChat.jsx';
 import './GameHub.css';
+import BreachArena from '../../modes/breach/BreachArena.jsx';
+
 
 const NAV = [
   { id: 'hub',       label: 'HUB',  icon: '◎', title: 'Lobby' },
@@ -43,6 +45,7 @@ export default function GameHub() {
     notify,
     activeTask: [activeTask],
     gameState: [gameState],
+    activeMatch: [activeMatch],       
     activePanel: [activePanel],
     viewingProfile: [viewingProfile],
     openPanel,
@@ -139,8 +142,10 @@ export default function GameHub() {
   };
 
   const renderMain = () => {
-    if (gameState === GAME_STATE.match) return <MatchArena />;
-    if (gameState === GAME_STATE.dojo)  return <PracticeDojo />;
+    if (gameState === GAME_STATE.match) {
+      return activeMatch?.mode === 'breach' ? <BreachArena /> : <MatchArena />;
+    }
+    if (gameState === GAME_STATE.dojo) return <PracticeDojo />;
     return <Lobby />;
   };
 

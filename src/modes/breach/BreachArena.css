@@ -1,0 +1,908 @@
+/* Breach arena — minimal styling for the load-bearing slice.
+   Part-A immersion polish (dramatic banners, kill feed animations,
+   "While You Were Working" replay, cosmetic integration) is deferred.
+
+   THEME INTEGRATION: the arena root receives CSS variables --ma-accent,
+   --breach-accent, --breach-bg, --breach-tile, and --breach-ink from
+   BreachArena.jsx based on the player's active cosmetic theme, plus a
+   `theme-dark` or `theme-light` class. Selectors below that used to use
+   hard-coded dark blues reference the variables where it matters most
+   (arena background, canvas wrap, scoreboard chrome); surface colors that
+   would stay dark regardless (overlays, modals) remain hard-coded so the
+   arena's gameplay elements read consistently. */
+
+.breach-arena {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 50% 40%,
+      color-mix(in srgb, var(--breach-bg, #0e1220) 80%, var(--breach-accent, #4da3ff) 8%) 0%,
+      var(--breach-bg, #06070e) 100%);
+  color: var(--breach-ink, #e2e5ef);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Light-theme variant: the radial gradient gets a warm parchment base so
+   the board blends with a light UI instead of punching a dark hole in it. */
+.breach-arena.theme-light {
+  background:
+    radial-gradient(circle at 50% 40%,
+      color-mix(in srgb, var(--breach-bg, #ece3d0) 85%, var(--breach-accent, #2563eb) 6%) 0%,
+      var(--breach-bg, #d6c9a7) 100%);
+  color: var(--breach-ink, #2a241b);
+}
+
+.breach-loading {
+  margin: auto;
+  color: #8998b0;
+  font-size: 0.95rem;
+}
+
+/* ── Top status bar ───────────────────────────────────────────── */
+
+.breach-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  /* Semi-transparent so the theme-gradient arena background bleeds through.
+     Light themes get a light tint; dark themes stay dark — both driven by
+     --breach-bg. */
+  background: color-mix(in srgb, var(--breach-bg, #0e1220) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--breach-accent, #4da3ff) 20%, transparent);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.breach-top-left,
+.breach-top-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.breach-phase {
+  color: #6ba3ff;
+  font-weight: 700;
+}
+
+.breach-template {
+  color: #8998b0;
+}
+
+.breach-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  color: #e2e5ef;
+}
+
+.breach-half {
+  padding: 3px 8px;
+  background: rgba(90, 110, 160, 0.18);
+  border-radius: 3px;
+  color: #9fb0d0;
+}
+
+.breach-score {
+  display: inline-flex;
+  gap: 6px;
+  padding: 3px 10px;
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid rgba(107, 163, 255, 0.22);
+  border-radius: 3px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.breach-score-atk { color: #ed7a7a; }
+.breach-score-def { color: #6de0b0; }
+.breach-score-sep { color: #4a5168; }
+
+.breach-side {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.breach-side--attacker {
+  background: rgba(237, 74, 74, 0.18);
+  color: #ed7a7a;
+}
+
+.breach-side--defender {
+  background: rgba(52, 211, 153, 0.18);
+  color: #6de0b0;
+}
+
+.breach-hp,
+.breach-pts {
+  color: #bfc8dc;
+  font-variant-numeric: tabular-nums;
+}
+
+.breach-alive {
+  color: #6de0b0;
+  font-weight: 700;
+}
+
+.breach-alive.dead {
+  color: #ed7a7a;
+}
+
+.breach-leave {
+  background: rgba(237, 74, 74, 0.12);
+  border: 1px solid rgba(237, 74, 74, 0.35);
+  color: #ed9898;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.breach-leave:hover {
+  background: rgba(237, 74, 74, 0.22);
+}
+
+/* ── HUD respawn button (issue #3) ─────────────────────────────── */
+/* Shown only when the human is dead during a live phase. Deliberately
+   brighter than .breach-leave so the player notices it; goes dim when
+   they can't afford respawn yet (disabled attribute). */
+.breach-respawn {
+  background: rgba(255, 183, 77, 0.18);
+  border: 1px solid rgba(255, 183, 77, 0.55);
+  color: #ffc570;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 2px;
+  animation: breach-respawn-pulse 1.6s ease-in-out infinite;
+}
+
+.breach-respawn:hover:not(:disabled) {
+  background: rgba(255, 183, 77, 0.3);
+}
+
+.breach-respawn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  animation: none;
+}
+
+@keyframes breach-respawn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 183, 77, 0.4); }
+  50%      { box-shadow: 0 0 0 5px rgba(255, 183, 77, 0); }
+}
+
+/* ── Canvas ───────────────────────────────────────────────────── */
+
+.breach-canvas-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 18px;
+  min-height: 0;
+}
+
+/* Inner takes the SCALED size in layout so the flex parent can center
+   it without fighting CSS transforms. The canvas itself stays at native
+   CANVAS_W × CANVAS_H and is scaled via `transform`, origin top-left,
+   so (0,0) of the canvas lines up with (0,0) of this inner box. Popup
+   overlays are positioned against this inner and use already-scaled
+   coordinates from the click handler. */
+.breach-canvas-inner {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.breach-canvas {
+  display: block;
+  background: transparent;
+  cursor: crosshair;
+}
+
+/* ── Event strip ──────────────────────────────────────────────── */
+
+.breach-event-strip {
+  padding: 6px 18px;
+  background: rgba(6, 8, 16, 0.75);
+  font-size: 0.72rem;
+  color: #8998b0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 22px;
+  flex-shrink: 0;
+}
+
+/* ── Action popup ─────────────────────────────────────────────── */
+
+.breach-action-popup {
+  position: absolute;
+  min-width: 160px;
+  background: rgba(14, 18, 30, 0.97);
+  border: 1px solid rgba(107, 163, 255, 0.45);
+  border-radius: 3px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.bap-header {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  color: #8998b0;
+  padding: 3px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 3px;
+}
+
+.bap-btn {
+  background: rgba(90, 110, 160, 0.12);
+  border: 1px solid rgba(90, 110, 160, 0.25);
+  color: #cdd6e6;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.bap-btn:hover:not(.bap-btn--disabled) {
+  background: rgba(107, 163, 255, 0.22);
+  border-color: rgba(107, 163, 255, 0.5);
+  color: #fff;
+}
+
+.bap-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Setup panel ──────────────────────────────────────────────── */
+
+.breach-setup-panel {
+  position: absolute;
+  top: 70px;
+  right: 18px;
+  width: 280px;
+  background: rgba(14, 18, 30, 0.97);
+  border: 1px solid rgba(107, 163, 255, 0.35);
+  border-radius: 4px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
+  z-index: 50;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.bsp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bsp-title {
+  font-weight: 700;
+  color: #6ba3ff;
+  letter-spacing: 0.1em;
+  flex: 1;
+}
+
+.bsp-timer {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  color: #e2e5ef;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  background: rgba(90, 110, 160, 0.18);
+  border-radius: 2px;
+  font-size: 0.82rem;
+}
+
+.bsp-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #8998b0;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.bsp-close:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #e2e5ef;
+}
+
+.bsp-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bsp-budget-label {
+  font-size: 0.68rem;
+  color: #8998b0;
+  letter-spacing: 0.1em;
+}
+
+.bsp-budget-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bsp-budget-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6ba3ff, #34d399);
+  transition: width 0.2s ease;
+}
+
+.bsp-budget-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #e2e5ef;
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.bsp-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bsp-status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.bsp-status-label {
+  color: #8998b0;
+  letter-spacing: 0.08em;
+}
+
+.bsp-status-value {
+  color: #cdd6e6;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.bsp-tile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bsp-tile-header {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: #8998b0;
+  padding: 2px 0;
+}
+
+.bsp-btn {
+  background: rgba(90, 110, 160, 0.12);
+  border: 1px solid rgba(90, 110, 160, 0.25);
+  color: #cdd6e6;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.bsp-btn:hover:not(.bsp-btn--disabled):not(:disabled) {
+  background: rgba(107, 163, 255, 0.22);
+  border-color: rgba(107, 163, 255, 0.5);
+  color: #fff;
+}
+
+.bsp-btn--disabled,
+.bsp-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bsp-btn--remove {
+  background: rgba(237, 74, 74, 0.14);
+  border-color: rgba(237, 74, 74, 0.35);
+  color: #ed9898;
+}
+
+.bsp-btn--remove:hover {
+  background: rgba(237, 74, 74, 0.24);
+  color: #fff;
+}
+
+.bsp-footer {
+  padding-top: 4px;
+}
+
+.bsp-ready {
+  width: 100%;
+  background: rgba(107, 163, 255, 0.22);
+  border: 1px solid rgba(107, 163, 255, 0.55);
+  color: #e2e5ef;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 2px;
+}
+
+.bsp-ready:hover:not(:disabled) {
+  background: rgba(107, 163, 255, 0.4);
+}
+
+.bsp-ready--done {
+  background: rgba(52, 211, 153, 0.22);
+  border-color: rgba(52, 211, 153, 0.6);
+  color: #6de0b0;
+  cursor: default;
+}
+
+.bsp-ready--blocked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Event banner (plant / defuse / explode / final-5) ────────── */
+
+.breach-event-banner {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  padding: 18px 40px;
+  background: linear-gradient(90deg, rgba(10,12,22,0.92), rgba(20,24,38,0.92), rgba(10,12,22,0.92));
+  color: #fff;
+  z-index: 120;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.55);
+  animation: be-slide-in 0.22s ease-out;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.be-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: center;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.be-site {
+  font-size: 3.2rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  padding: 6px 18px;
+  border-radius: 3px;
+}
+
+.be-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.be-actor {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.be-sub {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.78;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 2px;
+}
+
+/* Variant accents */
+
+.be-plant { border-left: 4px solid #ff4a4a; border-right: 4px solid #ff4a4a; }
+.be-plant .be-site { background: rgba(255,74,74,0.2); color: #ff8585; }
+
+.be-defuse { border-left: 4px solid #34d399; border-right: 4px solid #34d399; }
+.be-defuse .be-site { background: rgba(52,211,153,0.2); color: #6de0b0; }
+
+.be-explode { border-left: 4px solid #ffb74d; border-right: 4px solid #ffb74d; }
+.be-explode .be-site { background: rgba(255,183,77,0.22); color: #ffcf80; }
+
+.be-final5 { border-left: 4px solid #ff4a4a; border-right: 4px solid #ff4a4a; animation: be-final5-pulse 1.2s ease-in-out infinite; }
+
+/* Own-team vs enemy tinting */
+.be-friendly.be-plant .be-title,
+.be-friendly.be-defuse .be-title { color: #aef0c6; }
+.be-enemy.be-plant .be-title,
+.be-enemy.be-explode .be-title { color: #ffb0b0; }
+
+.be-clutch { background: rgba(255,214,0,0.14); border-color: #ffd600; }
+.be-clutch .be-sub { color: #ffd600; border-color: #ffd600; font-weight: 700; }
+
+@keyframes be-slide-in {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes be-final5-pulse {
+  0%, 100% { box-shadow: 0 6px 32px rgba(0,0,0,0.55), inset 0 0 20px rgba(255,74,74,0.15); }
+  50%      { box-shadow: 0 6px 32px rgba(0,0,0,0.55), inset 0 0 38px rgba(255,74,74,0.35); }
+}
+
+/* ── Kill feed (top-right) ────────────────────────────────────── */
+
+.breach-killfeed {
+  position: absolute;
+  top: 66px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 90;
+  pointer-events: none;
+  max-width: 320px;
+}
+
+.kf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(10, 12, 22, 0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 2px;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: #cdd6e6;
+  animation: kf-slide-in 0.18s ease-out;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.kf-actor, .kf-target {
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.kf-friendly { border-left: 3px solid #34d399; }
+.kf-enemy    { border-left: 3px solid #ed4a4a; }
+
+.kf-icon {
+  font-size: 1rem;
+  line-height: 1;
+  color: #8998b0;
+}
+
+.kf-icon-kill    { color: #ff6b6b; }
+.kf-icon-attack  { color: #ffb74d; }
+.kf-icon-plant   { color: #ff8585; }
+.kf-icon-defuse  { color: #6de0b0; }
+.kf-icon-explode { color: #ffcf80; }
+.kf-icon-mine    { color: #ffb74d; }
+.kf-icon-breach  { color: #a78bfa; }
+
+.kf-clutch {
+  color: #ffd600;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 1px 5px;
+  background: rgba(255,214,0,0.14);
+  border-radius: 2px;
+}
+
+@keyframes kf-slide-in {
+  from { transform: translateX(18px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Final-5 clock treatment ──────────────────────────────────── */
+
+.breach-clock.final5 {
+  color: #ff6b6b;
+  font-size: 1.4rem;
+  font-weight: 900;
+  animation: clock-pulse 1s ease-in-out infinite;
+}
+
+@keyframes clock-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* ── Half-time overlay ────────────────────────────────────────── */
+
+.breach-halftime {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 8, 16, 0.94);
+  z-index: 130;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  gap: 30px;
+}
+
+.bht-header {
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  color: #e2e5ef;
+  text-align: center;
+}
+
+.bht-score {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.bht-score-atk { color: #ed7a7a; }
+.bht-score-def { color: #6de0b0; }
+.bht-score-sep { color: #4a5168; font-size: 2.5rem; }
+
+.bht-sites {
+  display: flex;
+  gap: 18px;
+}
+
+.bht-site {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.14);
+  border-radius: 4px;
+  gap: 3px;
+  background: rgba(20, 24, 38, 0.6);
+}
+
+.bht-site-letter {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #e2e5ef;
+}
+
+.bht-site-outcome {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.bht-site-outcome.atk { color: #ed7a7a; }
+.bht-site-outcome.def { color: #6de0b0; }
+
+.bht-countdown {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: #8998b0;
+  text-transform: uppercase;
+}
+
+/* ── Match-end overlay ────────────────────────────────────────── */
+
+.breach-endscreen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, #0e1220, #06070e);
+  z-index: 140;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  gap: 22px;
+}
+
+.bes-header {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-align: center;
+  line-height: 1;
+}
+
+.bes-header.win   { color: #6de0b0; text-shadow: 0 0 30px rgba(52,211,153,0.35); }
+.bes-header.loss  { color: #ff7878; text-shadow: 0 0 30px rgba(237,74,74,0.35); }
+.bes-header.draw  { color: #ffcf80; }
+
+.bes-score {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.bes-rounds {
+  display: flex;
+  gap: 8px;
+}
+
+.bes-round-cell {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(20, 24, 38, 0.7);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.bes-round-cell.atk { color: #ed7a7a; border-color: rgba(237,74,74,0.5); }
+.bes-round-cell.def { color: #6de0b0; border-color: rgba(52,211,153,0.5); }
+
+.bes-elo {
+  padding: 10px 24px;
+  background: rgba(107,163,255,0.12);
+  border: 1px solid rgba(107,163,255,0.35);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #e2e5ef;
+  letter-spacing: 0.08em;
+}
+
+.bes-elo.pos { color: #6de0b0; border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.12); }
+.bes-elo.neg { color: #ff7878; border-color: rgba(237,74,74,0.5);  background: rgba(237,74,74,0.12); }
+
+.bes-cta {
+  margin-top: 12px;
+  padding: 12px 32px;
+  background: rgba(107,163,255,0.22);
+  border: 1px solid rgba(107,163,255,0.55);
+  color: #e2e5ef;
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.bes-cta:hover { background: rgba(107,163,255,0.4); }
+
+/* ── Task controls in top bar (parity with MatchArena's +TASK/NEXT/QUEUE) ─ */
+
+.breach-task-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+}
+
+.breach-tctrl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c8d0e0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.breach-tctrl:hover:not(:disabled) { background: rgba(107, 163, 255, 0.18); border-color: rgba(107, 163, 255, 0.45); }
+.breach-tctrl:disabled { opacity: 0.42; cursor: not-allowed; }
+
+.breach-tctrl--primary {
+  background: rgba(107, 163, 255, 0.22);
+  border-color: rgba(107, 163, 255, 0.5);
+  color: #e2e5ef;
+}
+.breach-tctrl--primary:hover:not(:disabled) { background: rgba(107, 163, 255, 0.38); }
+
+.breach-tctrl-sub {
+  font-size: 0.66rem;
+  color: #8998b0;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.breach-session-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: #6de0b0;
+}
+.breach-session-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6de0b0;
+  box-shadow: 0 0 6px rgba(109, 224, 176, 0.8);
+}
+
+/* ── Pre-match / loading overlay ─────────────────────────────────── */
+/* Hosts the shared PreMatchBanner during phase === 'loading'. The banner
+   carries its own fullscreen layout; this wrapper just pins it above
+   the arena shell. */
+
+.breach-prematch-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: auto;
+}
