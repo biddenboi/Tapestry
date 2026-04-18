@@ -479,6 +479,28 @@ class DatabaseConnection {
     });
   }
 
+
+  /** Shallow-merges `fields` into the existing record identified by `UUID`. */
+  async update(store, UUID, fields) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const tx  = this.database.transaction(store, 'readwrite');
+      const os  = tx.objectStore(store);
+      const req = os.get(UUID);
+      req.onsuccess = () => {
+        const existing = req.result || {};
+        const put = os.put({ ...existing, ...fields });
+        put.onsuccess = () => resolve(put.result);
+        put.onerror  = () => reject(put.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getPlayerByUUID(uuid) {
+    return this.get(STORES.player, uuid);
+  }
+
   async add(store, data) {
     await this.ready;
     return new Promise((resolve, reject) => {

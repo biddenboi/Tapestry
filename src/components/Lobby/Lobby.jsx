@@ -221,7 +221,18 @@ export default function Lobby() {
       const sorted = matches.sort((a, b) => String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
       setMatchHistory(sorted.slice(0, 4));
       const active = sorted.find((m) => m.status === MATCH_STATUS.active);
-      if (active) { setActiveMatch(active); setGameState(GAME_STATE.match); }
+      if (active) {
+        if (active.mapSeed) {
+          // Resume: MatchArena reads matchPhase to decide which phase to restore
+          setActiveMatch(active); setGameState(GAME_STATE.match);
+        } else {
+          // Pre-map-system legacy match — auto-conclude to unblock the player
+          await databaseConnection.update(STORES.match, active.UUID, {
+            status: MATCH_STATUS.complete,
+            result: { iWon: false, reason: 'abandoned', endedAt: new Date().toISOString() },
+          });
+        }
+      }
 
       const midnight = new Date(); midnight.setHours(0,0,0,0);
       const todayTasks = await databaseConnection.getStoreFromRange(STORES.task, midnight.toISOString(), new Date().toISOString());
@@ -256,9 +267,11 @@ export default function Lobby() {
     try {
       const allP = await databaseConnection.getAllPlayers();
       const { teammates, opponents } = await buildGhostRoster(databaseConnection, allP, currentPlayer, duration);
+      const matchUUID = uuid();
       const match = {
-        UUID: uuid(), createdAt: new Date().toISOString(), duration,
+        UUID: matchUUID, createdAt: new Date().toISOString(), duration,
         parent: currentPlayer.UUID, status: MATCH_STATUS.active,
+        mapSeed: Math.abs(matchUUID.split('').reduce((h, c) => Math.imul(31, h) + c.charCodeAt(0) | 0, 0)),
         teams: [[{ UUID: currentPlayer.UUID, username: currentPlayer.username, profilePicture: currentPlayer.profilePicture||null,
           elo: currentPlayer.elo||0, isCurrentPlayer: true,
           cardBanner: currentPlayer.activeCosmetics?.cardBanner||null,

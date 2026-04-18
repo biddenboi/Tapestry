@@ -1,644 +1,987 @@
-import { useContext, useState, useEffect, useCallback } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import { GAME_STATE, STORES, MATCH_STATUS, HOUR, THEME_ACCENT_COLORS } from '../../utils/Constants.js';
+import { STORES, GAME_STATE, MATCH_STATUS, THEME_ACCENT_COLORS } from '../../utils/Constants.js';
+import {
+  generateMap, hexToPixel, pixelToHex, hexCorners, getNeighbors, inBounds, tileKey, parseKey,
+  CANVAS_W, CANVAS_H, HEX_SIZE, TILE_HP, TEAM1_ZONE_END, TEAM2_ZONE_START, MAP_COLS, MAP_ROWS,
+} from '../../utils/Helpers/MapGen.js';
+import {
+  tickGhost, applyAction, applyProximityDamage,
+  GHOST_TICK_MS, burstMultiplier, getMoveCost, getClaimCost, getAttackTileCost,
+  getAttackTowerCost, getReinforceCost, getPlayerAttackCost,
+} from '../../utils/Helpers/GhostAI.js';
+import { computeEloChanges } from '../../utils/Helpers/Match.js';
+import { getRank, getRankLabel, getRankClass } from '../../utils/Helpers/Rank.js';
+import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
+import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
-import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
-import { getGhostScore, getGhostActivity } from '../../utils/Helpers/Match.js';
-import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
-import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
-import { getRank, getRankLabel, getRankClass, getRankGroupFloor } from '../../utils/Helpers/Rank.js';
+import PreMatchBanner from './PreMatchBanner.jsx';
+import TileActionPopup from './TileActionPopup.jsx';
 import './MatchArena.css';
 
-/* ── Timer hook ──────────────────────────────────────────── */
-function useMatchTimer(match) {
-  const [remaining, setRemaining] = useState(null);
-  const [elapsed, setElapsed]     = useState(0);
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!match) { setRemaining(null); setElapsed(0); return undefined; }
-    const endMs   = new Date(match.createdAt).getTime() + Number(match.duration || 0) * HOUR;
-    const startMs = new Date(match.createdAt).getTime();
-    const tick = () => {
-      const now = Date.now();
-      setRemaining(Math.max(0, endMs - now));
-      setElapsed(Math.max(0, Math.min(now - startMs, endMs - startMs)));
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [match]);
+const PHASE        = Object.freeze({ BANNER: 'banner', PLACEMENT: 'placement', ACTIVE: 'active', COMPLETE: 'complete' });
+const AUTO_SAVE_MS = 90_000;
+const DPR          = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
 
-  return { remaining, elapsed };
+// ───── DEV / TESTING ─────────────────────────────────────────────────────────
+// Set to a positive number (e.g. 10_000_000) to hand the current player a huge
+// spendable-points pool at match start so you can click around the map freely
+// without grinding tasks first. MUST be 0 for real play — ghost scoring
+// assumes tasks drive points.
+const DEV_EXTRA_POINTS = 10_000_000;
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Brighter palette — tiles need to read as terrain, not black voids
+const COLORS = {
+  bg:           '#0a0a14',
+  mountain:     '#272736',
+  mountainBrd:  '#4a4a66',
+  unclaimed:    '#1f4127',       // grass green, actually green this time
+  unclaimedBrd: '#3b7a48',
+  team1:        '#142f55',
+  team1Brd:     '#3878c0',
+  team2:        '#4a1318',
+  team2Brd:     '#b03a32',
+  fogWash:      'rgba(6,8,16,0.55)',   // overlay — tile underneath shows through
+  fogBrd:       'rgba(80,82,112,0.28)',
+  selected:     'rgba(224,213,255,0.95)',
+  meRing:       'rgba(255,255,255,0.9)',
+  towerGlow1:   'rgba(56,189,248,0.7)',
+  towerGlow2:   'rgba(248,113,113,0.7)',
+};
+
+// ── Pure helpers ──────────────────────────────────────────────────────────────
+
+function buildTeamMap(match) {
+  const map = {};
+  (match.teams?.[0] || []).forEach((p) => { map[p.UUID] = 'team1'; });
+  (match.teams?.[1] || []).forEach((p) => { map[p.UUID] = 'team2'; });
+  return map;
 }
 
-/* ── Banner style helper ─────────────────────────────────── */
-function getBannerStyle(cardBanner) {
-  if (!cardBanner) return null;
-  if (cardBanner.type === 'gradient') return { background: cardBanner.value };
-  if (cardBanner.type === 'color')    return { background: cardBanner.value };
-  if (cardBanner.type === 'image')    return { backgroundImage: `url(${cardBanner.value})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+function allPlayers(match) { return [...(match.teams?.[0] || []), ...(match.teams?.[1] || [])]; }
+function ghostsOf(match)   { return allPlayers(match).filter((p) => !p.isCurrentPlayer); }
+
+function pickTowerPosition(idx, team, tiles, usedKeys) {
+  const minQ = team === 'team1' ? 0 : TEAM2_ZONE_START;
+  const maxQ = team === 'team1' ? TEAM1_ZONE_END - 1 : MAP_COLS - 1;
+  const tR   = Math.floor(MAP_ROWS * [0.2, 0.5, 0.8][idx % 3]);
+  const tQ   = Math.floor((minQ + maxQ) / 2);
+  let best = null, bd = Infinity;
+  for (const key of Object.keys(tiles)) {
+    if (usedKeys.has(key)) continue;
+    const t = tiles[key];
+    if (t.type !== 'grass' || t.q < minQ || t.q > maxQ) continue;
+    const d = Math.abs(t.q - tQ) + Math.abs(t.r - tR);
+    if (d < bd) { bd = d; best = t; }
+  }
+  return best ? tileKey(best.q, best.r) : null;
+}
+
+function placeTower(tiles, key, team) {
+  if (!tiles[key]) return tiles;
+  return { ...tiles, [key]: { ...tiles[key], isTower: true, owner: team, hp: TILE_HP.tower, maxHp: TILE_HP.tower } };
+}
+
+function computeExplored(mapState, teamMap, uuid) {
+  const team = teamMap[uuid];
+  const set  = new Set(mapState.exploredTiles || []);
+  // Owned territory is always known
+  if (team && mapState.tiles) {
+    for (const [key, tile] of Object.entries(mapState.tiles)) {
+      if (tile.owner === team) set.add(key);
+    }
+  }
+  // Radius-1 vision from each teammate
+  for (const [id, pos] of Object.entries(mapState.playerPositions)) {
+    if (teamMap[id] !== team || !inBounds(pos.q, pos.r)) continue;
+    set.add(tileKey(pos.q, pos.r));
+    for (const { q, r } of getNeighbors(pos.q, pos.r)) { if (inBounds(q, r)) set.add(tileKey(q, r)); }
+  }
+  return set;
+}
+
+function towerTotals(tiles) {
+  let t1 = 0, t2 = 0;
+  for (const t of Object.values(tiles)) {
+    if (!t.isTower) continue;
+    if (t.owner === 'team1') t1 += t.hp;
+    else if (t.owner === 'team2') t2 += t.hp;
+  }
+  return { team1: t1, team2: t2 };
+}
+
+function checkWin(tiles) {
+  const a1 = Object.values(tiles).some((t) => t.isTower && t.owner === 'team1');
+  const a2 = Object.values(tiles).some((t) => t.isTower && t.owner === 'team2');
+  if (!a2) return 'team1';
+  if (!a1) return 'team2';
   return null;
 }
 
-/* ── Elo computation ─────────────────────────────────────── */
-/**
- * Pure function — computes elo change and breakdown for every player.
- * Winners:  +20 base + round(pct * 25) contribution [+ 5 overwhelm if diff > 300]
- * Losers:   -20 base + round(pct * 15) recompensation
- * Underdog: +round(20 * pct) if player is the lowest rank and everyone else is 150+ elo higher
- */
-function computeEloChanges(teams, scores, forcedLoserTeamIdx = null) {
-  const allPlayers = [...teams[0], ...teams[1]];
-  const t1Total = teams[0].reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const t2Total = teams[1].reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const grandTotal = t1Total + t2Total;
-
-  let winnerTeamIdx = t1Total >= t2Total ? 0 : 1;
-  if (forcedLoserTeamIdx !== null) winnerTeamIdx = forcedLoserTeamIdx === 0 ? 1 : 0;
-
-  const overwhelm = Math.abs(t1Total - t2Total) > 300;
-
-  // Underdog: lowest elo player, only if ALL others are 150+ elo above them
-  const sortedByElo = [...allPlayers].sort((a, b) => (a.elo || 0) - (b.elo || 0));
-  const lowestPlayer = sortedByElo[0];
-  const lowestElo = lowestPlayer ? (lowestPlayer.elo || 0) : 0;
-  const allOthers150Plus = lowestPlayer && allPlayers
-    .filter(p => p.UUID !== lowestPlayer.UUID)
-    .every(p => (p.elo || 0) - lowestElo >= 150);
-  const underdogUUID = allOthers150Plus ? lowestPlayer.UUID : null;
-
-  const changes = {};
-
-  for (let ti = 0; ti < 2; ti++) {
-    const isWinnerTeam = ti === winnerTeamIdx;
-    for (const player of teams[ti]) {
-      const pts = Number(scores[player.UUID] || 0);
-      const pct = grandTotal > 0 ? pts / grandTotal : 0;
-      const pctDisplay = Math.round(pct * 100);
-
-      const breakdown = [];
-      let change;
-
-      if (isWinnerTeam) {
-        const contribBonus = Math.round(pct * 25);
-        change = 20 + contribBonus;
-        breakdown.push({ label: 'Win', value: +20 });
-        if (contribBonus > 0) breakdown.push({ label: `Contribution (${pctDisplay}%)`, value: +contribBonus });
-        if (overwhelm) { change += 5; breakdown.push({ label: 'Overwhelm bonus', value: +5 }); }
-      } else {
-        const recomp = Math.round(pct * 15);
-        change = -20 + recomp;
-        breakdown.push({ label: 'Loss', value: -20 });
-        if (recomp > 0) breakdown.push({ label: `Contribution (${pctDisplay}%)`, value: +recomp });
-      }
-
-      if (player.UUID === underdogUUID) {
-        const underdogBonus = Math.round(20 * pct);
-        if (underdogBonus > 0) { change += underdogBonus; breakdown.push({ label: 'Underdog bonus', value: +underdogBonus }); }
-      }
-
-      changes[player.UUID] = { change, breakdown, isWinner: isWinnerTeam };
-    }
-  }
-
-  return { changes, winnerTeamIdx, t1Total, t2Total };
+function respawn(team, tiles) {
+  const opts = Object.values(tiles).filter((t) => t.isTower && t.owner === team);
+  if (!opts.length) return null;
+  const t = opts[Math.floor(Math.random() * opts.length)];
+  return { q: t.q, r: t.r };
 }
 
-/* ── Rank tier: drives visual intensity ──────────────────── */
-function getRankTier(elo = 0) {
-  const group = getRank(elo).group;
-  if (group === 'Radiant')                         return 'apex';
-  if (group === 'Immortal')                        return 'elite';
-  if (group === 'Ascendant')                       return 'high';
-  if (group === 'Diamond' || group === 'Platinum') return 'mid';
-  if (group === 'Gold'    || group === 'Silver')   return 'low';
-  return 'base';
+/** Card-banner cosmetic → inline style. Shop sells gradient/color/image banners. */
+function bannerStyle(cb) {
+  if (!cb) return null;
+  if (cb.type === 'gradient') return { background: cb.value };
+  if (cb.type === 'color')    return { background: cb.value };
+  if (cb.type === 'image')    return { backgroundImage: `url(${cb.value})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  return null;
 }
 
-/* ── Animated ELO counter ────────────────────────────────── */
-function AnimatedElo({ from, to, duration = 1800 }) {
-  const [display, setDisplay] = useState(from);
-  useEffect(() => {
-    const start = performance.now();
-    const diff  = to - from;
-    const frame = (now) => {
-      const t    = Math.min(1, (now - start) / duration);
-      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      setDisplay(Math.round(from + diff * ease));
-      if (t < 1) requestAnimationFrame(frame);
-    };
-    const id = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(id);
-  }, [from, to, duration]);
-  return <>{display.toLocaleString()}</>;
-}
+// ── Rich sidebar player row ──────────────────────────────────────────────────
+// Profile picture + rank color + card banner (shop cosmetic) + HP bar.
+// Everything that makes a player *feel* like someone lives here.
 
-/* ── Match End Screen overlay ────────────────────────────── */
-function MatchEndScreen({ match, currentPlayer, onReturn }) {
-  const result   = match.result || {};
-  const team1    = match.teams?.[0] || [];
-  const team2    = match.teams?.[1] || [];
-  // Use String coercion to match concludeMatch logic
-  const myOnT1   = team1.some(p => String(p.UUID) === String(currentPlayer?.UUID));
-  // Derive outcome from stored value; if undefined/null fall back to score comparison
-  const myTeamScoreRaw  = myOnT1 ? result.team1Total : result.team2Total;
-  const oppTeamScoreRaw = myOnT1 ? result.team2Total : result.team1Total;
-  const iWon     = result.iWon ?? (myTeamScoreRaw >= oppTeamScoreRaw);
-  const myTeam       = myOnT1 ? team1 : team2;
-  const oppTeam      = myOnT1 ? team2 : team1;
-  const myTeamScore  = myTeamScoreRaw;
-  const oppTeamScore = oppTeamScoreRaw;
-
-  const oldElo   = result.oldElo   ?? (Number(currentPlayer?.elo || 0) - (result.eloChange || 0));
-  const newElo   = result.newElo   ?? Number(currentPlayer?.elo || 0);
-  const breakdown = result.eloBreakdown || [];
-
-  const rankBefore = getRank(oldElo);
-  const rankAfter  = getRank(newElo);
-  const rankedUp   = rankAfter.minElo > rankBefore.minElo;
-  const rankColor  = rankAfter.color;
-
-  return (
-    <div className={`end-screen ${iWon ? 'end-screen-win' : 'end-screen-loss'}`}>
-      <div className="end-screen-scanlines" aria-hidden="true" />
-      <div className="end-screen-content">
-
-        {/* Outcome banner */}
-        <div className={`end-outcome-banner ${iWon ? 'eob-win' : 'eob-loss'}`}>
-          <span className="eob-icon">{iWon ? '▲' : '▼'}</span>
-          <span className="eob-label">
-            {iWon ? 'VICTORY' : (result.wasForfeited ? 'FORFEIT' : 'DEFEAT')}
-          </span>
-        </div>
-
-        {/* Team score breakdown */}
-        <div className="end-score-vs">
-          <div className="esv-side esv-mine">
-            <div className="esv-team-label">YOUR TEAM</div>
-            <div className="esv-score">{(myTeamScore || 0).toLocaleString()}</div>
-            <div className="esv-players">
-              {myTeam.map(p => (
-                <span key={p.UUID} className={`esv-player ${p.UUID === currentPlayer?.UUID ? 'esv-player-you' : ''}`}>
-                  {p.username}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className={`esv-vs-circle ${iWon ? 'esv-circle-win' : 'esv-circle-loss'}`}>VS</div>
-
-          <div className="esv-side esv-opp">
-            <div className="esv-team-label">OPPOSITION</div>
-            <div className="esv-score esv-score-opp">{(oppTeamScore || 0).toLocaleString()}</div>
-            <div className="esv-players">
-              {oppTeam.map(p => (
-                <span key={p.UUID} className="esv-player">{p.username}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Player ELO card */}
-        <div className={`end-player-card rank-tier-${getRankTier(newElo)}`} style={{ '--rank-color': rankColor }}>
-          <div className="epc-avatar-frame">
-            <ProfilePicture src={currentPlayer?.profilePicture} username={currentPlayer?.username} size={72} />
-            <div className="epc-avatar-ring" style={{ borderColor: rankColor, boxShadow: `0 0 18px ${rankColor}66` }} />
-            <div className="epc-rank-icon">{rankAfter.icon}</div>
-          </div>
-
-          <div className="epc-body">
-            <div className="epc-username" style={{ color: rankColor, textShadow: `0 0 24px ${rankColor}99` }}>
-              {currentPlayer?.username}
-            </div>
-
-            {rankedUp && (
-              <div className="epc-rankup">
-                ✦ RANK UP — {rankAfter.group.toUpperCase()}{rankAfter.sub ? ` ${rankAfter.sub}` : ''}
-              </div>
-            )}
-
-            <div className="epc-elo-transition">
-              <span className="epc-elo-old">{oldElo.toLocaleString()}</span>
-              <span className="epc-elo-arrow">→</span>
-              <span className="epc-elo-new" style={{ color: rankColor }}>
-                <AnimatedElo from={oldElo} to={newElo} />
-              </span>
-            </div>
-
-            <div className="epc-breakdown">
-              {breakdown.map((item, i) => (
-                <div
-                  key={i}
-                  className={`epc-bd-row ${item.value >= 0 ? 'bd-positive' : 'bd-negative'}`}
-                  style={{ animationDelay: `${0.35 + i * 0.08}s` }}
-                >
-                  <span className="bd-value">{item.value > 0 ? '+' : ''}{item.value}</span>
-                  <span className="bd-label">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button className="primary end-return-btn" onClick={onReturn}>
-          RETURN TO LOBBY →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Player node ─────────────────────────────────────────── */
-function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elapsedRatio, currentTaskName }) {
+function PlayerRow({ player, pos, isMe, isEnemy, visible }) {
   const rank       = getRank(player.elo || 0);
-  const rankLabel  = getRankLabel(player.elo || 0);
-  const rankTier   = getRankTier(player.elo || 0);
-  const accentColor = THEME_ACCENT_COLORS[player.playerTheme || 'default'] || '#4da3ff';
-  const bannerStyle = getBannerStyle(player.cardBanner);
+  const rankCls    = getRankClass(player.elo || 0);
+  const rankTxt    = getRankLabel(player.elo || 0);
+  const themeColor = THEME_ACCENT_COLORS[player.playerTheme || player.activeCosmetics?.theme || 'default']
+                  || THEME_ACCENT_COLORS.default;
+  const bg         = bannerStyle(player.cardBanner || player.activeCosmetics?.cardBanner);
+  const hp         = pos?.hp ?? 100;
+  const hpPct      = Math.max(0, Math.min(100, hp));
+  const hpColor    = hp > 50 ? '#22c55e' : hp > 25 ? '#f59e0b' : '#ef4444';
 
-  // Outer glow scales with rank tier
-  const glowAlpha = { base: 0, low: 0.18, mid: 0.35, high: 0.55, elite: 0.72, apex: 0.9 }[rankTier];
-  const cardGlow  = glowAlpha > 0
-    ? `0 0 ${8 + glowAlpha * 22}px ${rank.glow}`
-    : undefined;
-
-  const activity = isCurrentPlayer
-    ? (currentTaskName || null)
-    : getGhostActivity(player, elapsedRatio);
+  const hidden = isEnemy && !visible;
 
   return (
     <div
-      className={`apn apn-${side} rank-tier-${rankTier} ${isCurrentPlayer ? 'apn-self' : ''} ${isActive ? 'apn-active' : ''}`}
+      className={`ma-prow ${isMe ? 'ma-prow--me' : ''} ${isEnemy ? 'ma-prow--enemy' : ''} ${hidden ? 'ma-prow--fog' : ''}`}
       style={{
-        '--apn-accent': accentColor,
-        '--rank-color': rank.color,
-        '--rank-glow':  rank.glow,
-        ...(cardGlow ? { boxShadow: cardGlow } : {}),
-        ...(bannerStyle || {}),
+        '--prow-accent': themeColor,
+        '--prow-rank':   rank.color,
+        '--prow-glow':   rank.glow,
       }}
     >
-      {bannerStyle && <div className="apn-banner-overlay" />}
-      <div className="apn-avatar-wrap">
-        <ProfilePicture src={player.profilePicture} username={player.username} size={48} />
-        {isActive && <div className="apn-pulse-ring" />}
+      {bg && !hidden && <div className="ma-prow-banner" style={bg} />}
+      <div className="ma-prow-shade" />
+      <div className="ma-prow-avatar" style={{ boxShadow: hidden ? 'none' : `0 0 12px ${rank.glow}` }}>
+        {hidden
+          ? <span className="ma-prow-unknown">?</span>
+          : <ProfilePicture src={player.profilePicture} username={player.username} size={34} />}
       </div>
-      <div className="apn-info">
-        <div className="apn-name-row">
-          <span
-            className="apn-name"
-            style={{
-              color: rank.color,
-              textShadow: glowAlpha > 0.3 ? `0 0 10px ${rank.glow}` : undefined,
-            }}
-          >
-            {player.username}
-          </span>
-          {isCurrentPlayer && <span className="apn-tag apn-tag-you">YOU</span>}
-          {player.isGenerated && <span className="apn-tag apn-tag-ghost">GHOST</span>}
+      <div className="ma-prow-body">
+        <div className="ma-prow-name" style={{ color: hidden ? 'rgba(255,255,255,0.35)' : rank.color }}>
+          {player.username}
+          {isMe && <span className="ma-prow-youtag">YOU</span>}
         </div>
-        <div className={`apn-rank rank-${getRankClass(player.elo || 0)}`}>
-          {rank.icon} {rankLabel}
+        <div className={`ma-prow-rank rank-${rankCls}`}>
+          {hidden ? '— hidden —' : `${rank.icon} ${rankTxt}`}
         </div>
-        <div className="apn-score">{score.toLocaleString()} <span className="apn-pts">pts</span></div>
-        {activity && <div className="apn-activity">→ {activity}</div>}
+        {!hidden && (
+          <div className="ma-prow-hp">
+            <div className="ma-prow-hp-track">
+              <div className="ma-prow-hp-fill" style={{ width: `${hpPct}%`, background: hpColor }} />
+            </div>
+            <span className="ma-prow-hp-num">{hp}</span>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/* ── SVG connector lines ─────────────────────────────────── */
-function ArenaConnector({ team1Pct }) {
-  const W = 1000, H = 520;
-  const leftX = 230, rightX = 770, centerX = 500, centerY = 260;
-  const playerYs  = [90, 260, 430];
-  const myOpacity  = Math.max(0.2, team1Pct / 100);
-  const oppOpacity = Math.max(0.2, (100 - team1Pct) / 100);
-
-  return (
-    <svg className="arena-connector-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        {playerYs.map((y, i) => (
-          <linearGradient key={`gl${i}`} id={`gl${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#4da3ff" stopOpacity={myOpacity} />
-            <stop offset="100%" stopColor="#4da3ff" stopOpacity={myOpacity * 0.15} />
-          </linearGradient>
-        ))}
-        {playerYs.map((y, i) => (
-          <linearGradient key={`gr${i}`} id={`gr${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#ff3d57" stopOpacity={oppOpacity * 0.15} />
-            <stop offset="100%" stopColor="#ff3d57" stopOpacity={oppOpacity} />
-          </linearGradient>
-        ))}
-      </defs>
-      {playerYs.map((y, i) => (
-        <line key={`l${i}`} x1={leftX} y1={y} x2={centerX} y2={centerY} stroke={`url(#gl${i})`} strokeWidth="1.5" />
-      ))}
-      {playerYs.map((y, i) => (
-        <line key={`r${i}`} x1={centerX} y1={centerY} x2={rightX} y2={y} stroke={`url(#gr${i})`} strokeWidth="1.5" />
-      ))}
-      <polygon
-        points={`${centerX},${centerY-52} ${centerX+52},${centerY} ${centerX},${centerY+52} ${centerX-52},${centerY}`}
-        fill="none" stroke="rgba(77,163,255,0.2)" strokeWidth="1"
-      />
-    </svg>
-  );
+/**
+ * Screen-offset layout for N avatars sharing one tile.
+ * 1: center. 2: side-by-side. 3: triangle. 4+: 2×2 grid (first 4 only).
+ */
+function avatarLayout(n, cx, cy) {
+  const d = HEX_SIZE * 0.32;
+  if (n <= 1) return [{ x: cx, y: cy, scale: 1 }];
+  if (n === 2) return [
+    { x: cx - d, y: cy, scale: 0.8 },
+    { x: cx + d, y: cy, scale: 0.8 },
+  ];
+  if (n === 3) return [
+    { x: cx,     y: cy - d * 0.7, scale: 0.68 },
+    { x: cx - d, y: cy + d * 0.5, scale: 0.68 },
+    { x: cx + d, y: cy + d * 0.5, scale: 0.68 },
+  ];
+  return [
+    { x: cx - d, y: cy - d, scale: 0.6 },
+    { x: cx + d, y: cy - d, scale: 0.6 },
+    { x: cx - d, y: cy + d, scale: 0.6 },
+    { x: cx + d, y: cy + d, scale: 0.6 },
+  ].slice(0, n);
 }
 
-/* ── Center score diamond ─────────────────────────────────── */
-function CenterNode({ team1Total, team2Total, myOnTeam1 }) {
-  const grand   = team1Total + team2Total;
-  const myTotal = myOnTeam1 ? team1Total : team2Total;
-  const myPct   = grand > 0 ? Math.round(myTotal / grand * 100) : 50;
-  const isLeading = myPct > 50;
+// ── Canvas draw helpers ───────────────────────────────────────────────────────
 
-  return (
-    <div className="arena-center-node">
-      <div className={`acn-pct ${isLeading ? 'acn-lead' : 'acn-trail'}`}>
-        {myPct}<span className="acn-pct-sym">%</span>
-      </div>
-      <div className="acn-label">{isLeading ? 'in the lead' : 'behind'}</div>
-      <div className="acn-bar">
-        <div className="acn-bar-blue" style={{ width: `${myPct}%` }} />
-        <div className="acn-bar-red" />
-      </div>
-      <div className="acn-score-split">
-        <span className="acn-team-score acn-mine">{myTotal.toLocaleString()}</span>
-        <span className="acn-vs">vs</span>
-        <span className="acn-team-score acn-opp">{(grand - myTotal).toLocaleString()}</span>
-      </div>
-    </div>
-  );
+function drawHex(ctx, cx, cy, tile, fogged, selected, inPlacement) {
+  const pts = hexCorners(cx, cy);
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+  ctx.closePath();
+
+  // Always paint the real terrain colour first so fog becomes a *wash*
+  // rather than a wall — the map outline stays readable everywhere.
+  let fill, stroke;
+  if (tile.type === 'mountain')    { fill = COLORS.mountain; stroke = COLORS.mountainBrd; }
+  else if (!tile.owner)            { fill = COLORS.unclaimed; stroke = COLORS.unclaimedBrd; }
+  else if (tile.owner === 'team1') { fill = COLORS.team1;    stroke = COLORS.team1Brd; }
+  else                             { fill = COLORS.team2;    stroke = COLORS.team2Brd; }
+
+  ctx.fillStyle   = fill;
+  ctx.fill();
+  ctx.strokeStyle = selected ? COLORS.selected : (fogged ? COLORS.fogBrd : stroke);
+  ctx.lineWidth   = selected ? 2.2 : 0.8;
+  ctx.stroke();
+
+  if (fogged) {
+    ctx.fillStyle = COLORS.fogWash;
+    ctx.fill();
+    return;
+  }
+
+  // Reinforcement shimmer
+  if (tile.reinforceTier > 0 && !tile.isTower) {
+    ctx.fillStyle = tile.owner === 'team1'
+      ? `rgba(56,189,248,${tile.reinforceTier * 0.08})`
+      : `rgba(248,113,113,${tile.reinforceTier * 0.08})`;
+    ctx.fill();
+  }
+
+  // HP bar on damaged tiles
+  if (tile.maxHp > 0 && tile.hp < tile.maxHp) {
+    const pct = tile.hp / tile.maxHp;
+    const bw = HEX_SIZE * 1.4, bx = cx - bw / 2, by = cy + HEX_SIZE * 0.65;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(bx, by, bw, 2.5);
+    ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(bx, by, bw * pct, 2.5);
+  }
+
+  // Placement-phase zone highlight
+  if (inPlacement && tile.type === 'grass' && !tile.isTower) {
+    const isZone = tile.q < TEAM1_ZONE_END || tile.q >= TEAM2_ZONE_START;
+    if (isZone) {
+      ctx.strokeStyle = tile.q < TEAM1_ZONE_END ? 'rgba(56,189,248,0.55)' : 'rgba(248,113,113,0.55)';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    }
+  }
 }
 
-/* ── Main component ──────────────────────────────────────── */
+function drawTower(ctx, cx, cy, tile) {
+  const col  = tile.owner === 'team1' ? '#38bdf8' : '#f87171';
+  const glow = tile.owner === 'team1' ? COLORS.towerGlow1 : COLORS.towerGlow2;
+  ctx.shadowBlur  = 14;
+  ctx.shadowColor = glow;
+  const s = HEX_SIZE * 0.52;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s); ctx.lineTo(cx + s, cy);
+  ctx.lineTo(cx, cy + s); ctx.lineTo(cx - s, cy);
+  ctx.closePath();
+  ctx.fillStyle   = col;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth   = 0.9;
+  ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  if (tile.maxHp > 0) {
+    const pct = tile.hp / tile.maxHp;
+    const bw = HEX_SIZE * 1.6, bx = cx - bw / 2, by = cy - HEX_SIZE;
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(bx, by, bw, 3);
+    ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(bx, by, bw * pct, 3);
+  }
+}
+
+function drawPlayerAvatar(ctx, cx, cy, hp, team, isMe, s = 1) {
+  const col = team === 'team1' ? '#38bdf8' : '#f87171';
+  const r   = HEX_SIZE * 0.38 * s;
+  ctx.shadowBlur  = 6;
+  ctx.shadowColor = col;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle   = col;
+  ctx.fill();
+  ctx.strokeStyle = isMe ? COLORS.meRing : 'rgba(255,255,255,0.6)';
+  ctx.lineWidth   = isMe ? 1.7 : 0.8;
+  ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  if (hp < 100) {
+    const pct = hp / 100;
+    const bw = HEX_SIZE * 1.2 * s, bx = cx - bw / 2, by = cy + r + 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bx, by, bw, 2);
+    ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(bx, by, bw * pct, 2);
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function MatchArena() {
   const {
-    databaseConnection, timestamp, currentPlayer, refreshApp,
-    gameState: [, setGameState],
+    databaseConnection, currentPlayer, timestamp, refreshApp, notify,
     activeMatch: [activeMatch, setActiveMatch],
-    activeTask:  [activeTask, setActiveTask],
+    gameState:  [, setGameState],
+    activeTask: [activeTask, setActiveTask],
     openPanel,
   } = useContext(AppContext);
 
-  const { remaining, elapsed } = useMatchTimer(activeMatch);
-  const [scores, setScores]               = useState({});
-  const [nextTodo, setNextTodo]           = useState(null);
-  const [isConcluding, setIsConcluding]   = useState(false);
-  const [showEndScreen, setShowEndScreen] = useState(false);
+  const match   = activeMatch;
+  const teamMap = useMemo(() => buildTeamMap(match), [match]);
+  const myTeam  = teamMap[currentPlayer?.UUID];
+  const ghosts  = useMemo(() => ghostsOf(match), [match]);
 
-  const elapsedRatio = activeMatch
-    ? Math.min(1, elapsed / (Number(activeMatch.duration || 1) * HOUR))
-    : 0;
+  // Player's own theme color — drives the whole arena accent
+  const myAccent = THEME_ACCENT_COLORS[currentPlayer?.activeCosmetics?.theme || 'default']
+                || THEME_ACCENT_COLORS.default;
+  const inTask   = !!activeTask?.createdAt;
 
-  const buildScores = useCallback(async () => {
-    if (!activeMatch || !currentPlayer) return null;
-    const next = {};
-    const all  = [...(activeMatch.teams?.[0] || []), ...(activeMatch.teams?.[1] || [])];
-    for (const p of all) {
-      if (p.UUID === currentPlayer.UUID) continue;
-      next[p.UUID] = getGhostScore(p, activeMatch.createdAt, activeMatch.duration);
-    }
-    const tasks = await databaseConnection.getStoreFromRange(STORES.task, activeMatch.createdAt, new Date().toISOString());
-    next[currentPlayer.UUID] = tasks
-      .filter((t) => t.parent === currentPlayer.UUID)
-      .reduce((s, t) => s + Number(t.points || 0), 0);
-    return next;
-  }, [activeMatch, currentPlayer, databaseConnection]);
+  // Next suggested todo (fetched alongside task-count polling)
+  const [nextTodo, setNextTodo] = useState(null);
 
-  const refreshScores = useCallback(async () => {
-    const next = await buildScores();
-    if (!next) return;
-    setScores(next);
-    const todos = await databaseConnection.getAll(STORES.todo);
-    setNextTodo(getNextTodo(todos, getWeights(todos)));
-  }, [buildScores, databaseConnection]);
+  // ── Core state ─────────────────────────────────────────────────
+  const [phase, setPhase] = useState(() => {
+    if (match?.matchPhase === 'active'    && match?.mapState?.tiles) return PHASE.ACTIVE;
+    if (match?.matchPhase === 'placement' && match?.mapState?.tiles) return PHASE.PLACEMENT;
+    return PHASE.BANNER;
+  });
+  const [mapState, setMapState] = useState(() => match?.mapState || null);
+  const mapRef = useRef(null);
+  // Ref mirrors state so ghost loop / auto-save always see latest tiles
+  mapRef.current = mapState;
 
-  useEffect(() => { refreshScores(); }, [refreshScores, timestamp]);
+  const [placedTowers, setPlacedTowers] = useState({});
+  const [myPlaced,     setMyPlaced]     = useState(false);
+  const [spendable,    setSpendable]    = useState(0);
+  const [totalPts,     setTotalPts]     = useState(0);
+  const [burstSpent,   setBurstSpent]   = useState(0);
+  const [selectedTile, setSelectedTile] = useState(null);
+  const [popupPos,     setPopupPos]     = useState({ left: 0, top: 0 });
+  const [matchResult,  setMatchResult]  = useState(null);
+  const [eloDeltas,    setEloDeltas]    = useState(null);
+  const [timeLeft,     setTimeLeft]     = useState(0);
+  const [scale,        setScale]        = useState(1);
+  const prevPtsRef    = useRef(0);
+  const concludingRef = useRef(false);
 
-  // Auto-show endscreen when match completes (give arena a beat to render first)
+  const canvasRef    = useRef(null);
+  const containerRef = useRef(null);
+  const ghostIntRef  = useRef(null);
+  const saveIntRef   = useRef(null);
+
+  // ── Responsive scale — fit canvas to container, preserve hex aspect ──────
   useEffect(() => {
-    if (activeMatch?.status === MATCH_STATUS.complete) {
-      const timer = setTimeout(() => setShowEndScreen(true), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [activeMatch?.status]);
+    const container = containerRef.current;
+    if (!container) return;
+    const update = () => {
+      const rect = container.getBoundingClientRect();
+      const availW = Math.max(200, rect.width  - 8);
+      const availH = Math.max(200, rect.height - 16);
+      const s = Math.max(0.5, Math.min(2.2, Math.min(availW / CANVAS_W, availH / CANVAS_H)));
+      setScale(s);
+    };
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, []);
 
-  const concludeMatch = useCallback(async (forcedLoss = false) => {
-    if (!activeMatch || !currentPlayer || isConcluding || activeMatch.status !== MATCH_STATUS.active) return;
-    setIsConcluding(true);
-    try {
-      const finalScores = await buildScores();
-      if (!finalScores) return;
-      setScores(finalScores);
-
-      const team1 = activeMatch.teams?.[0] || [];
-      const team2 = activeMatch.teams?.[1] || [];
-
-      // Player is always placed on teams[0] at match creation (see Lobby.jsx).
-      // Use String coercion for the UUID comparison to guard against number/string type drift.
-      const myOnTeam1 = team1.some((p) => String(p.UUID) === String(currentPlayer.UUID));
-
-      const forcedLoserTeamIdx = forcedLoss ? (myOnTeam1 ? 0 : 1) : null;
-      const { changes, winnerTeamIdx, t1Total, t2Total } =
-        computeEloChanges([team1, team2], finalScores, forcedLoserTeamIdx);
-
-      // iWon: did the current player's team win?
-      // Since player is always on team1, this simplifies — but we keep the general form
-      // in case that ever changes, and cross-check with myOnTeam1.
-      const iWon = myOnTeam1
-        ? winnerTeamIdx === 0
-        : winnerTeamIdx === 1;
-      const myChange = changes[currentPlayer.UUID];
-
-      // Apply elo to current player, respecting the rank-group floor
-      const player = await databaseConnection.getCurrentPlayer();
-      const oldElo = Math.max(0, Number(player.elo || 0));
-      const floor  = getRankGroupFloor(oldElo);
-      const newElo = Math.max(floor, oldElo + (myChange?.change || 0));
-      await databaseConnection.add(STORES.player, { ...player, elo: newElo });
-
-      // Apply elo to real ghost players (skip synthesised ghosts), with their own floor
-      const allReal = await databaseConnection.getAllPlayers();
-      for (const ghost of [...team1, ...team2]) {
-        if (String(ghost.UUID) === String(currentPlayer.UUID)) continue;
-        if (String(ghost.UUID).startsWith('ghost-')) continue;
-        const rp = allReal.find((r) => String(r.UUID) === String(ghost.UUID));
-        if (!rp) continue;
-        const gc = changes[ghost.UUID];
-        const ghostOldElo = Math.max(0, Number(rp.elo || 0));
-        const ghostFloor  = getRankGroupFloor(ghostOldElo);
-        await databaseConnection.add(STORES.player, {
-          ...rp,
-          elo: Math.max(ghostFloor, ghostOldElo + (gc?.change || 0)),
-        });
-      }
-
-      const updated = {
-        ...activeMatch,
-        status: MATCH_STATUS.complete,
-        result: {
-          winner: winnerTeamIdx + 1,
-          team1Total: t1Total,
-          team2Total: t2Total,
-          iWon,
-          eloChange:    newElo - oldElo,
-          eloBreakdown: myChange?.breakdown || [],
-          oldElo,
-          newElo,
-          wasForfeited: forcedLoss,
-          concludedAt: new Date().toISOString(),
-        },
-      };
-      await databaseConnection.add(STORES.match, updated);
-      setActiveMatch(updated);
-      refreshApp();
-    } finally {
-      setIsConcluding(false);
-    }
-  }, [activeMatch, currentPlayer, isConcluding, buildScores, databaseConnection, refreshApp, setActiveMatch]);
-
+  // ── Canvas bitmap + CSS size sync (reacts to scale) ─────────────
   useEffect(() => {
-    if (!activeMatch || activeMatch.status !== MATCH_STATUS.active || remaining === null) return;
-    if (remaining === 0) concludeMatch(false);
-  }, [remaining, activeMatch, concludeMatch]);
+    const c = canvasRef.current;
+    if (!c) return;
+    c.width  = Math.round(CANVAS_W * scale * DPR);
+    c.height = Math.round(CANVAS_H * scale * DPR);
+    c.style.width  = `${CANVAS_W * scale}px`;
+    c.style.height = `${CANVAS_H * scale}px`;
+  }, [scale]);
 
-  if (!activeMatch) return null;
+  // ── Generate map eagerly (so placement starts instant banner ends) ──
+  useEffect(() => {
+    if (mapRef.current) return;
+    if (!match?.mapSeed) return;
+    const tiles = generateMap(match.mapSeed);
+    setMapState({
+      seed:            match.mapSeed,
+      tiles,
+      playerPositions: {},
+      towerOwners:     {},
+      pointsSpent:     {},
+      exploredTiles:   [],
+    });
+  }, [match?.mapSeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const team1      = activeMatch.teams?.[0] || [];
-  const team2      = activeMatch.teams?.[1] || [];
-  const t1Total    = team1.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const t2Total    = team2.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
-  const grand      = t1Total + t2Total;
-  const team1Pct   = grand > 0 ? Math.round(t1Total / grand * 100) : 50;
-  const inTask     = !!activeTask.createdAt;
-  const myOnT1     = team1.some((p) => p.UUID === currentPlayer?.UUID);
-  const matchEnded = activeMatch.status !== MATCH_STATUS.active;
-  const iWon       = matchEnded && activeMatch.result?.iWon;
-  const currentTaskName = inTask ? (activeTask.name || null) : null;
+  // ── Canvas render ───────────────────────────────────────────────
+  const render = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c || !mapState) return;
+    const ctx = c.getContext('2d');
+    // Combined DPR + responsive-scale transform. All inner code uses
+    // logical coords (CANVAS_W × CANVAS_H) and ignores scaling.
+    ctx.setTransform(DPR * scale, 0, 0, DPR * scale, 0, 0);
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  const handleReturn = () => {
-    setShowEndScreen(false);
-    setActiveMatch(null);
-    setGameState(GAME_STATE.idle);
+    if (!currentPlayer) return;
+    const explored = phase === PHASE.PLACEMENT
+      ? null   // full visibility during placement
+      : computeExplored(mapState, teamMap, currentPlayer.UUID);
+
+    const selKey = selectedTile ? tileKey(selectedTile.q, selectedTile.r) : '';
+    const inPl   = phase === PHASE.PLACEMENT;
+
+    // Pass 1: tiles
+    for (const tile of Object.values(mapState.tiles)) {
+      const { x, y } = hexToPixel(tile.q, tile.r);
+      const fogged   = explored ? !explored.has(tileKey(tile.q, tile.r)) : false;
+      drawHex(ctx, x, y, tile, fogged, tileKey(tile.q, tile.r) === selKey, inPl);
+    }
+    // Pass 2: towers
+    for (const tile of Object.values(mapState.tiles)) {
+      if (!tile.isTower) continue;
+      if (explored && !explored.has(tileKey(tile.q, tile.r))) continue;
+      const { x, y } = hexToPixel(tile.q, tile.r);
+      drawTower(ctx, x, y, tile);
+    }
+    // Pass 3: players — group so shared tiles fan out
+    const byTile = {};
+    for (const [uuid, pos] of Object.entries(mapState.playerPositions)) {
+      if (!inBounds(pos.q, pos.r)) continue;
+      if (explored && !explored.has(tileKey(pos.q, pos.r))) continue;
+      const k = tileKey(pos.q, pos.r);
+      (byTile[k] ||= []).push({ uuid, pos });
+    }
+    for (const group of Object.values(byTile)) {
+      const { x, y } = hexToPixel(group[0].pos.q, group[0].pos.r);
+      const layout = avatarLayout(group.length, x, y);
+      group.forEach(({ uuid, pos }, i) => {
+        const slot = layout[i] || layout[0];
+        drawPlayerAvatar(ctx, slot.x, slot.y, pos.hp ?? 100, teamMap[uuid], uuid === currentPlayer.UUID, slot.scale);
+      });
+    }
+  }, [mapState, selectedTile, phase, teamMap, currentPlayer, scale]);
+
+  useEffect(() => { render(); }, [render]);
+
+  // ── Banner complete ─────────────────────────────────────────────
+  // Persist matchPhase AND mapState together — the reload guard requires
+  // both to skip the banner. Saving only matchPhase is what caused the
+  // countdown to replay on every reload.
+  const onBannerDone = useCallback(async () => {
+    setPhase(PHASE.PLACEMENT);
+    const s = mapRef.current;
+    await databaseConnection.update(STORES.match, match.UUID, {
+      matchPhase: 'placement',
+      ...(s ? { mapState: s } : {}),
+    });
+  }, [match, databaseConnection]);
+
+  // ── Tower placement ─────────────────────────────────────────────
+  const handlePlace = useCallback((q, r) => {
+    if (myPlaced || !mapRef.current) return;
+    const key = tileKey(q, r);
+    const t   = mapRef.current.tiles[key];
+    if (!t || t.type !== 'grass' || t.isTower) return;
+    const minQ = myTeam === 'team1' ? 0 : TEAM2_ZONE_START;
+    const maxQ = myTeam === 'team1' ? TEAM1_ZONE_END - 1 : MAP_COLS - 1;
+    if (t.q < minQ || t.q > maxQ) return;
+
+    setMyPlaced(true);
+    setPlacedTowers((p) => ({ ...p, [currentPlayer.UUID]: key }));
+
+    const myGhosts    = ghosts.filter((g) => teamMap[g.UUID] === myTeam);
+    const enemyGhosts = ghosts.filter((g) => teamMap[g.UUID] !== myTeam);
+    const enemyTeam   = myTeam === 'team1' ? 'team2' : 'team1';
+
+    myGhosts.forEach((g, i) => setTimeout(() => {
+      setPlacedTowers((p) => {
+        const used = new Set([...Object.values(p), key]);
+        const pos  = pickTowerPosition(i, myTeam, mapRef.current?.tiles || {}, used);
+        return pos ? { ...p, [g.UUID]: pos } : p;
+      });
+    }, 900 + i * 1100));
+
+    enemyGhosts.forEach((g, i) => setTimeout(() => {
+      setPlacedTowers((p) => {
+        const used = new Set(Object.values(p));
+        const pos  = pickTowerPosition(i, enemyTeam, mapRef.current?.tiles || {}, used);
+        return pos ? { ...p, [g.UUID]: pos } : p;
+      });
+    }, 1400 + i * 900));
+  }, [myPlaced, myTeam, ghosts, teamMap, currentPlayer]);
+
+  // Transition PLACEMENT → ACTIVE once every tower is down
+  useEffect(() => {
+    if (phase !== PHASE.PLACEMENT || !mapState) return;
+    if (Object.keys(placedTowers).length < allPlayers(match).length) return;
+
+    let tiles = { ...mapState.tiles };
+    const towerOwners = {}, playerPositions = {};
+    for (const [uuid, key] of Object.entries(placedTowers)) {
+      const team = teamMap[uuid];
+      tiles = placeTower(tiles, key, team);
+      towerOwners[key] = uuid;
+      const { q, r } = parseKey(key);
+      playerPositions[uuid] = { q, r, hp: 100, team };
+    }
+    const exploredTiles = Object.values(tiles)
+      .filter((t) => t.owner === myTeam)
+      .map((t) => tileKey(t.q, t.r));
+
+    const s = { ...mapState, tiles, towerOwners, playerPositions, exploredTiles };
+    setMapState(s);
+    setPhase(PHASE.ACTIVE);
+    databaseConnection.update(STORES.match, match.UUID, { mapState: s, matchPhase: 'active' });
+  }, [placedTowers, phase, mapState, match, teamMap, myTeam, databaseConnection]);
+
+  // ── Conclude match ──────────────────────────────────────────────
+  const conclude = useCallback(async (state, winner, reason = 'towers') => {
+    if (concludingRef.current) return;
+    concludingRef.current = true;
+    setPhase(PHASE.COMPLETE);
+    clearInterval(ghostIntRef.current);
+    clearInterval(saveIntRef.current);
+
+    const iWon = winner === myTeam;
+    const { team1, team2 } = towerTotals(state.tiles);
+    const scoreMap = {};
+    allPlayers(match).forEach((p) => {
+      scoreMap[p.UUID] = teamMap[p.UUID] === 'team1' ? team1 : team2;
+    });
+    const deltas  = computeEloChanges(match, scoreMap, currentPlayer.UUID);
+    const result  = { iWon, winner, reason, team1TowerHp: team1, team2TowerHp: team2, endedAt: new Date().toISOString() };
+    const updated = { ...match, status: MATCH_STATUS.complete, result, mapState: state };
+    await databaseConnection.update(STORES.match, match.UUID, updated);
+
+    for (const [uuid, delta] of Object.entries(deltas)) {
+      if (!delta) continue;
+      try {
+        const p = await databaseConnection.getPlayerByUUID(uuid);
+        if (p) await databaseConnection.update(STORES.player, p.UUID, { elo: (p.elo || 0) + delta });
+      } catch { /* ghost UUIDs may not exist locally */ }
+    }
+
+    setMatchResult({ iWon, winner, reason, team1TowerHp: team1, team2TowerHp: team2 });
+    setEloDeltas(deltas);
+    setActiveMatch(updated);
     refreshApp();
+  }, [myTeam, match, teamMap, currentPlayer, databaseConnection, setActiveMatch, refreshApp]);
+
+  // ── Player action ───────────────────────────────────────────────
+  const handleAction = useCallback((action) => {
+    const state = mapRef.current;
+    if (!state || phase !== PHASE.ACTIVE) return;
+    const d    = match.duration / 4;
+    const mult = burstMultiplier(burstSpent);
+    const baseCosts = {
+      move:          getMoveCost(d),
+      claim:         getClaimCost(d),
+      attack_tile:   getAttackTileCost(d),
+      attack_tower:  getAttackTowerCost(d),
+      reinforce:     getReinforceCost((action.tier ?? 1) - 1, d),
+      attack_player: getPlayerAttackCost(d),
+    };
+    const cost = Math.ceil((baseCosts[action.type] || 0) * mult);
+    if (spendable < cost) return;
+
+    let { tiles, playerPositions, pointsSpent } = applyAction(
+      { ...action, cost }, state.tiles, state.playerPositions, state.pointsSpent, currentPlayer.UUID,
+    );
+
+    const myP = playerPositions[currentPlayer.UUID];
+    if (myP?.hp <= 0) {
+      const sp = respawn(myTeam, tiles);
+      if (sp) playerPositions = { ...playerPositions, [currentPlayer.UUID]: { ...myP, ...sp, hp: 100 } };
+    }
+
+    const newExp = computeExplored({ ...state, tiles, playerPositions }, teamMap, currentPlayer.UUID);
+    const ns = { ...state, tiles, playerPositions, pointsSpent, exploredTiles: [...newExp] };
+    setMapState(ns);
+    setSpendable((s) => s - cost);
+    setBurstSpent((b) => b + cost);
+    setSelectedTile(null);
+
+    const winner = checkWin(tiles);
+    if (winner) conclude(ns, winner);
+  }, [phase, match, burstSpent, spendable, currentPlayer, myTeam, teamMap, conclude]);
+
+  // ── Stable ref bag for long-lived intervals ─────────────────────
+  // React re-creates currentPlayer (via App.jsx's 10s player re-fetch) with
+  // a fresh object reference every tick, which would otherwise invalidate
+  // every interval's useCallback and *clear the setInterval before it fires*.
+  // Intervals read from this ref instead of from reactive closures.
+  const liveRef = useRef({});
+  liveRef.current = {
+    match, myTeam, teamMap, currentPlayerUUID: currentPlayer?.UUID,
+    ghosts, notify, conclude, phase,
   };
 
+  // ── Ghost AI loop ───────────────────────────────────────────────
+  // Interval is created once per phase entry, NOT tied to any reactive dep
+  // other than phase itself. All state is read from liveRef at tick time.
+  useEffect(() => {
+    if (phase !== PHASE.ACTIVE) return;
+
+    const tickOnce = () => {
+      const live = liveRef.current;
+      const state = mapRef.current;
+      if (!state || live.phase !== PHASE.ACTIVE) return;
+
+      let { tiles, playerPositions, pointsSpent } = state;
+
+      for (const ghost of live.ghosts) {
+        const ghostWithTeam = { ...ghost, team: live.teamMap[ghost.UUID] };
+        for (let i = 0; i < 4; i++) {
+          const act = tickGhost(ghostWithTeam, tiles, playerPositions, pointsSpent, live.match.createdAt, live.match.duration);
+          if (!act) break;
+          ({ tiles, playerPositions, pointsSpent } = applyAction(act, tiles, playerPositions, pointsSpent, ghost.UUID));
+        }
+      }
+
+      playerPositions = applyProximityDamage(playerPositions, live.match);
+
+      const myP = playerPositions[live.currentPlayerUUID];
+      if (myP?.hp <= 0) {
+        const sp = respawn(live.myTeam, tiles);
+        if (sp) {
+          playerPositions = { ...playerPositions, [live.currentPlayerUUID]: { ...myP, ...sp, hp: 100 } };
+          live.notify?.({ title: '💀 Defeated', message: 'Respawned at a friendly tower.', kind: 'error', persist: false });
+        }
+      }
+      for (const g of live.ghosts) {
+        const gp = playerPositions[g.UUID];
+        if (gp?.hp <= 0) {
+          const sp = respawn(live.teamMap[g.UUID], tiles);
+          if (sp) playerPositions = { ...playerPositions, [g.UUID]: { ...gp, ...sp, hp: 100 } };
+        }
+      }
+
+      const exp = computeExplored({ ...state, tiles, playerPositions }, live.teamMap, live.currentPlayerUUID);
+      const ns  = { ...state, tiles, playerPositions, pointsSpent, exploredTiles: [...exp] };
+      setMapState(ns);
+
+      const winner = checkWin(tiles);
+      if (winner) live.conclude?.(ns, winner);
+    };
+
+    // Fire once immediately so the player sees activity within seconds of
+    // entering the arena — waiting a full 25s for the first tick felt dead.
+    tickOnce();
+    const id = setInterval(tickOnce, GHOST_TICK_MS);
+    ghostIntRef.current = id;
+    return () => clearInterval(id);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Match timer — independent 1-second interval ─────────────────
+  // Previously this was piggy-backed on the `timestamp` useEffect, which
+  // fired every 10s and also flickered currentPlayer's reference, defeating
+  // it. Now it's a plain setInterval with no reactive deps except phase.
+  useEffect(() => {
+    if (phase !== PHASE.ACTIVE || !match) return;
+    const createdAt = new Date(match.createdAt).getTime();
+    const totalMs   = match.duration * 3_600_000;
+    const tick = () => {
+      const remaining = Math.max(0, totalMs - (Date.now() - createdAt));
+      setTimeLeft(remaining);
+      if (remaining <= 0 && !concludingRef.current) {
+        const st = mapRef.current;
+        if (st) {
+          const { team1, team2 } = towerTotals(st.tiles);
+          liveRef.current.conclude?.(st, team1 >= team2 ? 'team1' : 'team2', 'time');
+        }
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1_000);
+    return () => clearInterval(id);
+  }, [phase, match?.UUID, match?.createdAt, match?.duration]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Point tracking + next-todo (data refresh, not timer) ────────
+  // Keyed on primitive IDs so App's currentPlayer re-fetches don't spam it.
+  useEffect(() => {
+    if (phase !== PHASE.ACTIVE || !match || !currentPlayer) return;
+    const refresh = async () => {
+      const tasks = await databaseConnection.getStoreFromRange(STORES.task, match.createdAt, new Date().toISOString());
+      const myPts = tasks
+        .filter((t) => t.parent === currentPlayer.UUID && t.completedAt)
+        .reduce((s, t) => s + Number(t.points || 0), 0);
+
+      const spent = mapRef.current?.pointsSpent?.[currentPlayer.UUID] || 0;
+      setTotalPts(myPts + DEV_EXTRA_POINTS);
+      setSpendable(Math.max(0, myPts + DEV_EXTRA_POINTS - spent));
+
+      if (myPts > prevPtsRef.current) { setBurstSpent(0); prevPtsRef.current = myPts; }
+
+      const todos = await databaseConnection.getAll(STORES.todo);
+      setNextTodo(getNextTodo(todos, getWeights(todos)));
+    };
+    refresh();
+  }, [timestamp, phase, match?.UUID, currentPlayer?.UUID, databaseConnection]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Task control handlers (mirror PracticeDojo pattern) ─────────
+  const handleAddTask = useCallback(() => NiceModal.show(TaskCreationMenu), []);
+  const handleNextTask = useCallback(async () => {
+    if (!nextTodo || inTask) return;
+    setActiveTask({ ...nextTodo, originalDuration: Number(nextTodo.estimatedDuration || 0) });
+    await databaseConnection.remove(STORES.todo, nextTodo.UUID);
+    refreshApp();
+    NiceModal.show(TaskPreviewMenu, { start: true });
+  }, [nextTodo, inTask, setActiveTask, databaseConnection, refreshApp]);
+  const handleOpenQueue = useCallback(() => openPanel('tasks'), [openPanel]);
+
+  // ── Auto-save ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== PHASE.ACTIVE) return;
+    const save = () => { const s = mapRef.current; if (s) databaseConnection.update(STORES.match, match.UUID, { mapState: s }); };
+    saveIntRef.current = setInterval(save, AUTO_SAVE_MS);
+    const onHide = () => { if (document.hidden) save(); };
+    document.addEventListener('visibilitychange', onHide);
+    return () => { clearInterval(saveIntRef.current); document.removeEventListener('visibilitychange', onHide); };
+  }, [phase, match?.UUID, databaseConnection]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Canvas click ────────────────────────────────────────────────
+  const onClick = useCallback((e) => {
+    const c = canvasRef.current;
+    if (!c || !mapState) return;
+    const rect = c.getBoundingClientRect();
+    // Undo CSS scale to recover logical canvas coordinates
+    const logicalX = (e.clientX - rect.left) / scale;
+    const logicalY = (e.clientY - rect.top)  / scale;
+    const { q, r } = pixelToHex(logicalX, logicalY);
+    if (!inBounds(q, r)) return;
+
+    if (phase === PHASE.PLACEMENT) { handlePlace(q, r); return; }
+    if (phase !== PHASE.ACTIVE)    return;
+
+    const tile = mapState.tiles[tileKey(q, r)];
+    if (!tile) return;
+
+    // Anchor popup to the click in viewport space — the popup uses
+    // position: fixed, sidestepping all overflow/stacking-context issues.
+    const POPUP_W = 210, POPUP_H = 280;
+    setSelectedTile({ ...tile, q, r });
+    setPopupPos({
+      left: Math.min(window.innerWidth  - POPUP_W - 12, Math.max(12, e.clientX + 16)),
+      top:  Math.min(window.innerHeight - POPUP_H - 12, Math.max(12, e.clientY - 40)),
+    });
+  }, [mapState, phase, handlePlace, scale]);
+
+  // ── Forfeit / leave ─────────────────────────────────────────────
+  const forfeit = useCallback(async () => {
+    if (!window.confirm('Forfeit this match?')) return;
+    const st = mapRef.current;
+    if (st) conclude(st, myTeam === 'team1' ? 'team2' : 'team1', 'forfeit');
+  }, [myTeam, conclude]);
+
+  const leave = useCallback(() => {
+    setActiveMatch(null);
+    setGameState(GAME_STATE.idle);
+  }, [setActiveMatch, setGameState]);
+
+  // ── Derived display values ──────────────────────────────────────
+  const myPos    = mapState?.playerPositions?.[currentPlayer?.UUID];
+  const myHp     = myPos?.hp ?? 100;
+  const { team1: t1Hp, team2: t2Hp } = mapState ? towerTotals(mapState.tiles) : { team1: 0, team2: 0 };
+  const myTowHp  = myTeam === 'team1' ? t1Hp : t2Hp;
+  const enTowHp  = myTeam === 'team1' ? t2Hp : t1Hp;
+
+  const h = Math.floor(timeLeft / 3_600_000);
+  const m = Math.floor((timeLeft % 3_600_000) / 60_000);
+  const s = Math.floor((timeLeft % 60_000) / 1_000);
+  const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+  const [myTeamList, enTeamList] = useMemo(() => {
+    const t1 = match.teams?.[0] || [], t2 = match.teams?.[1] || [];
+    return myTeam === 'team1' ? [t1, t2] : [t2, t1];
+  }, [match, myTeam]);
+
+  // Shared explored set — sidebar + render both need it
+  const exploredSet = useMemo(() => (
+    mapState && currentPlayer ? computeExplored(mapState, teamMap, currentPlayer.UUID) : new Set()
+  ), [mapState, teamMap, currentPlayer]);
+
+  const playerOnTile = selectedTile
+    ? Object.entries(mapState?.playerPositions || {}).map(([id, pos]) => {
+        if (pos.q !== selectedTile.q || pos.r !== selectedTile.r) return null;
+        const p = allPlayers(match).find((x) => x.UUID === id);
+        return p ? { ...p, ...pos } : null;
+      }).find(Boolean)
+    : null;
+
+  // ── Render ──────────────────────────────────────────────────────
+  // Canvas is ALWAYS mounted (banner + end-card are overlays) so the
+  // DPR/size-sync effects have a stable target from first paint.
   return (
-    <div className={`match-arena ${matchEnded ? 'arena-ended' : ''}`}>
-      <div className="arena-scanlines" aria-hidden="true" />
+    <div className="ma-root" style={{ '--ma-accent': myAccent }}>
 
-      {/* Header */}
-      <div className="arena-header">
-        <div className="arena-header-left">
-          <div className="arena-status-dot" />
-          <span className="arena-eyebrow">{matchEnded ? 'MATCH COMPLETE' : 'MATCH IN PROGRESS'}</span>
-          <span className="arena-duration-badge">{activeMatch.duration}H MATCH</span>
-        </div>
-        <div className="arena-timer-wrap">
-          {matchEnded ? (
-            <span className={`arena-result-label ${iWon ? 'result-win' : 'result-loss'}`}>
-              {iWon ? '▲ VICTORY' : (activeMatch.result?.wasForfeited ? '▼ FORFEIT' : '▼ DEFEAT')}
-              {activeMatch.result?.eloChange != null && (
-                <span className="result-elo">
-                  {activeMatch.result.eloChange > 0 ? '+' : ''}{activeMatch.result.eloChange} ELO
-                </span>
+      {phase === PHASE.BANNER && (
+        <PreMatchBanner match={match} currentPlayerUUID={currentPlayer?.UUID} onComplete={onBannerDone} />
+      )}
+
+      {phase === PHASE.COMPLETE && matchResult && (() => {
+        const friendlyHp = matchResult.iWon ? matchResult.team1TowerHp : matchResult.team2TowerHp;
+        const enemyHp    = matchResult.iWon ? matchResult.team2TowerHp : matchResult.team1TowerHp;
+        return (
+          <div className="ma-end-overlay">
+            <div className="ma-end-card">
+              <div className={`ma-end-verdict ${matchResult.iWon ? 'ma-end-verdict--win' : 'ma-end-verdict--loss'}`}>
+                {matchResult.iWon ? '⚡ VICTORY' : '💀 DEFEAT'}
+              </div>
+              {matchResult.reason !== 'towers' && (
+                <div className="ma-end-reason">
+                  {matchResult.reason === 'time' ? 'Time expired — tower HP compared' : 'Match forfeited'}
+                </div>
               )}
-            </span>
-          ) : (
-            <>
-              <span className="arena-timer-label">TIME LEFT</span>
-              <span className="arena-timer">{timeAsHHMMSS(remaining || 0)}</span>
-            </>
-          )}
-        </div>
-        <div className="arena-header-right">
-          {!matchEnded ? (
-            <>
-              <button onClick={() => NiceModal.show(TaskCreationMenu)}>+ TASK</button>
-              <button onClick={() => openPanel('tasks')}>QUEUE</button>
-              <button className="primary" onClick={async () => {
-                if (!nextTodo || inTask) return;
-                setActiveTask({ ...nextTodo, originalDuration: Number(nextTodo.estimatedDuration || 0) });
-                await databaseConnection.remove(STORES.todo, nextTodo.UUID);
-                refreshApp();
-                NiceModal.show(TaskPreviewMenu);
-              }} disabled={!nextTodo || inTask}>↑ NEXT</button>
-              <button className="danger" onClick={async () => {
-                if (inTask || isConcluding) return;
-                if (!window.confirm('Forfeit match? You will lose ELO.')) return;
-                await concludeMatch(true);
-              }} disabled={inTask || isConcluding}>FORFEIT</button>
-            </>
-          ) : (
-            <button className="primary" onClick={() => setShowEndScreen(true)}>
-              VIEW RESULTS
+              <div className="ma-end-towers">
+                <div className="ma-end-tw-row"><span className="ma-end-tw-label friendly">Your towers</span><span className="ma-end-tw-hp">{friendlyHp} HP</span></div>
+                <div className="ma-end-tw-row"><span className="ma-end-tw-label enemy">Enemy towers</span><span className="ma-end-tw-hp">{enemyHp} HP</span></div>
+              </div>
+              {eloDeltas && (
+                <div className="ma-end-elo">
+                  ELO {(eloDeltas[currentPlayer.UUID] || 0) >= 0 ? '+' : ''}{eloDeltas[currentPlayer.UUID] || 0}
+                </div>
+              )}
+              <button className="ma-end-btn" onClick={leave}>Return to Lobby</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      <header className="ma-header">
+        <span className={`ma-phase-label ${phase === PHASE.PLACEMENT ? 'placing' : ''}`}>
+          {phase === PHASE.BANNER    ? '⚡ PREPARING MATCH'
+         : phase === PHASE.PLACEMENT ? '⬡ PLACE YOUR TOWER'
+         : phase === PHASE.COMPLETE  ? '🏁 MATCH OVER'
+         :                             '⚔ ACTIVE'}
+        </span>
+        {phase === PHASE.ACTIVE && <span className="ma-timer">{timeStr}</span>}
+
+        {phase === PHASE.ACTIVE && (
+          <div className="ma-task-controls">
+            <button className="ma-ctrl" onClick={handleAddTask} disabled={inTask} title="Create a new task">
+              <span className="ma-ctrl-sym">+</span> TASK
             </button>
-          )}
-        </div>
-      </div>
+            <button className="ma-ctrl ma-ctrl--primary" onClick={handleNextTask} disabled={!nextTodo || inTask}
+              title={inTask ? 'Session already active' : nextTodo ? `Start: ${nextTodo.name}` : 'No queued tasks'}>
+              <span className="ma-ctrl-sym">↑</span> NEXT
+              {nextTodo && !inTask && <span className="ma-ctrl-sub">{nextTodo.name.slice(0, 16)}</span>}
+            </button>
+            <button className="ma-ctrl" onClick={handleOpenQueue} title="Open task queue">
+              QUEUE
+            </button>
+            {inTask && (
+              <span className="ma-session-pill">
+                <span className="ma-session-dot" />
+                {(activeTask?.name || 'SESSION').slice(0, 18)}
+              </span>
+            )}
+          </div>
+        )}
 
-      {/* Score bar */}
-      <div className="arena-score-bar">
-        <span className={`asb-total ${myOnT1 ? 'asb-my' : 'asb-opp'}`}>{t1Total.toLocaleString()}</span>
-        <div className="asb-track">
-          <div className="asb-fill-blue" style={{ width: `${team1Pct}%` }} />
-          <div className="asb-fill-red" />
-        </div>
-        <span className={`asb-total ${!myOnT1 ? 'asb-my' : 'asb-opp'}`}>{t2Total.toLocaleString()}</span>
-      </div>
+        {phase !== PHASE.BANNER && phase !== PHASE.COMPLETE && (
+          <button className="ma-forfeit" onClick={forfeit}>Forfeit</button>
+        )}
+      </header>
 
-      {/* Field */}
-      <div className="arena-field">
-        <ArenaConnector team1Pct={team1Pct} />
+      <div className="ma-body">
+        <aside className="ma-sidebar">
+          <section className="ma-section">
+            <div className="ma-label">YOUR HP</div>
+            <div className="ma-hp-bar">
+              <div className="ma-hp-fill" style={{ width: `${myHp}%`, background: myHp > 50 ? '#22c55e' : myHp > 25 ? '#f59e0b' : '#ef4444' }} />
+            </div>
+            <span className="ma-hp-txt">{myHp}/100</span>
+          </section>
 
-        <div className="arena-side arena-side--left">
-          <div className="arena-side-label">YOUR TEAM</div>
-          {team1.map((player) => {
-            const isMe = player.UUID === currentPlayer?.UUID;
-            const enriched = isMe ? {
-              ...player,
-              cardBanner:  currentPlayer?.activeCosmetics?.cardBanner  ?? player.cardBanner  ?? null,
-              playerTheme: currentPlayer?.activeCosmetics?.theme        ?? player.playerTheme ?? 'default',
-            } : player;
-            return (
-              <ArenaPlayerNode key={player.UUID} player={enriched} score={Number(scores[player.UUID] || 0)}
-                isCurrentPlayer={isMe} isActive={isMe && inTask}
-                side="left" elapsedRatio={elapsedRatio}
-                currentTaskName={isMe ? currentTaskName : null}
-              />
-            );
-          })}
-        </div>
+          <section className="ma-section">
+            <div className="ma-label">POINTS</div>
+            <div className="ma-pts-main">{spendable} <span className="ma-pts-sub">spendable</span></div>
+            <div className="ma-pts-total">{totalPts} earned total</div>
+            {burstSpent >= 60 && <div className="ma-burst">⚡ Burst ×{burstMultiplier(burstSpent).toFixed(1)} active</div>}
+          </section>
 
-        <div className="arena-field-center">
-          <CenterNode team1Total={t1Total} team2Total={t2Total} myOnTeam1={myOnT1} />
-          {inTask && (
-            <div className="arena-in-session-badge">
-              <div className="arena-session-dot" />
-              {currentTaskName ? currentTaskName.slice(0, 20) : 'SESSION ACTIVE'}
+          <section className="ma-section">
+            <div className="ma-label">TOWER HP</div>
+            <div className="ma-tw-row"><span className="ma-tw-friendly">Friendly</span><span className="ma-tw-val">{myTowHp}</span></div>
+            <div className="ma-tw-row"><span className="ma-tw-enemy">Enemy</span><span className="ma-tw-val">{enTowHp}</span></div>
+          </section>
+
+          <section className="ma-section">
+            <div className="ma-label">YOUR TEAM</div>
+            <div className="ma-prow-list">
+              {myTeamList.map((p) => {
+                const pos = mapState?.playerPositions?.[p.UUID];
+                const enriched = p.UUID === currentPlayer.UUID
+                  ? { ...p,
+                      playerTheme: currentPlayer.activeCosmetics?.theme || p.playerTheme || 'default',
+                      cardBanner:  currentPlayer.activeCosmetics?.cardBanner ?? p.cardBanner ?? null,
+                      profilePicture: currentPlayer.profilePicture ?? p.profilePicture }
+                  : p;
+                return (
+                  <PlayerRow key={p.UUID} player={enriched} pos={pos}
+                             isMe={p.UUID === currentPlayer.UUID} isEnemy={false} visible />
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="ma-section">
+            <div className="ma-label">ENEMIES</div>
+            <div className="ma-prow-list">
+              {enTeamList.map((p) => {
+                const pos = mapState?.playerPositions?.[p.UUID];
+                const visible = pos && exploredSet.has(tileKey(pos.q, pos.r));
+                return (
+                  <PlayerRow key={p.UUID} player={p} pos={pos}
+                             isMe={false} isEnemy visible={visible} />
+                );
+              })}
+            </div>
+          </section>
+        </aside>
+
+        <div className="ma-map" ref={containerRef}>
+          {phase === PHASE.PLACEMENT && (
+            <div className={`ma-place-hint ${myPlaced ? 'waiting' : ''}`}>
+              {myPlaced ? 'Tower placed — waiting for teammates…' : 'Click a highlighted tile in your zone to place your tower'}
             </div>
           )}
-        </div>
 
-        <div className="arena-side arena-side--right">
-          <div className="arena-side-label arena-side-label--right">OPPOSITION</div>
-          {team2.map((player) => (
-            <ArenaPlayerNode key={player.UUID} player={player} score={Number(scores[player.UUID] || 0)}
-              isCurrentPlayer={player.UUID === currentPlayer?.UUID}
-              isActive={false}
-              side="right" elapsedRatio={elapsedRatio}
-              currentTaskName={null}
+          <canvas
+            ref={canvasRef}
+            className="ma-canvas"
+            onClick={onClick}
+            style={{ cursor: phase === PHASE.PLACEMENT ? (myPlaced ? 'default' : 'crosshair') : 'pointer' }}
+          />
+
+          {selectedTile && phase === PHASE.ACTIVE && (
+            <TileActionPopup
+              tile={selectedTile}
+              playerOnTile={playerOnTile}
+              currentPosition={myPos}
+              currentTeam={myTeam}
+              match={match}
+              spendable={spendable}
+              burstSpent={burstSpent}
+              durationHours={match.duration}
+              onAction={handleAction}
+              onClose={() => setSelectedTile(null)}
+              style={{ left: popupPos.left, top: popupPos.top }}
             />
-          ))}
+          )}
         </div>
       </div>
-
-      {/* End screen overlay */}
-      {showEndScreen && matchEnded && (
-        <MatchEndScreen match={activeMatch} currentPlayer={currentPlayer} onReturn={handleReturn} />
-      )}
     </div>
   );
 }
