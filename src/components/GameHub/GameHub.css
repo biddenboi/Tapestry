@@ -249,6 +249,13 @@
   flex-direction: column;
 }
 
+/* Settings panel: gradient pinned to the container viewport, not the scrolling content */
+.hub-panel-content:has(.settings-page) {
+  background:
+    linear-gradient(180deg, var(--accent-glow) 0%, transparent 260px),
+    var(--bg-void);
+}
+
 /* ── Inbox panel variant ─────────────────────────────────── */
 .hub-panel--inbox {
   width: min(380px, 92vw);
@@ -306,4 +313,9 @@
   padding: 0 3px;
   line-height: 1;
   box-shadow: 0 0 6px rgba(77,163,255,0.5);
+}
+
+/* Quick notes button — slightly smaller pencil icon to distinguish from nav LOG */
+.hub-notes-btn .hub-inbox-icon {
+  font-size: 22px;
 }

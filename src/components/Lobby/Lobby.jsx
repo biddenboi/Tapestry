@@ -48,78 +48,21 @@ function MatchHistoryRow({ match, currentPlayerUUID, onOpen }) {
 }
 
 function MatchSetupOverlay({ onStart, onClose, isLoading }) {
-  const [mode, setMode] = useState('conquest');
   const [duration, setDuration] = useState(4);
-
-  // Breach is fixed at 2h (spec §4.1).
-  const effectiveDuration = mode === 'breach' ? 2 : duration;
-
   return (
     <div className="match-setup-overlay">
       <div className="match-setup-card">
-        <div className="match-setup-header">
-          <div className="mso-corner" />
-          MATCHMAKING
-        </div>
+        <div className="match-setup-header"><div className="mso-corner" />MATCHMAKING</div>
         <div className="match-setup-body">
-          <p className="match-setup-title">Select Mode</p>
-          <div className="match-mode-row" style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            <button
-              className={`duration-chip ${mode === 'conquest' ? 'active' : ''}`}
-              onClick={() => setMode('conquest')}
-              style={{ flex: 1 }}
-            >
-              CONQUEST
-            </button>
-            <button
-              className={`duration-chip ${mode === 'breach' ? 'active' : ''}`}
-              onClick={() => setMode('breach')}
-              style={{ flex: 1 }}
-            >
-              BREACH (beta)
-            </button>
+          <p className="match-setup-title">Select Match Duration</p>
+          <p className="match-setup-sub">Compete against ghost records of your past profiles. Complete tasks to earn points during the match window.</p>
+          <div className="match-duration-row">
+            {[2,3,4,5,6,8].map((h) => <button key={h} className={`duration-chip ${duration===h?'active':''}`} onClick={() => setDuration(h)}>{h}H</button>)}
           </div>
-
-          {mode === 'conquest' ? (
-            <>
-              <p className="match-setup-title">Select Match Duration</p>
-              <p className="match-setup-sub">
-                Compete against ghost records of your past profiles. Complete
-                tasks to earn points during the match window.
-              </p>
-              <div className="match-duration-row">
-                {[2, 3, 4, 5, 6, 8].map((h) => (
-                  <button
-                    key={h}
-                    className={`duration-chip ${duration === h ? 'active' : ''}`}
-                    onClick={() => setDuration(h)}
-                  >
-                    {h}H
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="match-setup-title">Breach · 2 hours · 3v3</p>
-              <p className="match-setup-sub">
-                Plant, defend, rotate. Two 60-minute halves, sides swap at
-                halftime. Defenders place walls and mines during a 3-minute
-                setup phase. Only ghosts with ≥ 2h of match history can
-                appear — the rest are synthetic.
-              </p>
-            </>
-          )}
         </div>
         <div className="match-setup-footer">
           <button onClick={onClose}>CANCEL</button>
-          <button
-            className="primary"
-            onClick={() => onStart(mode, effectiveDuration)}
-            disabled={isLoading}
-          >
-            {isLoading ? 'FINDING MATCH…' : 'FIND MATCH →'}
-          </button>
+          <button className="primary" onClick={() => onStart(duration)} disabled={isLoading}>{isLoading ? 'FINDING MATCH…' : 'FIND MATCH →'}</button>
         </div>
       </div>
     </div>
@@ -127,8 +70,33 @@ function MatchSetupOverlay({ onStart, onClose, isLoading }) {
 }
 
 function EloChart({ data, friends, allPlayers }) {
+  const [span, setSpan] = useState('all');
   const W = 460, H = 200, PAD = { top: 16, right: 16, bottom: 30, left: 50 };
   const plotW = W - PAD.left - PAD.right, plotH = H - PAD.top - PAD.bottom;
+
+  // Filter + aggregate data based on span
+  const displayData = useMemo(() => {
+    if (!data || data.length === 0) return data;
+    const now = Date.now();
+    const cutoffs = { today: 86400000, week: 7*86400000, month: 30*86400000, quarter: 90*86400000 };
+    const cutoff = cutoffs[span] ? now - cutoffs[span] : 0;
+    const filtered = data.filter((d) => d.t >= cutoff);
+    const base = filtered.length >= 2 ? filtered : data;
+
+    // For week+ spans, collapse to one point per calendar day (last value of that day)
+    if (span === 'week' || span === 'month' || span === 'quarter') {
+      const dayMap = new Map();
+      for (const pt of base) {
+        const dayKey = new Date(pt.t).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        dayMap.set(dayKey, pt); // last point per day wins
+      }
+      const daily = [...dayMap.values()];
+      return daily.length >= 2 ? daily : base;
+    }
+    return base;
+  }, [data, span]);
+
+  const SPANS = [['today','Today'],['week','Week'],['month','Month'],['quarter','Quarter'],['all','All']];
 
   if (!data || data.length < 2) {
     return (
@@ -139,19 +107,18 @@ function EloChart({ data, friends, allPlayers }) {
     );
   }
 
-  const elos = data.map((d) => d.elo);
+  const elos = displayData.map((d) => d.elo);
   const eloSpread = Math.max(Math.max(...elos) - Math.min(...elos), 100);
   const minElo = Math.max(0, Math.min(...elos) - eloSpread * 0.4);
   const maxElo = Math.max(...elos) + eloSpread * 0.4;
-  const minT = data[0].t, maxT = data[data.length - 1].t;
+  const minT = displayData[0].t, maxT = displayData[displayData.length - 1].t;
   const toX = (t) => PAD.left + ((t - minT) / (maxT - minT || 1)) * plotW;
   const toY = (e) => PAD.top + plotH - ((e - minElo) / (maxElo - minElo || 1)) * plotH;
-  const linePath = data.map((d, i) => `${i===0?'M':'L'}${toX(d.t).toFixed(1)},${toY(d.elo).toFixed(1)}`).join(' ');
-  const areaPath = `${linePath} L${toX(data[data.length-1].t).toFixed(1)},${(PAD.top+plotH).toFixed(1)} L${toX(data[0].t).toFixed(1)},${(PAD.top+plotH).toFixed(1)} Z`;
+  const linePath = displayData.map((d, i) => `${i===0?'M':'L'}${toX(d.t).toFixed(1)},${toY(d.elo).toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L${toX(displayData[displayData.length-1].t).toFixed(1)},${(PAD.top+plotH).toFixed(1)} L${toX(displayData[0].t).toFixed(1)},${(PAD.top+plotH).toFixed(1)} Z`;
   const yTicks = [Math.round(minElo), Math.round((minElo+maxElo)/2), Math.round(maxElo)];
   const friendColors = ['rgba(0,214,143,0.85)','rgba(255,184,0,0.85)','rgba(167,139,250,0.85)','rgba(34,211,238,0.85)'];
 
-  // Classify friends: in-range (show dashed line + label) vs out-of-range (show overflow badge)
   const friendData = friends.slice(0,4).map((fid, i) => {
     const fp = allPlayers.find((p) => p.UUID === fid);
     if (!fp) return null;
@@ -164,70 +131,75 @@ function EloChart({ data, friends, allPlayers }) {
   const outRangeFriends = friendData.filter((f) => !f.inRange);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="elo-chart-svg" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="eloLine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="var(--accent-bright)" stopOpacity="1" />
-        </linearGradient>
-      </defs>
+    <div className="elo-chart-wrap">
+      <div className="elo-span-tabs">
+        {SPANS.map(([id, lbl]) => (
+          <button key={id} type="button"
+            className={`elo-span-btn ${span === id ? 'active' : ''}`}
+            onClick={() => setSpan(id)}>{lbl}</button>
+        ))}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="elo-chart-svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="eloLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--accent-bright)" stopOpacity="1" />
+          </linearGradient>
+        </defs>
 
-      {/* Grid */}
-      {yTicks.map((tick) => (
-        <line key={tick} x1={PAD.left} y1={toY(tick)} x2={W-PAD.right} y2={toY(tick)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-      ))}
+        {yTicks.map((tick) => (
+          <line key={tick} x1={PAD.left} y1={toY(tick)} x2={W-PAD.right} y2={toY(tick)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        ))}
 
-      {/* In-range friend lines with inline labels */}
-      {inRangeFriends.map(({ fid, fp, y, color }) => (
-        <g key={fid}>
-          <line x1={PAD.left} y1={y} x2={W-PAD.right-2} y2={y} stroke={color} strokeWidth="1" strokeDasharray="4,3" />
-          <text x={W-PAD.right-4} y={y-3} fontSize="8" fill={color} textAnchor="end">
-            {fp.username?.slice(0,8)} {fp.elo}
-          </text>
-        </g>
-      ))}
-
-      {/* Out-of-range: small arrow badges on the top/bottom edge */}
-      {outRangeFriends.map(({ fid, fp, color, above }, idx) => {
-        const bx = PAD.left + 8 + idx * 70;
-        const by = above ? PAD.top + 2 : PAD.top + plotH - 2;
-        return (
+        {inRangeFriends.map(({ fid, fp, y, color }) => (
           <g key={fid}>
-            <text x={bx} y={by + (above ? 9 : -3)} fontSize="8" fill={color}>
-              {above ? '▲' : '▼'} {fp.username?.slice(0,6)} {fp.elo}
+            <line x1={PAD.left} y1={y} x2={W-PAD.right-2} y2={y} stroke={color} strokeWidth="1" strokeDasharray="4,3" />
+            <text x={W-PAD.right-4} y={y-3} fontSize="8" fill={color} textAnchor="end">
+              {fp.username?.slice(0,8)} {fp.elo}
             </text>
           </g>
-        );
-      })}
+        ))}
 
-      <path d={areaPath} fill="url(#eloGrad)" />
-      <path d={linePath} fill="none" stroke="url(#eloLine)" strokeWidth="2" strokeLinejoin="round" />
+        {outRangeFriends.map(({ fid, fp, color, above }, idx) => {
+          const bx = PAD.left + 8 + idx * 70;
+          const by = above ? PAD.top + 2 : PAD.top + plotH - 2;
+          return (
+            <g key={fid}>
+              <text x={bx} y={by + (above ? 9 : -3)} fontSize="8" fill={color}>
+                {above ? '▲' : '▼'} {fp.username?.slice(0,6)} {fp.elo}
+              </text>
+            </g>
+          );
+        })}
 
-      {data.map((d, i) => (
-        <circle key={i} cx={toX(d.t)} cy={toY(d.elo)}
-          r={i===data.length-1?4:2.5}
-          fill={i===data.length-1?'var(--accent-bright)':'var(--accent)'}
-          stroke={i===data.length-1?'var(--bg-void)':'none'} strokeWidth="1.5" />
-      ))}
+        <path d={areaPath} fill="url(#eloGrad)" />
+        <path d={linePath} fill="none" stroke="url(#eloLine)" strokeWidth="2" strokeLinejoin="round" />
 
-      {/* Y axis labels */}
-      {yTicks.map((tick) => (
-        <text key={tick} x={PAD.left-5} y={toY(tick)+4} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor="end">{tick}</text>
-      ))}
+        {displayData.map((d, i) => (
+          <circle key={i} cx={toX(d.t)} cy={toY(d.elo)}
+            r={i===displayData.length-1?4:2.5}
+            fill={i===displayData.length-1?'var(--accent-bright)':'var(--accent)'}
+            stroke={i===displayData.length-1?'var(--bg-void)':'none'} strokeWidth="1.5" />
+        ))}
 
-      {/* X axis labels */}
-      {[data[0], data[data.length-1]].map((d, i) => (
-        <text key={i} x={toX(d.t)} y={H-4} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor={i===0?'start':'end'}>
-          {new Date(d.t).toLocaleDateString('en-US', { month:'short', day:'numeric' })}
-        </text>
-      ))}
-    </svg>
+        {yTicks.map((tick) => (
+          <text key={tick} x={PAD.left-5} y={toY(tick)+4} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor="end">{tick}</text>
+        ))}
+
+        {[displayData[0], displayData[displayData.length-1]].map((d, i) => (
+          <text key={i} x={toX(d.t)} y={H-4} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor={i===0?'start':'end'}>
+            {new Date(d.t).toLocaleDateString('en-US', { month:'short', day:'numeric' })}
+          </text>
+        ))}
+      </svg>
+    </div>
   );
 }
+
 
 function LeaderRow({ rank, player, value, label, isSelf, onClick }) {
   const rankClass = getRankClass(player.elo || 0);
@@ -278,18 +250,7 @@ export default function Lobby() {
       const sorted = matches.sort((a, b) => String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
       setMatchHistory(sorted.slice(0, 4));
       const active = sorted.find((m) => m.status === MATCH_STATUS.active);
-      if (active) {
-        if (active.mapSeed) {
-          // Resume: MatchArena reads matchPhase to decide which phase to restore
-          setActiveMatch(active); setGameState(GAME_STATE.match);
-        } else {
-          // Pre-map-system legacy match — auto-conclude to unblock the player
-          await databaseConnection.update(STORES.match, active.UUID, {
-            status: MATCH_STATUS.complete,
-            result: { iWon: false, reason: 'abandoned', endedAt: new Date().toISOString() },
-          });
-        }
-      }
+      if (active) { setActiveMatch(active); setGameState(GAME_STATE.match); }
 
       const midnight = new Date(); midnight.setHours(0,0,0,0);
       const todayTasks = await databaseConnection.getStoreFromRange(STORES.task, midnight.toISOString(), new Date().toISOString());
@@ -318,52 +279,26 @@ export default function Lobby() {
     load();
   }, [databaseConnection, currentPlayer, timestamp, setActiveMatch, setGameState]);
 
-const handleFindMatch = async (mode, duration) => {
-  if (!currentPlayer) return;
-  setLoadingMatch(true);
-  try {
-    const allP = await databaseConnection.getAllPlayers();
-    const { teammates, opponents } = await buildGhostRoster(
-      databaseConnection, allP, currentPlayer, duration,
-    );
-    const matchUUID = uuid();
-    const mapSeed = Math.abs(
-      matchUUID.split('').reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0),
-    );
-    const currentPlayerEntry = {
-      UUID: currentPlayer.UUID,
-      username: currentPlayer.username,
-      profilePicture: currentPlayer.profilePicture || null,
-      elo: currentPlayer.elo || 0,
-      isCurrentPlayer: true,
-      cardBanner: currentPlayer.activeCosmetics?.cardBanner || null,
-      playerTheme: currentPlayer.activeCosmetics?.theme || 'default',
-    };
-
-    const baseMatch = {
-      UUID: matchUUID,
-      createdAt: new Date().toISOString(),
-      duration,
-      parent: currentPlayer.UUID,
-      status: MATCH_STATUS.active,
-      mapSeed,
-      mode,                                   // 'conquest' | 'breach'
-      teams: [[currentPlayerEntry, ...teammates], opponents],
-      result: null,
-    };
-
-    // Breach's `match.breach` envelope is built by BreachArena during the
-    // Loading phase — the Lobby just stamps the mode and lets the arena
-    // take it from there. Conquest legacy state stays at the match root.
-    await databaseConnection.add(STORES.match, baseMatch);
-    setActiveMatch(baseMatch);
-    setGameState(GAME_STATE.match);
-    setShowSetup(false);
-    refreshApp();
-  } finally {
-    setLoadingMatch(false);
-  }
-};
+  const handleFindMatch = async (duration) => {
+    if (!currentPlayer) return;
+    setLoadingMatch(true);
+    try {
+      const allP = await databaseConnection.getAllPlayers();
+      const { teammates, opponents } = await buildGhostRoster(databaseConnection, allP, currentPlayer, duration);
+      const match = {
+        UUID: uuid(), createdAt: new Date().toISOString(), duration,
+        parent: currentPlayer.UUID, status: MATCH_STATUS.active,
+        teams: [[{ UUID: currentPlayer.UUID, username: currentPlayer.username, profilePicture: currentPlayer.profilePicture||null,
+          elo: currentPlayer.elo||0, isCurrentPlayer: true,
+          cardBanner: currentPlayer.activeCosmetics?.cardBanner||null,
+          playerTheme: currentPlayer.activeCosmetics?.theme||'default',
+          selectedAchievements: currentPlayer.selectedAchievements||[] }, ...teammates], opponents],
+        result: null,
+      };
+      await databaseConnection.add(STORES.match, match);
+      setActiveMatch(match); setGameState(GAME_STATE.match); setShowSetup(false); refreshApp();
+    } finally { setLoadingMatch(false); }
+  };
 
   const openMatchDetails = (match) =>
     NiceModal.show(MatchDetailsModal, { match, currentPlayerUUID: currentPlayer?.UUID, onOpenProfile: (id) => openPanel('profile', id) });

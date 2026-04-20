@@ -8,14 +8,16 @@ import { msToPoints } from '../../utils/Helpers/Time.js';
 import { getCurrentLocation } from '../../utils/Helpers/Location.js';
 import { getSessionMultiplier, getTaskDuration } from '../../utils/Helpers/Tasks.js';
 import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor.jsx';
-import Timer from '../../components/Timer/Timer.jsx';
 import TaskCreationMenu from '../TaskCreationMenu/TaskCreationMenu.jsx';
 import SessionResults from '../SessionResults/SessionResults.jsx';
+import { checkPassiveAchievements, getAchievementByKey } from '../../utils/Achievements.js';
 
 export default NiceModal.create(() => {
   const {
     databaseConnection,
     refreshApp,
+    notify,
+    gameState: [gameState],
     activeTask: [activeTask, setActiveTask],
   } = useContext(AppContext);
   const modal = useModal();
@@ -41,6 +43,7 @@ export default NiceModal.create(() => {
       parent: parent.UUID,
       completedAt: new Date().toISOString(),
       location: null,
+      source: gameState,
     };
 
     const duration = getTaskDuration(task);
@@ -56,6 +59,16 @@ export default NiceModal.create(() => {
     });
 
     await databaseConnection.add(STORES.task, task);
+
+    // Check passive achievements after task completion
+    const freshPlayer = await databaseConnection.getCurrentPlayer();
+    if (freshPlayer) {
+      const newlyEarned = await checkPassiveAchievements(freshPlayer, databaseConnection);
+      for (const key of newlyEarned) {
+        const a = getAchievementByKey(key);
+        if (a) notify({ title: 'Achievement Unlocked', message: a.label, kind: 'success', persist: false });
+      }
+    }
 
     const remainingEstimate = Math.max(0, estimatedDuration - sessionDuration);
     setActiveTask((previous) => ({
@@ -100,10 +113,6 @@ export default NiceModal.create(() => {
         <div className="session-task-info">
           <p className="session-task-name">{activeTask.name}</p>
           {activeTask.reasonToSelect && <p className="session-task-reason">{activeTask.reasonToSelect}</p>}
-        </div>
-
-        <div className="session-timer-bar">
-          <Timer showPoints={false} startTime={new Date(activeTask.createdAt).getTime()} duration={activeTask.sessionDuration} />
         </div>
 
         <div className="session-plan-wrap">

@@ -61,7 +61,7 @@ export const getNextTodo = (todoArray = [], weightArray = []) => {
 
 export const getSessionMultiplier = (duration, estimatedDuration) => {
   if (estimatedDuration <= 0 || estimatedDuration == null) return 0;
-  return Math.exp(-9 * Math.pow(duration - estimatedDuration, 2) / (2 * Math.pow(estimatedDuration, 2)));
+  return Math.exp(-2 * Math.pow(duration - estimatedDuration, 2) / (2 * Math.pow(estimatedDuration, 2)));
 };
 
 export const getGaussianCurvePoints = (estimatedDurationMs, count = 240) => {

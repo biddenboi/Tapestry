@@ -255,10 +255,19 @@
     font-size: 16px;
     font-weight: 600;
     color: var(--gold);
-    display: flex;
-    align-items: center;
-    gap: 3px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    line-height: 1;
 }
+.shop-card-cost.cost-dollars { color: var(--green); }
+.shop-card-cost-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--gold);
+}
+.shop-card-cost.cost-dollars .shop-card-cost-icon { color: var(--green); }
+.shop-card-cost-val { font-variant-numeric: tabular-nums; }
 
 .cost-icon {
     color: var(--gold);
@@ -283,6 +292,31 @@
     border-color: var(--accent-bright);
     color: white;
     box-shadow: var(--glow-blue);
+}
+
+.shop-card-admin {
+    display: flex;
+    gap: 4px;
+}
+
+.edit-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.edit-btn:hover {
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    background: var(--accent-glow);
+    box-shadow: none;
 }
 
 .cart-controls {
@@ -526,29 +560,34 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: fade-in 0.18s ease both;
 }
 
 .add-item-form {
     background: var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);
-    width: min(500px, 90vw);
+    width: min(520px, 92vw);
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .form-header {
-    padding: 12px 16px;
+    padding: 12px 18px;
     background: var(--bg-raised);
     border-bottom: 1px solid var(--border);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 12px;
+    font-family: var(--font-ui);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
     color: var(--accent-bright);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .close-btn {
@@ -557,30 +596,64 @@
     color: var(--text-muted);
     padding: 2px 6px;
     font-size: 14px;
+    line-height: 1;
     cursor: pointer;
+    clip-path: none;
 }
-
 .close-btn:hover { color: var(--red); background: transparent; border: none; box-shadow: none; }
 
+/* ── Form grid ─────────────────────────────────────────── */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 20px;
+    gap: 14px;
+    padding: 20px 22px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Icon + Name share the first row via a dedicated flex container —
+   this avoids the 1fr grid column forcing the icon cell to 50% width. */
+.form-identity-row {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+}
+.form-icon-field {
+    flex: 0 0 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.form-icon-field input {
+    text-align: center;
+    font-size: 18px;
+    padding: 7px 8px;
+}
+.form-name-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .form-grid label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-family: 'Rajdhani', sans-serif;
+    gap: 5px;
+    font-family: var(--font-ui);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--text-muted);
 }
 
-.form-grid .span2 { grid-column: span 2; }
+.form-grid label:focus-within { color: var(--accent-bright); }
+
+.form-grid .span2 { grid-column: 1 / -1; }
 
 .form-grid input,
 .form-grid select,
@@ -588,30 +661,65 @@
     background: var(--bg-surface);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 6px 8px;
+    padding: 8px 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
     font-size: 13px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-grid textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .form-footer {
-    padding: 14px 20px;
+    padding: 14px 22px;
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: 10px;
     background: var(--bg-surface);
+    flex-shrink: 0;
 }
 
-.cost-label-row {
+/* ── Price block (currency + cost) ─────────────────────── */
+.form-price-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+}
+
+.form-price-label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
+.form-price-label > span:first-child { color: var(--text); }
 
 .cost-badge {
+    font-family: var(--font-ui);
     font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    padding: 1px 5px;
+    letter-spacing: 0.16em;
+    padding: 2px 6px;
     border: 1px solid;
 }
 
@@ -631,18 +739,17 @@
     background: transparent;
     border: none;
     color: var(--text-muted);
+    font-family: var(--font-ui);
     font-size: 10px;
-    font-family: 'Rajdhani', sans-serif;
     letter-spacing: 0.08em;
-    padding: 1px 4px;
+    font-weight: 600;
+    padding: 2px 6px;
     cursor: pointer;
     clip-path: none;
-    text-transform: lowercase;
-    font-weight: 600;
-    transition: color 0.15s;
+    text-transform: none;
     margin-left: auto;
+    transition: color 0.15s;
 }
-
 .cost-reset-btn:hover {
     color: var(--accent-bright);
     background: transparent;
@@ -650,48 +757,299 @@
     box-shadow: none;
 }
 
+.form-price-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: stretch;
+}
+
+/* Currency toggle — chip pair */
+.currency-toggle {
+    display: inline-flex;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2px;
+    gap: 0;
+}
+
+.currency-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    clip-path: none;
+    transition: background 0.12s, color 0.12s;
+}
+.currency-chip:hover {
+    background: transparent;
+    color: var(--text);
+    border: none;
+    box-shadow: none;
+}
+.currency-chip.is-active {
+    background: var(--accent-glow);
+    color: var(--accent-bright);
+    border: none;
+}
+.currency-chip--dollars.is-active {
+    background: var(--green-dim);
+    color: var(--green);
+}
+.currency-chip-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* Cost input wrap (shared with money-log amount field) */
 .cost-input-wrap {
     display: flex;
-    align-items: center;
-    background: var(--bg-surface);
+    align-items: stretch;
+    background: var(--bg-card);
     border: 1px solid var(--border);
     transition: border-color 0.15s, box-shadow 0.15s;
 }
-
 .cost-input-wrap:focus-within {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent-glow);
 }
+.cost-input-wrap--dollars:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px var(--green-dim);
+}
 
 .cost-input-icon {
-    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    min-width: 32px;
     color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
-    flex-shrink: 0;
+    font-weight: 600;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
     user-select: none;
 }
+.cost-input-icon.money-icon { color: var(--green); }
 
 .cost-input-wrap input {
     border: none;
     background: transparent;
-    padding: 6px 8px 6px 0;
+    padding: 8px 10px;
     flex: 1;
+    width: 100%;
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-bright);
     box-shadow: none;
     outline: none;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.cost-input-wrap input:focus { border: none; box-shadow: none; }
+.cost-input-wrap input.cost-input-locked { color: var(--gold); }
+.cost-input-wrap--dollars input.cost-input-locked { color: var(--green); }
+
+/* ── Money log modal ───────────────────────────────────── */
+.money-log-form { width: min(460px, 92vw); }
+
+.money-log-body {
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
-.cost-input-wrap input:focus {
-    border: none;
-    box-shadow: none;
+.money-log-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border-left: 2px solid var(--accent-border);
 }
 
-.cost-input-wrap input.cost-input-locked {
-    color: var(--gold);
+.money-log-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
+.money-log-field:focus-within { color: var(--accent-bright); }
+
+.money-log-field input,
+.money-log-field textarea {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.money-log-field textarea { resize: vertical; min-height: 58px; line-height: 1.5; }
+.money-log-field input:focus,
+.money-log-field textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.money-log-field--amount:focus-within { color: var(--green); }
+
+.money-log-optional {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    color: var(--text-dim);
+    font-size: 10.5px;
+    margin-left: 4px;
+    font-style: italic;
+}
+
+.money-log-footer {
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.money-log-preview {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.money-log-preview strong {
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+}
+
+/* "Already logged today" locked state — a proper empty-state card */
+.money-log-locked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 36px 28px 30px;
+    text-align: center;
+}
+.money-log-locked-icon {
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(0, 214, 143, 0.3);
+    margin-bottom: 4px;
+}
+.money-log-locked-title {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-bright);
+}
+.money-log-locked-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    max-width: 320px;
+}
+.money-log-locked-btn { margin-top: 10px; min-width: 120px; }
+
+/* ── Cart sidebar money-balance refresh ────────────────── */
+.cart-token-balance {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.cart-balance--cash { border-bottom: 1px solid var(--border); }
+
+.money-balance-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-dim);
+    border: 1px solid rgba(0, 214, 143, 0.3);
+    color: var(--green);
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    clip-path: none;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.money-balance-btn:hover {
+    background: rgba(0, 214, 143, 0.18);
+    border-color: var(--green);
+    box-shadow: 0 0 12px rgba(0, 214, 143, 0.3);
+    color: var(--green);
+}
+.money-balance-btn .money-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+}
+.money-balance-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+}
+.money-log-hint-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--green);
+    opacity: 0.6;
+    background: transparent;
+    border: 1px solid rgba(0, 214, 143, 0.35);
+    margin-left: 2px;
+    line-height: 1;
+}
+.money-balance-btn:hover .money-log-hint-icon { opacity: 1; border-color: var(--green); }
 
 /* ── Cosmetic card ──────────────────────────────────────── */
 .cosmetic-card { position: relative; overflow: hidden; }
@@ -711,3 +1069,7 @@
   border: 1px solid var(--accent-border);
   color: var(--accent-bright);
 }
+
+/* ── Dollar / money styles ─────────────────────────────── */
+.cost-dollars       { color: var(--green); }
+.money-icon         { color: var(--green); font-weight: 700; }

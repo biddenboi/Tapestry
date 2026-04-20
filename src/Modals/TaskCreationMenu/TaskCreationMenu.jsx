@@ -5,6 +5,7 @@ import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { STORES } from '../../utils/Constants.js';
 import { getDaysUntilDue } from '../../utils/Helpers/Tasks.js';
+import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor.jsx';
 
 export default NiceModal.create(() => {
   const { databaseConnection, refreshApp, activeTask: [activeTask, setActiveTask] } = useContext(AppContext);
@@ -86,11 +87,11 @@ export default NiceModal.create(() => {
 
           <label className="full-width">
             How will you use the time?
-            <textarea
-              rows={4}
-              placeholder="Session plan, approach, steps..."
+            <MarkdownEditor
               value={activeTask.efficiency || ''}
-              onChange={(event) => setActiveTask((previous) => ({ ...previous, efficiency: event.target.value }))}
+              onChange={(value) => setActiveTask((previous) => ({ ...previous, efficiency: value }))}
+              placeholder="Session plan, approach, steps..."
+              className="plan-editor"
             />
           </label>
 

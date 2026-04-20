@@ -1,5 +1,5 @@
 import './Profile.css';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { v4 as uuid } from 'uuid';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
@@ -13,6 +13,9 @@ import TodoDetailModal from '../../Modals/TodoDetailModal/TodoDetailModal.jsx';
 import JournalDetailModal from '../../Modals/JournalDetailModal/JournalDetailModal.jsx';
 import MatchDetailsModal from '../../Modals/MatchDetailsModal/MatchDetailsModal.jsx';
 import EventDetailModal from '../../Modals/EventDetailModal/EventDetailModal.jsx';
+import AchievementsModal from '../../Modals/AchievementsModal/AchievementsModal.jsx';
+import AchievementBadge from '../../components/AchievementBadge/AchievementBadge.jsx';
+import { checkPassiveAchievements, getAchievementByKey, computeRarity, getRarityLabel } from '../../utils/Achievements.js';
 
 /**
  * Derives match outcome from the perspective of a specific player UUID.
@@ -28,21 +31,49 @@ function matchOutcomeFor(match, playerUUID) {
   return (winner === 1 && onTeam1) || (winner === 2 && !onTeam1) ? 'win' : 'loss';
 }
 
-function HistoryItem({ item, onOpen }) {
-  const iconMap = { task: 'TSK', journal: 'JNL', event: 'EVT' };
+function HistoryItem({ item, onOpen, canPin, onTogglePin }) {
+  const iconMap = { task: 'TSK', journal: 'JNL', event: 'EVT', item_use: 'USE', money_log: '$', transaction: 'TXN' };
   const timestamp = item.createdAt || item.completedAt;
 
   const subtitle = item.type === 'task'
     ? `${formatDuration(getTaskDuration(item)) || '—'} · ${item.points || 0} pts`
     : item.type === 'journal'
       ? `${(item.entry || '').slice(0, 56)}${(item.entry || '').length > 56 ? '…' : ''}`
-      : item.description || item.type;
+      : item.type === 'item_use'
+        ? `Used ${item.name || 'an item'}${item.category ? ` · ${item.category}` : ''}`
+        : item.type === 'money_log'
+          ? `+$${Number(item.amount || item.cost || 0).toFixed(2)}${item.description ? ` — ${item.description}` : ''}`
+          : item.type === 'transaction'
+            ? `${item.cost != null ? `$${Number(item.cost).toFixed(2)}` : ''}${item.description ? ` · ${item.description}` : ''}`.trim() || 'Transaction'
+            : item.description || item.type;
+
+  const title = item.type === 'item_use'
+    ? (item.name || 'Item used')
+    : (item.name || item.title || item.description || 'Untitled');
+
+  const handlePinClick = (e) => {
+    e.stopPropagation();
+    onTogglePin?.(item);
+  };
 
   return (
-    <button className="profile-history-item" onClick={() => onOpen(item)}>
+    <button className={`profile-history-item ${item.pinned ? 'profile-history-item--pinned' : ''}`} onClick={() => onOpen(item)}>
+      {canPin && (
+        <span
+          role="button"
+          tabIndex={0}
+          className={`profile-history-pin ${item.pinned ? 'profile-history-pin--active' : ''}`}
+          onClick={handlePinClick}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePinClick(e); } }}
+          title={item.pinned ? 'Unpin from top of timeline' : 'Pin to top of timeline'}
+          aria-label={item.pinned ? 'Unpin entry' : 'Pin entry'}
+        >
+          ⚲
+        </span>
+      )}
       <div className={`profile-history-icon phi-${item.type}`}>{iconMap[item.type] || '—'}</div>
       <div className="profile-history-copy">
-        <span className="profile-history-title">{item.name || item.title || item.description || 'Untitled'}</span>
+        <span className="profile-history-title">{title}</span>
         <span className="profile-history-sub">{subtitle}</span>
       </div>
       <div className="profile-history-time">
@@ -172,20 +203,24 @@ export default function Profile({ uuid: targetUUID }) {
   const [friendship, setFriendship] = useState(null);
   const [ownedPassIds, setOwnedPassIds] = useState(new Set());
   const [showBannerEditor, setShowBannerEditor] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [allPlayersForRarity, setAllPlayersForRarity] = useState([]);
 
   useEffect(() => {
     const load = async () => {
       const resolvedUUID = targetUUID || currentPlayer?.UUID;
       if (!resolvedUUID) { setPlayer(null); setPlayers([]); setFriends([]); setHistory([]); setMatches([]); setFriendship(null); return; }
+      const isSelfProfile = resolvedUUID === currentPlayer?.UUID;
 
       const viewed = await databaseConnection.get(STORES.player, resolvedUUID);
       setPlayer(viewed || null);
       if (!viewed) return;
 
-      const [tasks, journals, events, matchList, allPlayers, friendships, inv] = await Promise.all([
+      const [tasks, journals, events, transactions, matchList, allPlayers, friendships, inv] = await Promise.all([
         databaseConnection.getPlayerStore(STORES.task, viewed.UUID),
         databaseConnection.getPlayerStore(STORES.journal, viewed.UUID),
         databaseConnection.getPlayerStore(STORES.event, viewed.UUID),
+        databaseConnection.getPlayerStore(STORES.transaction, viewed.UUID),
         databaseConnection.getMatchesForPlayer(viewed.UUID),
         databaseConnection.getAllPlayers(),
         currentPlayer?.UUID ? databaseConnection.getFriendshipsForPlayer(currentPlayer.UUID) : Promise.resolve([]),
@@ -202,8 +237,25 @@ export default function Profile({ uuid: targetUUID }) {
       const combined = [
         ...tasks.filter((t) => t.completedAt).map((item) => ({ ...item, type: 'task',    sortAt: item.completedAt || item.createdAt })),
         ...journals.map((item) => ({ ...item, type: 'journal', sortAt: item.createdAt })),
-        ...events.map((item)  => ({ ...item, type: 'event',   sortAt: item.createdAt })),
-      ].sort((a, b) => String(b.sortAt || '').localeCompare(String(a.sortAt || '')));
+        ...events.map((item)  => ({
+          ...item,
+          /* Keep item_use as its own timeline kind so the icon and subtitle differ */
+          type:    item.type === 'item_use' ? 'item_use' : 'event',
+          sortAt:  item.createdAt,
+        })),
+        ...transactions.map((item) => ({
+          ...item,
+          /* money_log transactions surface on the timeline with the $ treatment */
+          type:    item.type === 'money_log' ? 'money_log' : 'transaction',
+          sortAt:  item.completedAt || item.createdAt,
+        })),
+      ].sort((a, b) => {
+        /* Pinned journals float to the top of the timeline */
+        const aPin = a.type === 'journal' && a.pinned ? 1 : 0;
+        const bPin = b.type === 'journal' && b.pinned ? 1 : 0;
+        if (aPin !== bPin) return bPin - aPin;
+        return String(b.sortAt || '').localeCompare(String(a.sortAt || ''));
+      });
 
       const acceptedFriendships = friendships.filter((e) => e.status === 'accepted');
       const friendUUIDs = new Set(acceptedFriendships.flatMap((e) => e.players).filter((id) => id !== currentPlayer?.UUID));
@@ -222,6 +274,19 @@ export default function Profile({ uuid: targetUUID }) {
       setFriendship(visibleFriendship || null);
       setHistory(combined);
       setMatches(matchList.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 10));
+      setAllPlayersForRarity(allPlayers);
+
+      // Run passive achievement check for the current (self) player on their own profile
+      if (isSelfProfile && viewed) {
+        const newlyEarned = await checkPassiveAchievements(viewed, databaseConnection);
+        if (newlyEarned.length > 0) {
+          for (const key of newlyEarned) {
+            const a = getAchievementByKey(key);
+            if (a) notify({ title: 'Achievement Unlocked', message: a.label, kind: 'success', persist: false });
+          }
+          refreshApp();
+        }
+      }
     };
     load();
   }, [databaseConnection, targetUUID, currentPlayer, timestamp]);
@@ -288,6 +353,16 @@ export default function Profile({ uuid: targetUUID }) {
     });
     refreshApp();
     notify({ title: 'Friends!', message: `You and ${player.username} are now friends.`, kind: 'success', persist: false });
+
+    // Check town achievements after gaining a friend
+    const freshPlayer = await databaseConnection.getCurrentPlayer();
+    if (freshPlayer) {
+      const newlyEarned = await checkPassiveAchievements(freshPlayer, databaseConnection);
+      for (const key of newlyEarned) {
+        const a = getAchievementByKey(key);
+        if (a) notify({ title: 'Achievement Unlocked', message: a.label, kind: 'success', persist: false });
+      }
+    }
   };
 
   // Decline an incoming request
@@ -305,7 +380,22 @@ export default function Profile({ uuid: targetUUID }) {
   const openHistoryItem = (item) => {
     if (item.type === 'journal') { NiceModal.show(JournalDetailModal, { item }); return; }
     if (item.type === 'task')    { NiceModal.show(TodoDetailModal, { item }); return; }
+    /* item_use and wake/end_work/sleep events all use the generic event modal */
     NiceModal.show(EventDetailModal, { item });
+  };
+
+  // Pin / unpin one of the viewer's own journal entries on their own profile
+  const handleTogglePin = async (item) => {
+    if (!item || item.type !== 'journal') return;
+    const ownsEntry = item.parent && currentPlayer?.UUID && item.parent === currentPlayer.UUID;
+    const onOwnProfile = player?.UUID === currentPlayer?.UUID;
+    if (!ownsEntry || !onOwnProfile) return;
+    const updated = { ...item, pinned: !item.pinned };
+    /* Strip timeline-only synthesised fields before persisting back to STORES.journal */
+    delete updated.type;
+    delete updated.sortAt;
+    await databaseConnection.add(STORES.journal, updated);
+    refreshApp();
   };
 
   if (!player) return <div className="profile-page"><div className="profile-empty">Profile not found.</div></div>;
@@ -369,6 +459,30 @@ export default function Profile({ uuid: targetUUID }) {
                 <span className="prb-icon">{rank.icon}</span>
                 <span className="prb-label">{rankLabel}</span>
               </div>
+              {player.archivedAt && <span className="profile-archived-badge">Archived</span>}
+              {/* Achievement bar */}
+              <button
+                className={`profile-ach-bar ${isSelf ? 'profile-ach-bar--editable' : ''}`}
+                onClick={() => setShowAchievements(true)}
+                title="View achievements"
+              >
+                {[0, 1, 2].map((i) => {
+                  const key = player.selectedAchievements?.[i] || null;
+                  const a   = key ? getAchievementByKey(key) : null;
+                  const rarityPct = key ? computeRarity(key, allPlayersForRarity) : 0;
+                  return (
+                    <AchievementBadge
+                      key={i}
+                      achievementKey={key}
+                      size={26}
+                      empty={!a}
+                      rarity={key ? getRarityLabel(rarityPct) : null}
+                      showTooltip={!!a}
+                      className="profile-ach-bar-badge"
+                    />
+                  );
+                })}
+              </button>
             </div>
             <p className="profile-desc">{player.description || 'No description set.'}</p>
             <div className="profile-rank-progress">
@@ -425,7 +539,20 @@ export default function Profile({ uuid: targetUUID }) {
             <div className="profile-timeline-list">
               {history.length === 0
                 ? <div className="profile-empty-row">No history yet.</div>
-                : history.map((item) => <HistoryItem key={`${item.type}-${item.UUID}`} item={item} onOpen={openHistoryItem} />)
+                : history.map((item) => {
+                    const ownsEntry = item.parent && currentPlayer?.UUID && item.parent === currentPlayer.UUID;
+                    const onOwnProfile = player?.UUID === currentPlayer?.UUID;
+                    const canPin = item.type === 'journal' && ownsEntry && onOwnProfile;
+                    return (
+                      <HistoryItem
+                        key={`${item.type}-${item.UUID}`}
+                        item={item}
+                        onOpen={openHistoryItem}
+                        canPin={canPin}
+                        onTogglePin={handleTogglePin}
+                      />
+                    );
+                  })
               }
             </div>
           </section>
@@ -489,6 +616,17 @@ export default function Profile({ uuid: targetUUID }) {
           current={profileBanner}
           onSave={saveBanner}
           onClose={() => setShowBannerEditor(false)}
+        />
+      )}
+
+      {/* Achievements modal */}
+      {showAchievements && (
+        <AchievementsModal
+          player={player}
+          isSelf={isSelf}
+          databaseConnection={databaseConnection}
+          onClose={() => setShowAchievements(false)}
+          onSaved={() => { setShowAchievements(false); refreshApp(); }}
         />
       )}
     </div>

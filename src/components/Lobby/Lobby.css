@@ -656,6 +656,40 @@
 }
 
 /* ── ELO chart ──────────────────────────────────────────── */
+.elo-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.elo-span-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.elo-span-btn {
+  font-size: 9px;
+  padding: 3px 9px;
+  letter-spacing: 0.1em;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  clip-path: none;
+}
+.elo-span-btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--text-bright);
+  background: var(--bg-hover);
+  box-shadow: none;
+}
+.elo-span-btn.active {
+  background: var(--accent);
+  border-color: var(--accent-bright);
+  color: #fff;
+  box-shadow: none;
+}
+
 .elo-chart-svg {
   display: block;
   display: block;

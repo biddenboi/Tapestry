@@ -1,5 +1,6 @@
 import './InventoryItemPopup.css';
 import { useState, useEffect, useRef, useContext } from 'react';
+import { v4 as uuid } from 'uuid';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { STORES, ITEM_TYPE, MINUTE } from '../../utils/Constants.js';
@@ -31,9 +32,9 @@ function DurationConsumer({ item, onFinish, onClose }) {
 
             if (el > durationMs) {
                 setPhase('overtime');
-                // Apply penalty for every extra full duration elapsed
+                // Apply penalty for every extra interval elapsed (fires immediately at 1 second over)
                 const overtimeMs = el - durationMs;
-                const newPenaltyCount = Math.floor(overtimeMs / durationMs);
+                const newPenaltyCount = Math.ceil(overtimeMs / durationMs);
                 if (newPenaltyCount > penaltyRef.current) {
                     const penaltiesToApply = newPenaltyCount - penaltyRef.current;
                     penaltyRef.current = newPenaltyCount;
@@ -148,6 +149,24 @@ export default NiceModal.create(({ item, onConsumed }) => {
             ...item,
             quantity: Math.max(0, item.quantity - 1),
         });
+
+        // Write a timeline event so consumption shows up in the profile history
+        const player = await databaseConnection.getCurrentPlayer();
+        if (player?.UUID) {
+            await databaseConnection.add(STORES.event, {
+                UUID: uuid(),
+                parent: player.UUID,
+                type: 'item_use',
+                name: item.name,
+                icon: item.icon || '▤',
+                category: item.category || item.type,
+                description: `Used ${item.name}`,
+                itemType: item.type,
+                itemId: item.itemId || item.UUID,
+                createdAt: new Date().toISOString(),
+            });
+        }
+
         onConsumed?.();
         refreshApp();
         notify({ title: 'Item consumed', message: `${item.name} resolved successfully.`, kind: 'success', persist: false });
@@ -188,10 +207,12 @@ export default NiceModal.create(({ item, onConsumed }) => {
                         <span className="chip-val">{item.quantity}</span>
                         <span className="chip-label">LEFT</span>
                     </div>
+                    {item.type === ITEM_TYPE.duration && (
                     <div className="stat-chip cost-chip">
                         <span className="chip-val">◈ {item.cost}</span>
                         <span className="chip-label">PENALTY</span>
                     </div>
+                    )}
                 </div>
 
                 {/* Consumer */}

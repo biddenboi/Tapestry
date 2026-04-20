@@ -62,24 +62,11 @@ div.journal-popup form input:focus {
     box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
-div.journal-popup form textarea {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 10px 12px;
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 13.5px;
-    line-height: 1.6;
-    resize: vertical;
-    min-height: 180px;
-    outline: none;
-    width: 100%;
-    transition: border-color 0.15s;
-}
-
-div.journal-popup form textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
+div.journal-popup form .journal-entry-editor {
+    min-height: 280px;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
 }
 
 div.journal-popup form button[type="submit"] {

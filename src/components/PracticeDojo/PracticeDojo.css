@@ -14,7 +14,7 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 60% 50% at 50% 60%, rgba(26, 110, 245, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 50% 60%, var(--accent-glow) 0%, transparent 70%),
         repeating-linear-gradient(
             0deg,
             transparent,
@@ -39,7 +39,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 24px;
-    background: rgba(15, 24, 41, 0.92);
+    background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
     border-bottom: 1px solid var(--border);
     backdrop-filter: blur(8px);
     flex-shrink: 0;
@@ -104,20 +104,20 @@
     justify-content: center;
     gap: 10px;
     padding: 32px 24px;
-    background: rgba(15, 24, 41, 0.8);
+    background: color-mix(in srgb, var(--bg-surface) 80%, transparent);
     border-right: 1px solid var(--border);
     transition: all 0.4s ease;
 }
 
 .dojo-pod--active {
-    border-right-color: rgba(77, 163, 255, 0.5);
-    background: rgba(26, 110, 245, 0.04);
+    border-right-color: var(--accent-border);
+    background: var(--accent-glow);
 }
 
 .dojo-pod-glow {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(77, 163, 255, 0.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, var(--accent-glow) 0%, transparent 70%);
     opacity: 0;
     transition: opacity 0.4s ease;
     pointer-events: none;
@@ -342,7 +342,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.22em;
-    color: #00d68f;
+    color: var(--green);
     margin-bottom: 2px;
 }
 
@@ -428,7 +428,7 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     font-weight: 700;
-    color: #00d68f;
+    color: var(--green);
     white-space: nowrap;
     flex-shrink: 0;
 }

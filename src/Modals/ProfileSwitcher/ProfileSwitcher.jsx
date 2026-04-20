@@ -6,6 +6,7 @@ import { STORES } from '../../utils/Constants.js';
 import ProfilePicture from '../../components/ProfilePicture/ProfilePicture.jsx';
 import { getCurrentIGT, formatInGameTime } from '../../utils/Helpers/Time.js';
 import { getRankClass, getRankLabel } from '../../utils/Helpers/Rank.js';
+import { startDay } from '../../utils/Helpers/Events.js';
 import Purgatory from '../Purgatory/Purgatory.jsx';
 import './ProfileSwitcher.css';
 
@@ -53,15 +54,19 @@ function ProfileCard({ player, isActive, isCurrent, onClick }) {
   const rankClass = getRankClass(player.elo || 0);
   const rankLabel = getRankLabel(player.elo || 0);
   const igt = isCurrent ? getCurrentIGT(player) : (player.inGameTime || 0);
+  const isArchived = !!player.archivedAt;
 
   return (
     <button
-      className={`ps-profile-card ${isActive ? 'ps-profile-card--active' : ''}`}
+      className={`ps-profile-card ${isActive ? 'ps-profile-card--active' : ''} ${isArchived ? 'ps-profile-card--archived' : ''}`}
       onClick={onClick}
     >
       <ProfilePicture src={player.profilePicture} username={player.username || '?'} size={44} />
       <div className="ps-profile-card-info">
-        <div className="ps-profile-card-name">{player.username || 'Unknown'}</div>
+        <div className="ps-profile-card-name-row">
+          <span className="ps-profile-card-name">{player.username || 'Unknown'}</span>
+          {isArchived && <span className="ps-archived-tag">Archived</span>}
+        </div>
         {player.description && (
           <div className="ps-profile-card-desc">{player.description}</div>
         )}
@@ -76,7 +81,7 @@ function ProfileCard({ player, isActive, isCurrent, onClick }) {
 }
 
 /* ── Main modal ─────────────────────────────────────────── */
-export default NiceModal.create(() => {
+export default NiceModal.create(({ skipPurgatory = false, todayStr = '' }) => {
   const { databaseConnection, currentPlayer, refreshApp } = useContext(AppContext);
   const modal = useModal();
   const [allPlayers, setAllPlayers] = useState([]);
@@ -85,11 +90,18 @@ export default NiceModal.create(() => {
   const [switching, setSwitching] = useState(false);
 
   const loadPlayers = useCallback(async () => {
-    const players = await databaseConnection.getAllPlayers();
+    const players = await databaseConnection.getActivePlayers();
     setAllPlayers(players);
   }, [databaseConnection]);
 
   useEffect(() => { loadPlayers(); }, [loadPlayers]);
+
+  /** Persist that the user has made their end-of-day choice. */
+  const markChosen = useCallback(() => {
+    if (currentPlayer?.UUID && todayStr) {
+      localStorage.setItem(`tapestry_eod_${currentPlayer.UUID}_${todayStr}`, 'chosen');
+    }
+  }, [currentPlayer, todayStr]);
 
   const otherPlayers = allPlayers.filter((p) => p.UUID !== currentPlayer?.UUID);
   const filteredPlayers = search.trim()
@@ -99,15 +111,26 @@ export default NiceModal.create(() => {
       )
     : otherPlayers;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    markChosen();
     modal.remove();
-    NiceModal.show(Purgatory);
+    if (skipPurgatory) {
+      // Missed-deadline flow: start the day immediately, no waiting for midnight.
+      const fresh = await databaseConnection.getCurrentPlayer();
+      await startDay(databaseConnection, fresh);
+      refreshApp();
+    } else {
+      // Normal flow: sleep time just passed, midnight hasn't yet — enter purgatory.
+      NiceModal.show(Purgatory);
+      refreshApp();
+    }
   };
 
   const handleSwitch = async (targetPlayer) => {
     if (switching) return;
     setSwitching(true);
     try {
+      markChosen();
       await databaseConnection.switchProfile(currentPlayer, targetPlayer.UUID);
       modal.remove();
       refreshApp();
@@ -120,6 +143,7 @@ export default NiceModal.create(() => {
     if (switching) return;
     setSwitching(true);
     try {
+      markChosen();
       const newPlayer = {
         UUID: uuid(),
         username,

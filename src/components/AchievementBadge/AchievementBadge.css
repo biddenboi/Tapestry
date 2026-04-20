@@ -1,0 +1,151 @@
+/* ══════════════════════════════════════════════════════════
+   ACHIEVEMENT BADGE
+   Small icon chip used in player cards and profile bar.
+══════════════════════════════════════════════════════════ */
+
+.ach-badge {
+  --ach-color: var(--accent-bright);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid;
+  flex-shrink: 0;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  box-sizing: border-box;
+}
+
+/* ── Empty slot ─── */
+.ach-badge--empty {
+  border-color: var(--border-subtle);
+  background: transparent;
+  cursor: pointer;
+}
+.ach-badge--empty:hover {
+  border-color: var(--border);
+  background: var(--bg-hover);
+}
+.ach-badge-empty-icon {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ── Filled slot ─── */
+.ach-badge--filled {
+  border-color: color-mix(in srgb, var(--ach-color) 40%, transparent);
+  background: color-mix(in srgb, var(--ach-color) 12%, var(--bg-card));
+}
+
+.ach-badge--clickable {
+  cursor: pointer;
+}
+.ach-badge--clickable:hover {
+  border-color: color-mix(in srgb, var(--ach-color) 70%, transparent);
+  background: color-mix(in srgb, var(--ach-color) 20%, var(--bg-card));
+  transform: translateY(-1px);
+}
+
+.ach-badge--selected {
+  border-color: var(--ach-color);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ach-color) 40%, transparent);
+}
+
+/* ── Icon ─── */
+.ach-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60%;
+  height: 60%;
+  color: var(--ach-color);
+  pointer-events: none;
+}
+.ach-badge-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Tooltip ─── */
+.ach-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  min-width: 160px;
+  max-width: 220px;
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--box-shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  text-align: center;
+}
+.ach-badge:hover .ach-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Arrow */
+.ach-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.ach-tooltip-name {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.ach-tooltip-rarity {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ach-tooltip-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* ── Progress bar in tooltip ─── */
+.ach-tooltip-progress {
+  margin-top: 6px;
+}
+.ach-tooltip-progress-bar {
+  height: 3px;
+  background: var(--bg-raised);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ach-tooltip-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.ach-tooltip-progress-label {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}

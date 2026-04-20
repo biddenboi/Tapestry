@@ -185,21 +185,39 @@ export default function Settings() {
   // Guard: track when we last wrote a cosmetic so the re-load effect doesn't
   // overwrite local state before the DB flush propagates into context.
   const lastCosmeticWriteRef = useRef(0);
+  // Guard: once the form is dirty, don't clobber user edits on re-load
+  const formDirtyRef = useRef(false);
+
+  // Keep the loader keyed to the player identity rather than the full currentPlayer
+  // reference — the latter changes every 10s via the timestamp interval, which
+  // was wiping unsaved form edits.
+  const playerUUID = currentPlayer?.UUID || null;
 
   useEffect(() => {
     const load = async () => {
-      // Skip re-loading player data for 1500 ms after a cosmetic write —
-      // this prevents the "refreshApp → getCurrentPlayer → stale data" race.
       if (Date.now() - lastCosmeticWriteRef.current < 1500) return;
       const p = await databaseConnection.getCurrentPlayer();
       if (!p) return;
       setPlayer(p);
-      setForm({ username: p.username || '', description: p.description || '', wakeTime: p.wakeTime || '07:00', sleepTime: p.sleepTime || '23:00' });
+      // Only re-seed the form if the user hasn't started editing it.
+      if (!formDirtyRef.current) {
+        setForm({
+          username:    p.username    || '',
+          description: p.description || '',
+          wakeTime:    p.wakeTime    || '07:00',
+          sleepTime:   p.sleepTime   || '23:00',
+        });
+      }
       const inv = await databaseConnection.getPlayerStore(STORES.inventory, p.UUID);
       setInventory(inv);
     };
     load();
-  }, [databaseConnection, currentPlayer]);
+  }, [databaseConnection, playerUUID]);
+
+  const updateForm = (patch) => {
+    formDirtyRef.current = true;
+    setForm((f) => ({ ...f, ...patch }));
+  };
 
   const ownedTypes = new Set(inventory.map((i) => i.type));
   const ownedIds   = new Set(inventory.map((i) => i.itemId || (i.name || '').toLowerCase()));
@@ -219,16 +237,13 @@ export default function Settings() {
     if (!player) return;
     lastCosmeticWriteRef.current = Date.now();
     const updated = { ...player, activeCosmetics: { ...(player.activeCosmetics || {}), [key]: value } };
-    // Optimistic local update first so UI responds instantly
     setPlayer(updated);
-    // Apply to DOM immediately
     if (key === 'theme') {
       document.documentElement.setAttribute('data-theme', value === 'default' ? '' : value);
     }
     if (key === 'font') {
       document.documentElement.setAttribute('data-font', value === 'default' ? '' : value);
     }
-    // Persist to DB then refresh context (GameHub effect will re-apply from context, correctly)
     await databaseConnection.add(STORES.player, updated);
     refreshApp();
   };
@@ -239,13 +254,23 @@ export default function Settings() {
     await databaseConnection.add(STORES.player, {
       ...player,
       username:    form.username    || player.username,
-      description: form.description || player.description,
+      description: form.description !== undefined ? form.description : player.description,
       wakeTime:    form.wakeTime,
       sleepTime:   form.sleepTime,
     });
+    formDirtyRef.current = false;
     refreshApp();
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleArchiveToggle = async () => {
+    if (!player) return;
+    const isArchived = !!player.archivedAt;
+    const updated = { ...player, archivedAt: isArchived ? null : new Date().toISOString() };
+    await databaseConnection.add(STORES.player, updated);
+    setPlayer(updated);
+    refreshApp();
   };
 
   const handleNewProfile = async () => {
@@ -294,6 +319,7 @@ export default function Settings() {
           <div className="srh-rank-label-group">
             <span className={`srh-rank-name rank-${rankClass}`}>{rankLabel}</span>
             <span className="srh-elo">{elo} ELO</span>
+            {player?.archivedAt && <span className="srh-archived-badge">Archived</span>}
           </div>
           <div className="srh-progress">
             <div className="srh-progress-track">
@@ -308,16 +334,22 @@ export default function Settings() {
         {/* Profile */}
         <SettingsSection icon="◯" title="Profile">
           <SettingsRow label="Username">
-            <input value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} placeholder={player?.username || 'Username'} className="settings-input" />
+            <input value={form.username} onChange={(e) => updateForm({ username: e.target.value })} placeholder={player?.username || 'Username'} className="settings-input" />
           </SettingsRow>
-          <SettingsRow label="Description">
-            <input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder={player?.description || 'About you'} className="settings-input" />
+          <SettingsRow label="Description" hint="Supports ~200 words">
+            <textarea
+              value={form.description}
+              onChange={(e) => updateForm({ description: e.target.value })}
+              placeholder={player?.description || 'About you'}
+              className="settings-input settings-input--textarea"
+              rows={4}
+            />
           </SettingsRow>
           <SettingsRow label="Wake Time">
-            <input type="time" value={form.wakeTime} onChange={(e) => setForm((f) => ({ ...f, wakeTime: e.target.value }))} className="settings-input settings-input--time" />
+            <input type="time" value={form.wakeTime} onChange={(e) => updateForm({ wakeTime: e.target.value })} className="settings-input settings-input--time" />
           </SettingsRow>
           <SettingsRow label="Bed Time" hint="Tokens lost if missed">
-            <input type="time" value={form.sleepTime} onChange={(e) => setForm((f) => ({ ...f, sleepTime: e.target.value }))} className="settings-input settings-input--time" />
+            <input type="time" value={form.sleepTime} onChange={(e) => updateForm({ sleepTime: e.target.value })} className="settings-input settings-input--time" />
           </SettingsRow>
           <div className="settings-save-row">
             <button type="submit" className="primary settings-save-btn">{saved ? '✓ SAVED' : 'SAVE CHANGES'}</button>
@@ -427,6 +459,16 @@ export default function Settings() {
         <SettingsSection icon="▤" title="Data">
           <SettingsRow label="Create Profile">
             <button type="button" onClick={handleNewProfile}>NEW PROFILE</button>
+          </SettingsRow>
+          <SettingsRow
+            label={player?.archivedAt ? 'Unarchive Profile' : 'Archive Profile'}
+            hint={player?.archivedAt
+              ? 'Restore access as an active profile'
+              : 'Hides this profile from the switcher (can still appear as ghost)'}
+          >
+            <button type="button" onClick={handleArchiveToggle}>
+              {player?.archivedAt ? 'UNARCHIVE' : 'ARCHIVE'}
+            </button>
           </SettingsRow>
           <SettingsRow label="Download Data">
             <button type="button" onClick={() => databaseConnection.getDataAsJSON()}>DOWNLOAD</button>

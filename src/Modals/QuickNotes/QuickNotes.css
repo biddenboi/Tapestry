@@ -1,0 +1,382 @@
+/* ══════════════════════════════════════════════════════
+   QUICK NOTES — Apple-Notes-inspired two-pane modal
+   Cleaner than before: no clip-path polygons, subtler
+   accents, roomier spacing, softer active highlight.
+══════════════════════════════════════════════════════ */
+
+.qn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: var(--background-dim);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.18s ease both;
+}
+
+/* Shell — clean rectangle, subtle accent border, no polygon */
+.qn-shell {
+  width: min(940px, 94vw);
+  height: min(680px, 88vh);
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--box-shadow-lg);
+  animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.qn-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.qn-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 10px;
+  flex-shrink: 0;
+}
+
+.qn-sidebar-title {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qn-new-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  clip-path: none;
+  border-radius: 4px;
+  padding: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.qn-new-btn:hover {
+  background: var(--accent-glow);
+  color: var(--accent-bright);
+  border-color: var(--accent-border);
+  box-shadow: none;
+}
+
+/* Search */
+.qn-search-wrap {
+  position: relative;
+  padding: 0 12px 12px;
+  flex-shrink: 0;
+}
+
+.qn-search-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  color: var(--text-dim);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.qn-search {
+  width: 100%;
+  padding: 7px 28px 7px 28px;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 12.5px;
+  outline: none;
+  box-sizing: border-box;
+  clip-path: none;
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.qn-search::placeholder { color: var(--text-dim); }
+.qn-search:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.qn-search-clear {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  clip-path: none;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.qn-search-clear:hover { color: var(--text); background: transparent; border: none; }
+
+/* Note list */
+.qn-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+}
+
+.qn-empty {
+  padding: 24px 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.qn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  clip-path: none;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  transition: background 0.1s;
+  position: relative;
+}
+.qn-row + .qn-row {
+  border-top: 1px solid var(--border-subtle);
+}
+.qn-row:hover { background: var(--bg-card); border-color: transparent; box-shadow: none; }
+
+/* Active — Apple-Notes style: subtle accent fill, small inset indicator */
+.qn-row--active {
+  background: var(--accent-glow);
+}
+.qn-row--active + .qn-row { border-top-color: transparent; }
+.qn-row--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--accent-bright);
+  border-radius: 2px;
+}
+.qn-row--active:hover { background: var(--accent-glow); }
+
+.qn-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.qn-row-title {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.qn-row--active .qn-row-title { color: var(--accent-bright); }
+
+.qn-row-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.qn-row-preview {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+/* ── Editor pane ─────────────────────────────────────── */
+.qn-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.qn-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.qn-pane-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.qn-pane-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.qn-save-status {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.qn-unsaved {
+  color: var(--accent-bright);
+  font-style: normal;
+  opacity: 0.85;
+}
+
+.qn-pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Sizing tweak only — colors/hover inherited from the global .danger class */
+.qn-delete-btn {
+  font-size: 10px;
+  padding: 3px 12px;
+}
+
+.qn-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+  clip-path: none;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color 0.12s;
+}
+.qn-close:hover { color: var(--red); background: transparent; border: none; }
+
+/* Editor body */
+.qn-editor-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  padding: 0;
+}
+
+.qn-editor {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  padding: 20px 28px;
+}
+
+/* Empty state */
+.qn-no-note {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-dim);
+  padding: 24px;
+}
+
+.qn-no-note-icon {
+  font-size: 44px;
+  opacity: 0.2;
+  line-height: 1;
+}
+
+.qn-no-note-msg {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  opacity: 0.7;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.qn-no-note-btn {
+  font-size: 11px;
+  padding: 8px 20px;
+  letter-spacing: 0.1em;
+}
+
+/* Responsive — narrow screens collapse sidebar to top */
+@media (max-width: 540px) {
+  .qn-shell { width: 98vw; height: 96vh; flex-direction: column; border-radius: 4px; }
+  .qn-sidebar { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  .qn-list { max-height: 140px; }
+  .qn-editor { padding: 16px 18px; }
+}

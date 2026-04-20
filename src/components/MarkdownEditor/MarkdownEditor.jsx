@@ -196,8 +196,22 @@ export default function MarkdownEditor({ value = '', onChange, placeholder, clas
     const handlePreviewClick = (e) => {
         const link = e.target.closest('a.md-link');
         if (link) {
+            e.preventDefault();
             e.stopPropagation();
-            return; // let the <a> handle it
+            const url = link.getAttribute('href');
+            if (url) {
+                // Electron: open in system browser via shell
+                try {
+                    if (window.require) {
+                        const { shell } = window.require('electron');
+                        shell.openExternal(url);
+                        return;
+                    }
+                } catch (_) { /* not in Electron */ }
+                // Browser fallback
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+            return;
         }
         // Otherwise focus the textarea
         textareaRef.current?.focus();

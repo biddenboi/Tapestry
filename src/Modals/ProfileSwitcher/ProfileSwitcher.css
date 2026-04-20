@@ -312,3 +312,27 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* ── Archived profile styling ─────────────────────────── */
+.ps-profile-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ps-archived-tag {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 2px 6px;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  text-transform: uppercase;
+}
+
+.ps-profile-card--archived {
+  opacity: 0.55;
+}

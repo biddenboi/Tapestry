@@ -1,6 +1,395 @@
 @import '../TodoDetailModal/TodoDetailModal.css';
 
-.detail-journal-copy {
+/* ── Modal shell ───────────────────────────────────────── */
+.journal-detail-card {
+  width: min(760px, 94vw);
+}
+
+.journal-detail-body {
+  gap: 16px;
+}
+
+/* ── Header: title + condensed date ────────────────────── */
+.journal-detail-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.journal-detail-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  margin-top: 4px;
+}
+
+.journal-edited-tag {
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.journal-detail-header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.journal-header-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--accent-border);
+  color: var(--accent-bright);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.journal-header-btn:hover {
+  background: var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ── Edit mode: title input ────────────────────────────── */
+.journal-edit-title {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 8px 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.journal-edit-title:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Shared card shell ─────────────────────────────────── */
+.journal-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.journal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  flex: 0 0 auto;
+}
+
+.journal-comments-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent-bright);
+  padding: 1px 8px;
+  background: var(--bg-void);
+  border: 1px solid var(--accent-border);
+}
+
+/* ── Entry card body ───────────────────────────────────── */
+.journal-entry-body {
+  padding: 14px 16px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.journal-entry-readonly {
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+.journal-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Edit mode: MarkdownEditor sits inside the entry card */
+.journal-card > .md-editor-wrap.journal-edit-body {
+  border: none;
+  background: transparent;
+  min-height: 240px;
+  max-height: 50vh;
+}
+
+.journal-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+}
+
+/* ── Comments card body ────────────────────────────────── */
+.journal-comments-body {
+  padding: 12px 14px;
+  max-height: 40vh;
+  overflow-y: auto;
+  min-height: 80px;
+}
+
+.journal-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journal-comments-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  padding: 18px 8px;
+}
+
+.journal-comment {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  transition: border-color 0.12s;
+}
+.journal-comment:hover {
+  border-color: var(--border);
+}
+
+.journal-comment--self {
+  border-color: var(--accent-border);
+  background: linear-gradient(135deg, var(--bg-card), var(--accent-glow));
+}
+
+/* ── Rank-bordered profile frame ───────────────────────── */
+.journal-comment-pfp-frame {
+  display: inline-flex;
+  padding: 2px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  line-height: 0;
+  flex-shrink: 0;
+  transition: box-shadow 0.15s, transform 0.15s;
+  /* borderColor + boxShadow overridden inline with the author's rank color */
+}
+
+/* Strip the inner pfp's own border so the rank ring reads cleanly */
+.journal-comment-pfp-frame .pfp-wrap {
+  border: none;
+}
+
+/* Button variant: clickable, resets all global <button> styling */
+.journal-comment-pfp-frame--btn {
+  padding: 2px;
+  font: inherit;
+  color: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  clip-path: none;
+  cursor: pointer;
+}
+.journal-comment-pfp-frame--btn:hover:not(:disabled) {
+  background: transparent;
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 0 16px currentColor; /* overridden below by inline style */
+}
+.journal-comment-pfp-frame--btn:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.journal-comment-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journal-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.journal-comment-author {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-bright);
+  font-size: 12px;
+}
+
+/* Button variant of the author name — clickable, same look as text */
+.journal-comment-author--btn {
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-transform: none;
+  clip-path: none;
+  cursor: pointer;
+  transition: color 0.12s, text-shadow 0.12s;
+}
+.journal-comment-author--btn:hover:not(:disabled) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--accent-bright);
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+.journal-comment-author--btn:focus-visible {
+  outline: 1px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.journal-comment-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.journal-comment-delete {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 1px 4px;
+  cursor: pointer;
+  transition: color 0.12s;
+  clip-path: none;
+}
+.journal-comment-delete:hover {
+  color: var(--red);
+  background: transparent;
+  box-shadow: none;
+}
+
+.journal-comment-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.55;
   white-space: pre-wrap;
-  line-height: 1.7;
+}
+
+/* ── Upvote / downvote bar ─────────────────────────────── */
+.journal-comment-votes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.jc-vote-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 6px;
+  clip-path: none;
+  box-shadow: none;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.jc-vote-btn:hover:not(:disabled) {
+  background: transparent;
+  box-shadow: none;
+}
+.jc-vote-btn--up:hover:not(:disabled),
+.jc-vote-btn--up.is-active {
+  color: var(--green);
+  border-color: rgba(0,214,143,0.4);
+  background: var(--green-dim);
+}
+.jc-vote-btn--down:hover:not(:disabled),
+.jc-vote-btn--down.is-active {
+  color: var(--red);
+  border-color: rgba(255,61,87,0.4);
+  background: var(--red-dim);
+}
+.jc-vote-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.jc-vote-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 18px;
+  text-align: center;
+}
+.jc-vote-score--pos { color: var(--green); }
+.jc-vote-score--neg { color: var(--red); }
+
+/* ── Compose row (bottom of comments card) ─────────────── */
+.journal-comment-compose {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+}
+
+.journal-comment-compose textarea {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.journal-comment-compose textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.journal-comment-compose button {
+  align-self: stretch;
+  min-width: 72px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+}
+
+/* ── Scrollbar polish ──────────────────────────────────── */
+.journal-entry-body::-webkit-scrollbar,
+.journal-comments-body::-webkit-scrollbar {
+  width: 6px;
+}
+.journal-entry-body::-webkit-scrollbar-track,
+.journal-comments-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.journal-entry-body::-webkit-scrollbar-thumb,
+.journal-comments-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.journal-entry-body::-webkit-scrollbar-thumb:hover,
+.journal-comments-body::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
 }

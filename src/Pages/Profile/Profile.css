@@ -10,7 +10,6 @@
   background-size: cover;
   background-position: center;
   min-height: 180px;
-  overflow: hidden;
 }
 
 .profile-hero::before {
@@ -286,6 +285,57 @@
 .phi-task    { background: rgba(77,163,255,0.08); color: var(--accent-bright); border-color: var(--accent-border); }
 .phi-journal { background: rgba(0,214,143,0.08);  color: var(--green); border-color: rgba(0,214,143,0.25); }
 .phi-event   { background: rgba(155,109,255,0.08); color: var(--purple); border-color: rgba(155,109,255,0.25); }
+.phi-item_use { background: rgba(255,184,0,0.10); color: var(--gold); border-color: rgba(255,184,0,0.3); }
+.phi-money_log { background: var(--green-dim); color: var(--green); border-color: rgba(0,214,143,0.3); font-weight: 700; }
+.phi-transaction { background: var(--green-dim); color: var(--green); border-color: rgba(0,214,143,0.25); }
+
+/* ── Timeline: pin toggle + pinned-row accent ───────────── */
+.profile-history-item { position: relative; }
+
+.profile-history-item--pinned {
+  border-color: var(--accent-border);
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  box-shadow: inset 2px 0 0 var(--accent-bright);
+}
+
+.profile-history-pin {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-dim);
+  background: var(--bg-void);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.14s, color 0.14s, border-color 0.14s, transform 0.14s, background 0.14s;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+.profile-history-item:hover .profile-history-pin,
+.profile-history-pin--active {
+  opacity: 1;
+  transform: translateY(0);
+}
+.profile-history-pin:hover {
+  color: var(--accent-bright);
+  border-color: var(--accent-border);
+  background: var(--accent-glow);
+}
+.profile-history-pin--active {
+  color: var(--accent-bright);
+  border-color: var(--accent-border);
+  background: var(--accent-glow);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
 
 .profile-history-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .profile-history-title { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -374,14 +424,18 @@
 }
 
 /* ── Banner overlay — stronger when custom bg set ─── */
+.profile-hero--has-banner {
+  min-height: 220px;
+}
+
 .profile-hero-overlay--strong {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 30%, transparent 20%, var(--bg-void) 100%),
-    linear-gradient(180deg,
-      transparent 0%,
-      var(--bg-surface) 60%,
-      var(--bg-void) 100%
-    ) ;
+  background: linear-gradient(
+    180deg,
+    rgba(4, 8, 15, 0.1) 0%,
+    rgba(4, 8, 15, 0.1) 45%,
+    var(--bg-void) 90%,
+    var(--bg-void) 100%
+  );
 }
 
 /* Image banners: inner rim glow */
@@ -532,4 +586,43 @@
 .pbe-footer {
   display: flex; justify-content: flex-end; gap: 8px;
   padding: 14px 18px; border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Archived badge ──────────────────────────────────── */
+.profile-archived-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  padding: 3px 10px;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  text-transform: uppercase;
+}
+
+/* ── Achievement bar in profile hero ─────────────────── */
+.profile-ach-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-left: 6px;
+}
+.profile-ach-bar:hover {
+  border-color: var(--border);
+  background: rgba(0, 0, 0, 0.4);
+}
+.profile-ach-bar--editable {
+  border-style: dashed;
+}
+.profile-ach-bar-badge {
+  /* Slightly shift up for visual centering near the name */
+  position: relative;
+  top: -1px;
 }

@@ -1,6 +1,5 @@
 import { HOUR, STORES } from '../Constants.js';
 import { getTaskDuration } from './Tasks.js';
-import { buildBehaviorProfile, defaultProfile } from './BehaviorProfile.js';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -53,42 +52,34 @@ async function estimateGhostPower(databaseConnection, player, durationHours) {
   const totalDuration = completed.reduce((sum, task) => sum + getTaskDuration(task), 0);
   const totalPoints = completed.reduce((sum, task) => sum + Number(task.points || 0), 0);
 
-  // Fallback rate for ghosts with no task history: scales with ELO, floored so
-  // even brand-new accounts produce ghosts with enough budget to play the map.
-  // Baseline is ~120 pts/hr (equivalent to 20 min of focused work per hour).
-  const fallbackPerMs = Math.max(120 / HOUR, ((player.elo || 900) / 1000) * 200 / HOUR);
-  const pointsPerMs = totalDuration > 0
+  // Cap pointsPerMs at the theoretical maximum (1 pt per 10 s = perfect accuracy)
+  const MAX_RATE = 1 / 10000;
+  const rawRate = totalDuration > 0
     ? totalPoints / totalDuration
-    : fallbackPerMs;
+    : ((player.elo || 900) / 1000) / 120000;
+  const pointsPerMs = Math.min(rawRate, MAX_RATE);
 
-  const expectedTotal = Math.round(pointsPerMs * durationHours * HOUR);
-  const floor = Math.round(durationHours * 120);
-
-  const matches = await databaseConnection.getPlayerStore(STORES.match, player.UUID).catch(() => []);
-  const behaviorProfile = buildBehaviorProfile(completed, matches, player);
+  // Apply a ~40% utilization factor: in a multi-hour match, nobody works
+  // productively for 100% of the time. This keeps ghost estimates realistic.
+  const UTILIZATION = 0.4;
+  const expectedTotal = Math.round(pointsPerMs * durationHours * HOUR * UTILIZATION);
 
   return {
     ...player,
     pointsPerMs,
-    estimatedTotal: Math.max(floor, expectedTotal),
+    estimatedTotal: Math.max(60, expectedTotal),
     isGenerated: false,
     recentTaskNames: completed.filter((t) => t.name).map((t) => t.name).slice(0, 15),
     playerTheme: player.activeCosmetics?.theme || 'default',
     cardBanner: player.activeCosmetics?.cardBanner || null,
-    behaviorProfile,
   };
 }
 
 function synthGhost(currentPlayer, durationHours, index) {
   const seed = hashString(`${currentPlayer.UUID}-${currentPlayer.createdAt || ''}-${index}`);
   const variance = 0.82 + seededRandom(seed) * 0.38;
-  const baseElo = (currentPlayer.elo || 1000) || 1000;   // coerce 0 ELO users toward a sane ghost range
-  const elo = Math.max(100, Math.round(baseElo + (seededRandom(seed + 1) - 0.5) * 180));
-  const floor = Math.round(durationHours * 120);
-  const estimatedTotal = Math.max(
-    floor,
-    Math.round((Math.max(baseElo, 400) / 8) * durationHours * variance),
-  );
+  const elo = Math.max(100, Math.round((currentPlayer.elo || 1000) + (seededRandom(seed + 1) - 0.5) * 180));
+  const estimatedTotal = Math.max(60, Math.round(((currentPlayer.elo || 1000) / 8) * durationHours * variance));
   return {
     UUID: `ghost-${currentPlayer.UUID}-${index}`,
     username: `${currentPlayer.username || 'Agent'} Echo ${index + 1}`,
@@ -98,7 +89,6 @@ function synthGhost(currentPlayer, durationHours, index) {
     pointsPerMs: estimatedTotal / (durationHours * HOUR),
     isGenerated: true,
     generatedSeed: seed,
-    behaviorProfile: defaultProfile({ elo }),
   };
 }
 
@@ -163,36 +153,10 @@ export function getGhostScore(player, createdAt, durationHours) {
   const seed = hashString(`${player.UUID}-${createdAt}`);
   const base = Number(player.estimatedTotal || 0);
   const progress = Math.pow(elapsedRatio, 0.92 + seededRandom(seed) * 0.18);
-  const volatility = (seededRandom(seed + Math.floor(elapsedRatio * 12)) - 0.5) * 0.08;
+  // Clamp volatility window index to 0-11 so the seed never flips at the
+  // exact match-end boundary (elapsedRatio = 1.0 would give index 12).
+  const volatilityIdx = Math.min(Math.floor(elapsedRatio * 12), 11);
+  const volatility = (seededRandom(seed + volatilityIdx) - 0.5) * 0.08;
   const scaled = base * clamp(progress + volatility, 0, 1.05);
   return Math.max(0, Math.round(scaled));
-}
-
-/**
- * Computes per-player ELO deltas based on team tower HP totals as scores.
- * Returns { [UUID]: deltaELO }.
- */
-export function computeEloChanges(match, scoreMap, currentPlayerUUID) {
-  const K = 24; // standard ELO K-factor
-  const [team1, team2] = match.teams || [[], []];
-  const team1Score = team1.reduce((s, p) => s + (scoreMap[p.UUID] || 0), 0) / Math.max(1, team1.length);
-  const team2Score = team2.reduce((s, p) => s + (scoreMap[p.UUID] || 0), 0) / Math.max(1, team2.length);
-
-  const deltas = {};
-  const allP = [...team1, ...team2];
-
-  for (const player of allP) {
-    const isTeam1 = team1.some((p) => p.UUID === player.UUID);
-    const myScore = isTeam1 ? team1Score : team2Score;
-    const opScore = isTeam1 ? team2Score : team1Score;
-
-    // ELO expected win probability
-    const eloA  = player.elo || 900;
-    const avgOp = (isTeam1 ? team2 : team1).reduce((s, p) => s + (p.elo || 900), 0) / Math.max(1, (isTeam1 ? team2 : team1).length);
-    const expected = 1 / (1 + Math.pow(10, (avgOp - eloA) / 400));
-    const actual   = myScore > opScore ? 1 : myScore < opScore ? 0 : 0.5;
-    deltas[player.UUID] = Math.round(K * (actual - expected));
-  }
-
-  return deltas;
 }

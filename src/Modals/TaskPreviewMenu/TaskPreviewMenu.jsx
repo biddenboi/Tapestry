@@ -9,7 +9,7 @@ import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor.jsx';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
 
 export default NiceModal.create(() => {
-  const { databaseConnection, refreshApp, activeTask: [activeTask, setActiveTask] } = useContext(AppContext);
+  const { databaseConnection, refreshApp, activeTask: [activeTask, setActiveTask], activeMatch: [activeMatch] } = useContext(AppContext);
   const modal = useModal();
 
   useEffect(() => {
@@ -38,6 +38,15 @@ export default NiceModal.create(() => {
     }));
     close();
     requestAnimationFrame(() => NiceModal.show(TaskSessionMenu));
+  };
+
+  const handleDeleteTask = async () => {
+    if (activeTask.UUID) {
+      await databaseConnection.remove(STORES.todo, activeTask.UUID);
+      refreshApp();
+    }
+    setActiveTask({});
+    close();
   };
 
   const handleSaveTodo = async () => {
@@ -103,6 +112,9 @@ export default NiceModal.create(() => {
         </div>
 
         <div className="task-modal-footer">
+          <button className="danger" onClick={handleDeleteTask} title="Delete this task">
+            DELETE
+          </button>
           <button onClick={handleSaveTodo} disabled={!canStart()}>
             ← BACK TO TODO
           </button>

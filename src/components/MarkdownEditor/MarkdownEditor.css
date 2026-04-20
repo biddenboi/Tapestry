@@ -112,8 +112,9 @@ em {
     color: var(--text-bright);
 }
 
-/* Inline code */
-.md-mirror code,
+/* Inline code — PREVIEW/READONLY only (full visual treatment).
+   Mirror gets minimal styling so glyph metrics stay identical to the textarea
+   and the cursor doesn't drift. */
 .md-preview code,
 .md-editor.readonly code {
     font-family: 'JetBrains Mono', monospace;
@@ -123,6 +124,12 @@ em {
     padding: 1px 5px;
     border: 1px solid var(--border);
     border-radius: 2px;
+}
+
+/* Mirror code — color only, same metrics as base text */
+.md-mirror code {
+    color: var(--accent-bright);
+    font-weight: 500;
 }
 
 /* Links */
@@ -140,28 +147,35 @@ em {
     text-decoration-color: var(--accent-bright);
 }
 
-/* Headings */
-.md-h1 {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.5em;
+/* Headings
+   Shared: color + weight (identical glyph metrics, safe for mirror).
+   The mirror MUST keep the same font-size / font-family / line-height as the
+   textarea — otherwise the cursor drifts because character positions diverge. */
+.md-h1, .md-h2, .md-h3 {
     font-weight: 700;
     color: var(--text-bright);
+}
+
+/* Preview + readonly — no cursor to align, so enlarge freely. */
+.md-preview .md-h1,
+.md-editor.readonly .md-h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5em;
     letter-spacing: 0.04em;
     display: block;
 }
 
-.md-h2 {
+.md-preview .md-h2,
+.md-editor.readonly .md-h2 {
     font-family: 'Rajdhani', sans-serif;
     font-size: 1.25em;
-    font-weight: 700;
-    color: var(--text-bright);
     display: block;
 }
 
-.md-h3 {
+.md-preview .md-h3,
+.md-editor.readonly .md-h3 {
     font-size: 1.1em;
     font-weight: 600;
-    color: var(--text-bright);
     display: block;
 }
 
@@ -172,13 +186,16 @@ em {
     font-weight: inherit;
 }
 
-/* Heading prefix shown in raw mode */
+/* Heading prefix shown in raw mode — ensure no metric change in mirror */
 .md-raw.md-h1,
 .md-raw.md-h2,
 .md-raw.md-h3 {
     color: var(--text-muted);
     font-size: inherit;
+    font-family: inherit;
     font-weight: inherit;
+    letter-spacing: 0;
+    display: inline;
 }
 
 /* ── Toolbar (optional, can be toggled) ─────────────────── */

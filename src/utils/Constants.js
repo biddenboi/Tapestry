@@ -1,4 +1,4 @@
-export const DATABASE_VERSION = 6;
+export const DATABASE_VERSION = 8;
 
 export const ACTIVE_PROFILE_KEY = 'tapestry_active_profile_uuid';
 
@@ -23,6 +23,8 @@ export const STORES = {
   friendship: 'friendshipObjectStore',
   notification: 'notificationObjectStore',
   chatMessage: 'chatMessageObjectStore',
+  journalComment: 'journalCommentObjectStore',
+  notes: 'notesObjectStore',
 };
 
 export const GAME_STATE = {

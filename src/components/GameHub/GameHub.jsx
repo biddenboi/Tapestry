@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, STORES } from '../../utils/Constants.js';
@@ -8,6 +8,7 @@ import { getRankClass, getRankGlow } from '../../utils/Helpers/Rank.js';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
 import ProfileSwitcher from '../../Modals/ProfileSwitcher/ProfileSwitcher.jsx';
 import Purgatory from '../../Modals/Purgatory/Purgatory.jsx';
+import QuickNotes from '../../Modals/QuickNotes/QuickNotes.jsx';
 import Lobby from '../Lobby/Lobby.jsx';
 import MatchArena from '../MatchArena/MatchArena.jsx';
 import PracticeDojo from '../PracticeDojo/PracticeDojo.jsx';
@@ -19,8 +20,6 @@ import Profile from '../../Pages/Profile/Profile.jsx';
 import Inbox from '../Inbox/Inbox.jsx';
 import GlobalChat from '../GlobalChat/GlobalChat.jsx';
 import './GameHub.css';
-import BreachArena from '../../modes/breach/BreachArena.jsx';
-
 
 const NAV = [
   { id: 'hub',       label: 'HUB',  icon: '◎', title: 'Lobby' },
@@ -43,9 +42,9 @@ export default function GameHub() {
     timestamp,
     currentPlayer,
     notify,
+    refreshApp,
     activeTask: [activeTask],
     gameState: [gameState],
-    activeMatch: [activeMatch],       
     activePanel: [activePanel],
     viewingProfile: [viewingProfile],
     openPanel,
@@ -55,6 +54,17 @@ export default function GameHub() {
   const sleepCheckFiredRef = useRef(false);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  /* ── EOD choice persistence helpers ────────────────────── */
+  // Key: tapestry_eod_<playerUUID>_<YYYY-MM-DD>
+  // Value: 'purgatory' | 'skip' (set the moment the user clicks a choice)
+  const eodKey = useCallback((playerUUID, dateStr) =>
+    `tapestry_eod_${playerUUID}_${dateStr}`, []);
+
+  const getLocalDateStr = useCallback((date = new Date()) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
 
   /* Apply active cosmetics (theme + font) from context player */
   useEffect(() => {
@@ -81,51 +91,84 @@ export default function GameHub() {
         const player = await databaseConnection.getCurrentPlayer();
         if (!player?.createdAt) return;
 
-        const lastEvent = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
-        const midnight  = getMidnightOfDate(getLocalDate(new Date()));
+        const lastEvent    = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
+        const midnight     = getMidnightOfDate(getLocalDate(new Date()));
+        const todayStr     = getLocalDateStr();
+        const mkKey        = (uid) => `tapestry_eod_${uid}_${todayStr}`;
 
+        // ── No history yet: first launch ──────────────────────────
         if (!lastEvent) {
           await startDay(databaseConnection, player);
+          refreshApp();
           return;
         }
 
-        if (getLocalDate(new Date(lastEvent.createdAt)) < midnight) {
+        const lastEventDate = getLocalDate(new Date(lastEvent.createdAt));
+
+        // ── Last event is from a previous day ─────────────────────
+        if (lastEventDate < midnight) {
           if (lastEvent.type === EVENT.sleep) {
+            // Slept before midnight on a previous day → normal new-day start
             sleepCheckFiredRef.current = false;
             await startDay(databaseConnection, player);
+            refreshApp();
           } else {
-            await endDay(databaseConnection, player, true);
-            await startDay(databaseConnection, player);
+            // Missed deadline: app wasn't open during the sleep→midnight window.
+            // Show profile picker once, then startDay immediately (no purgatory
+            // since that interval has already passed).
+            const key    = mkKey(player.UUID);
+            const choice = localStorage.getItem(key);
+            if (!choice) {
+              await endDay(databaseConnection, player, true);
+              notify({ title: 'Missed Bedtime', message: 'Your sleep time passed without ending the day. All tokens forfeited.', kind: 'error', persist: true });
+              NiceModal.show(ProfileSwitcher, { skipPurgatory: true, todayStr });
+            } else if (choice === 'chosen') {
+              // User already picked their profile on this session — finish starting.
+              await startDay(databaseConnection, player);
+              refreshApp();
+            }
+            // 'starting' means ProfileSwitcher already kicked off startDay — do nothing.
           }
           return;
         }
 
-        /* Current day: check if sleep time has passed */
-        if (lastEvent.type !== EVENT.sleep && !sleepCheckFiredRef.current) {
+        // ── Last event is from today ──────────────────────────────
+        if (lastEvent.type === EVENT.sleep) {
+          // We're between sleep time and midnight (purgatory window).
+          const key    = mkKey(player.UUID);
+          const choice = localStorage.getItem(key);
+          if (choice) {
+            // User already made their end-of-day choice — just re-show purgatory.
+            NiceModal.show(Purgatory);
+          } else {
+            // Show the profile switcher (handles first show + reload before choice).
+            NiceModal.show(ProfileSwitcher, { skipPurgatory: false, todayStr });
+          }
+          return;
+        }
+
+        // ── Active day: watch for sleep time ─────────────────────
+        if (!sleepCheckFiredRef.current) {
           const sleepDate = getSleepDateToday(player.sleepTime);
           if (sleepDate && Date.now() >= sleepDate.getTime()) {
             sleepCheckFiredRef.current = true;
-            await endDay(databaseConnection, player, true);
-            notify({
-              title: '💀 Sleep Time Passed',
-              message: 'You missed your scheduled bedtime. All tokens have been forfeited.',
-              kind: 'error',
-              persist: true,
-            });
-            NiceModal.show(ProfileSwitcher);
-            return;
+            const key    = mkKey(player.UUID);
+            const choice = localStorage.getItem(key);
+            if (!choice) {
+              await endDay(databaseConnection, player, true);
+              notify({ title: 'Sleep Time', message: 'Your scheduled bedtime has passed. All tokens forfeited.', kind: 'error', persist: true });
+              NiceModal.show(ProfileSwitcher, { skipPurgatory: false, todayStr });
+            } else {
+              NiceModal.show(Purgatory);
+            }
           }
-        }
-
-        if (lastEvent.type === EVENT.sleep) {
-          NiceModal.show(ProfileSwitcher);
         }
       } finally {
         running = false;
       }
     };
     syncDay();
-  }, [databaseConnection, timestamp, notify]);
+  }, [databaseConnection, timestamp, notify, refreshApp, getLocalDateStr]);
 
   const handleNavClick = (id) => {
     if (id !== 'journal') forceCloseJournal();
@@ -142,10 +185,8 @@ export default function GameHub() {
   };
 
   const renderMain = () => {
-    if (gameState === GAME_STATE.match) {
-      return activeMatch?.mode === 'breach' ? <BreachArena /> : <MatchArena />;
-    }
-    if (gameState === GAME_STATE.dojo) return <PracticeDojo />;
+    if (gameState === GAME_STATE.match) return <MatchArena />;
+    if (gameState === GAME_STATE.dojo)  return <PracticeDojo />;
     return <Lobby />;
   };
 
@@ -198,6 +239,15 @@ export default function GameHub() {
         </nav>
 
         <div className="hub-sidebar-bottom">
+          {/* Quick notes */}
+          <button
+            className="hub-inbox-btn hub-notes-btn"
+            onClick={() => { setInboxOpen(false); NiceModal.show(QuickNotes); }}
+            title="Quick Notes"
+          >
+            <span className="hub-inbox-icon">✎</span>
+          </button>
+
           {/* Inbox bell */}
           <button
             className={`hub-inbox-btn ${inboxOpen ? 'active' : ''}`}

@@ -141,6 +141,21 @@ class DatabaseConnection {
         ['playerUUID', 'playerUUID'],
       ], event);
     }
+
+    if (DATABASE_VERSION >= 7 && oldVersion < 7) {
+      this.createStore(STORES.journalComment, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['journalUUID', 'journalUUID'],
+        ['authorUUID', 'authorUUID'],
+      ], event);
+    }
+
+    if (DATABASE_VERSION >= 8 && oldVersion < 8) {
+      this.createStore(STORES.notes, 'UUID', [
+        ['createdAt', 'createdAt'],
+        ['updatedAt', 'updatedAt'],
+      ], event);
+    }
   }
 
   constructor() {
@@ -163,7 +178,7 @@ class DatabaseConnection {
 
   async getDataAsJSON() {
     await this.ready;
-    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages] = await Promise.all([
+    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments] = await Promise.all([
       this.getAll(STORES.task),
       this.getAll(STORES.player),
       this.getAll(STORES.journal),
@@ -176,9 +191,10 @@ class DatabaseConnection {
       this.getAll(STORES.friendship),
       this.getAll(STORES.notification),
       this.getAll(STORES.chatMessage),
+      this.getAll(STORES.journalComment),
     ]);
 
-    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages };
+    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments };
     const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -208,6 +224,7 @@ class DatabaseConnection {
       friendships: STORES.friendship,
       notifications: STORES.notification,
       chatMessages: STORES.chatMessage,
+      journalComments: STORES.journalComment,
     };
 
     for (const [key, storeName] of Object.entries(mapping)) {
@@ -413,7 +430,7 @@ class DatabaseConnection {
       && Number(player.elo || 0) === 1000;
   }
 
-  async getAllPlayers() {
+  async getAllPlayers({ includeArchived = true } = {}) {
     await this.ready;
     return new Promise((resolve, reject) => {
       const transaction = this.database.transaction(STORES.player, 'readonly');
@@ -423,7 +440,9 @@ class DatabaseConnection {
         const cursor = event.target.result;
         if (cursor) {
           if (!this.isLegacyBootstrapPlayer(cursor.value)) {
-            results.push(cursor.value);
+            if (includeArchived || !cursor.value.archivedAt) {
+              results.push(cursor.value);
+            }
           }
           cursor.continue();
         } else {
@@ -431,6 +450,30 @@ class DatabaseConnection {
         }
       };
       transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  async getActivePlayers() {
+    return this.getAllPlayers({ includeArchived: false });
+  }
+
+  /* ── Journal comments ─────────────────────────────────── */
+  async getCommentsForJournal(journalUUID) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.journalComment, 'readonly');
+      const objectStore = transaction.objectStore(STORES.journalComment);
+      if (!objectStore.indexNames.contains('journalUUID')) {
+        resolve([]);
+        return;
+      }
+      const request = objectStore.index('journalUUID').getAll(journalUUID);
+      request.onsuccess = () => {
+        const sorted = (request.result || [])
+          .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        resolve(sorted);
+      };
+      request.onerror = () => reject(request.error);
     });
   }
 
@@ -477,28 +520,6 @@ class DatabaseConnection {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-  }
-
-
-  /** Shallow-merges `fields` into the existing record identified by `UUID`. */
-  async update(store, UUID, fields) {
-    await this.ready;
-    return new Promise((resolve, reject) => {
-      const tx  = this.database.transaction(store, 'readwrite');
-      const os  = tx.objectStore(store);
-      const req = os.get(UUID);
-      req.onsuccess = () => {
-        const existing = req.result || {};
-        const put = os.put({ ...existing, ...fields });
-        put.onsuccess = () => resolve(put.result);
-        put.onerror  = () => reject(put.error);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async getPlayerByUUID(uuid) {
-    return this.get(STORES.player, uuid);
   }
 
   async add(store, data) {
