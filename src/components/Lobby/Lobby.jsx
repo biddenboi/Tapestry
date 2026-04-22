@@ -236,7 +236,9 @@ export default function Lobby() {
 
   useEffect(() => {
     const load = async () => {
-      const stage = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
+      const stage = currentPlayer?.UUID
+        ? await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep], currentPlayer.UUID)
+        : null;
       setScheduleStage(stage);
       if (!currentPlayer?.UUID) return;
 

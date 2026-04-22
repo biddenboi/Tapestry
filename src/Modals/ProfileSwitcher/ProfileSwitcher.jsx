@@ -81,7 +81,7 @@ function ProfileCard({ player, isActive, isCurrent, onClick }) {
 }
 
 /* ── Main modal ─────────────────────────────────────────── */
-export default NiceModal.create(({ skipPurgatory = false, todayStr = '' }) => {
+export default NiceModal.create(({ skipPurgatory = false, eodDateStr = '' }) => {
   const { databaseConnection, currentPlayer, refreshApp } = useContext(AppContext);
   const modal = useModal();
   const [allPlayers, setAllPlayers] = useState([]);
@@ -98,10 +98,10 @@ export default NiceModal.create(({ skipPurgatory = false, todayStr = '' }) => {
 
   /** Persist that the user has made their end-of-day choice. */
   const markChosen = useCallback(() => {
-    if (currentPlayer?.UUID && todayStr) {
-      localStorage.setItem(`tapestry_eod_${currentPlayer.UUID}_${todayStr}`, 'chosen');
+    if (currentPlayer?.UUID && eodDateStr) {
+      localStorage.setItem(`tapestry_eod_${currentPlayer.UUID}_${eodDateStr}`, 'chosen');
     }
-  }, [currentPlayer, todayStr]);
+  }, [currentPlayer, eodDateStr]);
 
   const otherPlayers = allPlayers.filter((p) => p.UUID !== currentPlayer?.UUID);
   const filteredPlayers = search.trim()

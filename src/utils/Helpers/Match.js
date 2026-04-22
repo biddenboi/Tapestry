@@ -47,20 +47,52 @@ async function estimateGhostPower(databaseConnection, player, durationHours) {
   const completed = tasks
     .filter((task) => task.completedAt && task.createdAt)
     .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
-    .slice(0, 24);
+    .slice(0, 30);
+
+  // ── Rate cap ──────────────────────────────────────────────────────────────
+  // Under the new formula, points = msToPoints(duration) × taskMultiplier, where
+  // taskMultiplier = aversionWeight(max 1.8) × urgencyWeight(max 7.0) × commitmentWeight(max ≈2.5).
+  // Theoretical ceiling: 1.8 × 7.0 × 2.5 / 10000 ≈ 0.00315 pts/ms.
+  // Old cap was 1/10000 = the base rate with no multiplier — far too low for the new system.
+  const MAX_RATE = (1.8 * 7.0 * 2.5) / 10000; // ≈ 0.00315 pts/ms
+
+  // ── ELO-based fallback rate ───────────────────────────────────────────────
+  // Anchored so a 1000-ELO player earns roughly the base rate at moderate utilization.
+  // Scales with ELO: a 1500-ELO player gets a 1.5× higher baseline than a 1000-ELO player.
+  const eloFallbackRate = (Math.max(100, player.elo || 900) / 1000) * (1.0 / 10000);
+
+  if (completed.length === 0) {
+    // No task history — use ELO estimate entirely.
+    const UTILIZATION = 0.4;
+    const expectedTotal = Math.round(eloFallbackRate * durationHours * HOUR * UTILIZATION);
+    return {
+      ...player,
+      pointsPerMs: eloFallbackRate,
+      estimatedTotal: Math.max(60, expectedTotal),
+      isGenerated: false,
+      recentTaskNames: [],
+      playerTheme: player.activeCosmetics?.theme || 'default',
+      cardBanner: player.activeCosmetics?.cardBanner || null,
+    };
+  }
 
   const totalDuration = completed.reduce((sum, task) => sum + getTaskDuration(task), 0);
-  const totalPoints = completed.reduce((sum, task) => sum + Number(task.points || 0), 0);
+  const totalPoints   = completed.reduce((sum, task) => sum + Number(task.points || 0), 0);
 
-  // Cap pointsPerMs at the theoretical maximum (1 pt per 10 s = perfect accuracy)
-  const MAX_RATE = 1 / 10000;
-  const rawRate = totalDuration > 0
-    ? totalPoints / totalDuration
-    : ((player.elo || 900) / 1000) / 120000;
-  const pointsPerMs = Math.min(rawRate, MAX_RATE);
+  // Raw rate from actual history, capped at theoretical maximum.
+  const rawRate    = totalDuration > 0 ? totalPoints / totalDuration : eloFallbackRate;
+  const actualRate = Math.min(rawRate, MAX_RATE);
 
-  // Apply a ~40% utilization factor: in a multi-hour match, nobody works
-  // productively for 100% of the time. This keeps ghost estimates realistic.
+  // Blend actual rate with ELO fallback based on sample size.
+  // Fully trust the actual rate once we have ≥ 10 tasks; below that, blend in
+  // the ELO baseline so a player with 1-2 unusual sessions doesn't get wildly
+  // mis-estimated.
+  const TRUST_THRESHOLD = 10;
+  const trustWeight = Math.min(completed.length / TRUST_THRESHOLD, 1.0);
+  const pointsPerMs = actualRate * trustWeight + eloFallbackRate * (1 - trustWeight);
+
+  // A ~40% utilization factor accounts for the reality that nobody is heads-down
+  // for 100% of a multi-hour match window.
   const UTILIZATION = 0.4;
   const expectedTotal = Math.round(pointsPerMs * durationHours * HOUR * UTILIZATION);
 

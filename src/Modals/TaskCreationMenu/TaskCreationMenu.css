@@ -12,7 +12,7 @@
 .task-modal {
     position: relative;
     z-index: 1;
-    width: min(600px, 90vw);
+    width: min(740px, 94vw);
     background: var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);
@@ -107,51 +107,6 @@
     gap: 14px;
 }
 
-/* ── Range input (session duration slider) ──────────────── */
-.range-input {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    background: var(--bg-raised);
-    border: none;
-    outline: none;
-    padding: 0;
-    box-shadow: none;
-    cursor: pointer;
-    margin-top: 6px;
-}
-
-.range-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--accent-bright);
-    border: 2px solid var(--bg-card);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.12s;
-    box-shadow: var(--glow-blue);
-}
-
-.range-input::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-}
-
-.range-ticks {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-top: 2px;
-}
-
-/* ── Plan editor (MarkdownEditor inside task form) ──────── */
-.plan-editor {
-    min-height: 220px;
-}
-
 /* ── Footer ─────────────────────────────────────────────── */
 .task-modal-footer {
     display: flex;
@@ -218,7 +173,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border);
     padding: 14px 16px;
-    min-height: 120px;
+    min-height: 80px;
 }
 
 /* ── Timer inside session modal ─────────────────────────── */
@@ -248,4 +203,253 @@
   background: rgba(255, 61, 87, 0.12);
   border-color: var(--red);
   box-shadow: 0 0 10px rgba(255, 61, 87, 0.3);
+}
+
+/* ── NLP highlight overlay ──────────────────────────────── */
+
+/* Wrapper gives us the visual box; input+backdrop live inside */
+.nlp-input-wrapper {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.nlp-input-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* Backdrop mirrors the input's font/padding exactly */
+.nlp-input-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  padding: 8px 10px;
+}
+
+.nlp-backdrop-inner {
+  display: inline-block;
+  white-space: pre;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: var(--text);  /* render unmatched text in normal colour */
+}
+
+/* Coloured token spans inside the backdrop. No horizontal padding here —
+   the backdrop must character-align exactly with the real input, so any
+   extra width per token would drift the colour offset from the caret. */
+.nlp-token {
+  border-radius: 2px;
+}
+
+.nlp-token--date {
+  color: var(--accent-bright);
+  background: rgba(77, 163, 255, 0.12);
+  cursor: pointer;    /* hint that it's clickable */
+}
+
+.nlp-token--duration {
+  color: var(--green);
+  background: rgba(0, 214, 143, 0.10);
+  cursor: pointer;
+}
+
+/* Real input sits above the backdrop; text transparent so backdrop shows */
+.nlp-input-field {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: transparent !important;
+  caret-color: var(--text) !important;
+  /* All layout/font props inherited from .task-form-body input rule */
+  width: 100%;
+  padding: 8px 10px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.nlp-input-field::placeholder {
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+/* ── Compact meta line (parsed due · duration) ──────────── */
+.nlp-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  min-height: 16px;
+}
+
+.nlp-meta-token {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.nlp-meta-date { color: var(--accent-bright); }
+.nlp-meta-dur  { color: var(--green); }
+
+.nlp-meta-sep {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+/* ── Description editor ─────────────────────────────────── */
+.description-editor {
+  min-height: 80px;
+}
+
+/* ── Field group (label + control row) ──────────────────── */
+.tcm-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tcm-field-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Aversion toggle ────────────────────────────────────── */
+.aversion-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.aversion-btn {
+  padding: 8px 0;
+  background: var(--bg-surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.aversion-btn:last-child {
+  border-right: none;
+}
+
+.aversion-btn:hover:not(.active) {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+/* Level-specific active tints */
+.aversion-btn--1.active {
+  background: rgba(77, 163, 255, 0.15);
+  color: var(--accent-bright);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.aversion-btn--2.active {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--gold);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.aversion-btn--3.active {
+  background: rgba(255, 61, 87, 0.12);
+  color: var(--red);
+  box-shadow: inset 0 -2px 0 var(--red);
+}
+
+/* ── Project select ─────────────────────────────────────── */
+.project-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13.5px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.project-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+/* ── Task field (full width) ────────────────────────────── */
+.tcm-task-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.tcm-task-label:focus-within {
+  color: var(--accent-bright);
+}
+
+/* ── Project + Resistance on same row ───────────────────── */
+.tcm-meta-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.tcm-project-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tcm-project-label:focus-within {
+  color: var(--accent-bright);
+}
+
+.tcm-project-label .project-select {
+  width: 100%;
+  font-size: 12px;
+  padding: 8px 28px 8px 8px;
 }

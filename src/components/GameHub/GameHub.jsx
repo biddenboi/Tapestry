@@ -3,7 +3,7 @@ import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, STORES } from '../../utils/Constants.js';
 import { getMidnightOfDate, getLocalDate } from '../../utils/Helpers/Time.js';
-import { endDay, startDay, getSleepDateToday } from '../../utils/Helpers/Events.js';
+import { endDay, startDay, getSleepDateToday, getBackfilledSleepDate } from '../../utils/Helpers/Events.js';
 import { getRankClass, getRankGlow } from '../../utils/Helpers/Rank.js';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
 import ProfileSwitcher from '../../Modals/ProfileSwitcher/ProfileSwitcher.jsx';
@@ -91,10 +91,10 @@ export default function GameHub() {
         const player = await databaseConnection.getCurrentPlayer();
         if (!player?.createdAt) return;
 
-        const lastEvent    = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep]);
+        const lastEvent    = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep], player.UUID);
         const midnight     = getMidnightOfDate(getLocalDate(new Date()));
         const todayStr     = getLocalDateStr();
-        const mkKey        = (uid) => `tapestry_eod_${uid}_${todayStr}`;
+        const mkKey        = (uid, dateStr) => `tapestry_eod_${uid}_${dateStr}`;
 
         // ── No history yet: first launch ──────────────────────────
         if (!lastEvent) {
@@ -116,12 +116,14 @@ export default function GameHub() {
             // Missed deadline: app wasn't open during the sleep→midnight window.
             // Show profile picker once, then startDay immediately (no purgatory
             // since that interval has already passed).
-            const key    = mkKey(player.UUID);
-            const choice = localStorage.getItem(key);
+            const eodDateStr = getLocalDateStr(lastEvent.createdAt);
+            const key        = mkKey(player.UUID, eodDateStr);
+            const choice     = localStorage.getItem(key);
             if (!choice) {
-              await endDay(databaseConnection, player, true);
+              const backfilledSleepDate = getBackfilledSleepDate(player.sleepTime, lastEvent.createdAt);
+              await endDay(databaseConnection, player, true, backfilledSleepDate.toISOString());
               notify({ title: 'Missed Bedtime', message: 'Your sleep time passed without ending the day. All tokens forfeited.', kind: 'error', persist: true });
-              NiceModal.show(ProfileSwitcher, { skipPurgatory: true, todayStr });
+              NiceModal.show(ProfileSwitcher, { skipPurgatory: true, eodDateStr });
             } else if (choice === 'chosen') {
               // User already picked their profile on this session — finish starting.
               await startDay(databaseConnection, player);
@@ -135,14 +137,15 @@ export default function GameHub() {
         // ── Last event is from today ──────────────────────────────
         if (lastEvent.type === EVENT.sleep) {
           // We're between sleep time and midnight (purgatory window).
-          const key    = mkKey(player.UUID);
-          const choice = localStorage.getItem(key);
+          const eodDateStr = getLocalDateStr(lastEvent.createdAt);
+          const key        = mkKey(player.UUID, eodDateStr);
+          const choice     = localStorage.getItem(key);
           if (choice) {
             // User already made their end-of-day choice — just re-show purgatory.
             NiceModal.show(Purgatory);
           } else {
             // Show the profile switcher (handles first show + reload before choice).
-            NiceModal.show(ProfileSwitcher, { skipPurgatory: false, todayStr });
+            NiceModal.show(ProfileSwitcher, { skipPurgatory: false, eodDateStr });
           }
           return;
         }
@@ -152,12 +155,13 @@ export default function GameHub() {
           const sleepDate = getSleepDateToday(player.sleepTime);
           if (sleepDate && Date.now() >= sleepDate.getTime()) {
             sleepCheckFiredRef.current = true;
-            const key    = mkKey(player.UUID);
-            const choice = localStorage.getItem(key);
+            const eodDateStr = todayStr;
+            const key        = mkKey(player.UUID, eodDateStr);
+            const choice     = localStorage.getItem(key);
             if (!choice) {
               await endDay(databaseConnection, player, true);
               notify({ title: 'Sleep Time', message: 'Your scheduled bedtime has passed. All tokens forfeited.', kind: 'error', persist: true });
-              NiceModal.show(ProfileSwitcher, { skipPurgatory: false, todayStr });
+              NiceModal.show(ProfileSwitcher, { skipPurgatory: false, eodDateStr });
             } else {
               NiceModal.show(Purgatory);
             }

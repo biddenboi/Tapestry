@@ -5,7 +5,7 @@ import { timeAsHHMMSS, msToPoints } from '../../utils/Helpers/Time.js';
 /**
  * Visually handles 
  * @param {number} startTime (milliseconds) - when to start timer from.
- * @param {number} duration (milliseconds) - how long the timer lasts
+ * @param {number} duration (minutes) - how long the timer lasts
 */
 
 function Timer({ showPoints, startTime, duration }) {  
@@ -16,6 +16,8 @@ function Timer({ showPoints, startTime, duration }) {
       setElapsedTime(0);
       return;
     }
+
+    setElapsedTime(Date.now() - startTime);
 
     const interval = setInterval(() => {
       setElapsedTime(Date.now() - startTime);

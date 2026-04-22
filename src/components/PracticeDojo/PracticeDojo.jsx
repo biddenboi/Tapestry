@@ -9,7 +9,7 @@ import TaskPreviewMenu  from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
 import { msToPoints } from '../../utils/Helpers/Time.js';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
-import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
+import { timeAsHHMMSS, prettyPrintDate } from '../../utils/Helpers/Time.js';
 import './PracticeDojo.css';
 
 function useSessionTimer(startMs) {
@@ -166,7 +166,7 @@ export default function PracticeDojo() {
                                 <>
                                     <div className="dnp-name">{nextTodo.name}</div>
                                     <div className="dnp-meta">
-                                        {nextTodo.estimatedDuration}min · due {nextTodo.dueDate}
+                                        {nextTodo.estimatedDuration}min · due {prettyPrintDate(nextTodo.dueDate)}
                                     </div>
                                     <button className="dnp-start primary" onClick={handleGetNext}>
                                         START THIS TASK →

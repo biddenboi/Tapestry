@@ -279,7 +279,7 @@ export default function Settings() {
       username: 'Agent',
       wakeTime: '07:00',
       sleepTime: '23:00',
-      tokens: 10000,
+      tokens: 0,
       elo: 0,
       minutesClearedToday: 0,
     });

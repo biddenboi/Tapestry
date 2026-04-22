@@ -1,23 +1,21 @@
 import './TaskPreviewMenu.css';
-import { useContext, useEffect } from 'react';
+import { useContext, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import { STORES } from '../../utils/Constants.js';
-import { getTodoWPD } from '../../utils/Helpers/Tasks.js';
+import { STORES, MINUTE } from '../../utils/Constants.js';
 import MarkdownEditor from '../../components/MarkdownEditor/MarkdownEditor.jsx';
 import TaskSessionMenu from '../TaskSessionMenu/TaskSessionMenu.jsx';
 
+
 export default NiceModal.create(() => {
-  const { databaseConnection, refreshApp, activeTask: [activeTask, setActiveTask], activeMatch: [activeMatch] } = useContext(AppContext);
+  const { databaseConnection, refreshApp, activeTask: [activeTask, setActiveTask] } = useContext(AppContext);
   const modal = useModal();
 
-  useEffect(() => {
-    const suggested = Math.min(Math.max(1, Math.floor(getTodoWPD(activeTask))), 60);
-    if (!activeTask.sessionDuration) {
-      setActiveTask((previous) => ({ ...previous, sessionDuration: suggested }));
-    }
-  }, [activeTask, setActiveTask]);
+  // Session commitment — pre-seed from any previously committed duration on this todo.
+  const [sessionMinutes, setSessionMinutes] = useState(
+    () => Math.round((Number(activeTask.sessionDuration) || 0) / MINUTE),
+  );
 
   const close = () => {
     modal.hide();
@@ -26,15 +24,25 @@ export default NiceModal.create(() => {
 
   const canStart = () => !!(activeTask.dueDate && activeTask.estimatedDuration);
 
+  const handleSliderChange = (e) => setSessionMinutes(Number(e.target.value));
+
+  const handleMinutesInput = (e) => {
+    const v = parseInt(e.target.value, 10);
+    setSessionMinutes(Number.isFinite(v) && v >= 0 ? v : 0);
+  };
+
   const startSession = async () => {
     const parent = await databaseConnection.getCurrentPlayer();
+    const committedMs = sessionMinutes * MINUTE;
+    // Set createdAt to start the session clock. The commitment duration from
+    // this input is stored on activeTask so TaskSessionMenu can seed from it.
     setActiveTask((previous) => ({
       ...previous,
       createdAt: new Date().toISOString(),
       parent: parent.UUID,
       UUID: previous.UUID || uuid(),
       estimatedDuration: Number(previous.estimatedDuration || 0),
-      sessionDuration: Number(previous.sessionDuration || 25),
+      sessionDuration: committedMs,
     }));
     close();
     requestAnimationFrame(() => NiceModal.show(TaskSessionMenu));
@@ -56,14 +64,11 @@ export default NiceModal.create(() => {
       UUID: activeTask.UUID || uuid(),
       parent: parent?.UUID || activeTask.parent,
       estimatedDuration: Number(activeTask.estimatedDuration || 0),
-      sessionDuration: Number(activeTask.sessionDuration || 25),
     });
     setActiveTask({});
     refreshApp();
     close();
   };
-
-  const sessionDuration = Number(activeTask.sessionDuration || 25);
 
   if (!modal.visible) return null;
 
@@ -76,6 +81,7 @@ export default NiceModal.create(() => {
         </div>
 
         <div className="task-form-body">
+
           <label className="full-width">
             Task Name
             <input
@@ -85,30 +91,53 @@ export default NiceModal.create(() => {
             />
           </label>
 
-          <label className="full-width">
-            Session Duration — <strong>{sessionDuration} min</strong>
-            <input
-              type="range"
-              min="1"
-              max="60"
-              value={sessionDuration}
-              onChange={(event) => setActiveTask((previous) => ({ ...previous, sessionDuration: Number(event.target.value) }))}
-              className="range-input"
-            />
-            <div className="range-ticks">
-              <span>1</span><span>15</span><span>30</span><span>45</span><span>60</span>
+          {/* ── Session commitment ─────────────────────────── */}
+          <div className="tcm-field-group">
+            <span className="tcm-field-label">Session Commitment</span>
+            <div className="preview-commitment-row">
+              <input
+                type="number"
+                className="preview-minutes-input"
+                min="0"
+                value={sessionMinutes || ''}
+                onChange={handleMinutesInput}
+                placeholder="0"
+              />
+              <span className="preview-minutes-unit">MIN</span>
+              <input
+                type="range"
+                className="range-input preview-commitment-slider"
+                min="0"
+                max="60"
+                step="5"
+                value={Math.min(sessionMinutes, 60)}
+                onChange={handleSliderChange}
+              />
+              {sessionMinutes > 0 && (
+                <span className="preview-commitment-bonus">
+                  +bonus if honoured
+                </span>
+              )}
             </div>
-          </label>
+            <div className="range-ticks">
+              <span>0</span>
+              <span>15</span>
+              <span>30</span>
+              <span>45</span>
+              <span>60+</span>
+            </div>
+          </div>
 
           <label className="full-width">
-            Session Plan
+            Description
             <MarkdownEditor
               value={activeTask.efficiency || ''}
               onChange={(value) => setActiveTask((previous) => ({ ...previous, efficiency: value }))}
-              placeholder="How will you use the time?"
+              placeholder="No description yet — add one by editing this task."
               className="plan-editor"
             />
           </label>
+
         </div>
 
         <div className="task-modal-footer">

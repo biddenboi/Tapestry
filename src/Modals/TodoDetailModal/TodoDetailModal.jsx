@@ -58,7 +58,7 @@ export default NiceModal.create(({ item }) => {
             {item.createdAt && <div><span className="detail-k">Created</span><strong>{UTCStringToLocalDate(item.createdAt)} {UTCStringToLocalTime(item.createdAt)}</strong></div>}
             {item.completedAt && <div><span className="detail-k">Completed</span><strong>{UTCStringToLocalDate(item.completedAt)} {UTCStringToLocalTime(item.completedAt)}</strong></div>}
             {item.estimatedDuration != null && <div><span className="detail-k">Estimate</span><strong>{item.estimatedDuration} min</strong></div>}
-            {item.sessionDuration != null && <div><span className="detail-k">Session</span><strong>{item.sessionDuration} min</strong></div>}
+            {item.sessionDuration != null && <div><span className="detail-k">Session</span><strong>{formatDuration(item.sessionDuration)}</strong></div>}
             {duration != null && <div><span className="detail-k">Actual</span><strong>{formatDuration(duration)}</strong></div>}
             {item.points != null && <div><span className="detail-k">Points</span><strong>{item.points}</strong></div>}
           </div>

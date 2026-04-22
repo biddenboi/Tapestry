@@ -6,7 +6,7 @@ import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import { getGhostScore, getGhostActivity } from '../../utils/Helpers/Match.js';
-import { getNextTodo, getWeights } from '../../utils/Helpers/Tasks.js';
+import { getNextTodo } from '../../utils/Helpers/Tasks.js';
 import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
 import { getRank, getRankLabel, getRankClass, getRankGroupFloor } from '../../utils/Helpers/Rank.js';
 import { checkMatchAchievements, getAchievementByKey } from '../../utils/Achievements.js';
@@ -535,7 +535,7 @@ export default function MatchArena() {
     if (!next) return;
     setScores(next);
     const todos = await databaseConnection.getAll(STORES.todo);
-    setNextTodo(getNextTodo(todos, getWeights(todos)));
+    setNextTodo(getNextTodo(todos));
   }, [buildScores, databaseConnection]);
 
   useEffect(() => { refreshScores(); }, [refreshScores, timestamp]);

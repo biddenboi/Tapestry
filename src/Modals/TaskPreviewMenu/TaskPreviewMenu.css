@@ -12,7 +12,7 @@
 .task-modal {
     position: relative;
     z-index: 1;
-    width: min(600px, 90vw);
+    width: min(740px, 94vw);
     background: var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);
@@ -229,4 +229,67 @@
     padding: 8px 22px 14px;
     background: var(--bg-surface);
     border-top: 1px solid var(--border);
+}
+
+/* ── Session commitment (inline: input · MIN · slider · bonus) ── */
+.preview-commitment-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: visible;
+}
+
+.preview-commitment-slider {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+}
+
+/* Override the global .task-form-body input[type="number"] { width: 100% } */
+.preview-commitment-row .preview-minutes-input {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    outline: none;
+    width: 68px !important;
+    flex: 0 0 68px !important;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+}
+
+.preview-commitment-row .preview-minutes-input::-webkit-inner-spin-button,
+.preview-commitment-row .preview-minutes-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+.preview-commitment-row .preview-minutes-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.preview-minutes-unit {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    flex: 0 0 auto;
+}
+
+.preview-commitment-bonus {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    color: var(--accent-bright);
+    opacity: 0.75;
+    white-space: nowrap;
+    flex: 0 0 auto;
 }

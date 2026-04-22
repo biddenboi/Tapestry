@@ -1,17 +1,144 @@
-/* ── Session-specific additions ─────────────────────────── */
+/* ── Session modal ───────────────────────────────────────── */
 
 .session-modal {
     max-height: 85vh;
 }
 
-.session-duration-badge {
+/* ── Identity block (header + task name merged) ──────────── */
+.session-identity {
+    position: relative;
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.session-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.session-task-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.25;
+    margin: 0 0 4px;
+}
+
+.session-task-reason {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    line-height: 1.4;
+}
+
+.session-description {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+/* ── Timer + multiplier block ────────────────────────────── */
+.session-timer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 22px 24px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.session-timer-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.session-elapsed {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 52px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--green);
+    text-shadow: 0 0 28px rgba(0, 214, 143, 0.35);
+    transition: color 0.4s, text-shadow 0.4s;
+}
+
+.session-elapsed--over {
+    color: var(--red);
+    text-shadow: 0 0 28px rgba(255, 61, 87, 0.35);
+    animation: elapsed-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes elapsed-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.72; }
+}
+
+.session-timer-sub {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+/* ── Multiplier (sits inline beside timer) ───────────────── */
+.session-multiplier {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+}
+
+.session-multiplier-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
     color: var(--accent-bright);
-    background: var(--accent-glow);
-    border: 1px solid var(--accent-border);
-    padding: 2px 10px;
-    letter-spacing: 0.06em;
-    text-transform: none;
+    letter-spacing: -0.01em;
+    line-height: 1;
+}
+
+.session-multiplier-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+/* ── Forfeit bonus button ─────────────────────────────────── */
+.complete-forfeit {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    color: var(--gold);
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.complete-forfeit:hover {
+    opacity: 1;
+    border-color: var(--gold);
+    background: rgba(251, 191, 36, 0.08);
 }

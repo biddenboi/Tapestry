@@ -156,6 +156,42 @@ class DatabaseConnection {
         ['updatedAt', 'updatedAt'],
       ], event);
     }
+
+    if (DATABASE_VERSION >= 9 && oldVersion < 9) {
+      // New projects store — flat list, no hierarchy.
+      this.createStore(STORES.project, 'UUID', [
+        ['name', 'name'],
+        ['createdAt', 'createdAt'],
+        ['parent', 'parent'],
+      ], event);
+
+      // Add aversion and projectId indexes to the existing todo store.
+      const todoStore = event.target.transaction.objectStore(STORES.todo);
+      if (!todoStore.indexNames.contains('aversion')) {
+        todoStore.createIndex('aversion', 'aversion', { unique: false });
+      }
+      if (!todoStore.indexNames.contains('projectId')) {
+        todoStore.createIndex('projectId', 'projectId', { unique: false });
+      }
+
+      // Migrate sessionDuration: existing records store minutes; we now store ms.
+      // Any record with a numeric sessionDuration gets multiplied by 60000.
+      // Records with null/undefined are left untouched (no committed duration set).
+      todoStore.openCursor().onsuccess = (cursorEvent) => {
+        const cursor = cursorEvent.target.result;
+        if (!cursor) return;
+        const todo = cursor.value;
+        if (todo.sessionDuration != null && Number.isFinite(Number(todo.sessionDuration))) {
+          const minutes = Number(todo.sessionDuration);
+          // Guard: skip values already >= 1 day in ms to prevent double-converting
+          // on any database that somehow ran this migration twice.
+          if (minutes < 86400000) {
+            cursor.update({ ...todo, sessionDuration: minutes * 60000 });
+          }
+        }
+        cursor.continue();
+      };
+    }
   }
 
   constructor() {
@@ -178,7 +214,7 @@ class DatabaseConnection {
 
   async getDataAsJSON() {
     await this.ready;
-    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments] = await Promise.all([
+    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects] = await Promise.all([
       this.getAll(STORES.task),
       this.getAll(STORES.player),
       this.getAll(STORES.journal),
@@ -192,9 +228,10 @@ class DatabaseConnection {
       this.getAll(STORES.notification),
       this.getAll(STORES.chatMessage),
       this.getAll(STORES.journalComment),
+      this.getAll(STORES.project),
     ]);
 
-    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments };
+    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects };
     const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -225,6 +262,7 @@ class DatabaseConnection {
       notifications: STORES.notification,
       chatMessages: STORES.chatMessage,
       journalComments: STORES.journalComment,
+      projects: STORES.project,
     };
 
     for (const [key, storeName] of Object.entries(mapping)) {
@@ -566,7 +604,7 @@ class DatabaseConnection {
     });
   }
 
-  async getLastEventType(types) {
+  async getLastEventType(types, playerUUID = null) {
     await this.ready;
     return new Promise((resolve, reject) => {
       const transaction = this.database.transaction(STORES.event, 'readonly');
@@ -578,9 +616,10 @@ class DatabaseConnection {
           resolve(null);
           return;
         }
-        const type = cursor.value.type;
-        const matches = Array.isArray(types) ? types.includes(type) : types === type;
-        if (matches) resolve(cursor.value);
+        const entry = cursor.value;
+        const typeMatches = Array.isArray(types) ? types.includes(entry.type) : types === entry.type;
+        const playerMatches = !playerUUID || entry.parent === playerUUID;
+        if (typeMatches && playerMatches) resolve(entry);
         else cursor.continue();
       };
       request.onerror = () => reject(request.error);

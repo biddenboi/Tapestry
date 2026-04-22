@@ -74,17 +74,6 @@ span.dur-val {
     letter-spacing: -0.02em;
 }
 
-span.dur-sub {
-    font-size: 11.5px;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-}
-
-.eff-great { color: var(--green); font-weight: 600; }
-.eff-good  { color: var(--accent-bright); font-weight: 600; }
-.eff-warn  { color: var(--gold); font-weight: 600; }
-.eff-bad   { color: var(--red); font-weight: 600; }
-
 /* ── Stat row ────────────────────────────────────────────── */
 div.results-stats {
     display: flex;
@@ -140,66 +129,14 @@ div.stat-points::after {
 }
 
 div.stat-tokens { }
-div.stat-mult { }
 
-/* ── Gaussian curve ──────────────────────────────────────── */
-.gaussian-wrap {
-    padding: 12px 24px 10px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-surface);
-    animation: fade-down 0.4s 0.22s ease both;
-}
-
-.gaussian-label {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-}
-
-.gaussian-svg {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-/* ── Breakdown ───────────────────────────────────────────── */
-div.results-breakdown {
-    padding: 12px 24px;
+/* ── Footer ──────────────────────────────────────────────── */
+div.results-footer {
+    padding: 14px 24px;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border-bottom: 1px solid var(--border);
+    justify-content: flex-end;
     background: var(--bg-surface);
     animation: fade-down 0.4s 0.28s ease both;
-}
-
-div.bk-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11.5px;
-}
-
-span.bk-key { color: var(--text-muted); }
-span.bk-val { color: var(--text); font-weight: 500; }
-span.diff-pos { color: var(--green); }
-span.diff-neg { color: var(--red); }
-
-/* ── Confirm button ──────────────────────────────────────── */
-button.results-confirm {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    font-size: 13px;
-    letter-spacing: 0.16em;
-    animation: fade-down 0.4s 0.34s ease both;
-    border: none;
-    border-top: 1px solid var(--border);
-    cursor: pointer;
 }
 
 /* ── Entrance animation ──────────────────────────────────── */

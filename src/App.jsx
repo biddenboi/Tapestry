@@ -1,9 +1,10 @@
-import { useState, createContext, useEffect, useMemo, useCallback } from 'react';
+import { useState, createContext, useEffect, useMemo, useCallback, useRef } from 'react';
 import { v4 as uuid } from 'uuid';
 import './App.css';
 import DatabaseConnection from './network/DatabaseConnection.js';
 import { SECOND, GAME_STATE, STORES } from './utils/Constants.js';
 import { getCurrentIGT } from './utils/Helpers/Time.js';
+import { pruneFutureDayEvents } from './utils/Helpers/Events.js';
 import { useInterval } from './utils/useInterval.js';
 import NiceModal from '@ebay/nice-modal-react';
 import GameHub from './components/GameHub/GameHub.jsx';
@@ -23,6 +24,7 @@ function App() {
   const [toasts, setToasts] = useState([]);
 
   const databaseConnection = useMemo(() => new DatabaseConnection(), []);
+  const prunedProfileRef = useRef(null);
 
   const refreshApp = useCallback(() => {
     setTimestamp(Date.now());
@@ -56,6 +58,20 @@ function App() {
       const player = await databaseConnection.getCurrentPlayer();
       setCurrentPlayer(player || null);
 
+      // Prune any future-dated start-day/end-day events for this profile, once
+      // per session per profile. Guards against clock drift, imports, or TZ
+      // changes that leave stray future entries.
+      if (player?.UUID && prunedProfileRef.current !== player.UUID) {
+        prunedProfileRef.current = player.UUID;
+        try {
+          const deleted = await pruneFutureDayEvents(databaseConnection, player.UUID);
+          if (deleted > 0) refreshApp();
+        } catch (err) {
+          // Don't block app load if pruning fails
+          console.warn('Failed to prune future day events:', err);
+        }
+      }
+
       if (player?.UUID && typeof databaseConnection.getNotificationsForPlayer === 'function') {
         const playerIGT = getCurrentIGT(player);
         const playerNotifications = await databaseConnection.getNotificationsForPlayer(player.UUID, playerIGT);
@@ -67,7 +83,7 @@ function App() {
     };
 
     load();
-  }, [databaseConnection, timestamp]);
+  }, [databaseConnection, timestamp, refreshApp]);
 
   useInterval(() => setTimestamp(Date.now()), SECOND * 10);
 

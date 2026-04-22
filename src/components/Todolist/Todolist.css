@@ -16,7 +16,7 @@ div.todo-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
+    padding: 10px 46px 10px 16px;
     background: var(--bg-raised);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -35,6 +35,198 @@ span.todo-header-stat {
     font-size: 10px;
     color: var(--text-muted);
 }
+
+/* ── Header right cluster (stat + projects button) ───────── */
+.todo-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+button.todo-projects-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    white-space: nowrap;
+}
+
+button.todo-projects-btn:hover {
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    background: var(--accent-glow);
+}
+
+/* ── Project filter chip bar ─────────────────────────────── */
+.project-filter-bar {
+    display: flex;
+    gap: 0;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+}
+
+.project-filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+button.project-chip {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s, color 0.1s;
+    flex-shrink: 0;
+}
+
+button.project-chip:last-child {
+    border-right: 1px solid var(--border);
+}
+
+button.project-chip:hover:not(.active) {
+    background: var(--bg-raised);
+    color: var(--text);
+}
+
+button.project-chip.active {
+    background: var(--accent-glow);
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    border-right: 1px solid var(--accent-border);
+}
+
+button.project-chip.active + button.project-chip {
+    border-left: none;
+}
+
+/* ── Overdue due-date label ──────────────────────────────── */
+span.todo-item-due--overdue {
+    color: var(--red);
+    font-weight: 700;
+}
+
+/* ── Cross-project overdue item ──────────────────────────── */
+div.todo-item--cross-project {
+    background: rgba(255, 61, 87, 0.04);
+}
+
+div.todo-item--cross-project::before {
+    background: var(--red);
+    opacity: 1 !important;
+    width: 3px;
+}
+
+/* ── Slope chip (the primary priority indicator) ─────────── */
+/* Sits at the left of every todo item. The tier is driven by the
+   data-tier attribute on .todo-slope-chip and by the parent
+   .todo-item--{tier} modifier, which together provide the colour,
+   border, and left-edge bar width. */
+
+div.todo-slope-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    padding: 5px 6px;
+    border-left: 3px solid var(--border);
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+    transition: background 0.12s, border-color 0.12s;
+}
+
+span.todo-slope-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+span.todo-slope-value::after {
+    content: '×';
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.65;
+    margin-left: 1px;
+}
+
+span.todo-slope-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    margin-top: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+/* ── Tier colouring ──────────────────────────────────────── */
+/* Colours: dormant = muted, idle = neutral text, active = accent,
+   urgent = gold, critical = red. Applied to the chip's value, label,
+   left-border, and a subtle row background tint. */
+
+div.todo-item--dormant .todo-slope-chip  { border-left-color: var(--border); }
+div.todo-item--dormant .todo-slope-value { color: var(--text-dim); }
+div.todo-item--dormant .todo-slope-label { color: var(--text-dim); opacity: 0.6; }
+
+div.todo-item--idle .todo-slope-chip  { border-left-color: var(--text-muted); }
+div.todo-item--idle .todo-slope-value { color: var(--text); }
+div.todo-item--idle .todo-slope-label { color: var(--text-muted); }
+
+div.todo-item--active .todo-slope-chip {
+    border-left-color: var(--accent);
+    background: rgba(77, 163, 255, 0.06);
+}
+div.todo-item--active .todo-slope-value { color: var(--accent-bright); }
+div.todo-item--active .todo-slope-label { color: var(--accent-bright); opacity: 0.85; }
+
+div.todo-item--urgent .todo-slope-chip {
+    border-left-color: var(--gold);
+    background: rgba(251, 191, 36, 0.08);
+}
+div.todo-item--urgent .todo-slope-value { color: var(--gold); }
+div.todo-item--urgent .todo-slope-label { color: var(--gold); opacity: 0.85; }
+
+div.todo-item--critical .todo-slope-chip {
+    border-left-color: var(--red);
+    background: rgba(255, 61, 87, 0.10);
+}
+div.todo-item--critical .todo-slope-value {
+    color: var(--red);
+    text-shadow: 0 0 8px rgba(255, 61, 87, 0.35);
+}
+div.todo-item--critical .todo-slope-label { color: var(--red); opacity: 0.9; }
+
+/* Subtle row tint for the two top tiers — reinforces the chip without
+   drowning the list in colour. */
+div.todo-item--urgent   { background: rgba(251, 191, 36, 0.025); }
+div.todo-item--critical { background: rgba(255, 61, 87, 0.035); }
+
+/* Left-edge bar width scales with tier — replaces the hover-only 2px bar */
+div.todo-item--active::before   { opacity: 1; width: 2px; background: var(--accent); }
+div.todo-item--urgent::before   { opacity: 1; width: 3px; background: var(--gold); }
+div.todo-item--critical::before { opacity: 1; width: 4px; background: var(--red); }
 
 /* ── Items container ─────────────────────────────────────── */
 div.todo-items {
@@ -55,13 +247,14 @@ p.todo-empty {
 div.todo-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 11px 16px;
+    align-items: stretch;
+    padding: 0 16px 0 0;
     border-bottom: 1px solid var(--border-subtle);
     cursor: pointer;
     gap: 12px;
     transition: background 0.12s;
     position: relative;
+    min-height: 52px;
 }
 
 div.todo-item:hover {
@@ -83,9 +276,11 @@ div.todo-item:hover::before { opacity: 1; }
 div.todo-item-left {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 2px;
     min-width: 0;
     flex: 1;
+    padding: 8px 0;
 }
 
 span.todo-item-name {
@@ -94,7 +289,7 @@ span.todo-item-name {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* color set inline based on weight */
+    color: var(--text);
     transition: color 0.2s;
 }
 
@@ -112,6 +307,7 @@ span.todo-item-due {
     color: var(--text-muted);
     flex-shrink: 0;
     white-space: nowrap;
+    align-self: center;
 }
 
 /* ── Footer (Next task button) ──────────────────────────── */
