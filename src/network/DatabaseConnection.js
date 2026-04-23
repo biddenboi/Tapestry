@@ -158,14 +158,12 @@ class DatabaseConnection {
     }
 
     if (DATABASE_VERSION >= 9 && oldVersion < 9) {
-      // New projects store — flat list, no hierarchy.
       this.createStore(STORES.project, 'UUID', [
         ['name', 'name'],
         ['createdAt', 'createdAt'],
         ['parent', 'parent'],
       ], event);
 
-      // Add aversion and projectId indexes to the existing todo store.
       const todoStore = event.target.transaction.objectStore(STORES.todo);
       if (!todoStore.indexNames.contains('aversion')) {
         todoStore.createIndex('aversion', 'aversion', { unique: false });
@@ -174,17 +172,12 @@ class DatabaseConnection {
         todoStore.createIndex('projectId', 'projectId', { unique: false });
       }
 
-      // Migrate sessionDuration: existing records store minutes; we now store ms.
-      // Any record with a numeric sessionDuration gets multiplied by 60000.
-      // Records with null/undefined are left untouched (no committed duration set).
       todoStore.openCursor().onsuccess = (cursorEvent) => {
         const cursor = cursorEvent.target.result;
         if (!cursor) return;
         const todo = cursor.value;
         if (todo.sessionDuration != null && Number.isFinite(Number(todo.sessionDuration))) {
           const minutes = Number(todo.sessionDuration);
-          // Guard: skip values already >= 1 day in ms to prevent double-converting
-          // on any database that somehow ran this migration twice.
           if (minutes < 86400000) {
             cursor.update({ ...todo, sessionDuration: minutes * 60000 });
           }
@@ -212,11 +205,164 @@ class DatabaseConnection {
     });
   }
 
-  async getDataAsJSON() {
+  downloadJSON(data, filename) {
+    const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  getPendingProfilePatchesStorageKey() {
+    return 'tapestry_pending_profile_patches';
+  }
+
+  loadPendingProfilePatches() {
+    try {
+      const raw = localStorage.getItem(this.getPendingProfilePatchesStorageKey());
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  savePendingProfilePatches(profilePatches) {
+    const hasEntries = Object.values(profilePatches || {}).some((entries) => (entries || []).length > 0);
+    if (!hasEntries) {
+      localStorage.removeItem(this.getPendingProfilePatchesStorageKey());
+      return;
+    }
+    localStorage.setItem(this.getPendingProfilePatchesStorageKey(), JSON.stringify(profilePatches));
+  }
+
+  clearPendingProfilePatches() {
+    localStorage.removeItem(this.getPendingProfilePatchesStorageKey());
+  }
+
+  getProfileOnlyKeys() {
+    return new Set([
+      'username',
+      'displayName',
+      'profilePicture',
+      'bannerPicture',
+      'avatar',
+      'avatarUrl',
+      'bannerUrl',
+    ]);
+  }
+
+  isEmbeddedImageData(value) {
+    return typeof value === 'string' && value.startsWith('data:image/');
+  }
+
+  extractProfilePatchDeep(value) {
+    const PROFILE_ONLY_KEYS = this.getProfileOnlyKeys();
+
+    if (this.isEmbeddedImageData(value)) {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      const extracted = value.map((entry) => this.extractProfilePatchDeep(entry));
+      return extracted.some((entry) => entry !== undefined) ? extracted : undefined;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return undefined;
+    }
+
+    const result = {};
+    Object.entries(value).forEach(([key, entryValue]) => {
+      if (PROFILE_ONLY_KEYS.has(key) || this.isEmbeddedImageData(entryValue)) {
+        if (entryValue !== undefined && entryValue !== '') {
+          result[key] = entryValue;
+        }
+        return;
+      }
+
+      const extractedValue = this.extractProfilePatchDeep(entryValue);
+      if (extractedValue !== undefined) {
+        result[key] = extractedValue;
+      }
+    });
+
+    return Object.keys(result).length ? result : undefined;
+  }
+
+  stripProfilePatchDeep(value) {
+    const PROFILE_ONLY_KEYS = this.getProfileOnlyKeys();
+
+    if (this.isEmbeddedImageData(value)) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => this.stripProfilePatchDeep(entry));
+    }
+
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const result = {};
+    Object.entries(value).forEach(([key, entryValue]) => {
+      if (PROFILE_ONLY_KEYS.has(key)) return;
+      const cleanedValue = this.stripProfilePatchDeep(entryValue);
+      if (cleanedValue !== undefined && cleanedValue !== '') {
+        result[key] = cleanedValue;
+      }
+    });
+    return result;
+  }
+
+  deepMergeProfilePatch(target, patch) {
+    if (patch === undefined) return target;
+
+    if (Array.isArray(patch)) {
+      const base = Array.isArray(target) ? [...target] : [];
+      patch.forEach((patchEntry, index) => {
+        if (patchEntry === undefined) return;
+        base[index] = this.deepMergeProfilePatch(base[index], patchEntry);
+      });
+      return base;
+    }
+
+    if (!patch || typeof patch !== 'object') {
+      return patch;
+    }
+
+    const base = target && typeof target === 'object' && !Array.isArray(target) ? { ...target } : {};
+    Object.entries(patch).forEach(([key, patchValue]) => {
+      base[key] = this.deepMergeProfilePatch(base[key], patchValue);
+    });
+    return base;
+  }
+
+  getDataStoreMapping() {
+    return {
+      tasks: STORES.task,
+      journals: STORES.journal,
+      events: STORES.event,
+      shop: STORES.shop,
+      todos: STORES.todo,
+      transactions: STORES.transaction,
+      inventory: STORES.inventory,
+      matches: STORES.match,
+      friendships: STORES.friendship,
+      notifications: STORES.notification,
+      chatMessages: STORES.chatMessage,
+      journalComments: STORES.journalComment,
+      projects: STORES.project,
+    };
+  }
+
+  async getDataPayload() {
     await this.ready;
-    const [tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects] = await Promise.all([
+    const [tasks, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects] = await Promise.all([
       this.getAll(STORES.task),
-      this.getAll(STORES.player),
       this.getAll(STORES.journal),
       this.getAll(STORES.event),
       this.getAll(STORES.shop),
@@ -231,26 +377,121 @@ class DatabaseConnection {
       this.getAll(STORES.project),
     ]);
 
-    const data = { tasks, players, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects };
-    const json = JSON.stringify(data, (key, value) => (value == null || value === '' ? undefined : value));
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'tapestry-dataset.json';
-    link.click();
-    URL.revokeObjectURL(url);
+    return {
+      tasks,
+      journals,
+      events,
+      shop,
+      todos,
+      transactions,
+      inventory,
+      matches,
+      friendships,
+      notifications,
+      chatMessages,
+      journalComments,
+      projects,
+    };
+  }
+
+  buildProfilePatches(dataPayload) {
+    const profilePatches = {};
+    Object.entries(dataPayload).forEach(([key, entries]) => {
+      const storePatches = (entries || [])
+        .map((entry) => {
+          const patch = this.extractProfilePatchDeep(entry);
+          return patch ? { UUID: entry.UUID, patch } : null;
+        })
+        .filter(Boolean);
+
+      if (storePatches.length) {
+        profilePatches[key] = storePatches;
+      }
+    });
+    return profilePatches;
+  }
+
+  async applyProfilePatches(profilePatches = {}) {
+    const mapping = this.getDataStoreMapping();
+    const remainingPatches = {};
+
+    for (const [key, patches] of Object.entries(profilePatches)) {
+      const storeName = mapping[key];
+      if (!storeName) continue;
+
+      for (const patchEntry of patches || []) {
+        const recordUUID = patchEntry?.UUID;
+        if (!recordUUID) continue;
+
+        const existingRecord = await this.get(storeName, recordUUID);
+        if (!existingRecord) {
+          if (!remainingPatches[key]) remainingPatches[key] = [];
+          remainingPatches[key].push(patchEntry);
+          continue;
+        }
+
+        const mergedRecord = this.deepMergeProfilePatch(existingRecord, patchEntry.patch);
+        await this.add(storeName, mergedRecord);
+      }
+    }
+
+    return remainingPatches;
+  }
+
+  async getProfilesAsJSON() {
+    await this.ready;
+    const players = await this.getAll(STORES.player);
+    const dataPayload = await this.getDataPayload();
+    const profilePatches = this.buildProfilePatches(dataPayload);
+    this.downloadJSON({ players, profilePatches }, 'tapestry-profiles.json');
+  }
+
+  async getDataAsJSON() {
+    await this.ready;
+    const dataPayload = await this.getDataPayload();
+    const strippedData = this.stripProfilePatchDeep(dataPayload);
+    this.downloadJSON(strippedData, 'tapestry-data.json');
+  }
+
+  async profileUpload(fileContents) {
+    const data = JSON.parse(fileContents);
+
+    await this.clear(STORES.player).catch(() => undefined);
+    for (const entry of data.players || []) {
+      await this.add(STORES.player, entry);
+    }
+
+    const pending = this.loadPendingProfilePatches();
+    const mergedPatches = { ...pending };
+    Object.entries(data.profilePatches || {}).forEach(([key, entries]) => {
+      mergedPatches[key] = [...(mergedPatches[key] || []), ...(entries || [])];
+    });
+
+    const remainingPatches = await this.applyProfilePatches(mergedPatches);
+    this.savePendingProfilePatches(remainingPatches);
   }
 
   async dataUpload(fileContents) {
     const data = JSON.parse(fileContents);
-    for (const storeName of Object.values(STORES)) {
+    const isLegacy = 'players' in data;
+
+    const dataStores = [
+      STORES.task, STORES.journal, STORES.event, STORES.shop,
+      STORES.todo, STORES.transaction, STORES.inventory, STORES.match,
+      STORES.friendship, STORES.notification, STORES.chatMessage,
+      STORES.journalComment, STORES.project,
+    ];
+
+    for (const storeName of dataStores) {
       await this.clear(storeName).catch(() => undefined);
+    }
+    if (isLegacy) {
+      await this.clear(STORES.player).catch(() => undefined);
+      this.clearPendingProfilePatches();
     }
 
     const mapping = {
       tasks: STORES.task,
-      players: STORES.player,
       journals: STORES.journal,
       events: STORES.event,
       shop: STORES.shop,
@@ -265,11 +506,19 @@ class DatabaseConnection {
       projects: STORES.project,
     };
 
+    if (isLegacy) {
+      mapping.players = STORES.player;
+    }
+
     for (const [key, storeName] of Object.entries(mapping)) {
       for (const entry of data[key] || []) {
-        // eslint-disable-next-line no-await-in-loop
         await this.add(storeName, entry);
       }
+    }
+
+    if (!isLegacy) {
+      const remainingPatches = await this.applyProfilePatches(this.loadPendingProfilePatches());
+      this.savePendingProfilePatches(remainingPatches);
     }
   }
 
@@ -321,9 +570,6 @@ class DatabaseConnection {
     });
   }
 
-
-  /* ── Active Profile (localStorage) ─────────────────────── */
-
   getActivePlayerUUID() {
     return localStorage.getItem('tapestry_active_profile_uuid') || null;
   }
@@ -338,13 +584,11 @@ class DatabaseConnection {
 
   async getCurrentPlayer() {
     await this.ready;
-    // Try localStorage-tracked active profile first
     const activeUUID = this.getActivePlayerUUID();
     if (activeUUID) {
       const player = await this.get(STORES.player, activeUUID);
       if (player && !this.isLegacyBootstrapPlayer(player)) return player;
     }
-    // Fallback: newest non-legacy player
     return new Promise((resolve, reject) => {
       const transaction = this.database.transaction(STORES.player, 'readonly');
       const objectStore = transaction.objectStore(STORES.player);
@@ -353,7 +597,6 @@ class DatabaseConnection {
         const cursor = event.target.result;
         if (!cursor) { resolve(null); return; }
         if (this.isLegacyBootstrapPlayer(cursor.value)) { cursor.continue(); return; }
-        // Auto-register as active if nothing was set
         this.setActivePlayerUUID(cursor.value.UUID);
         resolve(cursor.value);
       };
@@ -361,18 +604,13 @@ class DatabaseConnection {
     });
   }
 
-  /* ── IGT helpers ────────────────────────────────────────── */
-
-  /** Snapshot IGT for a player and save, then activate a new player */
   async switchProfile(fromPlayer, toPlayerUUID) {
     const now = new Date().toISOString();
-    // Snapshot IGT for from-player
     if (fromPlayer) {
       const start = fromPlayer.utcTimeAtStart ? new Date(fromPlayer.utcTimeAtStart).getTime() : Date.now();
       const accumulated = (fromPlayer.inGameTime || 0) + (Date.now() - start);
       await this.add(STORES.player, { ...fromPlayer, inGameTime: accumulated, utcTimeAtStart: null });
     }
-    // Activate to-player
     const toPlayer = await this.get(STORES.player, toPlayerUUID);
     if (toPlayer) {
       await this.add(STORES.player, { ...toPlayer, utcTimeAtStart: now });
@@ -380,7 +618,6 @@ class DatabaseConnection {
     this.setActivePlayerUUID(toPlayerUUID);
   }
 
-  /** Create a brand-new profile and make it active */
   async createAndSwitchProfile(fromPlayer, newPlayerData) {
     const now = new Date().toISOString();
     if (fromPlayer) {
@@ -388,13 +625,11 @@ class DatabaseConnection {
       const accumulated = (fromPlayer.inGameTime || 0) + (Date.now() - start);
       await this.add(STORES.player, { ...fromPlayer, inGameTime: accumulated, utcTimeAtStart: null });
     }
-    const newPlayer = { ...newPlayerData, inGameTime: 0, utcTimeAtStart: now, createdAt: now };
+    const newPlayer = { ...newPlayerData, elo: 0, inGameTime: 0, utcTimeAtStart: now, createdAt: now };
     await this.add(STORES.player, newPlayer);
     this.setActivePlayerUUID(newPlayer.UUID);
     return newPlayer;
   }
-
-  /* ── Chat ───────────────────────────────────────────────── */
 
   async getChatMessages(currentPlayerIGT = Infinity, limit = 100) {
     await this.ready;
@@ -402,19 +637,16 @@ class DatabaseConnection {
       const transaction = this.database.transaction(STORES.chatMessage, 'readonly');
       const objectStore = transaction.objectStore(STORES.chatMessage);
       const all = [];
-      // Collect all messages then filter — we can't index by inGameTimestamp efficiently
       objectStore.index('createdAt').openCursor(null, 'prev').onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
           all.push(cursor.value);
           cursor.continue();
         } else {
-          // Keep only messages whose IGT timestamp is <= the viewer's current IGT,
-          // then take the most recent `limit` of those, in chronological order.
           const filtered = all
             .filter((msg) => (msg.inGameTimestamp || 0) <= currentPlayerIGT)
-            .slice(0, limit)     // already newest-first from the cursor
-            .reverse();          // return oldest-first so chat renders top→bottom
+            .slice(0, limit)
+            .reverse();
           resolve(filtered);
         }
       };
@@ -435,8 +667,6 @@ class DatabaseConnection {
     await this.add(STORES.chatMessage, entry);
     return entry;
   }
-
-  /* ── Friend Requests ────────────────────────────────────── */
 
   async markNotificationRead(notifUUID) {
     await this.ready;
@@ -495,7 +725,6 @@ class DatabaseConnection {
     return this.getAllPlayers({ includeArchived: false });
   }
 
-  /* ── Journal comments ─────────────────────────────────── */
   async getCommentsForJournal(journalUUID) {
     await this.ready;
     return new Promise((resolve, reject) => {
@@ -532,8 +761,6 @@ class DatabaseConnection {
 
   async getNotificationsForPlayer(playerUUID, currentPlayerIGT = Infinity) {
     const all = await this.getPlayerStore(STORES.notification, playerUUID);
-    // If no IGT ceiling, return everything (used internally for accept/decline lookups).
-    // Records with no inGameTimestamp (legacy/self-generated toasts) are always visible (treated as 0).
     if (currentPlayerIGT === Infinity) return all;
     return all.filter((n) => (n.inGameTimestamp || 0) <= currentPlayerIGT);
   }
@@ -589,6 +816,17 @@ class DatabaseConnection {
       const objectStore = transaction.objectStore(store);
       const request = objectStore.clear();
       request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAllKeys(store) {
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(store, 'readonly');
+      const objectStore = transaction.objectStore(store);
+      const request = objectStore.getAllKeys();
+      request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
   }

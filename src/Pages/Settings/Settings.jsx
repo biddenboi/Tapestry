@@ -470,10 +470,26 @@ export default function Settings() {
               {player?.archivedAt ? 'UNARCHIVE' : 'ARCHIVE'}
             </button>
           </SettingsRow>
-          <SettingsRow label="Download Data">
+          <SettingsRow label="Download Profiles" hint="Player identities, profile pictures, and banners">
+            <button type="button" onClick={() => databaseConnection.getProfilesAsJSON()}>DOWNLOAD</button>
+          </SettingsRow>
+          <SettingsRow label="Upload Profiles" hint="Restores player profiles and visual assets">
+            <div className="settings-upload-row">
+              <input type="file" accept=".json" id="profiles-upload" className="settings-file-input"
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  const text = await file.text();
+                  await databaseConnection.profileUpload(text);
+                  refreshApp();
+                }} />
+              <label htmlFor="profiles-upload" className="settings-file-label">CHOOSE FILE</label>
+            </div>
+          </SettingsRow>
+          <SettingsRow label="Download Data" hint="Tasks, journals, timeline events, shop history, and more">
             <button type="button" onClick={() => databaseConnection.getDataAsJSON()}>DOWNLOAD</button>
           </SettingsRow>
-          <SettingsRow label="Upload Data">
+          <SettingsRow label="Upload Data" hint="Restores activity data — upload profiles first or after">
             <div className="settings-upload-row">
               <input type="file" accept=".json" id="data-upload" className="settings-file-input"
                 onChange={async (e) => {

@@ -149,7 +149,7 @@ export default NiceModal.create(({ skipPurgatory = false, eodDateStr = '' }) => 
         username,
         description,
         tokens: 0,
-        elo: 1000,
+        elo: 0,
         minutesClearedToday: 0,
         wakeTime: '08:00',
         sleepTime: '23:00',

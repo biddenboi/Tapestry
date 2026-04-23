@@ -19,12 +19,14 @@ import Settings from '../../Pages/Settings/Settings.jsx';
 import Profile from '../../Pages/Profile/Profile.jsx';
 import Inbox from '../Inbox/Inbox.jsx';
 import GlobalChat from '../GlobalChat/GlobalChat.jsx';
+import Feed from '../Feed/Feed.jsx';
 import './GameHub.css';
 
 const NAV = [
   { id: 'hub',       label: 'HUB',  icon: '◎', title: 'Lobby' },
   { id: 'tasks',     label: 'TASK', icon: '☑', title: 'Task List' },
   { id: 'chat',      label: 'CHAT', icon: '◈', title: 'Global Chat' },
+  { id: 'feed',      label: 'FEED', icon: '⬟', title: 'Journal Feed' },
   { id: 'shop',      label: 'SHOP', icon: '⬡', title: 'Shop' },
   { id: 'inventory', label: 'INV',  icon: '▤', title: 'Inventory' },
   { id: 'journal',   label: 'LOG',  icon: '✎', title: 'Journal' },
@@ -196,10 +198,11 @@ export default function GameHub() {
 
   const renderPanel = () => {
     if (!activePanel) return null;
-    const isFull = activePanel === 'shop' || activePanel === 'profile';
+    const isFull = activePanel === 'shop' || activePanel === 'profile' || activePanel === 'feed';
     let content = null;
     if (activePanel === 'tasks')     content = <TodoList />;
     if (activePanel === 'chat')      content = <GlobalChat />;
+    if (activePanel === 'feed')      content = <Feed />;
     if (activePanel === 'shop')      content = <Shop />;
     if (activePanel === 'inventory') content = <Inventory />;
     if (activePanel === 'settings')  content = <Settings />;
