@@ -108,9 +108,12 @@
 }
 
 .hub-nav-icon {
-  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   line-height: 1;
-  font-variant-emoji: text;
 }
 
 .hub-nav-label {
@@ -292,8 +295,11 @@
 }
 
 .hub-inbox-icon {
-  font-size: 30px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 }
 
 .hub-inbox-badge {
@@ -315,7 +321,8 @@
   box-shadow: 0 0 6px rgba(77,163,255,0.5);
 }
 
-/* Quick notes button — slightly smaller pencil icon to distinguish from nav LOG */
+/* Quick notes — same size as other icons */
 .hub-notes-btn .hub-inbox-icon {
-  font-size: 22px;
+  width: 20px;
+  height: 20px;
 }

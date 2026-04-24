@@ -1,0 +1,102 @@
+.tree-graph-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* React Flow internals */
+.react-flow__background { background: var(--bg) !important; }
+.react-flow__controls {
+  background: var(--surface) !important;
+  border: 0.5px solid var(--border2) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+}
+.react-flow__controls-button {
+  background: var(--surface) !important;
+  border-bottom-color: var(--border) !important;
+  color: var(--text2) !important;
+}
+.react-flow__controls-button:hover { background: var(--bg2) !important; }
+.react-flow__edge-path { stroke-width: 1.5px !important; }
+.react-flow, .react-flow__renderer,
+.react-flow__viewport-container { width: 100% !important; height: 100% !important; }
+
+/* ── Custom node ─────────────────────────────────────── */
+.cnode {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  /* No fixed width — node grows to fit content */
+  min-width: 180px;
+  max-width: 300px;
+  width: max-content;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.1s;
+  box-sizing: border-box;
+}
+.cnode:hover            { border-color: var(--blue); }
+.cnode--selected        { border-color: var(--blue); background: var(--blue-bg); }
+.cnode--root            { border-width: 1.5px; border-color: var(--text2); }
+.cnode--root.cnode--selected { border-color: var(--blue); background: var(--blue-bg); }
+.cnode--label           { background: var(--amber-bg); border-color: rgba(138,90,0,0.2); }
+.cnode--completed       { opacity: 0.5; }
+.cnode--disconnected    { opacity: 0.35; border-style: dashed; }
+
+.cnode-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  /* Allow wrapping so full name is always visible */
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+.cnode--selected .cnode-name { color: var(--blue-text); }
+
+.cnode-meta  { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.cnode-date  { font-size: 11px; color: var(--green-text); }
+.cnode-dur   { font-size: 11px; color: var(--text3); }
+
+.cnode-badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; margin-top: 5px; display: inline-block; }
+.cnode-badge--label { background: var(--amber-bg); color: var(--amber-text); }
+.cnode-badge--done  { background: var(--green-bg);  color: var(--green-text); }
+.cnode-badge--disc  { background: var(--bg3);        color: var(--text3); }
+
+.react-flow__handle {
+  width: 7px !important; height: 7px !important;
+  background: var(--border2) !important; border: none !important;
+}
+
+/* ── Side panel ──────────────────────────────────────── */
+.tg-panel {
+  position: absolute; top: 12px; right: 12px;
+  width: 260px;
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  z-index: 10;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+}
+.tg-panel-header   { display: flex; align-items: center; justify-content: space-between; }
+.tg-panel-title    { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; margin-right: 8px; word-break: break-word; }
+.tg-panel-close    { padding: 2px 6px; color: var(--text3); font-size: 12px; flex-shrink: 0; }
+
+.tg-view           { display: flex; flex-direction: column; gap: 8px; }
+.tg-info-row       { display: flex; flex-direction: column; gap: 2px; }
+.tg-info-val       { font-size: 13px; color: var(--text); }
+.tg-info-desc      { color: var(--text2); font-size: 12px; line-height: 1.5; }
+.tg-dblclick-hint  { font-size: 10px; color: var(--text3); font-style: italic; }
+.tg-view-actions   { display: flex; gap: 4px; flex-wrap: wrap; }
+.tg-view-actions button { font-size: 11px; padding: 5px 8px; }
+
+.tg-add-actions    { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.tg-add-actions button { font-size: 11px; padding: 5px 10px; }

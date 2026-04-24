@@ -453,6 +453,14 @@ function Shop() {
         const player = await databaseConnection.getCurrentPlayer();
         setCurrentPlayer(player);
         if (player) {
+            // One-time migration: if this player has a legacy money field stored on the
+            // player record but the global key hasn't been seeded yet, copy it over.
+            const globalMoney = databaseConnection.getGlobalMoney();
+            if (globalMoney === 0 && Number(player.money) > 0) {
+                databaseConnection.setGlobalMoney(player.money);
+                // Strip money from player record to avoid double-counting on future runs
+                await databaseConnection.add(STORES.player, { ...player, money: 0 });
+            }
             const inv = await databaseConnection.getPlayerStore(STORES.inventory, player.UUID);
             setOwnedCosmetics(inv.filter(i => i.type === 'cosmetic_theme' || i.type === 'cosmetic_font').map(i => i.itemId || i.name));
         }
@@ -479,11 +487,11 @@ function Shop() {
             createdAt: now,
             completedAt: now,
         });
-        // Update player money and log date
-        const newMoney = Math.max(0, (currentPlayer.money || 0) + amount);
+        // Update global money (shared across all profiles) and log date on player
+        const currentMoney = databaseConnection.getGlobalMoney();
+        databaseConnection.setGlobalMoney(currentMoney + amount);
         await databaseConnection.add(STORES.player, {
             ...currentPlayer,
-            money: newMoney,
             lastMoneyLogDate: today,
         });
         setShowMoneyLog(false);
@@ -578,13 +586,14 @@ function Shop() {
         const tokenCost   = tokenItems.reduce((s, e) => s + e.totalCost, 0);
         const dollarCost  = dollarItems.reduce((s, e) => s + e.totalCost, 0);
         if (currentPlayer.tokens < tokenCost) return;
-        if ((currentPlayer.money || 0) < dollarCost) return;
+        const currentMoney = databaseConnection.getGlobalMoney();
+        if (currentMoney < dollarCost) return;
 
         await databaseConnection.add(STORES.player, {
             ...currentPlayer,
             tokens: currentPlayer.tokens - tokenCost,
-            money:  Math.max(0, (currentPlayer.money || 0) - dollarCost),
         });
+        databaseConnection.setGlobalMoney(currentMoney - dollarCost);
 
         const allInventory = await databaseConnection.getAll(STORES.inventory);
         for (const entry of cart) {
@@ -721,7 +730,7 @@ function Shop() {
                 <CartSidebar
                     cart={cart}
                     tokens={currentPlayer?.tokens ?? 0}
-                    money={currentPlayer?.money ?? 0}
+                    money={databaseConnection.getGlobalMoney()}
                     onRemove={removeFromCart}
                     onPurchase={handlePurchase}
                     onClear={() => setCart([])}

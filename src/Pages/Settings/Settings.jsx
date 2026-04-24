@@ -3,6 +3,8 @@ import { v4 as uuid } from 'uuid';
 import { AppContext } from '../../App';
 import { STORES, COSMETIC_THEMES, COSMETIC_FONTS, BANNER_GRADIENTS } from '../../utils/Constants.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
+import { RankIcon } from '../../components/Icons/RankIcon.jsx';
+import { Icon } from '../../components/Icons/Icon.jsx';
 import './Settings.css';
 
 const FONT_FAMILY_MAP = {
@@ -315,7 +317,7 @@ export default function Settings() {
             : <div className="srh-avatar srh-avatar--init">{player?.username?.[0]?.toUpperCase() || '?'}</div>}
         </div>
         <div className="srh-rank-info">
-          <div className={`srh-rank-icon rank-${rankClass}`}>{rank.icon}</div>
+          <div className={`srh-rank-icon rank-${rankClass}`}><RankIcon group={rank.group} sub={rank.sub} size={28} /></div>
           <div className="srh-rank-label-group">
             <span className={`srh-rank-name rank-${rankClass}`}>{rankLabel}</span>
             <span className="srh-elo">{elo} ELO</span>
@@ -332,7 +334,7 @@ export default function Settings() {
 
       <form className="settings-form" onSubmit={handleSave}>
         {/* Profile */}
-        <SettingsSection icon="◯" title="Profile">
+        <SettingsSection icon={<Icon name="profile" size={16} />} title="Profile">
           <SettingsRow label="Username">
             <input value={form.username} onChange={(e) => updateForm({ username: e.target.value })} placeholder={player?.username || 'Username'} className="settings-input" />
           </SettingsRow>
@@ -357,7 +359,7 @@ export default function Settings() {
         </SettingsSection>
 
         {/* Theme */}
-        <SettingsSection icon="◈" title="Theme">
+        <SettingsSection icon={<Icon name="shop" size={16} />} title="Theme">
           <div className="settings-row">
             <div className="settings-row-label"><span>Dark Themes</span></div>
           </div>
@@ -377,7 +379,7 @@ export default function Settings() {
         </SettingsSection>
 
         {/* Font */}
-        <SettingsSection icon="✎" title="Typography">
+        <SettingsSection icon={<Icon name="notes" size={16} />} title="Typography">
           <div className="settings-row">
             <div className="settings-row-label"><span>UI Font</span><span className="settings-row-hint">Affects names, labels, headers</span></div>
           </div>
@@ -397,7 +399,7 @@ export default function Settings() {
 
         {/* Card Banner */}
         {hasCardBannerPass && (
-          <SettingsSection icon="◉" title="Card Banner">
+          <SettingsSection icon={<Icon name="inbox" size={16} />} title="Card Banner">
             <SettingsRow label="Arena Player Card" hint="Shown on your card during matches">
               <div className="banner-preview-row">
                 <div className="banner-thumb" style={activeCardBanner ? bannerPreviewStyle(activeCardBanner) : {}}>
@@ -412,7 +414,7 @@ export default function Settings() {
 
         {/* Lobby Banner */}
         {hasLobbyBannerPass && (
-          <SettingsSection icon="◈" title="Lobby Banner">
+          <SettingsSection icon={<Icon name="feed" size={16} />} title="Lobby Banner">
             <SettingsRow label="Lobby Player Card" hint="Background of your lobby sidebar card">
               <div className="banner-preview-row">
                 <div className="banner-thumb" style={activeLobbyBanner ? bannerPreviewStyle(activeLobbyBanner) : {}}>
@@ -427,7 +429,7 @@ export default function Settings() {
 
         {/* Profile Banner */}
         {hasProfileBannerPass && (
-          <SettingsSection icon="⬡" title="Profile Banner">
+          <SettingsSection icon={<Icon name="profile" size={16} />} title="Profile Banner">
             <SettingsRow label="Profile Page Background" hint="Seen by others visiting your profile">
               <div className="banner-preview-row">
                 <div className="banner-thumb banner-thumb--wide" style={activeProfileBanner ? bannerPreviewStyle(activeProfileBanner) : {}}>
@@ -442,7 +444,7 @@ export default function Settings() {
 
         {/* Locked passes guide */}
         {(!hasCardBannerPass || !hasProfileBannerPass || !hasLobbyBannerPass) && (
-          <SettingsSection icon="◈" title="Locked Cosmetics">
+          <SettingsSection icon={<Icon name="inventory" size={16} />} title="Locked Cosmetics">
             <div className="settings-row">
               <div className="settings-row-label">
                 <span>More Customization</span>
@@ -456,7 +458,7 @@ export default function Settings() {
         )}
 
         {/* Data */}
-        <SettingsSection icon="▤" title="Data">
+        <SettingsSection icon={<Icon name="journal" size={16} />} title="Data">
           <SettingsRow label="Create Profile">
             <button type="button" onClick={handleNewProfile}>NEW PROFILE</button>
           </SettingsRow>

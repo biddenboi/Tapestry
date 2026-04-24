@@ -23,6 +23,7 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     tab-size: 4;
+    overflow-y: scroll;
 }
 
 /* ── Mirror overlay ─────────────────────────────────────── */

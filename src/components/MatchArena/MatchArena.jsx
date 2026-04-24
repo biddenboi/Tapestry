@@ -1,16 +1,17 @@
-import { useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { GAME_STATE, STORES, MATCH_STATUS, HOUR, THEME_ACCENT_COLORS } from '../../utils/Constants.js';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import TaskPreviewMenu from '../../Modals/TaskPreviewMenu/TaskPreviewMenu.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
-import { getGhostScore, getGhostActivity } from '../../utils/Helpers/Match.js';
+import { getGhostScore, getGhostActivity, hydrateMatchTeams } from '../../utils/Helpers/Match.js';
 import { getNextTodo } from '../../utils/Helpers/Tasks.js';
 import { timeAsHHMMSS } from '../../utils/Helpers/Time.js';
 import { getRank, getRankLabel, getRankClass, getRankGroupFloor } from '../../utils/Helpers/Rank.js';
 import { checkMatchAchievements, getAchievementByKey } from '../../utils/Achievements.js';
 import AchievementBadge from '../AchievementBadge/AchievementBadge.jsx';
+import { RankIcon } from '../Icons/RankIcon.jsx';
 import './MatchArena.css';
 
 /* ── Timer hook ──────────────────────────────────────────── */
@@ -183,7 +184,7 @@ function MatchEndScreen({ match, currentPlayer, onReturn }) {
             <div className="esv-players">
               {myTeam.map(p => (
                 <span key={p.UUID} className={`esv-player ${p.UUID === currentPlayer?.UUID ? 'esv-player-you' : ''}`}>
-                  {p.username}
+                  {p.username || 'Unknown'}
                 </span>
               ))}
             </div>
@@ -196,7 +197,7 @@ function MatchEndScreen({ match, currentPlayer, onReturn }) {
             <div className="esv-score esv-score-opp">{(oppTeamScore || 0).toLocaleString()}</div>
             <div className="esv-players">
               {oppTeam.map(p => (
-                <span key={p.UUID} className="esv-player">{p.username}</span>
+                <span key={p.UUID} className="esv-player">{p.username || 'Unknown'}</span>
               ))}
             </div>
           </div>
@@ -207,7 +208,7 @@ function MatchEndScreen({ match, currentPlayer, onReturn }) {
           <div className="epc-avatar-frame">
             <ProfilePicture src={currentPlayer?.profilePicture} username={currentPlayer?.username} size={72} />
             <div className="epc-avatar-ring" style={{ borderColor: rankColor, boxShadow: `0 0 18px ${rankColor}66` }} />
-            <div className="epc-rank-icon">{rankAfter.icon}</div>
+            <div className="epc-rank-icon"><RankIcon group={rankAfter.group} sub={rankAfter.sub} size={22} /></div>
           </div>
 
           <div className="epc-body">
@@ -283,7 +284,7 @@ function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elaps
     >
       {bannerStyle && <div className="apn-banner-overlay" />}
       <div className="apn-avatar-wrap">
-        <ProfilePicture src={player.profilePicture} username={player.username} size={48} />
+        <ProfilePicture src={player.profilePicture} username={player.username || '?'} size={48} />
         {isActive && <div className="apn-pulse-ring" />}
       </div>
       <div className="apn-info">
@@ -295,7 +296,7 @@ function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elaps
               textShadow: glowAlpha > 0.3 ? `0 0 10px ${rank.glow}` : undefined,
             }}
           >
-            {player.username}
+            {player.username || 'Unknown'}
           </span>
           {isCurrentPlayer && <span className="apn-tag apn-tag-you">YOU</span>}
           {player.isGenerated && <span className="apn-tag apn-tag-ghost">GHOST</span>}
@@ -319,7 +320,7 @@ function ArenaPlayerNode({ player, score, isCurrentPlayer, isActive, side, elaps
           );
         })()}
         <div className={`apn-rank rank-${getRankClass(player.elo || 0)}`}>
-          {rank.icon} {rankLabel}
+          <RankIcon group={rank.group} sub={rank.sub} size={16} /> {rankLabel}
         </div>
         <div className="apn-score">{score.toLocaleString()} <span className="apn-pts">pts</span></div>
         {activity && <div className="apn-activity">→ {activity}</div>}
@@ -439,7 +440,7 @@ function VsScreen({ match, currentPlayer, onDismiss }) {
       >
         {bannerStyle && <div className="vs-player-banner-overlay" />}
         <div className="vs-player-avatar">
-          <ProfilePicture src={player.profilePicture} username={player.username} size={56} />
+          <ProfilePicture src={player.profilePicture} username={player.username || '?'} size={56} />
         </div>
         <div className="vs-player-info">
           <div className="vs-player-name-row">
@@ -450,7 +451,7 @@ function VsScreen({ match, currentPlayer, onDismiss }) {
                 textShadow: glowAlpha > 0.3 ? `0 0 10px ${rank.glow}` : undefined,
               }}
             >
-              {player.username}
+              {player.username || 'Unknown'}
             </span>
             {isMe && <span className="vs-player-tag">YOU</span>}
           </div>
@@ -462,7 +463,7 @@ function VsScreen({ match, currentPlayer, onDismiss }) {
             </div>
           )}
           <div className={`vs-player-rank rank-${rankClass}`}>
-            {rank.icon} {rankLabel}
+            <RankIcon group={rank.group} sub={rank.sub} size={16} /> {rankLabel}
           </div>
         </div>
       </div>
@@ -504,12 +505,36 @@ export default function MatchArena() {
   const [nextTodo, setNextTodo]           = useState(null);
   const [isConcluding, setIsConcluding]   = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
+  const [allPlayers, setAllPlayers]       = useState([]);
   // Only show VS screen if the match was created very recently (brand new, not a resume)
   const [showVsScreen, setShowVsScreen]   = useState(() => {
     if (!activeMatch || activeMatch.status !== MATCH_STATUS.active) return false;
     const ageMs = Date.now() - new Date(activeMatch.createdAt).getTime();
     return ageMs < 8000;
   });
+
+  // Pull the live player store once per refresh so stripped team snapshots
+  // (from data-only imports) can fall back to current identity fields.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const all = await databaseConnection.getAllPlayers();
+      if (!cancelled) setAllPlayers(all);
+    })();
+    return () => { cancelled = true; };
+  }, [databaseConnection, timestamp]);
+
+  const playersByUUID = useMemo(
+    () => Object.fromEntries((allPlayers || []).map((p) => [p.UUID, p])),
+    [allPlayers]
+  );
+
+  // Display-side view of the match with team snapshots self-healed against
+  // the live player store. All writes still target `activeMatch`.
+  const displayMatch = useMemo(
+    () => (activeMatch ? hydrateMatchTeams(activeMatch, playersByUUID) : null),
+    [activeMatch, playersByUUID]
+  );
 
   const elapsedRatio = activeMatch
     ? Math.min(1, elapsed / (Number(activeMatch.duration || 1) * HOUR))
@@ -640,8 +665,11 @@ export default function MatchArena() {
 
   if (!activeMatch) return null;
 
-  const team1      = activeMatch.teams?.[0] || [];
-  const team2      = activeMatch.teams?.[1] || [];
+  // Use hydrated snapshots for all display-layer reads. Writes still go
+  // through activeMatch to keep the canonical record authoritative.
+  const displaySource = displayMatch || activeMatch;
+  const team1      = displaySource.teams?.[0] || [];
+  const team2      = displaySource.teams?.[1] || [];
   const t1Total    = team1.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
   const t2Total    = team2.reduce((s, p) => s + Number(scores[p.UUID] || 0), 0);
   const grand      = t1Total + t2Total;
@@ -772,7 +800,7 @@ export default function MatchArena() {
       {/* VS screen overlay — shown on match entry */}
       {showVsScreen && activeMatch.status === MATCH_STATUS.active && (
         <VsScreen
-          match={activeMatch}
+          match={displaySource}
           currentPlayer={currentPlayer}
           onDismiss={() => setShowVsScreen(false)}
         />
@@ -780,7 +808,7 @@ export default function MatchArena() {
 
       {/* End screen overlay */}
       {showEndScreen && matchEnded && (
-        <MatchEndScreen match={activeMatch} currentPlayer={currentPlayer} onReturn={handleReturn} />
+        <MatchEndScreen match={displaySource} currentPlayer={currentPlayer} onReturn={handleReturn} />
       )}
     </div>
   );

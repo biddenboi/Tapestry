@@ -1,0 +1,57 @@
+.jed-card {
+  width: 520px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jed-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.jed-title-input {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.jed-date { margin-top: -4px; }
+
+.jed-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text2);
+  white-space: pre-wrap;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.jed-textarea {
+  flex: 1;
+  min-height: 220px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.jed-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.jed-delete-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+}

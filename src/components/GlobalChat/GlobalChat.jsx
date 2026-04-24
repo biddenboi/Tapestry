@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { AppContext } from '../../App.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import { getCurrentIGT, formatInGameTime } from '../../utils/Helpers/Time.js';
@@ -7,17 +7,30 @@ import './GlobalChat.css';
 export default function GlobalChat() {
   const { databaseConnection, currentPlayer, timestamp, openPanel } = useContext(AppContext);
   const [messages, setMessages] = useState([]);
+  const [players, setPlayers]   = useState([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Lookup of live player records for fallback when a chat message's
+  // denormalized username/profilePicture snapshot was lost during a
+  // profile-less data import.
+  const playersByUUID = useMemo(
+    () => Object.fromEntries((players || []).map((p) => [p.UUID, p])),
+    [players]
+  );
+
   const load = useCallback(async () => {
     // Only show messages whose inGameTimestamp is <= the current player's IGT.
     // This makes chat behave as if IGT is the only timeline that exists.
     const currentIGT = getCurrentIGT(currentPlayer);
-    const msgs = await databaseConnection.getChatMessages(currentIGT, 200);
+    const [msgs, allPlayers] = await Promise.all([
+      databaseConnection.getChatMessages(currentIGT, 200),
+      databaseConnection.getAllPlayers(),
+    ]);
     setMessages(msgs);
+    setPlayers(allPlayers);
   }, [databaseConnection, currentPlayer]);
 
   useEffect(() => { load(); }, [load, timestamp]);
@@ -79,6 +92,12 @@ export default function GlobalChat() {
 
         {messages.map((msg) => {
           const isMine = msg.playerUUID === currentPlayer.UUID;
+          // Fall back to live player data when the message's denormalized
+          // snapshot is missing (typical after a data-only import without
+          // the matching profile file).
+          const live           = playersByUUID[msg.playerUUID];
+          const displayName    = msg.username || live?.username || 'Unknown';
+          const displayAvatar  = msg.profilePicture != null ? msg.profilePicture : (live?.profilePicture ?? null);
           const openSender = () => {
             if (msg.playerUUID) openPanel('profile', msg.playerUUID);
           };
@@ -89,9 +108,9 @@ export default function GlobalChat() {
                   type="button"
                   className="gchat-avatar-btn"
                   onClick={openSender}
-                  title={`View ${msg.username || 'profile'}`}
+                  title={`View ${displayName}`}
                 >
-                  <ProfilePicture src={msg.profilePicture} username={msg.username || '?'} size={34} />
+                  <ProfilePicture src={displayAvatar} username={displayName} size={34} />
                 </button>
               )}
 
@@ -101,9 +120,9 @@ export default function GlobalChat() {
                     type="button"
                     className="gchat-sender-btn"
                     onClick={openSender}
-                    title={`View ${msg.username || 'profile'}`}
+                    title={`View ${displayName}`}
                   >
-                    {msg.username || 'Unknown'}
+                    {displayName}
                   </button>
                 )}
                 <div className={`gchat-bubble ${isMine ? 'gchat-bubble--mine' : 'gchat-bubble--theirs'}`}>

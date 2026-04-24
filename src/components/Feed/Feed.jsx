@@ -7,6 +7,7 @@ import { UTCStringToLocalDate } from '../../utils/Helpers/Time.js';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
 import MarkdownEditor from '../MarkdownEditor/MarkdownEditor.jsx';
 import JournalDetailModal from '../../Modals/JournalDetailModal/JournalDetailModal.jsx';
+import { RankIcon } from '../Icons/RankIcon.jsx';
 import './Feed.css';
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -120,7 +121,7 @@ function FeedCard({ entry, author, commentCount, currentPlayer, onVote, onOpenPr
               {author?.username || 'Unknown'}
             </button>
             <span className="feed-author-rank" style={{ color: rank.color }}>
-              {rank.icon} {rankLabel}
+              <RankIcon group={rank.group} sub={rank.sub} size={14} /> {rankLabel}
             </span>
           </div>
         </div>

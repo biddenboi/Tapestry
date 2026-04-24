@@ -4,19 +4,20 @@ import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, MATCH_STATUS, STORES } from '../../utils/Constants.js';
 import { endWorkDay } from '../../utils/Helpers/Events.js';
-import { buildGhostRoster } from '../../utils/Helpers/Match.js';
+import { buildGhostRoster, hydrateMatchTeams } from '../../utils/Helpers/Match.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
 import EndDayConfirm from '../../Modals/EndDayConfirm/EndDayConfirm.jsx';
 import MatchDetailsModal from '../../Modals/MatchDetailsModal/MatchDetailsModal.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
+import { RankIcon } from '../Icons/RankIcon.jsx';
 import './Lobby.css';
 
 function RankDisplay({ elo }) {
   const rank = getRank(elo), label = getRankLabel(elo), progress = getRankProgress(elo), rankClass = getRankClass(elo);
   return (
     <div className="rank-display">
-      <div className={`rank-icon rank-${rankClass}`}>{rank.icon}</div>
+      <div className={`rank-icon rank-${rankClass}`}><RankIcon group={rank.group} sub={rank.sub} size={20} /></div>
       <div className="rank-info">
         <span className={`rank-name rank-${rankClass}`}>{label}</span>
         <div className="rank-progress-track"><div className="rank-progress-fill" style={{ width: `${progress}%`, background: rank.color }} /></div>
@@ -35,9 +36,9 @@ function MatchHistoryRow({ match, currentPlayerUUID, onOpen }) {
     <button type="button" className={`mh-row ${won ? 'mh-win' : isLive ? 'mh-active' : 'mh-loss'}`} onClick={() => onOpen(match)}>
       <div className={`mh-outcome ${won ? 'win' : isLive ? 'active' : 'loss'}`}>{isLive ? 'LIVE' : won ? 'WIN' : 'LOSS'}</div>
       <div className="mh-teams">
-        <span className="mh-team">{myTeam.map((p) => p.username).join(', ')}</span>
+        <span className="mh-team">{myTeam.map((p) => p.username || 'Unknown').join(', ')}</span>
         <span className="mh-vs">vs</span>
-        <span className="mh-team muted">{oppTeam.map((p) => p.username).join(', ')}</span>
+        <span className="mh-team muted">{oppTeam.map((p) => p.username || 'Unknown').join(', ')}</span>
       </div>
       <div className="mh-meta">
         <span>{match.duration}h</span>
@@ -305,6 +306,19 @@ export default function Lobby() {
   const openMatchDetails = (match) =>
     NiceModal.show(MatchDetailsModal, { match, currentPlayerUUID: currentPlayer?.UUID, onOpenProfile: (id) => openPanel('profile', id) });
 
+  // Players keyed by UUID for snapshot-fallback lookups on match rosters.
+  const playersByUUID = useMemo(
+    () => Object.fromEntries((allPlayers || []).map((p) => [p.UUID, p])),
+    [allPlayers]
+  );
+
+  // Hydrate match history so stripped snapshots self-heal against the live
+  // player store (e.g., after a data-only import without the profile file).
+  const hydratedMatchHistory = useMemo(
+    () => matchHistory.map((m) => hydrateMatchTeams(m, playersByUUID)),
+    [matchHistory, playersByUUID]
+  );
+
   const leaderGlobal  = useMemo(() => [...allPlayers].sort((a,b) => (b.elo||0)-(a.elo||0)).slice(0,10), [allPlayers]);
   const leaderFriends = useMemo(() => allPlayers.filter((p) => friendUUIDs.has(p.UUID)).sort((a,b) => (b.elo||0)-(a.elo||0)), [allPlayers, friendUUIDs]);
   const leaderPoints  = useMemo(() => [...allPlayers].sort((a,b) => (playerPoints[b.UUID]||0)-(playerPoints[a.UUID]||0)).slice(0,10), [allPlayers, playerPoints]);
@@ -332,7 +346,7 @@ export default function Lobby() {
             <div className="lpc-avatar-ring" style={{ boxShadow: rankGlow }}>
               <ProfilePicture src={currentPlayer?.profilePicture} username={username} size={90} />
             </div>
-            <div className={`lpc-rank-emblem rank-${rankClass}`}>{getRank(elo).icon}</div>
+            <div className={`lpc-rank-emblem rank-${rankClass}`}><RankIcon group={getRank(elo).group} sub={getRank(elo).sub} size={28} /></div>
           </div>
           <div className="lpc-identity">
             <span className="lpc-username">{username}</span>
@@ -385,11 +399,11 @@ export default function Lobby() {
           </div>
 
           {/* Match history */}
-          {matchHistory.length > 0 && (
+          {hydratedMatchHistory.length > 0 && (
             <div className="lobby-history">
               <div className="lobby-history-title">RECENT MATCHES</div>
               <div className="lobby-history-list">
-                {matchHistory.map((m) => <MatchHistoryRow key={m.UUID} match={m} currentPlayerUUID={currentPlayer?.UUID} onOpen={openMatchDetails} />)}
+                {hydratedMatchHistory.map((m) => <MatchHistoryRow key={m.UUID} match={m} currentPlayerUUID={currentPlayer?.UUID} onOpen={openMatchDetails} />)}
               </div>
             </div>
           )}

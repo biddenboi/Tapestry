@@ -21,17 +21,18 @@ import Inbox from '../Inbox/Inbox.jsx';
 import GlobalChat from '../GlobalChat/GlobalChat.jsx';
 import Feed from '../Feed/Feed.jsx';
 import './GameHub.css';
+import { Icon } from '../Icons/Icon.jsx';
 
 const NAV = [
-  { id: 'hub',       label: 'HUB',  icon: '◎', title: 'Lobby' },
-  { id: 'tasks',     label: 'TASK', icon: '☑', title: 'Task List' },
-  { id: 'chat',      label: 'CHAT', icon: '◈', title: 'Global Chat' },
-  { id: 'feed',      label: 'FEED', icon: '⬟', title: 'Journal Feed' },
-  { id: 'shop',      label: 'SHOP', icon: '⬡', title: 'Shop' },
-  { id: 'inventory', label: 'INV',  icon: '▤', title: 'Inventory' },
-  { id: 'journal',   label: 'LOG',  icon: '✎', title: 'Journal' },
-  { id: 'profile',   label: 'PRF',  icon: '◯', title: 'Profile' },
-  { id: 'settings',  label: 'CFG',  icon: '✦', title: 'Settings' },
+  { id: 'hub',       label: 'HUB',  title: 'Lobby' },
+  { id: 'tasks',     label: 'TASK', title: 'Task List' },
+  { id: 'chat',      label: 'CHAT', title: 'Global Chat' },
+  { id: 'feed',      label: 'FEED', title: 'Journal Feed' },
+  { id: 'shop',      label: 'SHOP', title: 'Shop' },
+  { id: 'inventory', label: 'INV',  title: 'Inventory' },
+  { id: 'journal',   label: 'LOG',  title: 'Journal' },
+  { id: 'profile',   label: 'PRF',  title: 'Profile' },
+  { id: 'settings',  label: 'CFG',  title: 'Settings' },
 ];
 
 function forceCloseJournal() {
@@ -229,7 +230,7 @@ export default function GameHub() {
         </div>
 
         <nav className="hub-nav">
-          {NAV.map(({ id, label, icon, title }) => {
+          {NAV.map(({ id, label, title }) => {
             const active = id === 'hub' ? !activePanel && !inboxOpen : activePanel === id;
             return (
               <button
@@ -238,7 +239,9 @@ export default function GameHub() {
                 onClick={() => handleNavClick(id)}
                 title={title}
               >
-                <span className="hub-nav-icon">{icon}</span>
+                <span className="hub-nav-icon">
+                  <Icon name={id === 'journal' ? 'journal' : id} size={20} />
+                </span>
                 <span className="hub-nav-label">{label}</span>
               </button>
             );
@@ -252,7 +255,7 @@ export default function GameHub() {
             onClick={() => { setInboxOpen(false); NiceModal.show(QuickNotes); }}
             title="Quick Notes"
           >
-            <span className="hub-inbox-icon">✎</span>
+            <span className="hub-inbox-icon"><Icon name="notes" size={20} /></span>
           </button>
 
           {/* Inbox bell */}
@@ -261,7 +264,7 @@ export default function GameHub() {
             onClick={toggleInbox}
             title="Inbox"
           >
-            <span className="hub-inbox-icon">✉</span>
+            <span className="hub-inbox-icon"><Icon name="inbox" size={20} /></span>
             {unreadCount > 0 && (
               <span className="hub-inbox-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}

@@ -100,6 +100,12 @@ export default function TodoList({ style }) {
         : Promise.resolve([]),
     ]);
 
+    // Deduplicate by UUID — guards against duplicate DB entries causing React
+    // "same key" warnings. Last-write-wins (final entry kept per UUID).
+    const seenUUIDs = new Map();
+    for (const t of todoArray) seenUUIDs.set(t.UUID, t);
+    const dedupedTodos = [...seenUUIDs.values()];
+
     setProjects(projectArray.sort((a, b) => String(a.name).localeCompare(String(b.name))));
 
     // Build the slope-evaluation context once per reload. Used for the full
@@ -109,14 +115,14 @@ export default function TodoList({ style }) {
     setSlopeContext(ctx);
 
     // WPD / time-remaining calculation uses all todos regardless of filter.
-    const allWPD = getAllWPDFromArray(todoArray);
+    const allWPD = getAllWPDFromArray(dedupedTodos);
     const sumWPD = allWPD.reduce((a, c) => a + c, 0);
     const diff = sumWPD - (currentPlayer?.minutesClearedToday ?? 0);
     setTimeCleared(formatDuration(diff * MINUTE));
 
     // Slope-based weights (0-100 normalised) — kept for legacy consumers.
-    const slopeArray = getSlopes(todoArray, ctx);
-    const withWeight = todoArray.map((t, i) => ({
+    const slopeArray = getSlopes(dedupedTodos, ctx);
+    const withWeight = dedupedTodos.map((t, i) => ({
       ...t,
       weight: Math.floor(slopeArray[i] || 0),
     }));
@@ -212,7 +218,7 @@ export default function TodoList({ style }) {
   const openProjectsModal = () => {
     NiceModal.show(ProjectsModal, {
       onChanged: () => {
-        refreshApp();
+        reload();
         databaseConnection.getAll(STORES.project).then((rows) => {
           const stillExists = rows.some((p) => p.UUID === activeProjectId);
           if (!stillExists) setActiveProjectId(null);

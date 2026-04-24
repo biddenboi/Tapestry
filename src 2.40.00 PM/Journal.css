@@ -1,0 +1,212 @@
+.journal-page {
+  overflow-y: auto;
+}
+
+.journal-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  width: 100%;
+}
+
+/* ── Calendar ────────────────────────────────── */
+.journal-cal-section { flex-shrink: 0; }
+
+.journal-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.journal-cal-month {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 90px;
+}
+
+.journal-cal-year {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  min-width: 38px;
+  text-align: center;
+}
+
+.journal-nav-btn {
+  padding: 3px 8px;
+  font-size: 16px;
+  line-height: 1;
+  background: transparent;
+  border: 0.5px solid transparent;
+  color: var(--text2);
+  border-radius: var(--radius);
+}
+.journal-nav-btn:hover { background: var(--bg2); border-color: var(--border); }
+.journal-nav-btn--sm   { font-size: 13px; padding: 2px 6px; }
+
+.journal-year-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.journal-add-btn {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 6px 14px;
+}
+
+.journal-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.journal-cal-hd {
+  font-size: 10px;
+  color: var(--text3);
+  text-align: center;
+  padding: 3px 0;
+}
+
+/* Day cell — column layout so dots sit below the number */
+.journal-cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+.journal-cal-day:hover        { background: var(--bg3); border-color: var(--border2); }
+.journal-cal-day--today       { border-color: var(--border2); font-weight: 600; color: var(--text); }
+
+.journal-cal-day-num { line-height: 1; }
+
+/* Dot row */
+.journal-cal-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.journal-cal-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.journal-cal-dot--entry { background: var(--green-border); }
+.journal-cal-dot--task  { background: var(--blue-border);  }
+
+/* Legend */
+.journal-cal-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.legend-item {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text3);
+}
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.legend-item--entry::before { background: var(--green-border); }
+.legend-item--task::before  { background: var(--blue-border);  }
+
+.journal-total-label { font-size: 11px; color: var(--text3); margin-top: 8px; }
+
+/* ── Day detail ──────────────────────────────── */
+.journal-day-detail { padding: 0; }
+
+.journal-day-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.journal-back-btn {
+  font-size: 13px;
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  color: var(--text2);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.journal-back-btn:hover { background: var(--bg2); color: var(--text); }
+
+.journal-day-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.journal-add-btn-sm {
+  font-size: 12px;
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+
+.journal-day-section { margin-bottom: 28px; }
+
+.journal-day-section-label { margin-bottom: 10px; display: block; }
+
+.journal-day-empty { font-size: 12px; color: var(--text3); padding: 8px 0; }
+
+.journal-day-entry-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: var(--bg2);
+  transition: background 0.1s;
+}
+.journal-day-entry-row:hover { background: var(--bg3); }
+
+.journal-day-entry-title   { font-size: 14px; font-weight: 500; color: var(--text); }
+.journal-day-entry-preview { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.journal-day-entry-time    { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.journal-day-task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  margin-bottom: 6px;
+  background: var(--bg2);
+}
+
+.journal-day-task-body  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.journal-day-task-name  { font-size: 13px; font-weight: 500; color: var(--text); }
+.journal-day-task-meta  { font-size: 11px; color: var(--text3); }

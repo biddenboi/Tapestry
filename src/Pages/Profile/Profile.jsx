@@ -8,6 +8,7 @@ import ProfilePicture from '../../components/ProfilePicture/ProfilePicture.jsx';
 import { UTCStringToLocalDate, UTCStringToLocalTime, formatDuration, getCurrentIGT, formatInGameTime } from '../../utils/Helpers/Time.js';
 import { getTaskDuration } from '../../utils/Helpers/Tasks.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
+import { RankIcon } from '../../components/Icons/RankIcon.jsx';
 import { BANNER_GRADIENTS } from '../../utils/Constants.js';
 import TodoDetailModal from '../../Modals/TodoDetailModal/TodoDetailModal.jsx';
 import JournalDetailModal from '../../Modals/JournalDetailModal/JournalDetailModal.jsx';
@@ -456,7 +457,7 @@ export default function Profile({ uuid: targetUUID }) {
             <div className="profile-name-row">
               <h2 className="profile-name">{player.username}</h2>
               <div className={`profile-rank-badge rank-${rankClass}`}>
-                <span className="prb-icon">{rank.icon}</span>
+                <span className="prb-icon"><RankIcon group={rank.group} sub={rank.sub} size={16} /></span>
                 <span className="prb-label">{rankLabel}</span>
               </div>
               {player.archivedAt && <span className="profile-archived-badge">Archived</span>}

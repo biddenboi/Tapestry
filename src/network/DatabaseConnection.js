@@ -570,6 +570,21 @@ class DatabaseConnection {
     });
   }
 
+  // ── Global (cross-profile) money ──────────────────────────────────────
+  // Dollars are intentionally NOT per-profile: balances persist across all
+  // profiles and are never reset when a new profile is created.
+  getGlobalMoney() {
+    const raw = localStorage.getItem('tapestry_global_money');
+    const val = parseFloat(raw);
+    return Number.isFinite(val) ? val : 0;
+  }
+
+  setGlobalMoney(amount) {
+    const val = Math.max(0, Number.isFinite(Number(amount)) ? Number(amount) : 0);
+    localStorage.setItem('tapestry_global_money', String(val));
+    return val;
+  }
+
   getActivePlayerUUID() {
     return localStorage.getItem('tapestry_active_profile_uuid') || null;
   }

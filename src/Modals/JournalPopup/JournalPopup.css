@@ -12,7 +12,7 @@ div.journal-popup {
 div.journal-popup div.content {
     position: relative;
     z-index: 1;
-    width: min(540px, 90vw);
+    width: min(900px, 90vw);
     background: var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);
@@ -41,6 +41,7 @@ div.journal-popup form {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    height:50vh;
 }
 
 div.journal-popup form input[type="text"] {
@@ -67,6 +68,7 @@ div.journal-popup form .journal-entry-editor {
     max-height: 60vh;
     display: flex;
     flex-direction: column;
+    height:50vh;
 }
 
 div.journal-popup form button[type="submit"] {
