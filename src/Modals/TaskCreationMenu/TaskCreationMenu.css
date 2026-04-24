@@ -12,7 +12,6 @@
 .task-modal {
     position: relative;
     z-index: 1;
-    width: min(740px, 94vw);
     background: var(--bg-card);
     border: 1px solid var(--accent-border);
     box-shadow: var(--glow-blue), var(--box-shadow);

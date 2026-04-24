@@ -150,6 +150,8 @@
 /* ── Plan editor (MarkdownEditor inside task form) ──────── */
 .plan-editor {
     min-height: 220px;
+    height: 30vh;
+    overflow-y:scroll;
 }
 
 /* ── Footer ─────────────────────────────────────────────── */

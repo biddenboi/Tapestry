@@ -303,23 +303,21 @@ export default NiceModal.create(() => {
 
           {/* ── Project + Resistance on same row ─────────────── */}
           <div className="tcm-meta-row">
-            {projects.length > 0 ? (
-              <label className="tcm-project-label">
-                Project
-                <select
-                  className="project-select"
-                  value={activeTask.projectId || ''}
-                  onChange={(e) =>
-                    setActiveTask((prev) => ({ ...prev, projectId: e.target.value || null }))
-                  }
-                >
-                  <option value="">— None —</option>
-                  {projects.map((p) => (
-                    <option key={p.UUID} value={p.UUID}>{p.name}</option>
-                  ))}
-                </select>
-              </label>
-            ) : <div />}
+            <label className="tcm-project-label">
+              Project
+              <select
+                className="project-select"
+                value={activeTask.projectId || ''}
+                onChange={(e) =>
+                  setActiveTask((prev) => ({ ...prev, projectId: e.target.value || null }))
+                }
+              >
+                <option value="">— None —</option>
+                {projects.map((p) => (
+                  <option key={p.UUID} value={p.UUID}>{p.name}</option>
+                ))}
+              </select>
+            </label>
             <div className="tcm-field-group">
               <span className="tcm-field-label">Resistance</span>
               <div className="aversion-selector">
@@ -340,14 +338,12 @@ export default NiceModal.create(() => {
           {/* ── Task description ─────────────────────────────── */}
           <label className="full-width">
             Description
-            <div>
-              <MarkdownEditor
-                value={activeTask.efficiency || ''}
-                onChange={(value) => setActiveTask((prev) => ({ ...prev, efficiency: value }))}
-                placeholder="Notes, context, or links for this task..."
-                className="description-editor"
-              />
-            </div>
+            <MarkdownEditor
+              value={activeTask.efficiency || ''}
+              onChange={(value) => setActiveTask((prev) => ({ ...prev, efficiency: value }))}
+              placeholder="Notes, context, or links for this task..."
+              className="description-editor"
+            />
           </label>
 
         </div>
