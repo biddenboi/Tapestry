@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { v4 as uuid } from 'uuid';
-import { AppContext } from '../../App';
+import { AppContext } from '../../App.jsx';
 import { STORES, COSMETIC_THEMES, COSMETIC_FONTS, BANNER_GRADIENTS } from '../../utils/Constants.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
 import { RankIcon } from '../../components/Icons/RankIcon.jsx';
