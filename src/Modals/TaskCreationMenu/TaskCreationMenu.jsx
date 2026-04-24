@@ -340,12 +340,14 @@ export default NiceModal.create(() => {
           {/* ── Task description ─────────────────────────────── */}
           <label className="full-width">
             Description
-            <MarkdownEditor
-              value={activeTask.efficiency || ''}
-              onChange={(value) => setActiveTask((prev) => ({ ...prev, efficiency: value }))}
-              placeholder="Notes, context, or links for this task..."
-              className="description-editor"
-            />
+            <div>
+              <MarkdownEditor
+                value={activeTask.efficiency || ''}
+                onChange={(value) => setActiveTask((prev) => ({ ...prev, efficiency: value }))}
+                placeholder="Notes, context, or links for this task..."
+                className="description-editor"
+              />
+            </div>
           </label>
 
         </div>

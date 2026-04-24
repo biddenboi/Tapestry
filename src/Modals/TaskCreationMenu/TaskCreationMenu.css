@@ -311,7 +311,8 @@
 
 /* ── Description editor ─────────────────────────────────── */
 .description-editor {
-  min-height: 80px;
+  height: 30vh;
+  overflow-y: scroll;
 }
 
 /* ── Field group (label + control row) ──────────────────── */
