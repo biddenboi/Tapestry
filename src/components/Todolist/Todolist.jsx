@@ -2,7 +2,7 @@ import './TodoList.css';
 import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
-import { GAME_STATE, MINUTE, STORES } from '../../utils/Constants.js';
+import { MINUTE, STORES } from '../../utils/Constants.js';
 import {
   getSlopes,
   getNextTodo,
@@ -71,12 +71,11 @@ function TodoItem({ element, onSelect, projectName, slope }) {
 
 // ── TodoList ──────────────────────────────────────────────────────────────
 
-export default function TodoList({ style }) {
+export default function TodoList({ style, fromQueue = false }) {
   const {
     databaseConnection,
     refreshApp,
     closePanel,
-    gameState: [gameState],
     activeTask: [activeTask, setActiveTask],
   } = useContext(AppContext);
 
@@ -156,8 +155,8 @@ export default function TodoList({ style }) {
   useEffect(() => { reload(); }, [reload]);
 
   const inSessionMode = useMemo(
-    () => gameState === GAME_STATE.practice || gameState === GAME_STATE.match,
-    [gameState],
+    () => fromQueue,
+    [fromQueue],
   );
 
   const projectMap = useMemo(

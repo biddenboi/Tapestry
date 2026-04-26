@@ -472,17 +472,17 @@ export default function Settings() {
               {player?.archivedAt ? 'UNARCHIVE' : 'ARCHIVE'}
             </button>
           </SettingsRow>
-          <SettingsRow label="Download Profiles" hint="Player identities, profile pictures, and banners">
-            <button type="button" onClick={() => databaseConnection.getProfilesAsJSON()}>DOWNLOAD</button>
+          <SettingsRow label="Download Customization" hint="Player profiles, profile pictures, banners, and event definitions">
+            <button type="button" onClick={() => databaseConnection.getCustomizationAsJSON()}>DOWNLOAD</button>
           </SettingsRow>
-          <SettingsRow label="Upload Profiles" hint="Restores player profiles and visual assets">
+          <SettingsRow label="Upload Customization" hint="Restores profiles, visual assets, and custom events">
             <div className="settings-upload-row">
               <input type="file" accept=".json" id="profiles-upload" className="settings-file-input"
                 onChange={async (e) => {
                   const file = e.target.files[0];
                   if (!file) return;
                   const text = await file.text();
-                  await databaseConnection.profileUpload(text);
+                  await databaseConnection.customizationUpload(text);
                   refreshApp();
                 }} />
               <label htmlFor="profiles-upload" className="settings-file-label">CHOOSE FILE</label>

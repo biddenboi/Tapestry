@@ -185,6 +185,29 @@ class DatabaseConnection {
         cursor.continue();
       };
     }
+
+    if (DATABASE_VERSION >= 10 && oldVersion < 10) {
+      this.createStore(STORES.customEvent, 'UUID', [
+        ['type', 'type'],
+        ['specialKind', 'specialKind'],
+        ['createdAt', 'createdAt'],
+      ], event);
+
+      this.createStore(STORES.eventLog, 'UUID', [
+        ['parent', 'parent'],
+        ['eventUUID', 'eventUUID'],
+        ['igtDay', 'igtDay'],
+        ['loggedAt', 'loggedAt'],
+        ['specialKind', 'specialKind'],
+      ], event);
+
+      this.createStore(STORES.eventBuff, 'UUID', [
+        ['parent', 'parent'],
+        ['eventUUID', 'eventUUID'],
+        ['expiresAt', 'expiresAt'],
+        ['appliedAt', 'appliedAt'],
+      ], event);
+    }
   }
 
   constructor() {
@@ -200,7 +223,11 @@ class DatabaseConnection {
       };
       request.onsuccess = (event) => {
         this.database = event.target.result;
+        // Resolve ready FIRST so that seedSpecialEvents (which calls
+        // await this.ready internally) doesn't deadlock waiting on itself.
         resolve();
+        // Seed the three system events. Idempotent — safe to call on every boot.
+        this.seedSpecialEvents().catch(() => undefined);
       };
     });
   }
@@ -356,12 +383,14 @@ class DatabaseConnection {
       chatMessages: STORES.chatMessage,
       journalComments: STORES.journalComment,
       projects: STORES.project,
+      notes: STORES.notes,
+      eventLogs: STORES.eventLog,
     };
   }
 
   async getDataPayload() {
     await this.ready;
-    const [tasks, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects] = await Promise.all([
+    const [tasks, journals, events, shop, todos, transactions, inventory, matches, friendships, notifications, chatMessages, journalComments, projects, notes, eventLogs] = await Promise.all([
       this.getAll(STORES.task),
       this.getAll(STORES.journal),
       this.getAll(STORES.event),
@@ -375,6 +404,8 @@ class DatabaseConnection {
       this.getAll(STORES.chatMessage),
       this.getAll(STORES.journalComment),
       this.getAll(STORES.project),
+      this.getAll(STORES.notes),
+      this.getAll(STORES.eventLog),
     ]);
 
     return {
@@ -391,6 +422,8 @@ class DatabaseConnection {
       chatMessages,
       journalComments,
       projects,
+      notes,
+      eventLogs,
     };
   }
 
@@ -446,6 +479,57 @@ class DatabaseConnection {
     this.downloadJSON({ players, profilePatches }, 'tapestry-profiles.json');
   }
 
+  /**
+   * "Customization" bundle: visual identity (player profiles + their banners
+   * and patches) + event definitions (custom events, including their banner
+   * images encoded as data URLs). This is what the user sees as "Download
+   * Customization" — everything that defines how the app *looks and feels*
+   * for this human, separate from their activity history.
+   */
+  async getCustomizationAsJSON() {
+    await this.ready;
+    const players = await this.getAll(STORES.player);
+    const dataPayload = await this.getDataPayload();
+    const profilePatches = this.buildProfilePatches(dataPayload);
+    const customEvents = await this.getAll(STORES.customEvent);
+    this.downloadJSON(
+      { players, profilePatches, customEvents },
+      'tapestry-customization.json'
+    );
+  }
+
+  /**
+   * Restore the customization bundle. Players are replaced wholesale (same
+   * as the legacy profileUpload). Custom events are MERGED — existing events
+   * with matching UUIDs get overwritten (so banner edits propagate), but
+   * locally-created events that aren't in the import are preserved.
+   */
+  async customizationUpload(fileContents) {
+    const data = JSON.parse(fileContents);
+
+    await this.clear(STORES.player).catch(() => undefined);
+    for (const entry of data.players || []) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.add(STORES.player, entry);
+    }
+
+    const pending = this.loadPendingProfilePatches();
+    const mergedPatches = { ...pending };
+    Object.entries(data.profilePatches || {}).forEach(([key, entries]) => {
+      mergedPatches[key] = [...(mergedPatches[key] || []), ...(entries || [])];
+    });
+    const remainingPatches = await this.applyProfilePatches(mergedPatches);
+    this.savePendingProfilePatches(remainingPatches);
+
+    // Merge-import custom events (don't wipe — preserve local additions).
+    for (const evt of data.customEvents || []) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.add(STORES.customEvent, evt);
+    }
+    // Re-seed in case the bundle didn't include the system three.
+    await this.seedSpecialEvents().catch(() => undefined);
+  }
+
   async getDataAsJSON() {
     await this.ready;
     const dataPayload = await this.getDataPayload();
@@ -479,7 +563,7 @@ class DatabaseConnection {
       STORES.task, STORES.journal, STORES.event, STORES.shop,
       STORES.todo, STORES.transaction, STORES.inventory, STORES.match,
       STORES.friendship, STORES.notification, STORES.chatMessage,
-      STORES.journalComment, STORES.project,
+      STORES.journalComment, STORES.project, STORES.notes, STORES.eventLog,
     ];
 
     for (const storeName of dataStores) {
@@ -504,6 +588,8 @@ class DatabaseConnection {
       chatMessages: STORES.chatMessage,
       journalComments: STORES.journalComment,
       projects: STORES.project,
+      notes: STORES.notes,
+      eventLogs: STORES.eventLog,
     };
 
     if (isLegacy) {
@@ -644,6 +730,144 @@ class DatabaseConnection {
     await this.add(STORES.player, newPlayer);
     this.setActivePlayerUUID(newPlayer.UUID);
     return newPlayer;
+  }
+
+  /**
+   * Permanently wipe a profile and ALL associated timeline data. Used by the
+   * Ban tool. This is a one-shot, no-undo operation: the player record is
+   * removed along with every record across every store that references that
+   * player UUID (via `parent`, `playerUUID`, `authorUUID`, `players` index, or
+   * by cascading from the player's own journals into journalComments).
+   *
+   * Stores left untouched on purpose:
+   *   • shop   — catalog data, shared globally
+   *   • notes  — quick notes are not profile-scoped
+   *   • customEvent — user-created event TYPES, shared across profiles
+   *
+   * After completion, the active profile UUID is cleared. The next call to
+   * getCurrentPlayer() will fall back to the most-recently-created profile or
+   * trigger the new-profile flow if none remain.
+   */
+  async wipeProfile(playerUUID) {
+    if (!playerUUID) return;
+    await this.ready;
+
+    // Helper: delete every record in `store` whose value of `field` === target
+    const deleteByField = (store, field, target) => new Promise((resolve, reject) => {
+      const tx = this.database.transaction(store, 'readwrite');
+      const os = tx.objectStore(store);
+      const useIndex = os.indexNames.contains(field);
+      const cursorReq = useIndex ? os.index(field).openCursor(IDBKeyRange.only(target)) : os.openCursor();
+      cursorReq.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        if (useIndex || cursor.value?.[field] === target) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror   = () => reject(tx.error);
+      tx.onabort   = () => reject(tx.error);
+    });
+
+    // Helper: delete every record in `store` whose key value is in the supplied set
+    const deleteByFieldInSet = (store, field, set) => new Promise((resolve, reject) => {
+      if (!set || set.size === 0) { resolve(); return; }
+      const tx = this.database.transaction(store, 'readwrite');
+      const os = tx.objectStore(store);
+      os.openCursor().onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        if (set.has(cursor.value?.[field])) cursor.delete();
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror   = () => reject(tx.error);
+      tx.onabort   = () => reject(tx.error);
+    });
+
+    // 1. Snapshot the player's journal UUIDs so we can cascade-delete the
+    //    comments attached to them BEFORE the journals themselves are gone.
+    const ownedJournals = await this.getPlayerStore(STORES.journal, playerUUID);
+    const journalUUIDs = new Set((ownedJournals || []).map((j) => j.UUID).filter(Boolean));
+
+    // 2. Cascade: delete every comment on any of this player's journals,
+    //    regardless of who authored the comment.
+    if (journalUUIDs.size > 0) {
+      await deleteByFieldInSet(STORES.journalComment, 'journalUUID', journalUUIDs);
+    }
+    // Also delete every comment authored BY this player on anyone's journal.
+    await deleteByField(STORES.journalComment, 'authorUUID', playerUUID);
+
+    // 3. Delete every store keyed by `parent` === playerUUID.
+    const parentScopedStores = [
+      STORES.task,
+      STORES.journal,
+      STORES.event,
+      STORES.todo,
+      STORES.transaction,
+      STORES.inventory,
+      STORES.match,
+      STORES.notification,
+      STORES.project,
+      STORES.eventLog,
+      STORES.eventBuff,
+    ];
+    for (const store of parentScopedStores) {
+      try { await deleteByField(store, 'parent', playerUUID); }
+      catch (err) { console.warn(`[wipeProfile] failed to wipe ${store}:`, err); }
+    }
+
+    // 4. Chat messages are keyed by `playerUUID` (the message author).
+    try { await deleteByField(STORES.chatMessage, 'playerUUID', playerUUID); }
+    catch (err) { console.warn('[wipeProfile] failed to wipe chatMessages:', err); }
+
+    // 5. Friendships use a multiEntry `players` index. The cursor read of the
+    //    record gives us the array — drop the row if it contains our UUID.
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = this.database.transaction(STORES.friendship, 'readwrite');
+        tx.objectStore(STORES.friendship).openCursor().onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (!cursor) return;
+          const players = Array.isArray(cursor.value?.players) ? cursor.value.players : [];
+          if (players.includes(playerUUID)) cursor.delete();
+          cursor.continue();
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror   = () => reject(tx.error);
+        tx.onabort   = () => reject(tx.error);
+      });
+    } catch (err) { console.warn('[wipeProfile] failed to wipe friendships:', err); }
+
+    // 6. The player record itself.
+    try { await this.remove(STORES.player, playerUUID); }
+    catch (err) { console.warn('[wipeProfile] failed to remove player:', err); }
+
+    // 7. Clean up any per-profile localStorage breadcrumbs (EOD choices, wake
+    //    pending flags, pending profile patches). We sweep the whole keyspace
+    //    once because keys are date-suffixed.
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (
+          key.startsWith(`tapestry_eod_${playerUUID}_`) ||
+          key.startsWith(`tapestry_wake_pending_${playerUUID}_`)
+        ) {
+          toRemove.push(key);
+        }
+      }
+      toRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (err) { console.warn('[wipeProfile] failed to sweep localStorage:', err); }
+
+    // 8. If the wiped profile was the active one, clear the pointer. The next
+    //    getCurrentPlayer() call will pick a remaining profile (or none).
+    if (this.getActivePlayerUUID() === playerUUID) {
+      this.setActivePlayerUUID(null);
+    }
   }
 
   async getChatMessages(currentPlayerIGT = Infinity, limit = 100) {
@@ -855,6 +1079,126 @@ class DatabaseConnection {
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
+  }
+
+  // ── Custom events / logs / buffs ─────────────────────────────────────
+  async getAllCustomEvents() {
+    return this.getAll(STORES.customEvent);
+  }
+
+  async getEventLogsForPlayerEvent(playerUUID, eventUUID) {
+    if (!playerUUID || !eventUUID) return [];
+    const all = await this.getPlayerStore(STORES.eventLog, playerUUID);
+    return all.filter((entry) => entry.eventUUID === eventUUID);
+  }
+
+  async getAllEventLogsForPlayer(playerUUID) {
+    if (!playerUUID) return [];
+    return this.getPlayerStore(STORES.eventLog, playerUUID);
+  }
+
+  /** Cross-profile: every event log in the database, regardless of parent. */
+  async getAllEventLogs() {
+    return this.getAll(STORES.eventLog);
+  }
+
+  async getEventLogsForEvent(eventUUID) {
+    if (!eventUUID) return [];
+    await this.ready;
+    return new Promise((resolve, reject) => {
+      const transaction = this.database.transaction(STORES.eventLog, 'readonly');
+      const objectStore = transaction.objectStore(STORES.eventLog);
+      if (!objectStore.indexNames.contains('eventUUID')) {
+        resolve([]);
+        return;
+      }
+      const request = objectStore.index('eventUUID').getAll(eventUUID);
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getActiveEventBuffsForPlayer(playerUUID) {
+    if (!playerUUID) return [];
+    const all = await this.getPlayerStore(STORES.eventBuff, playerUUID);
+    const now = Date.now();
+    return all.filter((buff) => {
+      if (!buff.expiresAt) return true;
+      const expires = new Date(buff.expiresAt).getTime();
+      return Number.isFinite(expires) ? expires > now : true;
+    });
+  }
+
+  async clearEventBuffsForPlayer(playerUUID) {
+    if (!playerUUID) return;
+    const all = await this.getPlayerStore(STORES.eventBuff, playerUUID);
+    for (const buff of all) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.remove(STORES.eventBuff, buff.UUID);
+    }
+  }
+
+  /**
+   * Idempotent. Inserts the three system events if they aren't present.
+   * Uses deterministic UUIDs so re-running this is a no-op.
+   */
+  async seedSpecialEvents() {
+    await this.ready;
+    const existing = await this.getAll(STORES.customEvent);
+    const byUUID = Object.fromEntries(existing.map((e) => [e.UUID, e]));
+    const now = new Date().toISOString();
+
+    const seeds = [
+      {
+        UUID:         'special-wake-time',
+        ownerUUID:    null,
+        name:         'Wake Up Time',
+        description:  'Tracks how close you open the app to your set wake-up time each IGT day.',
+        type:         'special',
+        specialKind:  'wake_time',
+        maxBonusPct:  15,
+        bannerColor:  null,
+        bannerImageUrl: null,
+        accentColor:  null,
+        createdAt:    now,
+        updatedAt:    now,
+      },
+      {
+        UUID:         'special-first-match',
+        ownerUUID:    null,
+        name:         'First Match of the Day',
+        description:  'Tracks how quickly you start your first match after waking up each day.',
+        type:         'special',
+        specialKind:  'first_match',
+        maxBonusPct:  12,
+        bannerColor:  null,
+        bannerImageUrl: null,
+        accentColor:  null,
+        createdAt:    now,
+        updatedAt:    now,
+      },
+      {
+        UUID:         'special-entertainment',
+        ownerUUID:    null,
+        name:         'Work Day Discipline',
+        description:  'Fires when you make it through your work day without consuming entertainment items.',
+        type:         'special',
+        specialKind:  'entertainment',
+        maxBonusPct:  5,
+        bannerColor:  null,
+        bannerImageUrl: null,
+        accentColor:  null,
+        createdAt:    now,
+        updatedAt:    now,
+      },
+    ];
+
+    for (const seed of seeds) {
+      if (!byUUID[seed.UUID]) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.add(STORES.customEvent, seed);
+      }
+    }
   }
 
   async getLastEventType(types, playerUUID = null) {

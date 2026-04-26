@@ -6,8 +6,8 @@ import { STORES } from '../../utils/Constants.js';
 import ProfilePicture from '../../components/ProfilePicture/ProfilePicture.jsx';
 import { getCurrentIGT, formatInGameTime } from '../../utils/Helpers/Time.js';
 import { getRankClass, getRankLabel } from '../../utils/Helpers/Rank.js';
-import { startDay } from '../../utils/Helpers/Events.js';
 import Purgatory from '../Purgatory/Purgatory.jsx';
+import WakePopup from '../WakePopup/WakePopup.jsx';
 import './ProfileSwitcher.css';
 
 /* ── Inline new-profile form ────────────────────────────── */
@@ -115,12 +115,13 @@ export default NiceModal.create(({ skipPurgatory = false, eodDateStr = '' }) => 
     markChosen();
     modal.remove();
     if (skipPurgatory) {
-      // Missed-deadline flow: start the day immediately, no waiting for midnight.
-      const fresh = await databaseConnection.getCurrentPlayer();
-      await startDay(databaseConnection, fresh);
+      // Missed-deadline flow: the wake window is already past, so the user
+      // confirms entry into the new day immediately via WakePopup. WakePopup
+      // is the sole entry point for startDay() now.
+      NiceModal.show(WakePopup);
       refreshApp();
     } else {
-      // Normal flow: sleep time just passed, midnight hasn't yet — enter purgatory.
+      // Normal flow: sleep just passed, wakeTime hasn't yet — purgatory.
       NiceModal.show(Purgatory);
       refreshApp();
     }

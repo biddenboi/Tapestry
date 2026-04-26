@@ -1,4 +1,4 @@
-export const DATABASE_VERSION = 9;
+export const DATABASE_VERSION = 10;
 
 export const ACTIVE_PROFILE_KEY = 'tapestry_active_profile_uuid';
 
@@ -26,6 +26,9 @@ export const STORES = {
   journalComment: 'journalCommentObjectStore',
   notes: 'notesObjectStore',
   project: 'projectObjectStore',
+  customEvent: 'customEventObjectStore',
+  eventLog: 'eventLogObjectStore',
+  eventBuff: 'eventBuffObjectStore',
 };
 
 export const GAME_STATE = {
@@ -44,7 +47,30 @@ export const EVENT = {
   wake: 'wake',
   end_work: 'end_work',
   sleep: 'sleep',
+  item_use: 'item_use',
 };
+
+export const SPECIAL_EVENT_IDS = {
+  wakeTime:      'special-wake-time',
+  firstMatch:    'special-first-match',
+  entertainment: 'special-entertainment',
+};
+
+export const SPECIAL_KIND = {
+  wake_time:     'wake_time',
+  first_match:   'first_match',
+  entertainment: 'entertainment',
+};
+
+// Decay rates for special events (in ms). On-target = full ceiling, decays exponentially.
+export const SPECIAL_EVENT_TUNING = {
+  wake_time:     { ceiling: 0.15, decayMs: 30 * 60 * 1000 },     // 30-min half-life
+  first_match:   { ceiling: 0.12, decayMs: 2 * 60 * 60 * 1000 }, // 2-hour half-life
+  entertainment: { flatBonus: 0.05 },                            // flat 1.05× when fired
+};
+
+// Hard cap on streak contribution to multiplier (days beyond don't increase but maintain).
+export const HABIT_STREAK_CAP_DAYS = 30;
 
 export const ITEM_TYPE = {
   duration: 'duration',

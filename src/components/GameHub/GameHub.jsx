@@ -2,13 +2,14 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, STORES } from '../../utils/Constants.js';
-import { getMidnightOfDate, getLocalDate } from '../../utils/Helpers/Time.js';
-import { endDay, startDay, getSleepDateToday, getBackfilledSleepDate } from '../../utils/Helpers/Events.js';
+import { getMidnightOfDate, getLocalDate, getMsUntilWakeTime } from '../../utils/Helpers/Time.js';
+import { endDay, getSleepDateToday, getBackfilledSleepDate } from '../../utils/Helpers/Events.js';
 import { getRankClass, getRankGlow } from '../../utils/Helpers/Rank.js';
 import JournalPopup from '../../Modals/JournalPopup/JournalPopup.jsx';
 import ProfileSwitcher from '../../Modals/ProfileSwitcher/ProfileSwitcher.jsx';
-import Purgatory from '../../Modals/Purgatory/Purgatory.jsx';
+import WakePopup, { getWakePendingStorageKey, getTodayDateStr } from '../../Modals/WakePopup/WakePopup.jsx';
 import QuickNotes from '../../Modals/QuickNotes/QuickNotes.jsx';
+import Purgatory from '../../Modals/Purgatory/Purgatory.jsx';
 import Lobby from '../Lobby/Lobby.jsx';
 import MatchArena from '../MatchArena/MatchArena.jsx';
 import PracticeDojo from '../PracticeDojo/PracticeDojo.jsx';
@@ -17,6 +18,7 @@ import Shop from '../../Pages/Shop/Shop.jsx';
 import Inventory from '../../Pages/Inventory/Inventory.jsx';
 import Settings from '../../Pages/Settings/Settings.jsx';
 import Profile from '../../Pages/Profile/Profile.jsx';
+import Events from '../../Pages/Events/Events.jsx';
 import Inbox from '../Inbox/Inbox.jsx';
 import GlobalChat from '../GlobalChat/GlobalChat.jsx';
 import Feed from '../Feed/Feed.jsx';
@@ -26,6 +28,7 @@ import { Icon } from '../Icons/Icon.jsx';
 const NAV = [
   { id: 'hub',       label: 'HUB',  title: 'Lobby' },
   { id: 'tasks',     label: 'TASK', title: 'Task List' },
+  { id: 'events',    label: 'EVT',  title: 'Events' },
   { id: 'chat',      label: 'CHAT', title: 'Global Chat' },
   { id: 'feed',      label: 'FEED', title: 'Journal Feed' },
   { id: 'shop',      label: 'SHOP', title: 'Shop' },
@@ -34,6 +37,13 @@ const NAV = [
   { id: 'profile',   label: 'PRF',  title: 'Profile' },
   { id: 'settings',  label: 'CFG',  title: 'Settings' },
 ];
+
+// ── Module-level firing latches ─────────────────────────────────────────
+// These live outside the component so they survive React re-mounts within
+// the same tab session. Each entry is the composite key `${UUID}_${date}`
+// of the most recent fire. A subsequent tick that matches the latched key
+// is a no-op. The latches reset implicitly when player/date changes.
+const dayFireLatch = { wakePopupShown: null, endDayFired: null };
 
 function forceCloseJournal() {
   document.dispatchEvent(new CustomEvent('force-close-journal'));
@@ -55,6 +65,8 @@ export default function GameHub() {
   } = useContext(AppContext);
 
   const sleepCheckFiredRef = useRef(false);
+  const notifyRef = useRef(notify);
+  useEffect(() => { notifyRef.current = notify; }, [notify]);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -85,6 +97,16 @@ export default function GameHub() {
       .catch(() => setUnreadCount(0));
   }, [databaseConnection, currentPlayer, timestamp]);
 
+  /* Reload-resilience: if we were mid-WakePopup and the page reloaded,
+     re-show it before syncDay does its routing. */
+  useEffect(() => {
+    if (!currentPlayer?.UUID) return;
+    const key = getWakePendingStorageKey(currentPlayer.UUID, getTodayDateStr());
+    if (localStorage.getItem(key) === 'shown') {
+      NiceModal.show(WakePopup);
+    }
+  }, [currentPlayer]);
+
   useEffect(() => {
     let running = false;
     const syncDay = async () => {
@@ -92,17 +114,33 @@ export default function GameHub() {
       running = true;
       try {
         const player = await databaseConnection.getCurrentPlayer();
-        if (!player?.createdAt) return;
+        if (!player?.createdAt) {
+          // No profile exists yet — show the profile creator so the user can
+          // set up their first profile. ProfileSwitcher handles null currentPlayer
+          // gracefully and chains into WakePopup after creation.
+          NiceModal.show(ProfileSwitcher, { skipPurgatory: true });
+          return;
+        }
 
         const lastEvent    = await databaseConnection.getLastEventType([EVENT.wake, EVENT.end_work, EVENT.sleep], player.UUID);
         const midnight     = getMidnightOfDate(getLocalDate(new Date()));
         const todayStr     = getLocalDateStr();
-        const mkKey        = (uid, dateStr) => `tapestry_eod_${uid}_${dateStr}`;
+        const dayKey       = `${player.UUID}_${todayStr}`;
+        const eodKeyMaker  = (uid, dateStr) => `tapestry_eod_${uid}_${dateStr}`;
+        const wakePendingKey = getWakePendingStorageKey(player.UUID, todayStr);
 
-        // ── No history yet: first launch ──────────────────────────
+        const showWakePopupOnce = () => {
+          if (dayFireLatch.wakePopupShown === dayKey) return;
+          dayFireLatch.wakePopupShown = dayKey;
+          localStorage.setItem(wakePendingKey, 'shown');
+          NiceModal.show(WakePopup);
+        };
+
+        // ── No history yet: brand new player ──────────────────────
+        // Even first-ever launch goes through WakePopup. The new day starts
+        // when the user confirms — never silently.
         if (!lastEvent) {
-          await startDay(databaseConnection, player);
-          refreshApp();
+          showWakePopupOnce();
           return;
         }
 
@@ -111,43 +149,44 @@ export default function GameHub() {
         // ── Last event is from a previous day ─────────────────────
         if (lastEventDate < midnight) {
           if (lastEvent.type === EVENT.sleep) {
-            // Slept before midnight on a previous day → normal new-day start
+            // Slept properly. Route directly to WakePopup so the player can
+            // confirm the new day whenever they're ready. (Purgatory removed.)
+            showWakePopupOnce();
             sleepCheckFiredRef.current = false;
-            await startDay(databaseConnection, player);
-            refreshApp();
           } else {
-            // Missed deadline: app wasn't open during the sleep→midnight window.
-            // Show profile picker once, then startDay immediately (no purgatory
-            // since that interval has already passed).
+            // Missed deadline: app wasn't open during the sleep→wake window.
+            // Backfill the sleep event, forfeit tokens, route to ProfileSwitcher
+            // with skipPurgatory so the new day starts as soon as a profile is
+            // chosen (ProfileSwitcher will hand off to WakePopup).
             const eodDateStr = getLocalDateStr(lastEvent.createdAt);
-            const key        = mkKey(player.UUID, eodDateStr);
+            const key        = eodKeyMaker(player.UUID, eodDateStr);
             const choice     = localStorage.getItem(key);
             if (!choice) {
+              if (dayFireLatch.endDayFired === `${player.UUID}_${eodDateStr}`) return;
+              dayFireLatch.endDayFired = `${player.UUID}_${eodDateStr}`;
               const backfilledSleepDate = getBackfilledSleepDate(player.sleepTime, lastEvent.createdAt);
               await endDay(databaseConnection, player, true, backfilledSleepDate.toISOString());
-              notify({ title: 'Missed Bedtime', message: 'Your sleep time passed without ending the day. All tokens forfeited.', kind: 'error', persist: true });
+              notifyRef.current({ title: 'Missed Bedtime', message: 'Your sleep time passed without ending the day. All tokens forfeited.', kind: 'error', persist: true });
               NiceModal.show(ProfileSwitcher, { skipPurgatory: true, eodDateStr });
             } else if (choice === 'chosen') {
-              // User already picked their profile on this session — finish starting.
-              await startDay(databaseConnection, player);
-              refreshApp();
+              // User already picked their profile — route to WakePopup.
+              showWakePopupOnce();
             }
-            // 'starting' means ProfileSwitcher already kicked off startDay — do nothing.
+            // 'starting' means the flow is mid-handoff — do nothing.
           }
           return;
         }
 
         // ── Last event is from today ──────────────────────────────
         if (lastEvent.type === EVENT.sleep) {
-          // We're between sleep time and midnight (purgatory window).
+          // We're between today's sleep time and tomorrow's wake time.
           const eodDateStr = getLocalDateStr(lastEvent.createdAt);
-          const key        = mkKey(player.UUID, eodDateStr);
+          const key        = eodKeyMaker(player.UUID, eodDateStr);
           const choice     = localStorage.getItem(key);
           if (choice) {
-            // User already made their end-of-day choice — just re-show purgatory.
-            NiceModal.show(Purgatory);
+            // User already confirmed end-of-day choice — show WakePopup.
+            showWakePopupOnce();
           } else {
-            // Show the profile switcher (handles first show + reload before choice).
             NiceModal.show(ProfileSwitcher, { skipPurgatory: false, eodDateStr });
           }
           return;
@@ -157,13 +196,16 @@ export default function GameHub() {
         if (!sleepCheckFiredRef.current) {
           const sleepDate = getSleepDateToday(player.sleepTime);
           if (sleepDate && Date.now() >= sleepDate.getTime()) {
+            // Latch BEFORE the await to prevent re-entrancy on the next tick.
             sleepCheckFiredRef.current = true;
             const eodDateStr = todayStr;
-            const key        = mkKey(player.UUID, eodDateStr);
+            if (dayFireLatch.endDayFired === `${player.UUID}_${eodDateStr}`) return;
+            dayFireLatch.endDayFired = `${player.UUID}_${eodDateStr}`;
+            const key        = eodKeyMaker(player.UUID, eodDateStr);
             const choice     = localStorage.getItem(key);
             if (!choice) {
               await endDay(databaseConnection, player, true);
-              notify({ title: 'Sleep Time', message: 'Your scheduled bedtime has passed. All tokens forfeited.', kind: 'error', persist: true });
+              notifyRef.current({ title: 'Sleep Time', message: 'Your scheduled bedtime has passed. All tokens forfeited.', kind: 'error', persist: true });
               NiceModal.show(ProfileSwitcher, { skipPurgatory: false, eodDateStr });
             } else {
               NiceModal.show(Purgatory);
@@ -175,7 +217,7 @@ export default function GameHub() {
       }
     };
     syncDay();
-  }, [databaseConnection, timestamp, notify, refreshApp, getLocalDateStr]);
+  }, [databaseConnection, timestamp, getLocalDateStr]);
 
   const handleNavClick = (id) => {
     if (id !== 'journal') forceCloseJournal();
@@ -199,9 +241,11 @@ export default function GameHub() {
 
   const renderPanel = () => {
     if (!activePanel) return null;
-    const isFull = activePanel === 'shop' || activePanel === 'profile' || activePanel === 'feed';
+    const isFull = activePanel === 'shop' || activePanel === 'profile' || activePanel === 'feed' || activePanel === 'events';
     let content = null;
     if (activePanel === 'tasks')     content = <TodoList />;
+    if (activePanel === 'queue')     content = <TodoList fromQueue />;
+    if (activePanel === 'events')    content = <Events />;
     if (activePanel === 'chat')      content = <GlobalChat />;
     if (activePanel === 'feed')      content = <Feed />;
     if (activePanel === 'shop')      content = <Shop />;

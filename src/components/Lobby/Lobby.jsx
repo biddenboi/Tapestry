@@ -3,10 +3,11 @@ import { v4 as uuid } from 'uuid';
 import NiceModal from '@ebay/nice-modal-react';
 import { AppContext } from '../../App.jsx';
 import { EVENT, GAME_STATE, MATCH_STATUS, STORES } from '../../utils/Constants.js';
-import { endWorkDay } from '../../utils/Helpers/Events.js';
+import { endWorkDay, fireFirstMatchIfDue, checkEntertainmentAndLog } from '../../utils/Helpers/Events.js';
 import { buildGhostRoster, hydrateMatchTeams } from '../../utils/Helpers/Match.js';
 import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } from '../../utils/Helpers/Rank.js';
 import EndDayConfirm from '../../Modals/EndDayConfirm/EndDayConfirm.jsx';
+import BanModal from '../../Modals/BanModal/BanModal.jsx';
 import MatchDetailsModal from '../../Modals/MatchDetailsModal/MatchDetailsModal.jsx';
 import TaskCreationMenu from '../../Modals/TaskCreationMenu/TaskCreationMenu.jsx';
 import ProfilePicture from '../ProfilePicture/ProfilePicture.jsx';
@@ -299,6 +300,14 @@ export default function Lobby() {
         result: null,
       };
       await databaseConnection.add(STORES.match, match);
+      // Fire the First Match-of-the-Day special event if applicable. Idempotent
+      // for the IGT day — only fires once. Failures here must not block the
+      // match from starting.
+      try {
+        await fireFirstMatchIfDue(databaseConnection, currentPlayer, Date.now());
+      } catch (err) {
+        console.warn('[Lobby] first-match buff failed:', err);
+      }
       setActiveMatch(match); setGameState(GAME_STATE.match); setShowSetup(false); refreshApp();
     } finally { setLoadingMatch(false); }
   };
@@ -364,9 +373,31 @@ export default function Lobby() {
             <button className="lpc-btn" onClick={() => openPanel('profile', currentPlayer?.UUID)}>PROFILE</button>
             <div className="lpc-divider" />
             {isWorkDay
-              ? <button className="lpc-btn" onClick={async () => { await endWorkDay(databaseConnection, currentPlayer); refreshApp(); }}>END WORK DAY</button>
+              ? <button className="lpc-btn" onClick={async () => {
+                  await endWorkDay(databaseConnection, currentPlayer);
+                  // Evaluate Work Day Discipline immediately after end_work fires
+                  // so the buff is live for any post-work matches today.
+                  try { await checkEntertainmentAndLog(databaseConnection, currentPlayer); }
+                  catch (err) { console.warn('[Lobby] entertainment check failed:', err); }
+                  refreshApp();
+                }}>END WORK DAY</button>
               : <button className="lpc-btn danger" onClick={() => NiceModal.show(EndDayConfirm)}>END DAY</button>
             }
+            {/* ── Ban / wipe profile ─────────────────────────────
+                Quietly distinct from the action stack above — its
+                own hairline divider and a muted-red border — so it
+                reads as a different class of action without
+                shouting. */}
+            <div className="lpc-ban-zone">
+              <button
+                className="lpc-btn lpc-btn-ban"
+                onClick={() => NiceModal.show(BanModal)}
+                title="Permanently wipe this profile"
+              >
+                <span className="lpc-btn-ban-glyph" aria-hidden="true">⊗</span>
+                <span>BAN</span>
+              </button>
+            </div>
           </div>
         </aside>
 

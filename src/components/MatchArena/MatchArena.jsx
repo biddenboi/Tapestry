@@ -719,7 +719,7 @@ export default function MatchArena() {
           {!matchEnded ? (
             <>
               <button onClick={() => NiceModal.show(TaskCreationMenu)}>+ TASK</button>
-              <button onClick={() => openPanel('tasks')}>QUEUE</button>
+              <button onClick={() => openPanel('queue')}>QUEUE</button>
               <button className="primary" onClick={async () => {
                 if (!nextTodo || inTask) return;
                 setActiveTask({ ...nextTodo, originalDuration: Number(nextTodo.estimatedDuration || 0) });

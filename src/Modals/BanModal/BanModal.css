@@ -1,0 +1,499 @@
+/* ════════════════════════════════════════════════════════════
+   BAN MODAL — solemn / sad register, not alarmed.
+
+   What's deliberately absent: hazard chevrons, scan lines, glyph
+   flicker, card pulses, button pulses. Those all read as "fire
+   alarm" — wrong tone for an action whose weight is grief, not
+   urgency. What remains: heavy darkness, a single thin red
+   horizon line, generous space, and a slow staged goodbye when
+   the wipe completes.
+════════════════════════════════════════════════════════════ */
+
+.ban-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200; /* above confirm modals (170) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Heavier blanker than confirm — blacker, more saturated blur.
+   Reads like the rest of the room dimming so attention narrows
+   to the card. */
+.ban-blanker {
+  background-color: rgba(2, 0, 1, 0.94);
+  backdrop-filter: blur(10px) saturate(1.05);
+  transition: opacity 0.5s ease-out;
+}
+
+/* ── Card ──────────────────────────────────────────────────── */
+.ban-card {
+  position: relative;
+  z-index: 1;
+  width: min(540px, 92vw);
+  max-height: 92vh;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 61, 87, 0.22);
+  /* Vignette: a deep black drop with a faint red haze. Static —
+     no pulse. The card just sits there, heavy. */
+  box-shadow:
+    0 0 0 1px rgba(255, 61, 87, 0.08),
+    0 0 60px rgba(120, 20, 36, 0.18),
+    0 28px 72px rgba(0, 0, 0, 0.9);
+  animation: modal-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Phase 2 is slightly weightier — a touch more border presence —
+   but still no animation, no pulse. */
+.ban-card--final {
+  border-color: rgba(255, 61, 87, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(255, 61, 87, 0.12),
+    0 0 70px rgba(120, 20, 36, 0.24),
+    0 28px 72px rgba(0, 0, 0, 0.92);
+}
+
+/* ── Horizon line ─────────────────────────────────────────── */
+/* The card's only chrome: a single thin red rule across the top
+   edge, fading out at both ends. Reads like the last light of
+   dusk. Static. */
+.ban-horizon {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 61, 87, 0.0) 4%,
+    rgba(255, 61, 87, 0.55) 50%,
+    rgba(255, 61, 87, 0.0) 96%,
+    transparent 100%);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+/* Tiny sentence-case label, generous padding, hairline bottom
+   border. No banners, no caps, no glyph. Orientation only. */
+.ban-header {
+  padding: 14px 28px 12px;
+  border-bottom: 1px solid rgba(255, 61, 87, 0.14);
+}
+.ban-header-label {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 138, 152, 0.75);
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+.ban-body {
+  position: relative;
+  padding: 24px 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+.ban-body--final { gap: 18px; }
+
+/* ── Headline / prose ─────────────────────────────────────── */
+.ban-headline {
+  font-family: var(--font-ui), 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-bright);
+  line-height: 1.2;
+  margin: 2px 0 2px;
+}
+
+.ban-prose {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--text);
+}
+.ban-prose--note {
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 61, 87, 0.22);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Rules list ───────────────────────────────────────────── */
+/* Quieter than before — flat surface, single muted-red dot for
+   each marker, no left bar, no hover. Reads like a printed list,
+   not a hazard sign. */
+.ban-rules {
+  list-style: none;
+  margin: 2px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ban-rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 4px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.ban-rule-marker {
+  flex: 0 0 auto;
+  color: rgba(255, 61, 87, 0.7);
+  font-size: 14px;
+  line-height: 1.4;
+  margin-top: 1px;
+  letter-spacing: 0;
+}
+
+/* ── Consequence box (phase 1 closing call-out) ───────────── */
+.ban-consequence {
+  margin-top: 4px;
+  padding: 14px 16px;
+  background: rgba(255, 61, 87, 0.04);
+  border: 1px solid rgba(255, 61, 87, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ban-consequence-label {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: rgba(255, 138, 152, 0.85);
+  text-transform: none;
+}
+.ban-consequence p {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* ── PHASE 2 — Ledger of records to be erased ─────────────── */
+.ban-ledger {
+  background: rgba(8, 0, 2, 0.4);
+  border: 1px solid rgba(255, 61, 87, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.ban-ledger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 61, 87, 0.12);
+}
+.ban-ledger-eyebrow {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 138, 152, 0.75);
+}
+.ban-ledger-target {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ban-ledger-rows {
+  display: flex;
+  flex-direction: column;
+}
+.ban-ledger-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 14px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text);
+}
+.ban-ledger-row + .ban-ledger-row {
+  border-top: 1px solid rgba(255, 61, 87, 0.06);
+}
+.ban-ledger-label {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+.ban-ledger-dots {
+  flex: 1 1 auto;
+  height: 1px;
+  background-image: radial-gradient(circle, rgba(255, 61, 87, 0.25) 1px, transparent 1.5px);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+  background-position: left center;
+  align-self: center;
+  opacity: 0.7;
+}
+.ban-ledger-count {
+  flex: 0 0 auto;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-bright);
+  min-width: 48px;
+  text-align: right;
+}
+.ban-ledger-row--empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12.5px;
+}
+
+/* ── PHASE 2 — Username confirmation block ────────────────── */
+.ban-confirm-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ban-confirm-label {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.ban-username-display {
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  background: rgba(8, 0, 2, 0.5);
+  border: 1px solid rgba(255, 61, 87, 0.22);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  color: var(--text-bright);
+  /* Block selection so the user has to actually type, not paste */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+.ban-username-text {
+  letter-spacing: 0.03em;
+  word-break: break-all;
+}
+
+.ban-confirm-input {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 61, 87, 0.22);
+  color: var(--text-bright);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.ban-confirm-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.ban-confirm-input:focus {
+  border-color: rgba(255, 61, 87, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 61, 87, 0.1);
+}
+.ban-confirm-input.is-match {
+  border-color: rgba(255, 61, 87, 0.7);
+  background: rgba(255, 61, 87, 0.04);
+}
+
+/* ── Footer & buttons ─────────────────────────────────────── */
+.ban-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 61, 87, 0.1);
+}
+
+/* Return — neutral exit, doesn't compete. */
+.ban-btn-secondary {
+  padding: 9px 18px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-ui), 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  clip-path: none;
+}
+.ban-btn-secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.ban-btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* I understand — phase-1 forward action. Outlined, not filled.
+   Reads as a deliberate, considered step, not a button you bang
+   on in panic. */
+.ban-btn-advance {
+  padding: 9px 18px;
+  background: transparent;
+  border: 1px solid rgba(255, 61, 87, 0.5);
+  color: rgba(255, 138, 152, 0.95);
+  font-family: var(--font-ui), 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  clip-path: none;
+}
+.ban-btn-advance:hover {
+  background: rgba(255, 61, 87, 0.06);
+  border-color: rgba(255, 61, 87, 0.7);
+  color: #ffd0d6;
+}
+
+/* Delete forever — phase-2 final action. Disabled is grim and
+   inert. Armed is a muted red fill (NOT bright), no animation,
+   no pulse — the weight comes from the act, not the styling. */
+.ban-btn-final {
+  padding: 10px 22px;
+  background: rgba(40, 8, 14, 0.6);
+  border: 1px solid rgba(255, 61, 87, 0.2);
+  color: rgba(255, 61, 87, 0.35);
+  font-family: var(--font-ui), 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: not-allowed;
+  transition: all 0.25s ease;
+  clip-path: none;
+}
+.ban-btn-final.is-armed {
+  background: rgba(140, 28, 44, 0.85);
+  border-color: rgba(255, 61, 87, 0.55);
+  color: #fff5f6;
+  cursor: pointer;
+}
+.ban-btn-final.is-armed:hover {
+  background: rgba(170, 38, 56, 0.92);
+  border-color: rgba(255, 138, 152, 0.7);
+}
+.ban-btn-final:disabled { cursor: not-allowed; }
+
+/* ════════════════════════════════════════════════════════════
+   CLOSING ANIMATION — staged goodbye after a successful wipe.
+
+   Three layers, played in sequence:
+     0.0–0.7s   body contents fade out
+     0.2–1.3s   card opacity, slight downward drift, subtle
+                darkening
+     0.55–1.4s  blanker fades, finally revealing the app
+                underneath which is about to refresh.
+
+   No bounce, no scale-up, no easter-egg flash. Just dimming,
+   like the lights going out on a chapter. Total ~1.4s, matched
+   in JS by CLOSE_ANIM_MS.
+════════════════════════════════════════════════════════════ */
+.ban-card--closing {
+  animation: ban-card-leave 1.1s 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+.ban-card--closing .ban-body {
+  animation: ban-body-leave 0.7s ease-out forwards;
+}
+.ban-card--closing .ban-header,
+.ban-card--closing .ban-horizon {
+  animation: ban-body-leave 0.9s 0.1s ease-out forwards;
+}
+.ban-blanker--closing {
+  animation: ban-blanker-leave 1.4s ease-out forwards;
+}
+
+@keyframes ban-body-leave {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes ban-card-leave {
+  0%   { opacity: 1; transform: translateY(0)   scale(1);     filter: brightness(1); }
+  60%  { opacity: 0.55;                                       filter: brightness(0.65); }
+  100% { opacity: 0; transform: translateY(8px) scale(0.985); filter: brightness(0.35); }
+}
+
+@keyframes ban-blanker-leave {
+  0%   { opacity: 1; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   LOBBY BAN BUTTON — quietly distinct. No "DANGER ZONE" label,
+   no hazard chevrons. Just a muted-red button that sits with
+   its neighbors but reads as a different class of action when
+   you actually look at it.
+════════════════════════════════════════════════════════════ */
+.lpc-ban-zone {
+  position: relative;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 61, 87, 0.1);
+}
+
+.lpc-btn-ban {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 61, 87, 0.22);
+  color: rgba(255, 61, 87, 0.75);
+  letter-spacing: 0.16em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Inherits the global button clip-path from index.css — keeps it
+     visually consistent with the rest of the action stack. */
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lpc-btn-ban:hover:not(:disabled) {
+  background: rgba(255, 61, 87, 0.06);
+  border-color: rgba(255, 61, 87, 0.5);
+  color: #ffd0d6;
+  box-shadow: 0 0 12px rgba(255, 61, 87, 0.18);
+}
+
+.lpc-btn-ban .lpc-btn-ban-glyph {
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(255, 61, 87, 0.7);
+  opacity: 0.85;
+}
+.lpc-btn-ban:hover:not(:disabled) .lpc-btn-ban-glyph {
+  color: #ffd0d6;
+  opacity: 1;
+}
+
+/* ────── Light-theme adjustments ──────────────────────────── */
+[data-theme="sand"]  .ban-blanker,
+[data-theme="pure"]  .ban-blanker,
+[data-theme="paper"] .ban-blanker,
+[data-theme="rose"]  .ban-blanker {
+  background-color: rgba(40, 0, 8, 0.55);
+}

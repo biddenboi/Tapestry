@@ -54,6 +54,38 @@ export const getMsUntilMidnight = () => {
   return midnight.getTime() - now.getTime();
 };
 
+/**
+ * Milliseconds remaining until the player's wakeTime ("HH:MM").
+ * If wakeTime is already past for today, returns ms until that time tomorrow.
+ * Returns 0 for falsy / invalid input so callers can treat it as "fire immediately".
+ */
+export const getMsUntilWakeTime = (wakeTime) => {
+  if (!wakeTime || typeof wakeTime !== 'string') return 0;
+  const [h, m] = wakeTime.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(h, m, 0, 0);
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target.getTime() - now.getTime();
+};
+
+/**
+ * Wall-clock Date for the player's wakeTime ("HH:MM") on a given calendar day.
+ * Returns null on invalid input. Used to compute the wake-time delta when the
+ * player confirms ENTER DAY.
+ */
+export const getWakeDateForDate = (wakeTime, baseDate = new Date()) => {
+  if (!wakeTime || typeof wakeTime !== 'string') return null;
+  const [h, m] = wakeTime.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  const d = new Date(baseDate);
+  d.setHours(h, m, 0, 0);
+  return d;
+};
+
 export const formatDateAsLocalString = (date) => {
   const d = date instanceof Date ? date : new Date(date);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;

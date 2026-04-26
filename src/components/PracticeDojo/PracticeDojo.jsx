@@ -107,7 +107,7 @@ export default function PracticeDojo() {
                 </div>
                 <div className="dojo-header-right">
                     <button className="dojo-add-btn" onClick={handleAddTask}>+ TASK</button>
-                    <button className="dojo-queue-btn" onClick={() => openPanel('tasks')}>QUEUE ({todoCount})</button>
+                    <button className="dojo-queue-btn" onClick={() => openPanel('queue')}>QUEUE ({todoCount})</button>
                     <button
                         className="dojo-exit-btn danger"
                         onClick={handleExitDojo}

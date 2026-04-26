@@ -1,0 +1,1224 @@
+/* ════════════════════════════════════════════════════════════════════
+   EVENTS PAGE
+   Full-page (hub-panel--full). Steel-blue cyberpunk family. Each event
+   is a wide horizontal strip; clicking enters a "subquest" detail page
+   themed by that event's banner + accent. CSS variables only.
+   ════════════════════════════════════════════════════════════════════ */
+
+.evt-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: var(--bg);
+    padding-top: 52px;            /* clearance for the close (×) overlay */
+    /* Each event/section binds these locally; defaults pick up theme accent */
+    --evt-accent: var(--accent-bright);
+    --evt-accent-soft: var(--accent-glow);
+    --evt-accent-border: var(--accent-border);
+}
+
+/* ── Top header: title + day stat + new-button ────────────────── */
+.evt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 28px 12px 22px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 14px;
+}
+
+.evt-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    min-width: 0;
+}
+
+.evt-header-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    position: relative;
+    padding-left: 14px;
+}
+.evt-header-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.evt-header-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.evt-header-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+    clip-path: polygon(
+        0 0, calc(100% - 7px) 0, 100% 7px,
+        100% 100%, 7px 100%, 0 calc(100% - 7px)
+    );
+}
+.evt-header-add:hover {
+    background: rgba(0, 214, 143, 0.12);
+    box-shadow: 0 0 14px rgba(0, 214, 143, 0.3);
+}
+
+/* ── Tabs (AVAILABLE / ACTIVE) ───────────────────────────────── */
+.evt-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 22px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+}
+
+.evt-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 22px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.evt-tab:hover {
+    color: var(--text);
+    border-color: var(--border);
+    background: var(--bg-card);
+    box-shadow: none;
+}
+.evt-tab.active {
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    background: var(--accent-glow);
+}
+
+.evt-tab-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    background: var(--bg-raised);
+    color: var(--text);
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+}
+.evt-tab.active .evt-tab-count {
+    background: var(--accent);
+    color: var(--bg-void);
+}
+
+/* ── List body: vertical scroll of horizontal strip cards ───── */
+.evt-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Empty-state block */
+.evt-empty {
+    margin-top: 80px;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 32px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.evt-empty-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-bright);
+    margin: 0 0 8px;
+}
+.evt-empty-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* ── EVENT CARD — wide horizontal strip ─────────────────────── */
+.evt-card {
+    display: grid;
+    grid-template-columns: 320px 1fr auto;
+    align-items: stretch;
+    width: 100%;
+    min-height: 124px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    transition: border-color 0.15s, box-shadow 0.18s, transform 0.18s;
+    /* Subtle clip echoing other Tapestry surfaces */
+    clip-path: polygon(
+        0 0, calc(100% - var(--clip-md)) 0,
+        100% var(--clip-md), 100% 100%,
+        var(--clip-md) 100%, 0 calc(100% - var(--clip-md))
+    );
+}
+
+.evt-card:hover {
+    border-color: var(--evt-accent-border);
+    box-shadow: 0 0 24px var(--evt-accent-soft), 0 6px 20px rgba(0, 0, 0, 0.45);
+    transform: translateY(-1px);
+}
+
+.evt-card-banner {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 14px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bg-raised);
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+}
+.evt-card-banner-tint {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.18) 0%,
+        rgba(0, 0, 0, 0.02) 50%,
+        rgba(0, 0, 0, 0.55) 100%
+    );
+    pointer-events: none;
+}
+.evt-card-banner > * { position: relative; z-index: 1; }
+
+.evt-card-banner-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.18);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    letter-spacing: 0.18em;
+    user-select: none;
+}
+
+.evt-type-badge {
+    display: inline-block;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--evt-accent-border);
+    color: var(--evt-accent);
+    backdrop-filter: blur(2px);
+}
+.evt-type-special {
+    color: var(--gold);
+    border-color: rgba(255, 184, 0, 0.5);
+}
+
+/* Body of the strip — name, description, tag chips */
+.evt-card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 14px 20px;
+    min-width: 0;
+    gap: 6px;
+}
+.evt-card-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-bright);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.evt-card-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-muted);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.evt-card-meta {
+    display: flex;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+}
+.evt-card-meta-pill {
+    padding: 2px 8px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+}
+
+/* Right-side stat block */
+.evt-card-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 14px 22px 14px 18px;
+    border-left: 1px solid var(--border-subtle);
+    background: linear-gradient(180deg, var(--bg-card), var(--bg-surface));
+    min-width: 180px;
+    gap: 4px;
+}
+.evt-card-side-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--evt-accent);
+    line-height: 1;
+    text-shadow: 0 0 14px var(--evt-accent-soft);
+    letter-spacing: 0.02em;
+}
+.evt-card-side-num-of {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-left: 1px;
+}
+.evt-card-side-num--dim { color: var(--text-dim); text-shadow: none; }
+.evt-card-side-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.evt-card-side-buff {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+}
+.evt-card-side-buff--dim { color: var(--text-dim); }
+
+/* ════════════════════════════════════════════════════════════════════
+   DETAIL VIEW — "Subquest" mode. Banner image / accent define the page.
+   ════════════════════════════════════════════════════════════════════ */
+.evt-detail {
+    background: var(--bg-void);
+}
+
+/* The hero banner stretches edge-to-edge under the back bar */
+.evt-detail-hero {
+    position: relative;
+    height: 240px;
+    background-color: var(--bg-raised);
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid var(--evt-accent-border);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.evt-detail-hero-tint {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, var(--bg-void) 100%),
+        radial-gradient(ellipse at top right, var(--evt-accent-soft), transparent 60%);
+    pointer-events: none;
+}
+.evt-detail-hero-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 20px 32px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1;
+}
+.evt-detail-hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--evt-accent);
+}
+.evt-detail-hero-eyebrow .evt-type-badge { background: rgba(0,0,0,0.6); }
+.evt-detail-hero-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-bright);
+    margin: 0;
+    line-height: 1.1;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+}
+.evt-detail-hero-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    max-width: 720px;
+    margin: 0;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Top action bar: back / style / edit */
+.evt-detail-back-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px 12px 22px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+}
+.evt-detail-back-actions {
+    display: flex;
+    gap: 8px;
+}
+.evt-back-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: color 0.14s, border-color 0.14s;
+    clip-path: none;
+}
+.evt-back-btn:hover {
+    color: var(--accent-bright);
+    border-color: var(--accent-border);
+    background: transparent;
+    box-shadow: none;
+}
+
+.evt-pill-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.14s;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+.evt-pill-btn:hover {
+    border-color: var(--evt-accent-border);
+    color: var(--evt-accent);
+    background: var(--evt-accent-soft);
+    box-shadow: none;
+}
+.evt-pill-btn.danger { color: var(--red); border-color: rgba(255, 61, 87, 0.32); }
+.evt-pill-btn.danger:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+/* ── Detail body — single or split column ───────────────────── */
+.evt-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px 40px;
+    display: grid;
+    gap: 24px;
+}
+.evt-detail-body--split {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+.evt-detail-body--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+.evt-detail-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* Stat block — 3-cell horizontal grid */
+.evt-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+}
+.evt-stat-block {
+    background: var(--bg-card);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.evt-stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--evt-accent);
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+.evt-stat-num-of {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 2px;
+}
+.evt-stat-num--dim { color: var(--text-dim); }
+.evt-stat-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Primary action button */
+.evt-action-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 13px 20px;
+    background: var(--evt-accent);
+    border: 1px solid var(--evt-accent);
+    color: var(--bg-void);
+    cursor: pointer;
+    transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+.evt-action-btn:hover { box-shadow: 0 0 18px var(--evt-accent-soft); transform: translateY(-1px); }
+.evt-action-btn--done {
+    background: transparent;
+    border-color: var(--green);
+    color: var(--green);
+    cursor: default;
+}
+.evt-action-btn--done:hover { transform: none; box-shadow: none; }
+.evt-action-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Quantity logging row */
+.evt-quant-log {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+}
+.evt-quant-log-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+.evt-quant-input {
+    width: 100px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 0.04em;
+}
+.evt-quant-input:focus { outline: 1px solid var(--evt-accent); }
+.evt-quant-log-row .evt-action-btn { flex: 1; }
+
+/* Section block */
+.evt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.evt-section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--evt-accent);
+    margin: 0;
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.evt-section-title::before {
+    content: '';
+    width: 3px; height: 11px;
+    background: var(--evt-accent);
+    border-radius: 2px;
+}
+.evt-detail-note {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin: 0;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border-left: 2px solid var(--evt-accent-border);
+}
+
+/* ── Timeline ribbon ────────────────────────────────────────── */
+.evt-timeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 24px);
+    gap: 4px;
+    padding: 8px 0 4px;
+}
+.evt-tl-cell {
+    width: 24px; height: 24px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    transition: transform 0.12s;
+    cursor: default;
+}
+.evt-tl-cell:hover { transform: scale(1.15); }
+.evt-tl-cell--success {
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 6px rgba(0, 214, 143, 0.45);
+}
+.evt-tl-cell--failure {
+    background: var(--red-dim);
+    border-color: rgba(255, 61, 87, 0.45);
+}
+.evt-tl-cell--today {
+    border-color: var(--evt-accent);
+    border-style: dashed;
+    animation: evt-pulse 2s ease-in-out infinite;
+}
+.evt-tl-cell--today-done {
+    background: var(--green);
+    border: 2px solid var(--evt-accent);
+    box-shadow: 0 0 8px var(--evt-accent-soft);
+}
+.evt-tl-cell--future { background: transparent; border-style: dotted; opacity: 0.45; }
+
+@keyframes evt-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--evt-accent-soft); }
+    50%      { box-shadow: 0 0 8px 2px var(--evt-accent-soft); }
+}
+
+/* ── History list ───────────────────────────────────────────── */
+.evt-history {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border);
+    max-height: 420px;
+    overflow-y: auto;
+}
+.evt-history-row {
+    display: grid;
+    grid-template-columns: 80px 32px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+}
+.evt-history-row--failure .evt-history-status { color: var(--red); }
+.evt-history-row .evt-history-status { color: var(--green); }
+.evt-history-day {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+}
+.evt-history-pp { display: flex; align-items: center; }
+.evt-history-status {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.evt-history-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+    letter-spacing: 0.04em;
+}
+.evt-history-meta--mult { color: var(--evt-accent); }
+.evt-history-empty {
+    padding: 18px 16px;
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    text-align: center;
+    list-style: none;
+}
+
+/* ── Profile leaderboard (right column) ──────────────────────── */
+.evt-leader {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.evt-leader-head {
+    padding: 14px 16px 12px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.evt-leader-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--evt-accent);
+}
+.evt-leader-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.evt-leader-list {
+    display: flex;
+    flex-direction: column;
+}
+.evt-leader-row {
+    display: grid;
+    grid-template-columns: 32px 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    transition: background 0.12s;
+}
+.evt-leader-row:last-child { border-bottom: none; }
+.evt-leader-row--self {
+    background: var(--evt-accent-soft);
+    border-left: 2px solid var(--evt-accent);
+}
+.evt-leader-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+.evt-leader-row--self .evt-leader-rank { color: var(--evt-accent); }
+.evt-leader-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.03em;
+}
+.evt-leader-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--evt-accent);
+    letter-spacing: 0.04em;
+}
+.evt-leader-gap {
+    text-align: center;
+    padding: 6px 0;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.evt-leader-empty {
+    padding: 22px 16px;
+    color: var(--text-muted);
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+}
+
+/* ── Profile contribution bars ──────────────────────────────── */
+.evt-contrib {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+.evt-contrib-row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 80px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+}
+.evt-contrib-row:last-child { border-bottom: none; }
+.evt-contrib-row--self { background: var(--evt-accent-soft); }
+.evt-contrib-name-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+.evt-contrib-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.evt-contrib-bar {
+    height: 6px;
+    background: var(--bg-raised);
+    overflow: hidden;
+}
+.evt-contrib-bar-fill {
+    height: 100%;
+    background: var(--evt-accent);
+    box-shadow: 0 0 8px var(--evt-accent-soft);
+    transition: width 0.3s;
+}
+.evt-contrib-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--evt-accent);
+    text-align: right;
+    letter-spacing: 0.04em;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FORM (create / edit)
+   ════════════════════════════════════════════════════════════════════ */
+.evt-form-pick {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+.evt-form-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-bright);
+    margin: 8px 0 0;
+}
+.evt-form-pick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: 100%;
+    max-width: 760px;
+}
+.evt-form-pick-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 22px 22px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.evt-form-pick-card:hover {
+    border-color: var(--accent-border);
+    box-shadow: 0 0 22px var(--accent-glow);
+    transform: translateY(-2px);
+}
+.evt-form-pick-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+}
+.evt-form-pick-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-bright);
+    letter-spacing: 0.02em;
+}
+.evt-form-pick-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    margin: 0;
+}
+.evt-form-pick-range {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-top: auto;
+    padding-top: 6px;
+}
+
+.evt-form {
+    flex: 1;
+    overflow-y: auto;
+    padding: 26px 28px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 880px;
+    width: 100%;
+    align-self: center;
+}
+.evt-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.evt-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.evt-form-field > span {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.evt-form-field input[type="text"],
+.evt-form-field input[type="number"],
+.evt-form-field textarea {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    transition: border-color 0.14s, box-shadow 0.14s;
+    width: 100%;
+    box-sizing: border-box;
+}
+.evt-form-field input:focus,
+.evt-form-field textarea:focus {
+    outline: none;
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 1px var(--accent-border), 0 0 14px var(--accent-glow);
+}
+.evt-form-field textarea { resize: vertical; min-height: 56px; }
+
+.evt-form-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+.evt-form-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: var(--accent-bright);
+    border: 1px solid var(--bg-void);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+.evt-form-slider::-moz-range-thumb {
+    width: 16px; height: 16px;
+    background: var(--accent-bright);
+    border: 1px solid var(--bg-void);
+    cursor: pointer;
+}
+.evt-form-hint {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.evt-form-fieldset {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.evt-form-fieldset legend {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    padding: 0 8px;
+}
+
+.evt-color-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.evt-color-row input[type="color"] {
+    width: 40px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 0;
+}
+.evt-color-row input[type="text"] { flex: 1; }
+
+/* Banner image upload area */
+.evt-banner-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.evt-banner-preview {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bg-raised);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+.evt-banner-preview-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+.evt-banner-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.evt-banner-file-input { display: none; }
+.evt-banner-file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--accent-border);
+    color: var(--accent-bright);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.14s;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+.evt-banner-file-label:hover {
+    background: var(--accent-glow);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+.evt-banner-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.14s;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+.evt-banner-clear:hover { color: var(--red); border-color: rgba(255, 61, 87, 0.4); }
+.evt-banner-hint {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: 0;
+}
+
+.evt-form-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 8px;
+}
+.evt-form-footer-spacer { flex: 1; }
+.evt-form-confirm {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 61, 87, 0.4);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text-bright);
+}
+.evt-form-confirm > button { padding: 6px 12px; font-size: 11px; }
+.evt-form-delete {
+    background: transparent;
+    color: var(--red);
+    border-color: rgba(255, 61, 87, 0.32);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+    transition: all 0.14s;
+}
+.evt-form-delete:hover { background: var(--red-dim); border-color: var(--red); }
+
+.evt-form button {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 9px 18px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.14s;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.evt-form button:hover { border-color: var(--accent-border); color: var(--accent-bright); background: var(--accent-glow); }
+.evt-form button.primary { background: var(--accent); border-color: var(--accent); color: var(--bg-void); }
+.evt-form button.primary:hover { background: var(--accent-bright); box-shadow: 0 0 16px var(--accent-glow); }
+.evt-form button.danger { background: transparent; color: var(--red); border-color: rgba(255, 61, 87, 0.5); }
+.evt-form button.danger:hover { background: var(--red-dim); border-color: var(--red); }
+.evt-form button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Style preview block (used inside form + style page) */
+.evt-style-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+}
+
+/* ── Responsive: collapse split layout on narrow viewports ──── */
+@media (max-width: 940px) {
+    .evt-card { grid-template-columns: 220px 1fr auto; }
+    .evt-detail-body--split { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+    .evt-card { grid-template-columns: 1fr; }
+    .evt-card-banner { border-right: none; border-bottom: 1px solid var(--border); min-height: 100px; }
+    .evt-card-side { border-left: none; border-top: 1px solid var(--border-subtle); align-items: flex-start; }
+    .evt-form-row { grid-template-columns: 1fr; }
+    .evt-detail-hero { height: 180px; }
+    .evt-detail-hero-name { font-size: 26px; }
+    .evt-detail-stats { grid-template-columns: 1fr; }
+}

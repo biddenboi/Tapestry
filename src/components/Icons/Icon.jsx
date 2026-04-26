@@ -3,7 +3,7 @@
  * Usage: <Icon name="hub" size={20} color="currentColor" />
  *
  * Names: hub, tasks, chat, feed, shop, inventory, journal, profile,
- *        settings, notes, inbox, timer, bell, check, add, close, trophy
+ *        settings, notes, inbox, timer, bell, check, add, close, trophy, events
  */
 
 const PATHS = {
@@ -155,6 +155,15 @@ const PATHS = {
       <line x1="10" y1="14" x2="10" y2="17" />
       <line x1="6" y1="17" x2="14" y2="17" />
       <line x1="7" y1="19" x2="13" y2="19" />
+    </>
+  ),
+  events: (
+    <>
+      {/* Hex frame echoing the hub icon — establishes 'system' status */}
+      <polygon points="10,1.5 17,5.75 17,14.25 10,18.5 3,14.25 3,5.75" />
+      {/* Bolt: angular zig from upper-right shoulder to lower-left tip */}
+      <path d="M11.5 4.5 L7 10.5 L9.5 10.5 L8 15.5 L13 9 L10.5 9 Z" fill="currentColor" stroke="none" opacity="0.85" />
+      <path d="M11.5 4.5 L7 10.5 L9.5 10.5 L8 15.5 L13 9 L10.5 9 Z" />
     </>
   ),
 };
