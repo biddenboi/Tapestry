@@ -13,11 +13,22 @@ const SYNC_LABEL = Object.freeze({
   error: 'Private sync needs attention',
 });
 
-export default function SyncAccountPanel() {
+const EMPTY_RUNTIME_SYNC = Object.freeze({
+  status: 'local-only',
+  transportConfigured: false,
+});
+
+export default function SyncAccountPanel({ databaseConnection = null }) {
   const snapshot = useSyncExternalStore(
     service.subscribe,
     service.getSnapshot,
     service.getSnapshot,
+  );
+  const runtimeStore = databaseConnection?.syncRuntime?.statusStore;
+  const runtimeSnapshot = useSyncExternalStore(
+    runtimeStore?.subscribe || (() => () => undefined),
+    runtimeStore?.getSnapshot || (() => EMPTY_RUNTIME_SYNC),
+    runtimeStore?.getSnapshot || (() => EMPTY_RUNTIME_SYNC),
   );
   const [requestError, setRequestError] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +92,14 @@ export default function SyncAccountPanel() {
     }
   };
 
+  const effectiveSyncStatus = snapshot.user && runtimeSnapshot.transportConfigured
+    ? runtimeSnapshot.status === 'error'
+      ? 'error'
+      : runtimeSnapshot.status === 'syncing'
+        ? 'connecting'
+        : 'ready'
+    : snapshot.syncStatus;
+
   if (!snapshot.configured) {
     return (
       <div className="settings-sync-account settings-sync-account--unavailable">
@@ -99,12 +118,12 @@ export default function SyncAccountPanel() {
         {snapshot.user ? (
           <>
             <span>{snapshot.user.email}</span>
-            <small>{SYNC_LABEL[snapshot.syncStatus] || SYNC_LABEL['local-only']}</small>
+            <small>{SYNC_LABEL[effectiveSyncStatus] || SYNC_LABEL['local-only']}</small>
           </>
         ) : (
           <>
             <span>Sign in directly with the private-sync password. Email is recovery-only.</span>
-            <small>{SYNC_LABEL[snapshot.syncStatus] || SYNC_LABEL['local-only']}</small>
+            <small>{SYNC_LABEL[effectiveSyncStatus] || SYNC_LABEL['local-only']}</small>
           </>
         )}
       </div>

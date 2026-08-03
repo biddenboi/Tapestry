@@ -759,7 +759,7 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
 
         {/* Data */}
         <SettingsSection page="data" activePage={presentedPageId} icon={<Icon name="journal" size={16} />} title="Data & Backup">
-          <SyncAccountPanel />
+          <SyncAccountPanel databaseConnection={databaseConnection} />
           <SyncStatusPanel databaseConnection={databaseConnection} />
           <OfflineStoragePanel databaseConnection={databaseConnection} />
           {!mobileRestricted && <RecoveryPanel databaseConnection={databaseConnection} onRestored={refreshApp} />}

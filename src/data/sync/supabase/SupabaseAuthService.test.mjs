@@ -77,3 +77,22 @@ test('new private-sync passwords require at least twelve characters', async () =
   await service.initialize();
   await assert.rejects(() => service.setPassword('too-short'), /at least 12/);
 });
+
+test('sync transport errors never contaminate the authentication error field', async () => {
+  const session = { access_token: 'desktop', user: { id: 'owner', email: PRIMARY_OWNER_EMAIL } };
+  const { client } = clientFixture({ session });
+  const service = new SupabaseAuthService({ client, configuration: { configured: true } });
+  await service.initialize();
+
+  service.setSyncState('error', new Error('The mobile working-set publish session is no longer active.'));
+  assert.equal(service.getSnapshot().error, null);
+  assert.equal(service.getSnapshot().syncStatus, 'error');
+  assert.equal(
+    service.getSnapshot().syncError?.message,
+    'The mobile working-set publish session is no longer active.',
+  );
+
+  service.setSyncState('ready');
+  assert.equal(service.getSnapshot().error, null);
+  assert.equal(service.getSnapshot().syncError, null);
+});

@@ -38,6 +38,12 @@ function publicError(error) {
   });
 }
 
+function isLegacyWorkingSetSyncError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('mobile working-set publish session')
+    || message.includes('working-set publish session is no longer active');
+}
+
 export class SupabaseAuthService {
   constructor({ client = getSupabaseClient(), configuration = getSupabaseConfiguration() } = {}) {
     this.client = client;
@@ -51,6 +57,7 @@ export class SupabaseAuthService {
       session: null,
       user: null,
       syncStatus: 'local-only',
+      syncError: null,
       busy: false,
       notice: null,
       error: null,
@@ -93,6 +100,7 @@ export class SupabaseAuthService {
           user: session?.user || null,
           status: session ? 'signed-in' : 'signed-out',
           syncStatus: session ? this.snapshot.syncStatus : 'local-only',
+          syncError: session ? this.snapshot.syncError : null,
           busy: false,
           error: null,
         });
@@ -197,11 +205,20 @@ export class SupabaseAuthService {
       user: null,
       status: 'signed-out',
       syncStatus: 'local-only',
+      syncError: null,
     });
   }
 
   setSyncState(syncStatus, error = null) {
-    this._set({ syncStatus, error: publicError(error) });
+    const patch = {
+      syncStatus,
+      syncError: publicError(error),
+    };
+    // Older builds incorrectly stored transport failures in the authentication
+    // error field. Clear that one known legacy value during any state update so
+    // a connected runtime cannot keep displaying a dead publication-session error.
+    if (isLegacyWorkingSetSyncError(this.snapshot.error)) patch.error = null;
+    this._set(patch);
   }
 }
 
