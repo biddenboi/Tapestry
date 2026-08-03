@@ -2,10 +2,8 @@ import getSupabaseAuthService from './SupabaseAuthService.js';
 import getSupabaseClient from './SupabaseClient.js';
 import SupabaseSyncTransport from './SupabaseSyncTransport.js';
 import {
-  MOBILE_WORKING_SET_MANIFEST_TYPE,
   MOBILE_WORKING_SET_SCHEMA_VERSION,
   collectMobileReferenceRecords,
-  publishMobileBootstrapData,
   synchronizeMobileReferenceData,
 } from '../MobileReferenceSync.js';
 import { setRemoteResourceResolver } from '@shared/resources/Resources.js';
@@ -154,27 +152,9 @@ export class SupabaseSyncBootstrap {
       // sync account. Routine synchronization uses the operation log plus the
       // bounded reference set, so stale snapshots cannot resurrect deletions.
       await this.runtime.synchronize({ reason: 'supabase-session-configured' });
-      if (!mobile) {
-        const existing = await transport.getMobileReferenceRecords([
-          'profile',
-          MOBILE_WORKING_SET_MANIFEST_TYPE,
-        ]);
-        const profiles = existing.filter((record) => record?.recordType === 'profile');
-        const manifest = existing
-          .filter((record) => record?.recordType === MOBILE_WORKING_SET_MANIFEST_TYPE)
-          .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')))[0];
-        const schemaVersion = Math.max(0, Number(manifest?.data?.schemaVersion) || 0);
-        if (!profiles.length || schemaVersion < MOBILE_WORKING_SET_SCHEMA_VERSION) {
-          try {
-            await publishMobileBootstrapData(this.databaseConnection, transport);
-          } catch (error) {
-            console.warn(
-              '[Tapestry] Initial mobile working-set publication was deferred; routine sync remains connected.',
-              error,
-            );
-          }
-        }
-      }
+      // Routine synchronization and the durable reference outbox are the
+      // canonical cross-device path. Do not create a replace-all working-set
+      // publication session here; overlapping clients can invalidate it.
       this.auth.setSyncState('ready');
     } catch (error) {
       setRemoteResourceResolver(null);
