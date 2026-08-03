@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { publishMobileBootstrapData } from '@data/sync/MobileReferenceSync.js';
 
 function downloadJson(databaseConnection, value, filename) {
   const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
@@ -130,16 +129,24 @@ export default function RecoveryPanel({ databaseConnection, onRestored = null })
   };
 
   const publishMobileData = async () => {
-    const transport = databaseConnection?.syncRuntime?.transport;
-    if (!transport || serverBusy) return;
+    const runtime = databaseConnection?.syncRuntime;
+    if (!runtime?.transport || serverBusy) return;
     setServerBusy(true);
-    setMessage('Publishing the mobile-safe working set…');
+    setMessage('Flushing durable records and publishing a recovery checkpoint…');
     try {
-      await databaseConnection.syncRuntime.synchronize({ reason: 'desktop-mobile-bootstrap-publish' });
-      const result = await publishMobileBootstrapData(databaseConnection, transport);
-      setMessage(`Published ${Number(result.uploaded || 0)} records for clean-device mobile restore.`);
+      const sync = await runtime.synchronize({ reason: 'manual-recovery-publish' });
+      const durable = await runtime.flushReferenceOutbox();
+      const checkpoint = await runtime.publishCloudCheckpoint({
+        force: true,
+        reason: 'manual-recovery-publish',
+      });
+      setMessage(
+        `Server recovery updated: ${Number(sync.uploaded || 0)} operations, `
+        + `${Number(durable.uploaded || 0)} records, `
+        + `${checkpoint?.uploaded ? 'checkpoint uploaded' : checkpoint?.reason || 'checkpoint unchanged'}.`,
+      );
     } catch (error) {
-      setMessage(error?.message || 'Mobile data could not be published.');
+      setMessage(error?.message || 'Server recovery data could not be published.');
     } finally {
       setServerBusy(false);
     }
@@ -167,10 +174,10 @@ export default function RecoveryPanel({ databaseConnection, onRestored = null })
       <div className="settings-offline-storage">
         <div>
           <strong>Server recovery snapshot</strong>
-          <span>{connected ? 'Private server connected · mobile bootstrap is automatic' : 'Sign in and connect private sync first'}</span>
+          <span>{connected ? 'Private server connected · durable sync is automatic' : 'Sign in and connect private sync first'}</span>
         </div>
         <div className="settings-folder-actions">
-          <button type="button" disabled={!connected || serverBusy} onClick={publishMobileData}>Publish mobile data</button>
+          <button type="button" disabled={!connected || serverBusy} onClick={publishMobileData}>Publish recovery data</button>
           <button type="button" disabled={!connected || serverBusy} onClick={exportServer}>Export server</button>
           <button type="button" disabled={!connected || serverBusy} onClick={compareIntegrity}>Compare integrity</button>
         </div>

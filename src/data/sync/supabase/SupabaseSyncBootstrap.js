@@ -51,8 +51,8 @@ export class SupabaseSyncBootstrap {
   queueSession(snapshot) {
     const key = snapshot.session?.access_token || null;
     // Sync-state notifications are published through the same auth store as
-    // session changes. Do not turn a failed configuration into a tight retry
-    // loop; only a genuinely new session should reconfigure the transport.
+    // session changes. Only a genuinely new session should reconfigure the
+    // transport; runtime retries remain inside SyncRuntime.
     if (key === this.sessionKey) return this.applyPromise;
     this.sessionKey = key;
     this.applyPromise = this.applyPromise
@@ -69,7 +69,9 @@ export class SupabaseSyncBootstrap {
       this.auth.setSyncState('local-only');
       return;
     }
+
     this.auth.setSyncState('connecting');
+
     try {
       const identity = platformIdentity();
       this.platform = identity.platform;
@@ -83,19 +85,21 @@ export class SupabaseSyncBootstrap {
       };
       const transport = new SupabaseSyncTransport({ client: this.client, ownerId: user.id });
       const hadLocalWorkspace = (await this.databaseConnection.getAll('players')).length > 0;
+
       this.runtime.setCheckpointPublishingEnabled(hadLocalWorkspace && !mobile);
       await this.runtime.configure({ transport, device });
       this.runtime.cancelScheduledSync?.();
+
       setRemoteResourceResolver(
-        identity.platform === 'mobile-web'
+        mobile
           ? (resourceUUID) => transport.downloadMobileResource(resourceUUID)
           : null,
         { cacheLimitBytes: 25 * 1024 * 1024 },
       );
+
       this.runtime.afterSynchronize = async ({ reason = 'scheduled' } = {}) => {
-        // Pull first so a reconnecting device cannot publish an older local
-        // snapshot over a newer server record. Only records that were actually
-        // mutated locally are uploaded from the durable reference outbox.
+        // Routine synchronization is pull/reconcile plus the durable outbox.
+        // It never starts a token-based replace-all publication session.
         const references = await synchronizeMobileReferenceData(
           this.databaseConnection,
           transport,
@@ -105,6 +109,7 @@ export class SupabaseSyncBootstrap {
             uploadReferences: false,
           },
         );
+
         if (!this.runtime.checkpointPublishingEnabled) {
           const durable = await this.runtime.flushReferenceOutbox();
           return {
@@ -117,6 +122,7 @@ export class SupabaseSyncBootstrap {
             },
           };
         }
+
         let seeded = false;
         if (!await this.runtime.isReferenceMirrorSeeded()) {
           const current = await collectMobileReferenceRecords(this.databaseConnection, {
@@ -131,6 +137,7 @@ export class SupabaseSyncBootstrap {
           });
           seeded = true;
         }
+
         const durable = await this.runtime.flushReferenceOutbox();
         const durabilityFlush = new Set([
           'background-durability-flush',
@@ -148,13 +155,15 @@ export class SupabaseSyncBootstrap {
         return { references, durable, seeded, checkpoint };
       };
 
-      // A full working-set replacement is only needed to seed a new private
-      // sync account. Routine synchronization uses the operation log plus the
-      // bounded reference set, so stale snapshots cannot resurrect deletions.
-      await this.runtime.synchronize({ reason: 'supabase-session-configured' });
-      // Routine synchronization and the durable reference outbox are the
-      // canonical cross-device path. Do not create a replace-all working-set
-      // publication session here; overlapping clients can invalidate it.
+      // Authentication/transport readiness is independent of the first sync
+      // pass. A network or record-level failure belongs in SyncStatusStore and
+      // must not tear down a valid transport or leave a stale auth error.
+      this.auth.setSyncState('ready');
+      try {
+        await this.runtime.synchronize({ reason: 'supabase-session-configured' });
+      } catch (error) {
+        console.warn('[Tapestry] Initial private sync pass failed; the connected transport will retry.', error);
+      }
       this.auth.setSyncState('ready');
     } catch (error) {
       setRemoteResourceResolver(null);
