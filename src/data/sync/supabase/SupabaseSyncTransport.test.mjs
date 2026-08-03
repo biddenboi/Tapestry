@@ -126,55 +126,106 @@ test('mobile reference reads can request the lightweight record subset', async (
   ]);
 });
 
-test('identical concurrent working-set publications share one server session', async () => {
+test('legacy working-set replacement uses durable merge without publication sessions', async () => {
   const calls = [];
   const client = {
-    rpc: async (name) => {
-      calls.push(name);
+    rpc: async (name, parameters) => {
+      calls.push({ name, parameters });
       await new Promise((resolve) => setTimeout(resolve, 2));
-      if (name === 'begin_mobile_reference_publish') return { data: 'token-1', error: null };
-      if (name === 'merge_mobile_reference_publish') return { data: { merged: 1 }, error: null };
-      if (name === 'finalize_mobile_reference_publish') return { data: { pruned: 0 }, error: null };
+
+      if (name === 'merge_mobile_reference_records') {
+        return {
+          data: { merged: parameters.p_records.length },
+          error: null,
+        };
+      }
+
       return { data: null, error: null };
     },
-    channel() { return { on() { return this; }, subscribe() { return this; } }; },
+    channel() {
+      return {
+        on() { return this; },
+        subscribe() { return this; },
+      };
+    },
   };
-  const transport = new SupabaseSyncTransport({ client, ownerId: 'owner' });
-  const records = [{ recordType: 'profile', recordId: 'p1', updatedAt: '2026-08-02T12:00:00.000Z' }];
+
+  const transport = new SupabaseSyncTransport({
+    client,
+    ownerId: 'owner',
+  });
+
+  const records = [{
+    recordType: 'profile',
+    recordId: 'p1',
+    updatedAt: '2026-08-02T12:00:00.000Z',
+  }];
+
+  const result = await transport.replaceMobileReferenceRecords(records);
+
+  assert.deepEqual(result, { merged: 1 });
+  assert.deepEqual(
+    calls.map(({ name }) => name),
+    ['merge_mobile_reference_records'],
+  );
+});
+
+test('concurrent legacy replacement calls never create token publication sessions', async () => {
+  const calls = [];
+
+  const client = {
+    rpc: async (name, parameters) => {
+      calls.push(name);
+
+      if (name === 'merge_mobile_reference_records') {
+        return {
+          data: { merged: parameters.p_records.length },
+          error: null,
+        };
+      }
+
+      throw new Error(`Unexpected RPC: ${name}`);
+    },
+    channel() {
+      return {
+        on() { return this; },
+        subscribe() { return this; },
+      };
+    },
+  };
+
+  const transport = new SupabaseSyncTransport({
+    client,
+    ownerId: 'owner',
+  });
+
+  const records = [{
+    recordType: 'task',
+    recordId: 't1',
+    updatedAt: '2026-08-02T12:00:00.000Z',
+  }];
+
   const [first, second] = await Promise.all([
     transport.replaceMobileReferenceRecords(records),
     transport.replaceMobileReferenceRecords(records),
   ]);
-  assert.deepEqual(first, second);
-  assert.equal(calls.filter((name) => name === 'begin_mobile_reference_publish').length, 1);
-  assert.equal(calls.filter((name) => name === 'finalize_mobile_reference_publish').length, 1);
-});
 
-test('inactive working-set publication restarts once with a new token', async () => {
-  const calls = [];
-  let begins = 0;
-  const client = {
-    rpc: async (name, parameters) => {
-      calls.push({ name, token: parameters?.p_publish_token || null });
-      if (name === 'begin_mobile_reference_publish') {
-        begins += 1;
-        return { data: `token-${begins}`, error: null };
-      }
-      if (name === 'merge_mobile_reference_publish' && parameters.p_publish_token === 'token-1') {
-        return { data: null, error: { message: 'The mobile working-set publish session is no longer active.' } };
-      }
-      if (name === 'merge_mobile_reference_publish') return { data: { merged: 1 }, error: null };
-      if (name === 'finalize_mobile_reference_publish') return { data: { pruned: 2 }, error: null };
-      return { data: null, error: null };
-    },
-    channel() { return { on() { return this; }, subscribe() { return this; } }; },
-  };
-  const result = await new SupabaseSyncTransport({ client, ownerId: 'owner' })
-    .replaceMobileReferenceRecords([{ recordType: 'task', recordId: 't1', updatedAt: '2026-08-02T12:00:00.000Z' }]);
-  assert.equal(begins, 2);
-  assert.equal(result.merged, 1);
-  assert.equal(result.pruned, 2);
-  assert.equal(calls.filter(({ name }) => name === 'finalize_mobile_reference_publish').length, 1);
+  assert.deepEqual(first, { merged: 1 });
+  assert.deepEqual(second, { merged: 1 });
+
+  assert.equal(
+    calls.filter((name) => name === 'merge_mobile_reference_records').length,
+    2,
+  );
+
+  assert.equal(
+    calls.some((name) => [
+      'begin_mobile_reference_publish',
+      'merge_mobile_reference_publish',
+      'finalize_mobile_reference_publish',
+    ].includes(name)),
+    false,
+  );
 });
 
 

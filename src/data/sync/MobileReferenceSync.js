@@ -500,7 +500,7 @@ export async function publishActiveProfileReference(databaseConnection, transpor
 }
 
 export async function publishMobileBootstrapData(databaseConnection, transport) {
-  if (!transport?.replaceMobileReferenceRecords && !transport?.mergeMobileReferenceRecords) return { published: false };
+  if (!transport?.mergeMobileReferenceRecords) return { published: false };
   if (databaseConnection.demoMode) return { published: false, reason: 'demo-mode' };
   const local = await collectMobileReferenceRecords(databaseConnection, {
     bootstrap: true,
@@ -520,9 +520,9 @@ export async function publishMobileBootstrapData(databaseConnection, transport) 
     updatedAt: publishedAt,
   });
   const resources = await publishReferencedMobileResources(databaseConnection, transport, local);
-  const workingSet = transport.replaceMobileReferenceRecords
-    ? await transport.replaceMobileReferenceRecords(local)
-    : await transport.mergeMobileReferenceRecords(local);
+  // Replace-all publication sessions are retired. Merge records through the
+  // durable idempotent path so concurrent devices cannot invalidate tokens.
+  const workingSet = await transport.mergeMobileReferenceRecords(local);
   return { published: true, uploaded: local.length, resources, ...workingSet };
 }
 

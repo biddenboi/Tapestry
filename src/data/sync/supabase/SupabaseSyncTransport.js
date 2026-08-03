@@ -205,48 +205,9 @@ export class SupabaseSyncTransport {
   }
 
   async replaceMobileReferenceRecords(records = []) {
-    const snapshot = [...records];
-    const fingerprint = mobilePublishFingerprint(snapshot);
-    const inFlight = this.mobileReferencePublishes.get(fingerprint);
-    if (inFlight) return inFlight;
-
-    const publish = this.mobileReferencePublishTail
-      .catch(() => undefined)
-      .then(async () => {
-        for (let attempt = 0; attempt < 2; attempt += 1) {
-          try {
-            const { data: publishToken, error: beginError } = await this.client.rpc('begin_mobile_reference_publish');
-            throwIfError(beginError);
-            let merged = 0;
-            for (let index = 0; index < snapshot.length; index += 500) {
-              // eslint-disable-next-line no-await-in-loop
-              const { data, error } = await this.client.rpc('merge_mobile_reference_publish', {
-                p_publish_token: publishToken,
-                p_records: snapshot.slice(index, index + 500),
-              });
-              throwIfError(error);
-              merged += Number(data?.merged || 0);
-            }
-            const { data: finalized, error: finalizeError } = await this.client.rpc('finalize_mobile_reference_publish', {
-              p_publish_token: publishToken,
-            });
-            throwIfError(finalizeError);
-            return { merged, pruned: Number(finalized?.pruned || 0) };
-          } catch (error) {
-            if (attempt === 0 && inactiveMobilePublishSession(error)) continue;
-            throw error;
-          }
-        }
-        throw new Error('The mobile working-set publish did not complete.');
-      });
-
-    this.mobileReferencePublishTail = publish;
-    this.mobileReferencePublishes.set(fingerprint, publish);
-    publish.then(
-      () => this.mobileReferencePublishes.delete(fingerprint),
-      () => this.mobileReferencePublishes.delete(fingerprint),
-    );
-    return publish;
+    // Backward-compatible alias only. The token-based replace-all protocol is
+    // retired because concurrent clients can invalidate each other's session.
+    return this.mergeMobileReferenceRecords(records);
   }
 
   async uploadDatabaseCheckpoint({ bytes, deviceId, createdAt = new Date().toISOString() } = {}) {
