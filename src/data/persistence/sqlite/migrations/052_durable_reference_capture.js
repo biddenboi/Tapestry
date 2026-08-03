@@ -120,7 +120,7 @@ export const migration052 = Object.freeze({
   description: 'Capture every mobile-safe canonical document mutation in the durable cloud outbox.',
   sourceApplicationVersion: 'durable-cloud-sync-v2',
   sql: DURABLE_REFERENCE_CAPTURE_SQL,
-  checksum: '430a2adf5b33f7da78ba14e5b73730018dcf07d970307bf5f85395da899bfc56',
+  checksum: 'f0dce17bf1e771a271577f07dd0c6108b6a7818b24ebbc80af267afa1fd37cee',
 });
 
 export default migration052;

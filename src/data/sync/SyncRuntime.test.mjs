@@ -162,7 +162,8 @@ test('SyncRuntime retries interrupted uploads and settles accepted operations', 
   const accepted = await runtime.operations.get('operation-1');
   assert.equal(accepted.status, 'accepted');
   assert.equal(accepted.serverSequence, 10);
-  assert.equal(runtime.getStatus().status, 'synced');
+  assert.equal(runtime.getStatus().status, 'pending');
+  assert.equal(runtime.getStatus().referencePending, 1);
 });
 
 test('offline task create, edit, and complete replay once after reconnect', async (t) => {

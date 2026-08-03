@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { calculateMigrationChecksum } from '../persistence/sqlite/migrationChecksum.js';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -14,7 +14,7 @@ test('every mobile-safe canonical document table has durable put and delete capt
   assert.equal((sql.match(/AFTER INSERT ON /g) || []).length, 39);
   assert.equal((sql.match(/AFTER UPDATE ON /g) || []).length, 39);
   assert.equal((sql.match(/AFTER DELETE ON /g) || []).length, 39);
-  assert.equal(createHash('sha256').update(sql.trim()).digest('hex'), checksum);
+  assert.equal(await calculateMigrationChecksum(migration052), checksum);
   assert.match(sql, /document_todos/);
   assert.match(sql, /document_players/);
   assert.match(sql, /document_chronicle_entry_revisions/);

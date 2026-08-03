@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --test --test-force-exit \"src/**/*.test.mjs\"",
+    "test": "node --experimental-loader ./scripts/test-alias-loader.mjs --test --test-force-exit \"src/**/*.test.mjs\"",
     "electron:dev": "node electron/dev.cjs",
     "electron:build": "npm run build && electron-builder",
     "electron:build:mac": "npm run build && electron-builder --mac"

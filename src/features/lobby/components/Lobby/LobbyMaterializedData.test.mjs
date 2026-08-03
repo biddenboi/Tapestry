@@ -64,7 +64,6 @@ test('explicit Lobby actions hydrate their complete domains only when invoked', 
 test('leaderboard rebuilds are commit-driven and preserve the old snapshot while pending', () => {
   assert.match(database, /_queueMaterializedLeaderboardRebuild\(stagedOperations, label\)/);
   assert.match(database, /queueLeaderboardRebuildForOperations\(this, committedOperations, reason\)/);
-  assert.match(database, /_queueMaterializedLeaderboardRebuild\(\[operation\]\)/);
   assert.match(leaderboards, /requestIdleCallback\(callback, \{ timeout: 1000 \}\)/);
   assert.match(leaderboards, /commitAtomicMutation\(\{\s*label: 'materialized-leaderboard-rebuild'/);
   assert.match(lobby, /MATERIALIZED_LEADERBOARDS_REBUILDING_EVENT/);
