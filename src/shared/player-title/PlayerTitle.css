@@ -1,0 +1,40 @@
+.player-title {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--player-title-color, var(--gold));
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--player-title-color, var(--gold)) 34%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.player-title--compact {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.player-title--glow {
+  animation: player-title-glow 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--player-title-color, var(--gold)) 45%, transparent));
+}
+
+@keyframes player-title-glow {
+  0%, 100% {
+    color: var(--player-title-color, var(--gold));
+    text-shadow:
+      0 0 8px color-mix(in srgb, var(--player-title-color, var(--gold)) 48%, transparent),
+      0 0 18px color-mix(in srgb, var(--player-title-accent, var(--gold)) 28%, transparent);
+  }
+  50% {
+    color: var(--player-title-accent, #fff7ad);
+    text-shadow:
+      0 0 12px color-mix(in srgb, var(--player-title-color, var(--gold)) 72%, transparent),
+      0 0 28px color-mix(in srgb, var(--player-title-accent, #fff7ad) 50%, transparent);
+  }
+}

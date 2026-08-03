@@ -1,0 +1,5 @@
+[data-theme="kawaii"] :is(.habit-empty-state, .chronicle-caught-up)::before {
+  content: "♡";
+  color: var(--accent);
+  font-size: 1.4rem;
+}

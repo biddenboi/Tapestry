@@ -1,0 +1,7 @@
+[data-theme="minimalist"] :is(.local-section-nav, .chronicle-card, .event-calendar-day) {
+  box-shadow: none;
+}
+
+[data-theme="minimalist"] .local-section-nav__rail {
+  border-bottom: var(--recipe-rule);
+}

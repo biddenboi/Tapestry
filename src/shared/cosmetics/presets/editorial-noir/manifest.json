@@ -1,0 +1,39 @@
+{
+  "id": "editorial-noir",
+  "version": 1,
+  "setId": "editorial-noir",
+  "label": "Editorial Noir",
+  "description": "Editorial Noir preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#f04c55",
+    "base": "#0d0d0d"
+  },
+  "motion": "ambient",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "contribution-road"
+}

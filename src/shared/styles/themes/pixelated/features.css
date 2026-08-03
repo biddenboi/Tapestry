@@ -1,0 +1,7 @@
+[data-theme="pixelated"] :is(.chronicle-page, .habit-page, .event-local-page) {
+  image-rendering: pixelated;
+}
+
+[data-theme="pixelated"] :is(.habit-section-heading, .chronicle-time-group) {
+  border-bottom-style: dashed;
+}

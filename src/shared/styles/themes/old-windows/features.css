@@ -1,0 +1,4 @@
+[data-theme="old_windows"] :is(.chronicle-page__header, .habit-page-header, .evt-world-header) {
+  border-bottom: 2px outset var(--border);
+  background: linear-gradient(90deg, var(--accent), var(--accent-dim));
+}

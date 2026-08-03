@@ -1,0 +1,507 @@
+/* ── Current map-shell sizing fixes ───────────────────────── */
+.hub-lobby-menu .lobby-layout {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.hub-lobby-menu .lobby-center {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-bottom: 34px;
+}
+
+.hub-lobby-menu .data-hub,
+.hub-lobby-menu .lobby-status-row,
+.hub-lobby-menu .lobby-data-summary {
+  min-width: 0;
+}
+
+.hub-lobby-menu .data-hub * {
+  min-width: 0;
+}
+
+.hub-world-panel--events {
+  width: min(620px, calc(100vw - 126px));
+  transition: width 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hub-world-panel--events:has(.evt-detail),
+.hub-world-panel--events:has(.evt-goal-detail) {
+  width: min(840px, calc(100vw - 126px));
+}
+
+.hub-world-panel--events .evt-card {
+  grid-template-columns: 112px minmax(0, 1fr) minmax(96px, auto);
+}
+
+.hub-world-panel--events .evt-card-banner {
+  min-height: 108px;
+}
+
+.hub-world-panel--events .evt-editor-capsule {
+  --evt-editor-width: min(420px, max(300px, calc(100vw - 72px - 100% - 38px)));
+  left: min(calc(100% + 20px), calc(100vw - 72px - var(--evt-editor-width) - 18px));
+  width: var(--evt-editor-width);
+  min-width: 0;
+  transition: left 0.24s cubic-bezier(0.22, 1, 0.36, 1), width 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hub-world-panel--events .evt-editor-capsule:has(.habit-editor) {
+  top: clamp(28px, 5vh, 64px);
+  right: max(28px, calc((100% - 720px) / 2));
+  bottom: clamp(28px, 5vh, 64px);
+  left: max(28px, calc((100% - 720px) / 2));
+  width: auto;
+  min-width: 0;
+}
+
+.hub-world-panel--events .evt-editor-capsule:has(.evt-form) {
+  --evt-editor-width: min(620px, calc(100vw - 144px));
+  left: min(calc(100% + 20px), calc(100vw - 72px - var(--evt-editor-width) - 18px));
+  width: var(--evt-editor-width);
+  min-width: min(420px, calc(100vw - 144px));
+}
+
+.hub-world-panel--events .evt-editor-capsule:has(.evt-form) .evt-form {
+  padding: 22px 24px;
+}
+
+.hub-world-panel--events .evt-editor-capsule:has(.evt-form) .evt-form-row,
+.hub-world-panel--events .evt-editor-capsule:has(.evt-form) .evt-form-pick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hub-world-panel--feed {
+  background: color-mix(in srgb, var(--bg-void) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.hub-world-panel--feed .feed-header {
+  background: var(--bg-void);
+}
+
+.hub-world-panel--feed .feed-card {
+  background: var(--bg-card);
+}
+
+.hub-world-panel--shop {
+  --shop-panel-bottom: 28px;
+  bottom: var(--shop-panel-bottom);
+}
+
+.hub-world-panel--shop .shop-grid-area {
+  height: calc(100vh - 144px - var(--shop-panel-bottom));
+}
+
+.hub-world-panel--shop .cart-sidebar {
+  bottom: var(--shop-panel-bottom);
+}
+
+.hub-world-panel--shop .add-item-form {
+  --shop-form-width: min(640px, calc(100vw - 140px));
+  left: min(calc(100% + var(--shop-gap)), calc(100vw - 72px - var(--shop-form-width) - 18px));
+  bottom: var(--shop-panel-bottom);
+  width: var(--shop-form-width);
+}
+
+.hub-world-panel--shop .shop-page--editing .shop-grid-area {
+  filter: saturate(0.72) brightness(0.72);
+}
+
+.hub-world-panel--shop .shop-page--editing .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  .hub-world-panel--events {
+    width: min(560px, calc(100vw - 126px));
+  }
+
+  .hub-world-panel--events:has(.evt-detail),
+  .hub-world-panel--events:has(.evt-goal-detail) {
+    width: min(760px, calc(100vw - 126px));
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    --shop-form-width: min(560px, calc(100vw - 128px));
+  }
+}
+
+@media (max-width: 760px) {
+  .hub-lobby-menu .lobby-layout {
+    overflow-y: auto;
+  }
+
+  .hub-lobby-menu .lobby-center {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .hub-world-panel--events,
+  .hub-world-panel--events:has(.evt-detail),
+  .hub-world-panel--events:has(.evt-goal-detail) {
+    width: auto;
+  }
+
+  .hub-world-panel--events .evt-editor-capsule,
+  .hub-world-panel--events .evt-editor-capsule:has(.evt-form),
+  .hub-world-panel--events .evt-editor-capsule:has(.habit-editor) {
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .hub-world-panel--events .evt-editor-capsule:has(.evt-form) .evt-form-row,
+  .hub-world-panel--events .evt-editor-capsule:has(.evt-form) .evt-form-pick-grid,
+  .hub-world-panel--shop .shop-page--editing .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-world-panel--shop {
+    --shop-panel-bottom: 64px;
+  }
+}
+
+
+/* ── Current full-screen event details ─────────────────────── */
+.hub-world-panel--events:has(.evt-detail),
+.hub-world-panel--events:has(.evt-goal-detail) {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-void) 94%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.hub-world-panel--events:has(.evt-detail) .hub-page,
+.hub-world-panel--events:has(.evt-goal-detail) .hub-page,
+.hub-world-panel--events:has(.evt-detail) .evt-page,
+.hub-world-panel--events:has(.evt-goal-detail) .evt-page {
+  height: 100%;
+}
+
+.hub-world-panel--events:has(.evt-detail) .hub-overlay-close,
+.hub-world-panel--events:has(.evt-goal-detail) .hub-overlay-close {
+  top: 14px;
+  right: 14px;
+  z-index: 74;
+}
+
+@media (max-width: 760px) {
+  .hub-world-panel--events:has(.evt-detail),
+  .hub-world-panel--events:has(.evt-goal-detail) {
+    inset: 0;
+  }
+}
+
+/* ── Wide shop and event workspaces ───────────────────────── */
+@media (min-width: 761px) {
+  .hub-world-panel--shop,
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) {
+    inset: 18px 18px 18px 64px;
+    width: auto;
+    height: auto;
+    max-width: none;
+    overflow: hidden;
+    border-radius: 8px;
+    transform: none;
+  }
+
+  .hub-world-panel--shop {
+    --shop-gap: 0px;
+    --shop-cart-width: clamp(240px, 22vw, 320px);
+    --shop-panel-bottom: 18px;
+  }
+
+  .hub-world-panel--shop .hub-page,
+  .hub-world-panel--shop .shop-page,
+  .hub-world-panel--shop .shop-body {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .hub-world-panel--shop .shop-body {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .hub-world-panel--shop .shop-grid-area {
+    flex: 1 1 auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .hub-world-panel--shop .shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .hub-world-panel--shop .cart-sidebar {
+    position: static;
+    inset: auto;
+    width: var(--shop-cart-width);
+    min-width: 240px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid color-mix(in srgb, var(--color-shop) 30%, transparent);
+    border-radius: 0;
+    background: var(--surface-glass-strong);
+    box-shadow: none;
+    animation: none;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .hub-page,
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-page {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-list,
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-goals-board {
+    padding: 24px 28px 36px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card {
+    grid-template-columns: minmax(220px, 28%) minmax(0, 1fr) minmax(112px, auto);
+    min-height: 124px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card-banner {
+    min-height: 124px;
+    padding: 14px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card-body {
+    padding: 16px 18px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card-name {
+    font-size: 19px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card-desc {
+    font-size: 12px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-card-side {
+    min-width: 112px;
+    padding: 16px 18px;
+  }
+
+  .hub-world-panel--events:not(:has(.evt-detail)):not(:has(.evt-goal-detail)) .evt-goal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+
+/* ── Lobby menu breathing room for analytics ───────────────── */
+.hub-lobby-menu {
+  inset: 18px 18px 18px 64px;
+  width: auto;
+  max-width: none;
+}
+
+.hub-lobby-menu .lobby {
+  height: 100%;
+  overflow: hidden;
+}
+
+.hub-lobby-menu .lobby-layout {
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.hub-lobby-menu .lobby-center {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding-right: 34px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.hub-lobby-menu .lobby-center > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.hub-lobby-menu .lobby-data-summary {
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+  align-items: stretch;
+}
+
+.hub-lobby-menu .lobby-status-card,
+.hub-lobby-menu .lobby-latest-match {
+  min-height: 132px;
+  overflow: visible;
+}
+
+.hub-lobby-menu .data-hub-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr));
+}
+
+.hub-lobby-menu .data-card--leader {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 320px;
+  max-height: min(440px, 42vh);
+  overflow: hidden;
+}
+
+.hub-lobby-menu .leader-tabs {
+  flex-wrap: wrap;
+}
+
+.hub-lobby-menu .leader-tab {
+  flex: 1 1 50%;
+  min-width: 136px;
+}
+
+.hub-lobby-menu .leader-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 3px;
+}
+
+.hub-lobby-menu .leader-row {
+  min-height: 44px;
+}
+
+.hub-lobby-menu .leader-value {
+  min-width: 110px;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .hub-lobby-menu .lobby-layout,
+  .hub-lobby-menu .lobby-data-summary,
+  .hub-lobby-menu .data-hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-lobby-menu .data-card--chart {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .hub-lobby-menu .data-card--leader {
+    min-width: 0;
+  }
+}
+
+
+@media (max-width: 860px) {
+  .hub-lobby-menu {
+    inset: 14px;
+  }
+
+  .hub-lobby-menu .lobby-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ── Restored full-page Events detail layout ───────────────── */
+.hub-world-panel--events:has(.evt-detail) .evt-detail-body,
+.hub-world-panel--events:has(.evt-detail) .evt-detail-body--split,
+.hub-world-panel--events:has(.evt-detail) .evt-detail-body--single {
+  display: grid;
+  flex-direction: initial;
+  overflow-y: auto;
+}
+
+.hub-world-panel--events:has(.evt-detail) .evt-detail-body--split {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+
+.hub-world-panel--events:has(.evt-detail) .evt-detail-body--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hub-world-panel--events:has(.evt-detail) .evt-detail-primary,
+.hub-world-panel--events:has(.evt-detail) .evt-detail-rail {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+}
+
+@media (max-width: 940px) {
+  .hub-world-panel--events:has(.evt-detail) .evt-detail-body--split {
+    grid-template-columns: 1fr;
+  }
+}
+.arrival-card {
+  position: fixed;
+  left: clamp(16px, 4vw, 54px);
+  top: clamp(72px, 13vh, 132px);
+  z-index: 48;
+  width: min(430px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--color-task) 42%, var(--border));
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-task) 10%, transparent), transparent 58%),
+    color-mix(in srgb, var(--bg-card) 94%, transparent);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .38);
+  backdrop-filter: blur(18px);
+}
+.arrival-card > span {
+  color: var(--color-task);
+  font: 800 9px/1 'JetBrains Mono', monospace;
+  letter-spacing: .17em;
+}
+.arrival-card h2 { margin: 0; color: var(--text-bright); font-size: clamp(20px, 3vw, 28px); }
+.arrival-card > p,
+.arrival-card > small { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.arrival-card > small { color: var(--text-dim); }
+.arrival-card__reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.arrival-card__reasons i {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font: normal 8px/1 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+}
+.arrival-card footer { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 3px; }
+.arrival-card footer button { min-height: 34px; border-radius: 6px; }
+
+@media (max-width: 640px) {
+  .arrival-card {
+    left: 10px;
+    right: 10px;
+    top: max(68px, env(safe-area-inset-top));
+    width: auto;
+  }
+}

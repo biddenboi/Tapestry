@@ -1,0 +1,2 @@
+[data-theme="atelier"] { --theme-enter-animation:atelier-enter 240ms cubic-bezier(.22,1,.36,1) both; }
+@keyframes atelier-enter { from { opacity:0; transform:translateY(6px) rotate(.15deg); } }

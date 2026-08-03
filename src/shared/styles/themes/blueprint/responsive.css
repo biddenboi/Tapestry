@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="blueprint"] { --recipe-grid-size: 18px; }
+}

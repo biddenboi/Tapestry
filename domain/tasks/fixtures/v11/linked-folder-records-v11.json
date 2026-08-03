@@ -1,0 +1,76 @@
+{
+  "format": "tapestry-v11-linked-folder-records",
+  "formatVersion": 1,
+  "capturedAt": "2026-07-01T14:00:00.000Z",
+  "appSettings": [
+    {
+      "UUID": "taskRecommenderSettings",
+      "value": {
+        "enabled": true,
+        "continuousTraining": true
+      },
+      "updatedAt": "2026-07-01T12:00:00.000Z"
+    },
+    {
+      "UUID": "taskRecommenderWeights:player-1",
+      "parent": "player-1",
+      "value": {
+        "modelVersion": 11,
+        "trainingEvents": 1,
+        "weights": {
+          "bias": 0.1
+        }
+      },
+      "updatedAt": "2026-07-01T12:00:00.000Z"
+    }
+  ],
+  "taskRecommendations": [
+    {
+      "UUID": "legacy-decision-1",
+      "parent": "player-1",
+      "type": "next-task-impression",
+      "source": "tasks",
+      "taskUUID": "task-1",
+      "taskName": "Write outline",
+      "probability": 0.4,
+      "taskSnapshot": {
+        "UUID": "task-1",
+        "parent": "player-1",
+        "name": "Write outline",
+        "requiredTimerMinutes": 20,
+        "suggestedMinutes": 20
+      },
+      "decisionContext": {
+        "schemaVersion": 1,
+        "raw": {
+          "request": {
+            "source": "tasks"
+          },
+          "openTasks": [
+            {
+              "UUID": "task-1",
+              "name": "Write outline"
+            }
+          ]
+        }
+      },
+      "outcomeHistory": [
+        {
+          "rawOutcome": "accepted",
+          "occurredAt": "2026-07-01T12:01:00.000Z",
+          "acceptedMinutes": 20
+        }
+      ],
+      "features": {
+        "bias": 1,
+        "durationFit": 0.9
+      },
+      "reward": 0.7,
+      "labels": {
+        "start": 1
+      },
+      "createdAt": "2026-07-01T12:00:00.000Z",
+      "outcomeAt": "2026-07-01T12:01:00.000Z"
+    }
+  ]
+}

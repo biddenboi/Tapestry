@@ -1,0 +1,39 @@
+{
+  "id": "forest",
+  "version": 1,
+  "setId": "forest",
+  "label": "Forest",
+  "description": "Forest preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#54d68b",
+    "base": "#0a1a0d"
+  },
+  "motion": "ambient",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "contribution-road"
+}

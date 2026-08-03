@@ -1,0 +1,6 @@
+[data-theme="blueprint"] :is(.chronicle-page, .habit-page, .event-local-page) {
+  background-image:
+    linear-gradient(rgba(112, 216, 255, .065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(112, 216, 255, .065) 1px, transparent 1px);
+  background-size: var(--recipe-grid-size) var(--recipe-grid-size);
+}

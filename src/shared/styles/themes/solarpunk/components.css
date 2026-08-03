@@ -1,0 +1,9 @@
+[data-theme="solarpunk"] :is(.chronicle-card, .event-calendar-day, .event-boundary-grid article) {
+  border-radius: var(--recipe-organic-radius);
+  box-shadow: var(--recipe-leaf-shadow);
+}
+
+[data-theme="solarpunk"] .local-section-nav__item[aria-selected="true"]::before {
+  content: "◒";
+  color: var(--accent);
+}

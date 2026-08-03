@@ -1,0 +1,7 @@
+[data-theme="editorial_noir"] {
+  --theme-enter-animation: recipe-noir-cut 240ms cubic-bezier(.7, 0, .2, 1) both;
+}
+
+@keyframes recipe-noir-cut {
+  from { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(var(--recipe-motion-distance)); }
+}

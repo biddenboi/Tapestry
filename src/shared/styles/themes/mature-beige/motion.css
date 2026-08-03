@@ -1,0 +1,7 @@
+[data-theme="mature_beige"] {
+  --theme-enter-animation: recipe-folio-in 220ms ease-out both;
+}
+
+@keyframes recipe-folio-in {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)); }
+}

@@ -1,0 +1,8 @@
+[data-theme="gamification"] :is(.chronicle-card, .habit-card, .event-review-summary) {
+  border-top: var(--recipe-ornate-rule);
+  box-shadow: var(--recipe-crest-shadow), var(--theme-card-shadow);
+}
+
+[data-theme="gamification"] .local-section-nav__item[aria-selected="true"] {
+  border-color: var(--gold);
+}

@@ -1,0 +1,4 @@
+[data-theme="obsidian"] :is(.chronicle-stream, .profile-page-content) {
+  background-image: linear-gradient(90deg, transparent 71px, rgba(139, 156, 255, .045) 72px, transparent 73px);
+  background-size: 288px 100%;
+}

@@ -1,0 +1,7 @@
+[data-theme="kawaii"] {
+  --theme-enter-animation: recipe-kawaii-pop 260ms cubic-bezier(.2, 1.35, .4, 1) both;
+}
+
+@keyframes recipe-kawaii-pop {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)) scale(.975); }
+}

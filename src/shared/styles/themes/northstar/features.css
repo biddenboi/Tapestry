@@ -1,0 +1,2 @@
+[data-theme="northstar"] :is(.profile-block,.chronicle-card,.habit-card,.road-node) { background-image:linear-gradient(135deg,rgba(125,211,252,.06),transparent 44%); }
+[data-theme="northstar"] :is(.chronicle-time-group,.habit-section-heading)::before { content:'✦'; margin-right:7px; color:var(--accent-bright); }

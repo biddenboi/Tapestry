@@ -1,0 +1,39 @@
+{
+  "id": "northstar",
+  "version": 1,
+  "setId": "northstar",
+  "label": "Northstar",
+  "description": "Northstar preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#7dd3fc",
+    "base": "#06152f"
+  },
+  "motion": "ambient",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "contribution-road"
+}

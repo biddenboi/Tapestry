@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="dreamcore"] .local-section-nav { width: calc(100% - 16px); }
+}

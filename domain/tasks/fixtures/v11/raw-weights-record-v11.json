@@ -1,0 +1,19 @@
+{
+  "UUID": "taskRecommenderWeights:player-1",
+  "parent": "player-1",
+  "updatedAt": "2026-07-01T12:00:00.000Z",
+  "value": {
+    "modelVersion": 11,
+    "algorithm": "tars-v11-wide-field-fm-deepfm-lite-untyped-bandit",
+    "trainingEvents": 12,
+    "weights": {
+      "bias": 0.15
+    },
+    "featureCounts": {
+      "bias": 12
+    },
+    "stumps": [],
+    "headModels": {},
+    "utilityWeights": {}
+  }
+}

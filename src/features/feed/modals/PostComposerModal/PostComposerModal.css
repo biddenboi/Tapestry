@@ -1,0 +1,133 @@
+.post-composer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 170;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-composer-card {
+  --composer-accent: var(--color-feed);
+  position: relative;
+  z-index: 1;
+  width: min(920px, 92vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--composer-accent) 8%, transparent), transparent 46%),
+    var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--composer-accent) 32%, var(--border));
+  box-shadow: 0 18px 52px rgba(0,0,0,0.48);
+}
+
+.post-composer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.post-composer-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--accent-bright);
+}
+
+.post-composer-header h2 {
+  margin: 2px 0 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  color: var(--text-bright);
+}
+
+.post-composer-close {
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  clip-path: none;
+}
+
+.post-composer-card form {
+  min-height: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.post-composer-card.ui-modal .ui-modal__body {
+  padding: 0;
+}
+
+.post-composer-title {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  outline: none;
+}
+
+.post-composer-title:focus {
+  border-color: var(--composer-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--composer-accent) 18%, transparent);
+}
+
+.post-composer-editor {
+  min-height: 260px;
+  max-height: 42vh;
+}
+
+.post-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.post-composer-footer span {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.post-composer-footer button {
+  flex-shrink: 0;
+  padding: 9px 22px;
+  background: color-mix(in srgb, var(--composer-accent) 72%, #543195);
+  border: 1px solid var(--composer-accent);
+  color: var(--text-bright);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.post-composer-card > .ui-modal__footer .post-composer-footer button:not(.primary) {
+  background: var(--bg-raised);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.post-composer-error {
+  color: var(--red);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .post-composer-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

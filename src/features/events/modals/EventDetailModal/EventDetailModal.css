@@ -1,0 +1,191 @@
+@import '@features/tasks/modals/TodoDetailModal/TodoDetailModal.css';
+
+.event-detail-card {
+  width: min(800px, 94vw);
+  overflow: hidden;
+}
+
+.event-detail-card .detail-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.event-detail-card .detail-header::after {
+  content: '';
+  position: absolute;
+  inset: auto 18px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-bright), transparent);
+  opacity: 0.34;
+}
+
+.event-detail-summary {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(77, 163, 255, 0.14), transparent 52%),
+    var(--bg-surface);
+  border: 1px solid var(--accent-border);
+  overflow: hidden;
+}
+
+.event-detail-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.event-detail-summary--income {
+  background:
+    linear-gradient(135deg, rgba(0, 214, 143, 0.16), transparent 52%),
+    var(--bg-surface);
+  border-color: rgba(0, 214, 143, 0.34);
+}
+
+.event-detail-summary--expense,
+.event-detail-summary--warning {
+  background:
+    linear-gradient(135deg, rgba(255, 61, 87, 0.13), transparent 52%),
+    var(--bg-surface);
+  border-color: rgba(255, 61, 87, 0.3);
+}
+
+.event-detail-summary--item {
+  background:
+    linear-gradient(135deg, rgba(251, 191, 36, 0.15), transparent 52%),
+    var(--bg-surface);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.event-detail-summary--with-image {
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+}
+
+.event-detail-image {
+  position: relative;
+  z-index: 1;
+  width: 104px;
+  min-height: 104px;
+  align-self: stretch;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--accent-border);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.event-detail-summary-copy,
+.event-detail-time {
+  position: relative;
+  z-index: 1;
+}
+
+.event-detail-summary-k {
+  display: block;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.event-detail-primary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-bright);
+}
+
+.event-detail-primary strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.event-detail-primary span {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.event-detail-summary-copy p {
+  margin-top: 8px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.event-detail-time {
+  align-self: start;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.event-detail-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.event-detail-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
+  gap: 12px;
+}
+
+.event-detail-timestamps dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.event-detail-timestamps dt {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.event-detail-timestamps dd {
+  margin: 0;
+  min-width: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .event-detail-summary,
+  .event-detail-summary--with-image,
+  .event-detail-lower {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-image {
+    width: 100%;
+    min-height: 140px;
+  }
+
+  .event-detail-stats {
+    grid-template-columns: 1fr;
+  }
+}

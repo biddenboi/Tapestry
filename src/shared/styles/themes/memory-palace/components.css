@@ -1,0 +1,2 @@
+[data-theme="memory_palace"] :is(.ui-panel,.ui-modal,.road-inspector,.chronicle-card) { backdrop-filter:blur(18px) saturate(1.08); border-color:rgba(203,181,255,.22); }
+[data-theme="memory_palace"] .local-section-nav__item[aria-selected="true"] { border-radius:12px 12px 3px 3px; }

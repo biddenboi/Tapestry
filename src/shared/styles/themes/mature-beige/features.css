@@ -1,0 +1,7 @@
+[data-theme="mature_beige"] :is(.chronicle-card__excerpt, .event-boundary-history, .goal-overview) {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+[data-theme="mature_beige"] .chronicle-card h3 {
+  font-weight: 500;
+}

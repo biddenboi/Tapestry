@@ -1,0 +1,40 @@
+.reminder-modal {
+  --modal-accent: var(--color-warning);
+}
+
+.reminder-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reminder-modal-form input,
+.reminder-modal-form textarea {
+  width: 100%;
+  border-color: color-mix(in srgb, var(--color-warning) 28%, var(--border));
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--bg-void));
+}
+
+.reminder-modal-form textarea {
+  resize: vertical;
+}
+
+.reminder-modal-when {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.reminder-modal-error {
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 42%, var(--border));
+  background: color-mix(in srgb, var(--color-danger) 9%, transparent);
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .reminder-modal-when {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,7 @@
+[data-theme="blueprint"] {
+  --theme-enter-animation: recipe-blueprint-draw 180ms steps(4, end) both;
+}
+
+@keyframes recipe-blueprint-draw {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(var(--recipe-motion-distance)); }
+}

@@ -1,0 +1,9 @@
+[data-theme="editorial_noir"] :is(.chronicle-card, .event-calendar-day, .event-review-summary) {
+  border: var(--recipe-editorial-rule);
+  border-radius: 0;
+  box-shadow: var(--recipe-ink-shadow);
+}
+
+[data-theme="editorial_noir"] .local-section-nav__item:nth-child(even) {
+  transform: translateY(3px);
+}

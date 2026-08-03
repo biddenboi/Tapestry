@@ -1,0 +1,133 @@
+/* RankUpModal — celebratory welcome shown after promoting to a new rank
+ * group. Per-group accent colour echoes the rank colours from Rank.js's
+ * GROUPS table so the modal feels visually tied to the tier you just
+ * earned. Visually distinct from InsufficientPlayersModal — that one is
+ * friction, this one is reward.
+ */
+
+.rankup-modal {
+  /* Default fallback accent — overridden per-rank below. */
+  --rankup-accent: #4da3ff;
+  --rankup-glow:   rgba(77, 163, 255, 0.55);
+
+  max-width: 480px;
+  text-align: center;
+  padding: 36px 32px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Soft radial glow behind the headline echoing the rank colour. */
+.rankup-modal::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160%;
+  height: 80%;
+  background: radial-gradient(ellipse at center, var(--rankup-glow), transparent 65%);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rankup-modal > * {
+  position: relative;
+  z-index: 1;
+}
+
+.rankup-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: var(--rankup-accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.rankup-headline {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+  color: var(--text-primary, #f4f4f5);
+  text-shadow: 0 0 24px var(--rankup-glow);
+}
+
+.rankup-sublabel {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rankup-accent);
+  margin: 0 0 18px;
+  opacity: 0.9;
+}
+
+.rankup-duration {
+  display: inline-block;
+  padding: 8px 18px;
+  margin-bottom: 22px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-primary, #f4f4f5);
+  border: 1px solid var(--rankup-accent);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rankup-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 28px;
+  max-width: 380px;
+  text-align: left;
+}
+
+.rankup-bullets li {
+  position: relative;
+  padding: 8px 0 8px 22px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary, #a1a1aa);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.05));
+}
+
+.rankup-bullets li:last-child {
+  border-bottom: none;
+}
+
+.rankup-bullets li::before {
+  content: '◆';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-size: 10px;
+  color: var(--rankup-accent);
+  opacity: 0.7;
+}
+
+.rankup-cta {
+  min-width: 200px;
+  background: var(--rankup-accent);
+  border-color: var(--rankup-accent);
+  box-shadow: 0 0 16px var(--rankup-glow);
+}
+
+.rankup-cta:hover {
+  filter: brightness(1.1);
+}
+
+/* ── Per-group accent overrides ──
+ * Colours mirror the GROUPS table in Rank.js. */
+.rankup-bronze    { --rankup-accent: #c87941; --rankup-glow: rgba(200, 121, 65, 0.55); }
+.rankup-silver    { --rankup-accent: #c0c8d8; --rankup-glow: rgba(192, 200, 216, 0.55); }
+.rankup-gold      { --rankup-accent: #d4a017; --rankup-glow: rgba(212, 160, 23, 0.6);  }
+.rankup-platinum  { --rankup-accent: #22d3ee; --rankup-glow: rgba(34, 211, 238, 0.55); }
+.rankup-diamond   { --rankup-accent: #60a5fa; --rankup-glow: rgba(96, 165, 250, 0.6);  }
+.rankup-ascendant { --rankup-accent: #00d68f; --rankup-glow: rgba(0, 214, 143, 0.6);   }
+.rankup-immortal  { --rankup-accent: #f43f5e; --rankup-glow: rgba(244, 63, 94, 0.6);   }
+.rankup-radiant   { --rankup-accent: #fde047; --rankup-glow: rgba(253, 224, 71, 0.7);  }

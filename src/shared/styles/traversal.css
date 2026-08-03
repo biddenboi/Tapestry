@@ -1,0 +1,251 @@
+/*
+ * Tapestry traversal choreography
+ *
+ * Motion explains hierarchy and direction; it never delays state changes or input.
+ * Feature layouts own geometry. These rules add a shared arrival rhythm while the
+ * theme's motion pack supplies the personality.
+ */
+
+:root,
+[data-theme] {
+  --traversal-ease: cubic-bezier(.2, .8, .2, 1);
+  --traversal-duration: 260ms;
+  --traversal-nav-duration: 240ms;
+  --traversal-x: 0px;
+  --traversal-y: 8px;
+  --traversal-scale: .992;
+  --traversal-blur: 0px;
+  --traversal-hover-lift: -2px;
+  --traversal-icon-rotate: -6deg;
+  --traversal-symbol: "·";
+}
+
+[data-theme-motion="precise"] { --traversal-duration: 170ms; --traversal-nav-duration: 170ms; --traversal-y: 5px; --traversal-symbol: "＋"; }
+[data-theme-motion="crisp"] { --traversal-duration: 150ms; --traversal-nav-duration: 160ms; --traversal-y: 3px; --traversal-symbol: "—"; }
+[data-theme-motion="spring"] { --traversal-duration: 330ms; --traversal-nav-duration: 300ms; --traversal-ease: cubic-bezier(.2, 1.35, .38, 1); --traversal-y: 12px; --traversal-scale: .965; --traversal-hover-lift: -3px; --traversal-symbol: "✦"; }
+[data-theme-motion="drift"] { --traversal-duration: 480ms; --traversal-nav-duration: 360ms; --traversal-ease: cubic-bezier(.16, 1, .3, 1); --traversal-x: 10px; --traversal-y: 12px; --traversal-blur: 5px; --traversal-symbol: "☁"; }
+[data-theme-motion="stepped"] { --traversal-duration: 180ms; --traversal-nav-duration: 160ms; --traversal-ease: steps(4, end); --traversal-x: 6px; --traversal-y: 6px; --traversal-scale: 1; --traversal-hover-lift: -2px; --traversal-icon-rotate: 0deg; --traversal-symbol: "▦"; }
+[data-theme-motion="composed"] { --traversal-duration: 260ms; --traversal-nav-duration: 230ms; --traversal-ease: cubic-bezier(.22, 1, .36, 1); --traversal-y: 8px; --traversal-symbol: "❧"; }
+[data-theme-motion="snap"] { --traversal-duration: 130ms; --traversal-nav-duration: 110ms; --traversal-ease: steps(3, end); --traversal-x: 5px; --traversal-y: 5px; --traversal-scale: 1; --traversal-hover-lift: 0px; --traversal-icon-rotate: 0deg; --traversal-symbol: "▣"; }
+[data-theme-motion="dock"] { --traversal-duration: 230ms; --traversal-nav-duration: 210ms; --traversal-ease: cubic-bezier(.16, 1, .3, 1); --traversal-x: -14px; --traversal-y: 0px; --traversal-symbol: "⌁"; }
+[data-theme-motion="reward"] { --traversal-duration: 390ms; --traversal-nav-duration: 300ms; --traversal-ease: cubic-bezier(.22, 1.3, .36, 1); --traversal-y: 16px; --traversal-scale: .95; --traversal-hover-lift: -3px; --traversal-symbol: "★"; }
+[data-theme-motion="growth"] { --traversal-duration: 310ms; --traversal-nav-duration: 270ms; --traversal-ease: cubic-bezier(.16, 1, .3, 1); --traversal-y: 13px; --traversal-scale: .98; --traversal-symbol: "✤"; }
+[data-theme-motion="bubble"] { --traversal-duration: 340ms; --traversal-nav-duration: 290ms; --traversal-ease: cubic-bezier(.18, 1.2, .32, 1); --traversal-y: 15px; --traversal-scale: .97; --traversal-hover-lift: -3px; --traversal-symbol: "◉"; }
+[data-theme-motion="draft"] { --traversal-duration: 210ms; --traversal-nav-duration: 190ms; --traversal-ease: steps(4, end); --traversal-x: -9px; --traversal-y: 4px; --traversal-scale: 1; --traversal-icon-rotate: 0deg; --traversal-symbol: "⌗"; }
+[data-theme-motion="cinematic"] { --traversal-duration: 280ms; --traversal-nav-duration: 220ms; --traversal-ease: cubic-bezier(.7, 0, .2, 1); --traversal-y: 12px; --traversal-symbol: "◩"; }
+[data-theme-motion="orbit"] { --traversal-duration: 320ms; --traversal-nav-duration: 280ms; --traversal-ease: cubic-bezier(.16, 1, .3, 1); --traversal-x: 10px; --traversal-y: 7px; --traversal-scale: .982; --traversal-icon-rotate: -24deg; --traversal-symbol: "✧"; }
+[data-theme-motion="handmade"] { --traversal-duration: 280ms; --traversal-nav-duration: 250ms; --traversal-ease: cubic-bezier(.22, 1, .36, 1); --traversal-y: 9px; --traversal-symbol: "✎"; }
+[data-theme-motion="recollection"] { --traversal-duration: 390ms; --traversal-nav-duration: 310ms; --traversal-ease: cubic-bezier(.16, 1, .3, 1); --traversal-x: 13px; --traversal-y: 5px; --traversal-blur: 6px; --traversal-symbol: "◇"; }
+[data-theme-motion="gather"] { --traversal-duration: 300ms; --traversal-nav-duration: 270ms; --traversal-ease: cubic-bezier(.2, .9, .25, 1); --traversal-y: 10px; --traversal-scale: .98; --traversal-symbol: "◎"; }
+
+[data-traversal-surface="tasks"] { --traversal-accent: var(--color-task); --traversal-landmark: "✓"; }
+[data-traversal-surface="events"] { --traversal-accent: var(--color-event); --traversal-landmark: "◴"; }
+[data-traversal-surface="feed"] { --traversal-accent: var(--color-feed); --traversal-landmark: "¶"; }
+[data-traversal-surface="inventory"],
+[data-traversal-surface="shop"],
+[data-traversal-surface="pass"] { --traversal-accent: var(--color-inventory); --traversal-landmark: "◇"; }
+[data-traversal-surface="profile"],
+[data-traversal-surface="profiles"],
+.hub-inbox-drawer { --traversal-accent: var(--color-profile); --traversal-landmark: "◌"; }
+[data-traversal-surface="settings"] { --traversal-accent: var(--accent-bright); --traversal-landmark: "⚙"; }
+[data-traversal-surface="lobby"] { --traversal-accent: var(--color-match); --traversal-landmark: "⌂"; }
+[data-traversal-surface="match"] { --traversal-accent: var(--color-match); --traversal-landmark: "⚔"; }
+[data-traversal-surface="dojo"] { --traversal-accent: var(--gold); --traversal-landmark: "◈"; }
+
+:where(.hub-world-panel, .hub-lobby-menu, .hub-focus-overlay)[data-traversal-surface] {
+  isolation: isolate;
+}
+
+:where(.hub-world-panel, .hub-lobby-menu)[data-traversal-surface]::after {
+  position: absolute;
+  right: clamp(18px, 4vw, 64px);
+  bottom: clamp(14px, 3vw, 44px);
+  z-index: -1;
+  content: var(--traversal-landmark, var(--traversal-symbol));
+  color: color-mix(in srgb, var(--traversal-accent, var(--accent-bright)) 10%, transparent);
+  font: 800 clamp(68px, 11vw, 170px)/1 var(--font-display);
+  pointer-events: none;
+  transform: rotate(-7deg);
+}
+
+.hub-page[data-traversal-page] {
+  position: relative;
+  z-index: 1;
+  animation: traversal-scene-arrive var(--traversal-duration) var(--traversal-ease) both;
+}
+
+.hub-world-button--nav .hub-nav-icon {
+  transform-origin: center;
+  transition: transform var(--traversal-nav-duration) var(--traversal-ease), filter var(--theme-transition);
+}
+
+.hub-world-button--nav:hover .hub-nav-icon,
+.hub-world-button--nav:focus-visible .hub-nav-icon {
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--nav-color, var(--accent-bright)) 48%, transparent));
+  transform: translateY(-1px) scale(1.08) rotate(var(--traversal-icon-rotate));
+}
+
+.hub-world-button--nav.active .hub-nav-icon {
+  animation: traversal-nav-confirm var(--traversal-duration) var(--traversal-ease) both;
+}
+
+@keyframes traversal-nav-confirm {
+  from { opacity: .42; transform: scale(.72) rotate(var(--traversal-icon-rotate)); }
+}
+
+@keyframes traversal-scene-arrive {
+  from {
+    opacity: 0;
+    filter: blur(var(--traversal-blur));
+    transform: translate(var(--traversal-x), var(--traversal-y)) scale(var(--traversal-scale));
+  }
+}
+
+[data-traversal-active="true"] .local-section-nav ~ :not(.local-section-nav):not([hidden]),
+[data-traversal-active="true"] .ui-section-tabs ~ :not([hidden]) {
+  animation: traversal-section-forward var(--traversal-duration) var(--traversal-ease) both;
+}
+
+[data-traversal-active="true"][data-traversal-direction="backward"] .local-section-nav ~ :not(.local-section-nav):not([hidden]),
+[data-traversal-active="true"][data-traversal-direction="backward"] .ui-section-tabs ~ :not([hidden]) {
+  animation-name: traversal-section-backward;
+}
+
+@keyframes traversal-section-forward {
+  from { opacity: 0; filter: blur(var(--traversal-blur)); transform: translateX(max(8px, var(--traversal-x))) translateY(calc(var(--traversal-y) * .35)); }
+}
+
+@keyframes traversal-section-backward {
+  from { opacity: 0; filter: blur(var(--traversal-blur)); transform: translateX(min(-8px, calc(var(--traversal-x) * -1))) translateY(calc(var(--traversal-y) * .35)); }
+}
+
+/* Page landmarks: a small route marker makes repeated page structures feel intentional. */
+:where(.ui-page-header, .event-local-page__header, .habit-page-header, .chronicle-page__header) {
+  position: relative;
+}
+
+:where(.ui-page-header, .event-local-page__header, .habit-page-header, .chronicle-page__header)::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, var(--traversal-accent, var(--accent-bright)), color-mix(in srgb, var(--traversal-accent, var(--accent-bright)) 16%, transparent) 58%, transparent);
+  pointer-events: none;
+  transform-origin: left;
+  animation: traversal-route-draw var(--traversal-duration) var(--traversal-ease) both;
+}
+
+@keyframes traversal-route-draw { from { opacity: 0; transform: scaleX(.08); } }
+
+:where(.ui-page-header__eyebrow, .event-local-page__eyebrow, .habit-page-eyebrow, .chronicle-kicker)::before {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  content: '';
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 24%, transparent);
+  transform: rotate(45deg);
+  transition: transform var(--traversal-nav-duration) var(--traversal-ease), background var(--traversal-nav-duration) ease;
+}
+
+[data-traversal-surface]:hover :where(.ui-page-header__eyebrow, .event-local-page__eyebrow, .habit-page-eyebrow, .chronicle-kicker)::before {
+  background: currentColor;
+  transform: rotate(135deg);
+}
+
+/* Cards remain still by default; interaction produces one concise tactile response. */
+:where(
+  .ui-entity-card, .ui-panel, .inv-card, .shop-card, .chronicle-card,
+  .chronicle-story-tile, .habit-card, .goal-card, .settings-section, .leader-row,
+  .lobby-reminder-capsule, .task-now-card, .task-history-entry
+) {
+  transition:
+    transform var(--traversal-nav-duration) var(--traversal-ease),
+    border-color var(--theme-transition),
+    box-shadow var(--theme-transition),
+    filter var(--theme-transition);
+}
+
+:where(
+  .ui-entity-card, .inv-card, .shop-card, .chronicle-card,
+  .chronicle-story-tile, .habit-card, .goal-card, .leader-row,
+  .lobby-reminder-capsule, .task-now-card, .task-history-entry
+):hover {
+  border-color: color-mix(in srgb, var(--traversal-accent, var(--accent-bright)) 48%, var(--border));
+  filter: brightness(1.035);
+  transform: translateY(var(--traversal-hover-lift));
+}
+
+:where(.ui-empty-state, .inv-empty, .chronicle-empty) :where(.ui-empty-state__icon, [aria-hidden="true"]):first-child {
+  transform-origin: center;
+  animation: traversal-empty-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes traversal-empty-breathe {
+  50% { opacity: .72; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--traversal-accent, var(--accent-bright)) 42%, transparent)); transform: translateY(-2px) scale(1.04); }
+}
+
+/* List arrival rhythm. Limited to the first eight items so long histories never feel slow. */
+:where(
+  .inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid
+) > :nth-child(-n + 8) {
+  animation: traversal-item-arrive var(--traversal-duration) var(--traversal-ease) both;
+  animation-delay: calc((var(--traversal-order, 0)) * 28ms);
+}
+
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(2) { --traversal-order: 1; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(3) { --traversal-order: 2; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(4) { --traversal-order: 3; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(5) { --traversal-order: 4; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(6) { --traversal-order: 5; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(7) { --traversal-order: 6; }
+:where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(8) { --traversal-order: 7; }
+
+@keyframes traversal-item-arrive {
+  from { opacity: 0; filter: blur(calc(var(--traversal-blur) * .6)); transform: translateY(calc(var(--traversal-y) * .8)) scale(var(--traversal-scale)); }
+}
+
+/* Theme-native accents without changing page geometry. */
+[data-theme-motion="draft"] [data-traversal-surface] .local-section-nav__indicator { border-style: dashed; }
+[data-theme-motion="stepped"] [data-traversal-surface] :where(.local-section-nav__indicator, .ui-empty-state__icon) { image-rendering: pixelated; }
+[data-theme-motion="cinematic"] [data-traversal-surface] .ui-page-header h1 { text-wrap: balance; }
+[data-theme-motion="orbit"] [data-traversal-surface]::after { transform: rotate(-7deg); animation: traversal-orbit-landmark 12s linear infinite; }
+[data-theme-motion="handmade"] [data-traversal-surface]::after { transform: rotate(-4deg); }
+[data-theme-motion="gather"] [data-traversal-surface]::after { letter-spacing: -.25em; }
+
+@keyframes traversal-orbit-landmark { to { transform: rotate(353deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-traversal-surface]::after,
+  .hub-world-button--nav.active .hub-nav-icon,
+  :where(.ui-page-header, .event-local-page__header, .habit-page-header, .chronicle-page__header)::after,
+  .hub-page[data-traversal-page],
+  [data-traversal-active="true"] .local-section-nav ~ :not(.local-section-nav):not([hidden]),
+  [data-traversal-active="true"] .ui-section-tabs ~ :not([hidden]),
+  :where(.ui-empty-state, .inv-empty, .chronicle-empty) :where(.ui-empty-state__icon, [aria-hidden="true"]):first-child,
+  :where(.inv-grid, .chronicle-grid, .opening-trail-grid, .appearance-studio__grid, .shop-grid) > :nth-child(-n + 8) {
+    animation: none !important;
+  }
+
+  :where(.local-section-nav__indicator, .ui-entity-card, .inv-card, .shop-card, .chronicle-card, .habit-card, .goal-card) {
+    transition-duration: .001ms !important;
+  }
+}
+
+[data-reduced-motion] [data-traversal-surface]::after,
+[data-reduced-motion] .hub-page[data-traversal-page],
+[data-reduced-motion] [data-traversal-active="true"] .local-section-nav ~ :not(.local-section-nav):not([hidden]),
+[data-reduced-motion] [data-traversal-active="true"] .ui-section-tabs ~ :not([hidden]) {
+  animation: none !important;
+}
+
+@media (max-width: 700px) {
+  :where(.hub-world-panel, .hub-lobby-menu)[data-traversal-surface]::after {
+    right: 12px;
+    bottom: 12px;
+    font-size: 64px;
+  }
+}

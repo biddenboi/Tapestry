@@ -1,0 +1,80 @@
+.mobile-cloud-bootstrap-shell {
+  min-height: 100dvh;
+}
+
+.mobile-cloud-bootstrap__actions {
+  width: 100%;
+}
+
+.mobile-cloud-bootstrap__card {
+  min-height: 132px;
+  align-content: center;
+}
+
+.mobile-cloud-bootstrap__notice {
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-bright);
+  background: color-mix(in srgb, var(--color-profile) 12%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--color-profile) 30%, var(--border));
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.mobile-cloud-bootstrap__password {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-profile) 30%, var(--border));
+  background: color-mix(in srgb, var(--color-profile) 8%, var(--bg-surface));
+  border-radius: var(--radius-sm);
+}
+
+.mobile-cloud-bootstrap__password label {
+  color: var(--text-bright);
+  font-weight: 700;
+}
+
+.mobile-cloud-bootstrap__password span,
+.mobile-cloud-bootstrap__password small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.mobile-cloud-bootstrap__divider {
+  text-align: center;
+}
+
+.mobile-cloud-bootstrap__password input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 var(--space-3);
+  color: var(--text-bright);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.mobile-cloud-bootstrap__password button {
+  min-height: 46px;
+}
+
+.mobile-cloud-bootstrap__recovery-note {
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .mobile-cloud-bootstrap .ui-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .mobile-cloud-bootstrap__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-cloud-bootstrap__actions button {
+    width: 100%;
+    min-height: 46px;
+  }
+}

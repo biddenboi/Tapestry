@@ -1,0 +1,197 @@
+/* Color-blocked task workspace */
+div.todo-list--hub {
+    --page-accent: var(--color-task);
+    background:
+        radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--color-task) 12%, transparent), transparent 34rem),
+        var(--bg-void);
+}
+
+.todo-hub-header {
+    padding: 20px 22px;
+    background:
+        linear-gradient(110deg, color-mix(in srgb, var(--color-task) 13%, transparent), transparent 72%),
+        var(--bg-surface);
+    border: 1px solid color-mix(in srgb, var(--color-task) 36%, var(--border));
+    border-radius: var(--radius-lg);
+}
+
+.todo-hub-stats .ui-metric-card {
+    background: var(--bg-card);
+}
+.todo-hub-stats .ui-metric-card:nth-child(1) { border-top-color: var(--color-task); }
+.todo-hub-stats .ui-metric-card:nth-child(2) { border-top-color: var(--color-danger); }
+.todo-hub-stats .ui-metric-card:nth-child(3) { border-top-color: var(--color-event); }
+.todo-hub-stats .ui-metric-card:nth-child(4) { border-top-color: var(--color-inventory); }
+.todo-hub-stats .ui-metric-card:nth-child(5) { border-top-color: var(--color-feed); }
+.todo-hub-stats .ui-metric-card:nth-child(6) { border-top-color: var(--color-goal); }
+
+.todo-hub-tabs {
+    padding: 0 12px;
+    background: color-mix(in srgb, var(--color-task) 6%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--color-task) 26%, var(--border));
+    border-radius: var(--radius-md);
+}
+
+.todo-hub-controls {
+    padding: 10px;
+    background: color-mix(in srgb, var(--color-task) 5%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--color-task) 24%, var(--border));
+    border-radius: var(--radius-md);
+}
+
+.todo-hub-controls input,
+.todo-hub-controls select {
+    background: color-mix(in srgb, var(--color-task) 8%, var(--bg-void));
+}
+
+.todo-section-grid > .todo-task-section:nth-child(1) {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-danger) 9%, transparent), transparent 48%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--color-danger) 34%, var(--border));
+}
+
+.todo-section-grid > .todo-task-section:nth-child(2) {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-task) 9%, transparent), transparent 48%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--color-task) 34%, var(--border));
+}
+
+.todo-section-grid > .todo-task-section:nth-child(3) {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-feed) 8%, transparent), transparent 48%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--color-feed) 32%, var(--border));
+}
+
+.todo-section-grid > .todo-task-section:nth-child(4) {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-inventory) 8%, transparent), transparent 48%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--color-inventory) 30%, var(--border));
+}
+
+.todo-calendar-panel,
+.todo-planning-tray,
+.todo-board-column,
+.todo-deadline-day,
+.todo-completed-row {
+    background: var(--surface-task);
+}
+
+.todo-hub-task-card {
+    background:
+        linear-gradient(100deg, color-mix(in srgb, var(--task-color, var(--color-task)) 8%, transparent), transparent 42%),
+        var(--bg-surface);
+}
+
+.todo-hub-task-card:hover,
+.todo-hub-task-card.selected {
+    background:
+        linear-gradient(100deg, color-mix(in srgb, var(--task-color, var(--color-task)) 13%, transparent), transparent 48%),
+        var(--bg-raised);
+}
+
+/* Product-wide task layout cleanup */
+div.todo-list--hub {
+    gap: 14px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--color-task) 15%, transparent), transparent 34rem),
+        var(--bg-void);
+}
+
+.todo-hub-header {
+    --page-accent: var(--color-task);
+    margin-bottom: 0;
+    padding-right: 22px;
+}
+
+.todo-hub-stats {
+    gap: 1px;
+}
+
+.todo-hub-stats .ui-metric-card:nth-child(2) strong {
+    color: var(--color-danger);
+}
+
+.todo-calendar-panel,
+.todo-planning-tray,
+.todo-task-section,
+.todo-project-card,
+.todo-board-column,
+.todo-deadline-day,
+.todo-completed-row {
+    border-radius: var(--radius-md);
+    clip-path: none;
+}
+
+.todo-task-pill {
+    border-left-color: var(--task-color, var(--color-task));
+    border-radius: var(--radius-xs);
+}
+
+.todo-task-pill--active,
+.todo-task-pill--urgent,
+.todo-task-pill--critical {
+    border-left-color: var(--task-color, var(--color-task));
+}
+
+.todo-hub-task-card {
+    border-left: 4px solid var(--task-color, var(--color-task));
+    border-radius: var(--radius-sm);
+    clip-path: none;
+}
+
+.todo-hub-task-card--active,
+.todo-hub-task-card--urgent,
+.todo-hub-task-card--critical {
+    border-left-color: var(--task-color, var(--color-task));
+}
+
+.todo-hub-task-card--urgent .todo-hub-task-tier {
+    color: var(--color-warning);
+}
+
+.todo-hub-task-card--critical .todo-hub-task-tier {
+    color: var(--color-danger);
+}
+
+.todo-hub-empty.ui-empty-state {
+    min-height: 94px;
+    padding: 16px;
+    text-align: left;
+}
+
+@media (max-width: 820px) {
+    .todo-hub-header {
+        padding-right: 16px;
+    }
+
+    .todo-hub-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+}
+
+.todo-header-actions button,
+.ui-page-header__actions .todo-header-actions button {
+    min-height: 34px;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+}
+
+.todo-header-actions .primary,
+.ui-page-header__actions .todo-header-actions .primary {
+    padding-inline: 18px;
+}
+
+.todo-hub-search:focus,
+.todo-hub-search:focus-visible,
+.todo-reminder-controls input:focus,
+.todo-reminder-controls input:focus-visible {
+    box-shadow: none;
+    outline: none;
+}

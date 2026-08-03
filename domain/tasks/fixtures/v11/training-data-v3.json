@@ -1,0 +1,81 @@
+{
+  "format": "tapestry-task-recommender-training-data",
+  "formatVersion": 3,
+  "exportedAt": "2026-07-01T13:00:00.000Z",
+  "playerUUID": "player-1",
+  "eventSchemaVersion": 2,
+  "rawContextSchemaVersion": 1,
+  "modelVersion": 11,
+  "algorithm": "tars-v11-wide-field-fm-deepfm-lite-untyped-bandit",
+  "policyVersion": "tars-v11-untyped-action-bandit",
+  "featureSchemaVersion": 5,
+  "rewardSchemaVersion": 3,
+  "settings": {
+    "enabled": true,
+    "continuousTraining": true
+  },
+  "modelMetadata": {
+    "trainedAt": "2026-07-01T11:00:00.000Z",
+    "trainingEvents": 1,
+    "validationLoss": 0.2
+  },
+  "recommenderEvents": [
+    {
+      "UUID": "legacy-decision-1",
+      "parent": "player-1",
+      "type": "next-task-impression",
+      "source": "tasks",
+      "taskUUID": "task-1",
+      "taskName": "Write outline",
+      "probability": 0.4,
+      "taskSnapshot": {
+        "UUID": "task-1",
+        "parent": "player-1",
+        "name": "Write outline",
+        "requiredTimerMinutes": 20,
+        "suggestedMinutes": 20
+      },
+      "decisionContext": {
+        "schemaVersion": 1,
+        "raw": {
+          "request": {
+            "source": "tasks"
+          },
+          "openTasks": [
+            {
+              "UUID": "task-1",
+              "name": "Write outline"
+            }
+          ]
+        }
+      },
+      "outcomeHistory": [
+        {
+          "rawOutcome": "accepted",
+          "occurredAt": "2026-07-01T12:01:00.000Z",
+          "acceptedMinutes": 20
+        }
+      ],
+      "features": {
+        "bias": 1,
+        "durationFit": 0.9
+      },
+      "reward": 0.7,
+      "labels": {
+        "start": 1
+      },
+      "createdAt": "2026-07-01T12:00:00.000Z",
+      "outcomeAt": "2026-07-01T12:01:00.000Z"
+    }
+  ],
+  "referenceData": {
+    "tasks": [
+      {
+        "UUID": "task-1",
+        "parent": "player-1",
+        "name": "Write outline"
+      }
+    ],
+    "todos": []
+  }
+}

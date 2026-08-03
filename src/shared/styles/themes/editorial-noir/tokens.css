@@ -1,0 +1,5 @@
+[data-theme="editorial_noir"] {
+  --recipe-editorial-rule: 1px solid rgba(248, 242, 226, .22);
+  --recipe-ink-shadow: 14px 14px 0 rgba(0, 0, 0, .38);
+  --recipe-motion-distance: 14px;
+}

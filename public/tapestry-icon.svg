@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Tapestry">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16243b"/>
+      <stop offset="1" stop-color="#0c101b"/>
+    </linearGradient>
+    <linearGradient id="thread" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#65d6c4"/>
+      <stop offset="1" stop-color="#879cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M128 146h256M128 218h256M128 290h256M128 362h256" fill="none" stroke="#34435c" stroke-width="26" stroke-linecap="round"/>
+  <path d="M170 112v288M256 112v288M342 112v288" fill="none" stroke="#26334a" stroke-width="26" stroke-linecap="round"/>
+  <path d="M128 146h128v72h128v72H256v72H128M170 112v106h86v72h86v110" fill="none" stroke="url(#thread)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="170" cy="146" r="15" fill="#e8fbf7"/>
+  <circle cx="342" cy="362" r="15" fill="#e8edff"/>
+</svg>

@@ -1,0 +1,7 @@
+[data-theme="old_windows"] {
+  --theme-enter-animation: recipe-window-open 100ms steps(3, end) both;
+}
+
+@keyframes recipe-window-open {
+  from { opacity: 0; clip-path: inset(45%); }
+}

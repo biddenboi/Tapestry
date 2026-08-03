@@ -1,0 +1,7 @@
+[data-theme="pixelated"] {
+  --theme-enter-animation: recipe-pixel-step 160ms steps(4, end) both;
+}
+
+@keyframes recipe-pixel-step {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)); }
+}

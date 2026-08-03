@@ -1,0 +1,196 @@
+.session-results {
+    position: fixed;
+    inset: 0;
+    z-index: 170;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.results-card {
+    position: relative;
+    z-index: 1;
+    width: min(640px, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-task) 8%, transparent), transparent 42%),
+        var(--bg-card);
+    box-shadow: var(--box-shadow);
+    animation: results-card-rise .18s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.results-header {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-raised);
+}
+
+.results-header p {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.results-eyebrow,
+.results-summary span,
+.results-return > span,
+.results-integration-row > span {
+    color: var(--text-dim);
+    font: 800 9px/1 'JetBrains Mono', monospace;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.results-eyebrow {
+    color: var(--accent-bright);
+    letter-spacing: .2em;
+}
+
+.results-title {
+    margin: 0;
+    color: var(--text-bright);
+    font: 400 34px/1 var(--font-display, Georgia, serif);
+}
+
+.results-summary {
+    display: grid;
+    grid-template-columns: 1.35fr .75fr 1fr;
+    gap: 1px;
+    border-bottom: 1px solid var(--border);
+    background: var(--border);
+}
+
+.results-summary > div {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+    padding: 16px;
+    background: var(--bg-surface);
+}
+
+.results-summary strong {
+    overflow-wrap: anywhere;
+    color: var(--text-bright);
+    font-size: 13px;
+}
+
+.results-return,
+.results-integration,
+.results-provenance,
+.results-match-score {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+}
+
+.results-match-score {
+    display: grid;
+    gap: 9px;
+    background: color-mix(in srgb, var(--accent) 7%, var(--bg-surface));
+}
+
+.results-match-score > span {
+    color: var(--accent-bright);
+    font: 800 9px/1 'JetBrains Mono', monospace;
+    letter-spacing: .14em;
+}
+
+.results-match-score__formula {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.results-match-score__formula strong { color: var(--text-bright); }
+.results-match-score__formula i { color: var(--text-muted); font-style: normal; }
+.results-match-score p { margin: 0; color: var(--text-muted); font-size: 11px; }
+
+.results-return {
+    display: grid;
+    gap: 7px;
+    background: color-mix(in srgb, var(--color-task) 7%, var(--bg-surface));
+}
+
+.results-return p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: capitalize;
+}
+
+.results-return strong {
+    color: var(--text-bright);
+    font-size: 14px;
+}
+
+.results-integration h2 {
+    margin: 0 0 10px;
+    color: var(--text-bright);
+    font-size: 15px;
+}
+
+.results-integration-row {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.results-integration-row strong {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.results-provenance summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.results-provenance p {
+    display: grid;
+    gap: 3px;
+    margin: 10px 0 0;
+    color: var(--text);
+    font-size: 11px;
+}
+
+.results-provenance p span {
+    color: var(--text-dim);
+}
+
+.results-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 22px;
+    background: var(--bg-surface);
+}
+
+@keyframes results-card-rise {
+    from { opacity: 0; transform: translateY(14px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 620px) {
+    .results-card {
+        width: min(94vw, 640px);
+    }
+
+    .results-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .results-card {
+        animation: none;
+    }
+}

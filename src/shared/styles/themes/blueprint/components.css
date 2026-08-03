@@ -1,0 +1,10 @@
+[data-theme="blueprint"] :is(.chronicle-card, .event-calendar-day, .event-boundary-history) {
+  border: var(--recipe-drawing-rule);
+  border-radius: 1px;
+  box-shadow: 8px 8px 0 rgba(8, 65, 112, .28);
+}
+
+[data-theme="blueprint"] .local-section-nav__item[aria-selected="true"] {
+  outline: 1px dashed var(--accent-bright);
+  outline-offset: -4px;
+}

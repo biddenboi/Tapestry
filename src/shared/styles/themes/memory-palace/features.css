@@ -1,0 +1,2 @@
+[data-theme="memory_palace"] :is(.profile-block,.chronicle-card,.road-node) { background-image:radial-gradient(circle at 85% 0%,rgba(196,167,255,.12),transparent 50%); }
+[data-theme="memory_palace"] .chronicle-time-group { letter-spacing:.16em; }

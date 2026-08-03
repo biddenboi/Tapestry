@@ -1,0 +1,39 @@
+{
+  "id": "slate",
+  "version": 1,
+  "setId": "slate",
+  "label": "Slate",
+  "description": "Slate preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#7eb6ff",
+    "base": "#1a1a2e"
+  },
+  "motion": "ambient",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "contribution-road"
+}

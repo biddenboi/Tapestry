@@ -1,0 +1,10 @@
+[data-theme="dreamcore"] :is(.chronicle-card, .event-calendar-day, .event-review-summary) {
+  backdrop-filter: var(--recipe-haze);
+  box-shadow: var(--recipe-drift-shadow);
+}
+
+[data-theme="dreamcore"] .local-section-nav {
+  width: min(920px, calc(100% - 30px));
+  margin: 12px auto 0;
+  border-radius: 999px;
+}

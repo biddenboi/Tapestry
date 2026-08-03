@@ -1,0 +1,527 @@
+/* ════════════════════════════════════════════════════════════════════
+   DEBUFF / REVERSE MODIFIERS
+   Applied via .evt-debuff on cards & detail page wrappers, and via
+   .evt-type-debuff on the type pill. Default red theming kicks in only
+   when no custom accent/banner has been set (those are handled by
+   accentVarsFor / bannerStyle in the JSX).
+   ════════════════════════════════════════════════════════════════════ */
+/* ── Amber debuff palette ────────────────────────────────────────── */
+.evt-card-side-buff--debuff { color: #f59f00; }
+
+.evt-type-debuff {
+    color: #f59f00 !important;
+    border-color: rgba(245, 159, 0, 0.42) !important;
+    background: rgba(245, 159, 0, 0.12) !important;
+}
+
+/* "I slipped" button — reverse habits. Amber, subdued. */
+.evt-action-btn--reverse {
+    background: rgba(245, 159, 0, 0.10);
+    border-color: rgba(245, 159, 0, 0.42);
+    color: #f59f00;
+}
+.evt-action-btn--reverse:hover:not(:disabled) {
+    background: rgba(245, 159, 0, 0.20);
+}
+
+/* Form: highlight slider label when in negative territory */
+.evt-form-field--debuff > span:first-child {
+    color: #f59f00;
+}
+.evt-form-slider--debuff {
+    accent-color: #f59f00;
+}
+
+/* Color-blocked event system */
+.evt-page {
+    --evt-accent: var(--color-event);
+    --evt-accent-soft: color-mix(in srgb, var(--color-event) 16%, transparent);
+    --evt-accent-border: color-mix(in srgb, var(--color-event) 40%, transparent);
+    background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--color-event) 11%, transparent), transparent 38rem),
+        var(--bg-void);
+}
+
+.evt-main-header {
+    background:
+        linear-gradient(110deg, color-mix(in srgb, var(--color-event) 14%, transparent), transparent 72%),
+        var(--bg-surface);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-event) 38%, var(--border));
+}
+
+.evt-tabs.ui-section-tabs {
+    background: color-mix(in srgb, var(--color-event) 5%, var(--bg-surface));
+    border-bottom-color: color-mix(in srgb, var(--color-event) 30%, var(--border));
+}
+
+.evt-habit-board,
+.evt-goals-board {
+    background-color: color-mix(in srgb, var(--color-event) 4%, var(--bg-void));
+}
+
+.evt-card {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--evt-accent) 9%, transparent), transparent 52%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--evt-accent) 32%, var(--border));
+}
+
+.evt-card-body {
+    background: transparent;
+}
+
+.evt-card-side {
+    background: color-mix(in srgb, var(--evt-accent) 7%, var(--bg-surface));
+}
+
+.evt-card-meta-pill,
+.evt-type-badge {
+    border-radius: 999px;
+}
+
+.evt-goal-card,
+.evt-goal-stat,
+.evt-goal-panel {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--evt-accent) 8%, transparent), transparent 54%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--evt-accent) 30%, var(--border));
+}
+
+.evt-detail {
+    background: color-mix(in srgb, var(--evt-accent) 5%, var(--bg-void));
+}
+
+.evt-stat-block,
+.evt-quant-log,
+.evt-section--timeline,
+.evt-section--history,
+.evt-section--compact,
+.evt-section--dojo-status,
+.evt-section--dojo-info {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--evt-accent) 7%, transparent), transparent 54%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--evt-accent) 28%, var(--border));
+    border-radius: var(--radius-md);
+}
+
+/* Compact event records: metrics read as one summary line, not a card wall. */
+.evt-detail-stats {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.evt-stat-block {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 16px;
+    background: transparent !important;
+    border: 0 !important;
+    border-right: 1px solid var(--border-subtle) !important;
+    border-radius: 0 !important;
+}
+
+.evt-stat-block:last-child {
+    border-right: 0 !important;
+}
+
+.evt-stat-num {
+    font-size: clamp(20px, 3vw, 28px);
+}
+
+.evt-dojo-status-grid,
+.evt-dojo-info-grid,
+.evt-ritual-formula {
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.evt-dojo-status-card,
+.evt-dojo-info-card,
+.evt-ritual-formula > div {
+    padding: 13px 15px;
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.evt-dojo-status-card:last-child,
+.evt-dojo-info-card:last-child,
+.evt-ritual-formula > div:last-child {
+    border-right: 0;
+}
+
+@media (max-width: 760px) {
+    .evt-detail-stats {
+        flex-direction: column;
+    }
+
+    .evt-stat-block,
+    .evt-dojo-status-card,
+    .evt-dojo-info-card,
+    .evt-ritual-formula > div {
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+    }
+
+    .evt-goal-timeline-day {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .evt-goal-overview-status {
+        margin-left: 0;
+    }
+}
+
+/* ── Map sidebar editor overlay ───────────────────────────── */
+.evt-page--backgrounded {
+    opacity: 0.42;
+    filter: saturate(0.72);
+    pointer-events: none;
+    transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.evt-editor-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 72;
+    background: color-mix(in srgb, var(--bg-void) 10%, transparent);
+    animation: evt-editor-layer-in 0.16s ease both;
+}
+
+.evt-editor-capsule {
+    position: fixed;
+    top: 22px;
+    right: 18px;
+    bottom: 22px;
+    left: clamp(540px, 64vw, 640px);
+    min-width: 292px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--color-event) 42%, transparent);
+    border-radius: 8px;
+    background: var(--surface-glass-strong);
+    box-shadow: 0 28px 86px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(18px);
+    animation: evt-editor-capsule-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.evt-editor-capsule .evt-page {
+    height: 100%;
+    background: transparent;
+}
+
+.evt-editor-capsule .evt-form,
+.evt-editor-capsule .evt-form-pick {
+    max-width: none;
+    height: 100%;
+    padding: 22px;
+    overflow-y: auto;
+}
+
+.evt-editor-capsule .evt-form-row,
+.evt-editor-capsule .evt-form-pick-grid {
+    grid-template-columns: 1fr;
+}
+
+.evt-editor-capsule .evt-header {
+    padding-right: 22px;
+}
+
+@keyframes evt-editor-layer-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes evt-editor-capsule-in {
+    from { opacity: 0; transform: translateX(18px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 760px) {
+    .evt-detail-back-bar {
+        padding: 12px 54px 12px 14px;
+        align-items: flex-start;
+    }
+
+    .evt-detail-back-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .evt-editor-capsule {
+        left: 14px;
+        right: 14px;
+        top: 72px;
+        bottom: 18px;
+        min-width: 0;
+    }
+}
+
+/* ── Detail structure inside the world shell ─────────────────────────────── */
+.evt-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 28px 40px;
+    display: grid;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.evt-detail-body--split {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+
+.evt-detail-body--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.evt-detail-col {
+    min-width: 0;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.evt-detail-primary,
+.evt-detail-rail {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+}
+
+.evt-goal-panel--report {
+    grid-column: 1 / -1;
+}
+
+.evt-goal-report-form {
+    display: grid;
+    gap: 12px;
+}
+
+.evt-goal-report-entry {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+    align-items: stretch;
+}
+
+.evt-goal-report-sign {
+    min-height: 96px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--evt-accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.evt-goal-report-sign:hover,
+.evt-goal-report-sign:focus-visible {
+    transform: translateY(-1px);
+    border-color: var(--evt-accent-border);
+    background: var(--evt-accent-soft);
+    outline: none;
+}
+
+.evt-goal-report-sign.is-negative {
+    border-color: rgba(255, 105, 130, 0.42);
+    background: rgba(255, 105, 130, 0.08);
+    color: #ff7890;
+}
+
+.evt-goal-report-form textarea {
+    min-height: 96px;
+    width: 100%;
+    resize: vertical;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font: inherit;
+    line-height: 1.45;
+}
+
+.evt-goal-report-form textarea:focus {
+    outline: none;
+    border-color: var(--evt-accent-border);
+    box-shadow: 0 0 0 3px var(--evt-accent-soft);
+}
+
+.evt-goal-report-form .primary {
+    justify-self: start;
+}
+
+.evt-form-check {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+}
+
+.evt-form-check input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--color-event);
+}
+
+/* Final room polish for the world redesign. Keep details compact and readable. */
+.evt-detail-body {
+    padding: 16px 28px 30px;
+    gap: 16px;
+}
+
+.evt-detail-body--split {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 370px);
+}
+
+.evt-detail-col {
+    gap: 14px;
+}
+
+.evt-detail-stats {
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--border-subtle);
+    border-color: var(--border-subtle);
+}
+
+.evt-stat-block {
+    padding: 12px 14px;
+}
+
+.evt-stat-num {
+    font-size: 26px;
+}
+
+.evt-section--timeline,
+.evt-section--history,
+.evt-section--compact,
+.evt-quant-log,
+.evt-leader,
+.evt-contrib {
+    border-radius: var(--radius-md);
+}
+
+.evt-quant-log {
+    padding: 12px;
+}
+
+.evt-leader-head {
+    padding: 12px 14px 10px;
+}
+
+.evt-leader-row {
+    padding: 8px 14px;
+}
+
+.evt-goal-report-sign,
+.evt-goal-report-form textarea {
+    min-height: 76px;
+}
+
+.evt-goal-dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: 12px;
+    align-items: start;
+}
+
+.evt-goal-primary-stack,
+.evt-goal-side-stack {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.evt-goal-panel--timeline {
+    grid-column: 1 / -1;
+}
+
+.evt-form-check strong {
+    display: block;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+}
+
+.evt-form-check small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+@media (max-width: 1120px) {
+    .evt-detail-body--split,
+    .evt-goal-dashboard,
+    .evt-goal-overview {
+        grid-template-columns: 1fr;
+    }
+}
+
+.evt-goal-overview.evt-arena-position-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px;
+}
+
+.evt-goal-overview.evt-arena-position-strip > span,
+.evt-goal-overview.evt-arena-position-strip > span + span {
+    min-height: 50px;
+    padding: 9px 11px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+.evt-goal-overview.evt-arena-position-strip .evt-goal-overview-status {
+    margin-left: 0;
+}
+
+.evt-section--timeline .evt-calendar {
+    width: min(100%, 360px);
+}
+
+.evt-section--timeline .evt-calendar-dow-row,
+.evt-section--timeline .evt-calendar-week {
+    gap: 4px;
+}
+
+.evt-section--timeline .evt-cal-cell {
+    min-height: 0;
+}
+
+/* Goal color swatches must win over the generic form-button background rule. */
+.evt-form .evt-goal-color-presets button,
+.evt-form .evt-goal-color-presets button:hover {
+    background: var(--preset-color);
+    border-color: color-mix(in srgb, var(--preset-color) 70%, var(--border));
+    color: transparent;
+}
+
+.evt-form .evt-goal-color-presets button:hover {
+    filter: brightness(1.12);
+}
+
+.evt-form .evt-goal-color-presets button.active {
+    border-color: var(--text-bright);
+    box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--preset-color);
+}

@@ -1,0 +1,5 @@
+[data-theme="frutiger_aero"] :is(.chronicle-page, .habit-page, .event-local-page) {
+  background-image:
+    radial-gradient(circle at 78% 5%, rgba(255, 255, 255, .55), transparent 12rem),
+    linear-gradient(rgba(107, 209, 255, .08), rgba(74, 196, 132, .08));
+}

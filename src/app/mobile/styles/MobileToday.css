@@ -1,0 +1,35 @@
+.mobile-date-title { min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.mobile-date-title span { display: block; }
+.mobile-date-rail { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 15px; }
+.mobile-date-rail button { display: flex; min-width: 0; min-height: 54px; align-items: center; justify-content: center; flex-direction: column; gap: 3px; padding: 3px 0; border-color: transparent; background: transparent; color: var(--text-muted); }
+.mobile-date-rail button span { font-size: .66rem; text-transform: uppercase; }
+.mobile-date-rail button b { font-size: .86rem; }
+.mobile-date-rail button.is-today b { color: var(--color-task); }
+.mobile-date-rail button.is-selected { border-color: color-mix(in srgb, var(--color-task) 54%, transparent); background: color-mix(in srgb, var(--color-task) 12%, var(--bg-card)); color: var(--text-bright); }
+.mobile-nearest-reminder { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; width: 100%; min-height: 56px; align-items: center; gap: 8px; margin-bottom: 17px; padding: 8px 11px; border-left: 3px solid var(--color-event, #fbbf24); background: var(--bg-card); text-align: left; }
+.mobile-nearest-reminder > span { color: var(--color-event); font-size: 1.15rem; }
+.mobile-nearest-reminder strong { overflow: hidden; color: var(--text-bright); font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-nearest-reminder small { color: var(--color-event); font-size: .72rem; }
+.mobile-agenda-list { padding-bottom: 78px; }
+.mobile-agenda-list > h2 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; color: var(--text-muted); font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; }
+.mobile-task-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); min-height: 62px; margin-top: 7px; border: 1px solid var(--border-subtle); background: var(--bg-card); }
+.mobile-task-row.is-overdue { border-left: 3px solid var(--color-warning, #f59e0b); }
+.mobile-task-checkbox { display: grid; min-width: 48px; min-height: 48px; place-items: center; border: 0; border-right: 1px solid var(--border-subtle); background: transparent; }
+.mobile-task-checkbox > span { width: 20px; height: 20px; border: 2px solid color-mix(in srgb, var(--color-task) 68%, var(--text-muted)); border-radius: 3px; }
+.mobile-task-row.is-completing .mobile-task-checkbox > span { background: var(--color-task); box-shadow: 0 0 14px var(--color-task); animation: mobile-check-fill 260ms ease-out both; }
+.mobile-task-row.is-completing { animation: mobile-row-complete 520ms ease-out both; }
+.mobile-task-row__body { display: flex; min-width: 0; align-items: flex-start; justify-content: center; flex-direction: column; gap: 5px; padding: 9px 12px; border: 0; background: transparent; text-align: left; }
+.mobile-task-row__body strong, .mobile-task-row__body span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-task-row__body strong { color: var(--text-bright); font-size: .9rem; }
+.mobile-task-row__body span { color: var(--text-muted); font-size: .72rem; }
+.mobile-task-row.is-overdue .mobile-task-row__body span { color: var(--color-warning, #f59e0b); }
+.mobile-agenda-empty { display: flex; min-height: 110px; align-items: center; justify-content: center; flex-direction: column; gap: 5px; color: var(--text-muted); text-align: center; }
+.mobile-agenda-empty strong { color: var(--text-bright); }
+.mobile-agenda-empty span { font-size: .78rem; }
+.mobile-reminder-add { margin-top: -58px; padding-inline: 12px; }
+.mobile-today-page[data-slide-direction="forward"] .mobile-agenda-list { animation: mobile-day-forward 210ms ease-out; }
+.mobile-today-page[data-slide-direction="backward"] .mobile-agenda-list { animation: mobile-day-backward 210ms ease-out; }
+@keyframes mobile-day-forward { from { opacity: .45; transform: translateX(18px); } }
+@keyframes mobile-day-backward { from { opacity: .45; transform: translateX(-18px); } }
+@keyframes mobile-check-fill { from { transform: scale(.7); } }
+@keyframes mobile-row-complete { 65% { opacity: 1; } to { opacity: 0; transform: translateY(-5px); } }

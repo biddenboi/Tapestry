@@ -1,0 +1,218 @@
+.profile-identity {
+  --profile-frame-outset: 4px;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: 10px;
+  color: inherit;
+}
+
+.profile-identity__portrait {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  isolation: isolate;
+}
+
+.profile-identity__portrait::before,
+.profile-identity__portrait::after {
+  position: absolute;
+  z-index: 4;
+  content: '';
+  pointer-events: none;
+}
+
+.profile-identity__cosmetic-frame {
+  position: absolute;
+  z-index: 3;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  object-fit: fill;
+  border-radius: var(--profile-avatar-radius, 4.56px);
+  pointer-events: none;
+}
+
+.profile-identity__portrait::before {
+  inset: calc(-1 * var(--profile-frame-outset));
+  border: 2px solid var(--profile-rank-color, var(--border));
+  border-radius: calc(var(--profile-avatar-radius, 4.56px) + var(--profile-frame-outset));
+}
+
+.profile-identity__portrait::after {
+  right: 2px;
+  bottom: -7px;
+  width: calc(var(--profile-avatar-size, 38px) * .16);
+  height: 3px;
+  border-radius: 99px;
+  background: var(--profile-rank-color, var(--border));
+  box-shadow:
+    calc(var(--profile-avatar-size, 38px) * -.22) 0 0 -8px transparent,
+    calc(var(--profile-avatar-size, 38px) * -.22) 0 0 var(--profile-rank-color, var(--border)),
+    calc(var(--profile-avatar-size, 38px) * -.44) 0 0 -8px transparent,
+    calc(var(--profile-avatar-size, 38px) * -.44) 0 0 var(--profile-rank-color, var(--border));
+  opacity: 0;
+}
+
+.profile-identity[data-rank-notches="1"] .profile-identity__portrait::after { opacity: 1; box-shadow: none; }
+.profile-identity[data-rank-notches="2"] .profile-identity__portrait::after { opacity: 1; box-shadow: calc(var(--profile-avatar-size, 38px) * -.22) 0 0 var(--profile-rank-color, var(--border)); }
+.profile-identity[data-rank-notches="3"] .profile-identity__portrait::after { opacity: 1; box-shadow: calc(var(--profile-avatar-size, 38px) * -.22) 0 0 var(--profile-rank-color, var(--border)), calc(var(--profile-avatar-size, 38px) * -.44) 0 0 var(--profile-rank-color, var(--border)); }
+
+.profile-identity__portrait .pfp-wrap {
+  border: 0;
+  box-shadow: var(--profile-rank-shadow, none);
+}
+
+.profile-identity__portrait .pfp-wrap::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  content: '';
+  border: 1px solid color-mix(in srgb, var(--profile-rank-color, var(--border)) 50%, transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Rank is always the outer structural frame. The equipped profile frame
+   remains the quiet inner rule, so cosmetics cannot imply a false rank. */
+.profile-identity[data-profile-frame]:not([data-profile-frame="default"]) .pfp-wrap::after {
+  inset: 3px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--profile-cosmetic-accent, var(--accent, #4da3ff)) 54%, transparent);
+}
+
+.profile-identity[data-rank-frame="iron"] { --profile-frame-outset: 3px; }
+.profile-identity[data-rank-frame="bronze"] { --profile-frame-outset: 5px; }
+.profile-identity[data-rank-frame="silver"] { --profile-frame-outset: 4px; }
+.profile-identity[data-rank-frame="gold"] { --profile-frame-outset: 5px; }
+.profile-identity[data-rank-frame="platinum"] { --profile-frame-outset: 5px; }
+.profile-identity[data-rank-frame="diamond"] { --profile-frame-outset: 7px; }
+.profile-identity[data-rank-frame="ascendant"] { --profile-frame-outset: 6px; }
+.profile-identity[data-rank-frame="immortal"] { --profile-frame-outset: 6px; }
+.profile-identity[data-rank-frame="radiant"] { --profile-frame-outset: 8px; }
+
+.profile-identity[data-rank-frame="iron"] .profile-identity__portrait::before {
+  border: 3px double var(--profile-rank-color);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.profile-identity[data-rank-frame="bronze"] .profile-identity__portrait::before {
+  border-width: 2px;
+  background:
+    radial-gradient(circle at 4px 4px, #f0ad73 0 2px, transparent 2.4px),
+    radial-gradient(circle at calc(100% - 4px) 4px, #f0ad73 0 2px, transparent 2.4px),
+    radial-gradient(circle at 4px calc(100% - 4px), #f0ad73 0 2px, transparent 2.4px),
+    radial-gradient(circle at calc(100% - 4px) calc(100% - 4px), #f0ad73 0 2px, transparent 2.4px);
+  box-shadow: inset 0 0 6px rgba(76,35,13,.48);
+}
+.profile-identity[data-rank-frame="silver"] .profile-identity__portrait::before {
+  border: 3px ridge var(--profile-rank-color);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.65), 1px 1px 0 rgba(0,0,0,.45);
+}
+.profile-identity[data-rank-frame="gold"] .profile-identity__portrait::before {
+  border-width: 3px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--profile-rank-color) 35%, transparent);
+}
+.profile-identity[data-rank-frame="platinum"] .profile-identity__portrait::before {
+  border-color: rgba(165, 249, 255, .85);
+  background: linear-gradient(135deg, rgba(255,255,255,.22), transparent 38%, rgba(34,211,238,.14));
+  box-shadow: 0 0 10px rgba(34,211,238,.34), inset 0 0 8px rgba(255,255,255,.15);
+}
+.profile-identity[data-rank-frame="diamond"] .profile-identity__portrait::before {
+  border-width: 3px;
+  background: linear-gradient(135deg, rgba(147,197,253,.18), transparent 36%, rgba(37,99,235,.25));
+  box-shadow: 0 0 12px rgba(96,165,250,.42);
+}
+.profile-identity[data-rank-frame="ascendant"] .profile-identity__portrait::before {
+  border-width: 3px 2px;
+  transform: rotate(2deg);
+  box-shadow: 0 0 10px rgba(0,214,143,.34), inset 0 0 8px rgba(0,214,143,.16);
+}
+.profile-identity[data-rank-frame="immortal"] .profile-identity__portrait::before {
+  border-width: 3px;
+  box-shadow: 0 0 7px rgba(244,63,94,.62), 0 0 15px rgba(244,63,94,.22);
+  animation: rank-ember 2.8s ease-in-out infinite alternate;
+}
+.profile-identity[data-rank-frame="radiant"] .profile-identity__portrait::before {
+  border: 3px double #fff7bf;
+  box-shadow: 0 0 10px rgba(253,224,71,.72), 0 0 22px rgba(255,255,255,.32), inset 0 0 8px rgba(255,255,255,.28);
+  animation: rank-radiant 3.8s linear infinite;
+}
+@keyframes rank-ember { from { filter: brightness(.82); } to { filter: brightness(1.25); } }
+@keyframes rank-radiant { 50% { box-shadow: 0 0 15px rgba(253,224,71,.9), 0 0 28px rgba(255,255,255,.38), inset 0 0 10px rgba(255,255,255,.34); } }
+
+.profile-identity__copy {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.profile-identity__name-row {
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-identity__name-row strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-identity__name-row em {
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  border: 1px solid color-mix(in srgb, var(--accent, #4da3ff) 45%, transparent);
+  border-radius: 999px;
+  color: var(--accent-bright, #7ec8ff);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.profile-identity__title,
+.profile-identity__rank,
+.profile-identity__meta {
+  max-width: min(24ch, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-identity__rank {
+  color: var(--gold, #e7c66a);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.profile-identity__meta {
+  color: var(--text-muted, #8290a6);
+  font-size: 10px;
+}
+
+.profile-identity--compact {
+  gap: 7px;
+}
+
+.profile-identity--compact .profile-identity__portrait {
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-identity[data-rank-frame="immortal"] .profile-identity__portrait::before,
+  .profile-identity[data-rank-frame="radiant"] .profile-identity__portrait::before { animation: none; }
+}

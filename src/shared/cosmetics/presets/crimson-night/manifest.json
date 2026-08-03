@@ -1,0 +1,39 @@
+{
+  "id": "crimson-night",
+  "version": 1,
+  "setId": "crimson-night",
+  "label": "Crimson Night",
+  "description": "Crimson Night preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#fb7185",
+    "base": "#1a0507"
+  },
+  "motion": "ambient",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "contribution-road"
+}

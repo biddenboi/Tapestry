@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="editorial_noir"] .chronicle-card:nth-child(even) { transform: none; }
+}
