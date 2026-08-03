@@ -1,0 +1,5 @@
+[data-theme="minimalist_light"] {
+  --recipe-day-rule: 1px solid rgba(15, 23, 42, .12);
+  --recipe-paper-shadow: 0 8px 24px rgba(15, 23, 42, .07);
+  --recipe-motion-distance: 4px;
+}

@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="kawaii"] .local-section-nav__item { padding-inline: 14px; }
+}

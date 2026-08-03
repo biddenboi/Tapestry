@@ -1,0 +1,8 @@
+[data-theme="memory_palace"] {
+  color-scheme:dark; --bg-void:#0e0918; --bg:#151022; --bg-surface:#1d1630; --bg-card:#271e3d; --bg-raised:#32264c; --bg-hover:#40305f;
+  --accent:#9471dc; --accent-bright:#cbb5ff; --accent-dim:#6549a0; --accent-glow:rgba(196,167,255,.14); --accent-border:rgba(203,181,255,.36);
+  --text:#ded6ec; --text-bright:#fff9ff; --text-muted:#a99bbd; --text-dim:#776a8c; --border:rgba(211,190,255,.16); --border-strong:rgba(211,190,255,.3); --border-subtle:rgba(211,190,255,.08);
+  --green:#66c7a6; --red:#e76c8c; --gold:#d3af68; --purple:#c4a7ff; --radius-xs:8px; --radius-sm:11px; --radius-md:15px; --radius-lg:20px; --radius-xl:26px;
+  --font-ui:Inter,system-ui,sans-serif; --font-body:Georgia,serif; --font-display:Georgia,serif; --theme-card-radius:16px; --theme-button-radius:10px; --overlay-blur:16px;
+  --theme-card-shadow:0 22px 58px rgba(6,2,14,.4),inset 0 1px rgba(255,255,255,.055); --theme-page-texture:linear-gradient(90deg,rgba(196,167,255,.03) 1px,transparent 1px),linear-gradient(rgba(196,167,255,.025) 1px,transparent 1px),radial-gradient(circle at 75% 10%,rgba(196,167,255,.13),transparent 34rem); --theme-page-size:68px 68px,68px 68px,auto;
+}

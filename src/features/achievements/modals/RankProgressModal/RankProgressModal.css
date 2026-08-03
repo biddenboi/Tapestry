@@ -1,0 +1,390 @@
+/* RankProgressModal - detailed, dismissible view of current rank progress. */
+
+.rank-progress-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.rank-progress-modal {
+  --rank-progress-accent: var(--accent-bright);
+  --rank-progress-glow: rgba(77, 163, 255, 0.45);
+
+  position: relative;
+  z-index: 1;
+  width: min(680px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid color-mix(in srgb, var(--rank-progress-accent) 46%, var(--border));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--rank-progress-accent) 24%, transparent), var(--box-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: rank-progress-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rank-progress-modal::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 280px;
+  background: radial-gradient(ellipse at center, var(--rank-progress-glow), transparent 68%);
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+@keyframes rank-progress-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.rpm-header,
+.rpm-body {
+  position: relative;
+  z-index: 1;
+}
+
+.rpm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--bg-raised) 86%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.rpm-eyebrow {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--rank-progress-accent);
+}
+
+.rpm-title {
+  margin: 1px 0 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-bright);
+}
+
+.rpm-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.rpm-close:hover {
+  color: var(--red);
+  border-color: rgba(255, 61, 87, 0.4);
+  box-shadow: none;
+}
+
+.rpm-body {
+  padding: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.rpm-rank-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+}
+
+.rpm-rank-pill {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  clip-path: none;
+}
+
+.rpm-rank-pill--next {
+  border-color: color-mix(in srgb, var(--rank-progress-accent) 34%, var(--border-subtle));
+}
+
+.rpm-rank-icon {
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpm-rank-caption {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.rpm-rank-pill strong {
+  display: block;
+  margin-top: 2px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rpm-rank-arrow {
+  align-self: center;
+  min-width: 34px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.rpm-progress-section,
+.rpm-section {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 0 0;
+}
+
+.rpm-progress-topline,
+.rpm-progress-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpm-progress-topline {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rpm-progress-topline strong {
+  color: var(--text-bright);
+  text-align: right;
+}
+
+.rpm-progress-track {
+  position: relative;
+  height: 10px;
+  margin: 12px 0 9px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.rpm-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--rank-progress-accent) 70%, var(--bg-card)), var(--rank-progress-accent));
+  box-shadow: 0 0 16px var(--rank-progress-glow);
+  transition: width 0.45s ease;
+}
+
+.rpm-progress-foot {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.rpm-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rank-progress-accent);
+}
+
+.rpm-help-mark {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--rank-progress-accent) 52%, transparent);
+  color: var(--text-bright);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.rpm-reward-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.rpm-reward-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.rpm-reward-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  background: var(--rank-progress-accent);
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px var(--rank-progress-glow);
+}
+
+.rpm-tier-list {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.rpm-tier-guide {
+  min-height: 150px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rpm-tier-row {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-subtle);
+}
+
+.rpm-tier-row.active {
+  border-color: color-mix(in srgb, var(--rank-progress-accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--rank-progress-accent) 9%, transparent);
+}
+
+.rpm-tier-emblem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpm-tier-copy {
+  min-width: 0;
+}
+
+.rpm-tier-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rpm-tier-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rpm-current-chip {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--rank-progress-accent) 50%, transparent);
+  color: var(--text-bright);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rpm-tier-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  margin-top: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.rpm-tier-flags span + span::before {
+  content: '/';
+  margin-right: 8px;
+  color: var(--border);
+}
+
+@media (max-width: 560px) {
+  .rank-progress-modal-overlay {
+    padding: 10px;
+  }
+
+  .rpm-header {
+    padding: 14px;
+  }
+
+  .rpm-body {
+    padding: 14px;
+  }
+
+  .rpm-rank-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .rpm-rank-arrow {
+    min-width: 0;
+  }
+
+  .rpm-progress-topline,
+  .rpm-progress-foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rpm-progress-topline strong {
+    text-align: left;
+  }
+}

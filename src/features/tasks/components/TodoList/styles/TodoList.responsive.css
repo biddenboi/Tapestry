@@ -1,0 +1,251 @@
+@media (max-width: 920px) {
+    .todo-hub-body,
+    .todo-upcoming-layout {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 820px) {
+    div.todo-list--hub {
+        min-width: 0;
+        max-width: 100%;
+        padding: 18px 16px 20px;
+    }
+    .todo-hub-header {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-right: 34px;
+    }
+    .todo-hub-header > div:first-child,
+    .todo-hub-header p,
+    .todo-hub-header-actions {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .todo-hub-header p {
+        white-space: normal;
+    }
+    .todo-hub-controls {
+        width: 100%;
+        min-width: 0;
+        grid-template-columns: 1fr;
+    }
+    .todo-focus-banner {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .todo-tabs-row {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .todo-tabs-summary {
+        margin: 0 0 8px;
+        text-align: left;
+    }
+    .todo-day-agenda {
+        grid-template-columns: 1fr;
+    }
+    .todo-section-grid {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+    .todo-calendar-grid--week,
+    .todo-calendar-grid--month {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+    .todo-calendar-grid--week .todo-calendar-day,
+    .todo-calendar-day {
+        min-height: 180px;
+    }
+}
+
+.todo-header-actions,
+.todo-day-agenda-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.todo-reminder-controls {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
+    background: color-mix(in srgb, var(--color-warning) 5%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--color-warning) 24%, var(--border));
+    border-radius: var(--radius-md);
+}
+
+.todo-reminder-controls input {
+    width: 100%;
+    padding: 8px 10px;
+    background: color-mix(in srgb, var(--color-warning) 5%, var(--bg-void));
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
+    outline: none;
+}
+
+.todo-reminder-controls input:focus {
+    border-color: color-mix(in srgb, var(--color-warning) 52%, var(--border));
+}
+
+.todo-hub-body--reminders {
+    display: block;
+}
+
+.todo-reminders-view {
+    width: 100%;
+}
+
+.todo-reminders-view .todo-reminder-section {
+    width: 100%;
+}
+
+.todo-reminders-view .todo-task-section-list {
+    max-height: none;
+}
+
+.todo-reminders-view .todo-reminder-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 74px;
+}
+
+.todo-reminders-view .todo-reminder-card-actions {
+    grid-column: auto;
+    justify-content: flex-end;
+    padding-top: 0;
+}
+
+.todo-reminder-pill {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    padding: 6px 7px;
+    text-align: left;
+    background: color-mix(in srgb, var(--color-warning) 8%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--color-warning) 34%, var(--border));
+    border-left: 3px solid var(--color-warning);
+    border-radius: var(--radius-xs);
+    color: var(--text-muted);
+}
+
+.todo-reminder-pill svg {
+    color: var(--color-warning);
+}
+
+.todo-reminder-pill time {
+    color: var(--color-warning);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+}
+
+.todo-reminder-pill > span {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.todo-reminder-pill.is-overdue {
+    border-color: color-mix(in srgb, var(--color-danger) 38%, var(--border));
+    border-left-color: var(--color-danger);
+}
+
+.todo-reminder-pill.is-overdue svg,
+.todo-reminder-pill.is-overdue time {
+    color: var(--color-danger);
+}
+
+.todo-reminder-section {
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--color-warning) 9%, transparent), transparent 48%),
+        var(--bg-card);
+    border-color: color-mix(in srgb, var(--color-warning) 34%, var(--border));
+}
+
+.todo-reminder-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+    padding: 10px;
+    background: var(--bg-surface);
+    border: 1px solid color-mix(in srgb, var(--color-warning) 25%, var(--border));
+    border-left: 3px solid var(--color-warning);
+    border-radius: var(--radius-sm);
+}
+
+.todo-reminder-card.is-overdue {
+    border-left-color: var(--color-danger);
+}
+
+.todo-reminder-card-icon {
+    color: var(--color-warning);
+}
+
+.todo-reminder-card.is-overdue .todo-reminder-card-icon {
+    color: var(--color-danger);
+}
+
+.todo-reminder-card-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.todo-reminder-card-copy strong {
+    color: var(--text-bright);
+}
+
+.todo-reminder-card-copy time {
+    color: var(--color-warning);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+}
+
+.todo-reminder-card-copy p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.todo-reminder-card-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-top: 4px;
+}
+
+.todo-reminder-card-actions button {
+    padding: 4px 7px;
+    font-size: 9px;
+}
+
+@media (max-width: 600px) {
+    .todo-header-actions,
+    .todo-day-agenda-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .todo-reminder-controls,
+    .todo-reminders-view .todo-reminder-card {
+        grid-template-columns: 1fr;
+    }
+
+    .todo-reminders-view .todo-reminder-card-actions {
+        grid-column: 1;
+        justify-content: flex-start;
+    }
+}

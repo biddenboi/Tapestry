@@ -1,0 +1,616 @@
+/* ══════════════════════════════════════════════════════════
+   FEED — Reddit-style journal scroller
+   ══════════════════════════════════════════════════════════ */
+
+.feed-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--color-feed) 14%, transparent), transparent 34rem),
+    var(--bg-void);
+  overflow: hidden;
+}
+
+/* ── Header bar ──────────────────────────────────────────── */
+.feed-header {
+  --page-accent: var(--color-feed);
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--accent-glow) 0%, transparent 100%);
+}
+
+.feed-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feed-header-icon {
+  font-size: 26px;
+  color: var(--accent-bright);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  line-height: 1;
+}
+
+.feed-header-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-bright);
+  line-height: 1;
+}
+
+.feed-header-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.feed-create-btn,
+.feed-next-btn {
+  padding: 7px 16px;
+  background: var(--accent);
+  border: 1px solid var(--accent-bright);
+  color: var(--text-bright);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.feed-create-btn:hover:not(:disabled) {
+  background: var(--accent-bright);
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.feed-next-btn {
+  background: var(--bg-raised);
+  border-color: color-mix(in srgb, var(--color-feed) 44%, var(--border));
+  color: var(--text);
+}
+
+.feed-next-btn:hover:not(:disabled) {
+  border-color: var(--color-feed);
+  color: var(--text-bright);
+}
+
+.feed-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.feed-search-wrap {
+  width: min(360px, 38vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--bg-void);
+  border: 1px solid color-mix(in srgb, var(--color-feed) 30%, var(--border));
+  border-radius: var(--radius-sm);
+}
+
+.feed-search-wrap input {
+  min-width: 0;
+  padding: 7px 0;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  outline: 0;
+  text-align: center;
+}
+
+.feed-search-wrap button {
+  padding: 2px 5px;
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+}
+
+/* ── Scrollable list ─────────────────────────────────────── */
+.feed-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-list::-webkit-scrollbar { width: 6px; }
+.feed-list::-webkit-scrollbar-track { background: transparent; }
+.feed-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.feed-list::-webkit-scrollbar-thumb:hover { background: var(--border-strong, var(--border)); }
+
+.feed-card-slot {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* ── Feed card ───────────────────────────────────────────── */
+.feed-card {
+  --feed-card-accent: var(--color-feed);
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--feed-card-accent) 18%, var(--border-subtle));
+  border-left: 3px solid var(--feed-card-accent);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 152px;
+  max-height: none;
+  align-self: stretch;
+  flex: 0 0 auto;
+  transition: border-color 0.14s, box-shadow 0.14s;
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
+}
+
+.feed-card--achievement { --feed-card-accent: var(--color-achievement); }
+.feed-card--match,
+.feed-card--match_result { --feed-card-accent: var(--color-match); }
+.feed-card--image { --feed-card-accent: var(--color-feed); }
+.feed-card--milestone { --feed-card-accent: var(--color-shop); }
+.feed-card--reflection { --feed-card-accent: var(--color-inventory); }
+.feed-card:hover {
+  border-color: var(--border);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+}
+
+/* ── Card header: author info ────────────────────────────── */
+.feed-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  gap: 10px;
+}
+
+.feed-author-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Rank-bordered avatar frame — border/shadow overridden inline */
+.feed-pfp-frame {
+  display: inline-flex;
+  padding: 2px;
+  background: transparent;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.14s, filter 0.14s;
+  /* override global button styles */
+  clip-path: none;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+.feed-pfp-frame:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.12);
+  background: transparent;
+  box-shadow: none !important;
+}
+/* Strip inner pfp border so rank ring reads cleanly */
+.feed-pfp-frame .pfp-wrap {
+  border: none;
+}
+
+.feed-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.feed-author-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* button reset */
+  background: transparent;
+  border: none;
+  clip-path: none;
+  box-shadow: none;
+  padding: 0;
+  text-transform: none;
+  cursor: pointer;
+  transition: color 0.12s, text-shadow 0.12s;
+}
+.feed-author-name:hover:not(:disabled) {
+  color: var(--accent-bright);
+  text-shadow: 0 0 8px var(--accent-glow);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.feed-author-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  /* color overridden inline with rank.color */
+}
+
+.feed-entry-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Entry title ─────────────────────────────────────────── */
+.feed-entry-title {
+  margin: 0;
+  padding: 12px 14px 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-bright);
+  line-height: 1.25;
+}
+
+.feed-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px 0;
+}
+
+.feed-entry-meta:empty {
+  display: none;
+}
+
+.feed-entry-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  background: color-mix(in srgb, var(--feed-card-accent) 10%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--feed-card-accent) 28%, var(--border));
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* ── Entry body preview ──────────────────────────────────── */
+.feed-entry-body {
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feed-entry-copy {
+  position: relative;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.feed-entry-copy.is-clamped {
+  max-height: 13.6em;
+  overflow: hidden;
+}
+
+.feed-entry-copy.is-clamped::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3.4em;
+  background: linear-gradient(180deg, transparent, var(--bg-card));
+  pointer-events: none;
+}
+
+.feed-entry-empty {
+  margin: 10px 14px 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--feed-card-accent) 6%, var(--bg-surface));
+  border: 1px dashed color-mix(in srgb, var(--feed-card-accent) 24%, var(--border-subtle));
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.feed-expand-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--accent-bright);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 2px 0;
+  cursor: pointer;
+  clip-path: none;
+  box-shadow: none;
+  text-transform: none;
+  transition: color 0.12s, text-shadow 0.12s;
+}
+.feed-expand-btn:hover:not(:disabled) {
+  color: var(--accent-bright);
+  text-shadow: 0 0 8px var(--accent-glow);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Footer: votes + comment count + open ────────────────── */
+.feed-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+}
+
+/* Vote bar */
+.feed-vote-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feed-vote-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 8px;
+  clip-path: none;
+  box-shadow: none;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.feed-vote-btn:hover:not(:disabled),
+.feed-vote-btn.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+.feed-vote-btn--up:hover:not(:disabled),
+.feed-vote-btn--up.is-active {
+  color: var(--green);
+  border-color: rgba(0,214,143,0.45);
+  background: var(--green-dim);
+}
+.feed-vote-btn--down:hover:not(:disabled),
+.feed-vote-btn--down.is-active {
+  color: var(--red);
+  border-color: rgba(255,61,87,0.45);
+  background: var(--red-dim);
+}
+.feed-vote-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+.feed-vote-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 22px;
+  text-align: center;
+}
+.feed-vote-score.pos { color: var(--green); }
+.feed-vote-score.neg { color: var(--red); }
+
+/* Comment count */
+.feed-comment-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  clip-path: none;
+  box-shadow: none;
+  padding: 3px 6px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  transition: color 0.12s;
+}
+.feed-comment-btn:hover:not(:disabled) {
+  color: var(--text-bright);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.feed-comment-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+.feed-comment-count {
+  font-weight: 700;
+  color: var(--accent-bright);
+}
+
+/* Open entry — pushed to the right */
+/* ── Empty state ─────────────────────────────────────────── */
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  gap: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.feed-empty.ui-empty-state {
+  align-items: center;
+  justify-items: center;
+  margin: auto;
+  width: min(100%, 560px);
+}
+
+@media (max-width: 760px) {
+  .feed-header-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .feed-search-wrap {
+    width: 100%;
+  }
+}
+.feed-empty-icon {
+  font-size: 42px;
+  opacity: 0.25;
+  line-height: 1;
+  display: block;
+}
+.feed-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.feed-empty-sub {
+  font-size: 12px !important;
+  color: var(--text-dim) !important;
+}
+
+.feed-load-sentinel {
+  padding: 18px 12px 8px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── Skeleton loading cards ──────────────────────────────── */
+.feed-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-card--skeleton {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.skel {
+  background: var(--bg-raised);
+  border-radius: 2px;
+  animation: skel-pulse 1.6s ease-in-out infinite;
+}
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1;   }
+}
+
+.skel-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.skel-name  { width: 120px; height: 14px; margin-bottom: 4px; }
+.skel-rank  { width: 72px;  height: 10px; }
+.skel-title { margin: 12px 14px 0; height: 20px; width: 60%; }
+.skel-body  { margin: 8px 14px;    height: 12px; width: 90%; }
+.skel-body--short { width: 55%; }
+
+/* Color-blocked community feed */
+.feed-wrap {
+  --page-accent: var(--color-feed);
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--color-feed) 11%, transparent), transparent 38rem),
+    var(--bg-void);
+}
+
+.feed-wrap button.primary {
+  background: color-mix(in srgb, var(--color-feed) 74%, #5d36a8);
+  border-color: var(--color-feed);
+  color: #fff;
+}
+
+.feed-wrap button.primary:hover:not(:disabled) {
+  background: var(--color-feed);
+}
+
+.feed-header {
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--color-feed) 14%, transparent), transparent 72%),
+    var(--bg-surface);
+  border-bottom-color: color-mix(in srgb, var(--color-feed) 38%, var(--border));
+}
+
+.feed-list {
+  background: transparent;
+}
+
+.feed-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--feed-card-accent) 8%, transparent), transparent 48%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, var(--feed-card-accent) 34%, var(--border));
+}
+
+.feed-card-header {
+  background: color-mix(in srgb, var(--feed-card-accent) 6%, var(--bg-surface));
+}
+
+.feed-card-footer {
+  background: var(--bg-surface);
+}
+
+.feed-empty.ui-empty-state {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--color-feed) 8%, transparent), transparent 52%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, var(--color-feed) 36%, var(--border));
+}
+
+.feed-search-wrap input:focus,
+.feed-search-wrap input:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+}

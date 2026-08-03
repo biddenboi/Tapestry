@@ -1,0 +1,32 @@
+{
+  "format": "tapestry-task-recommender-weights",
+  "exportedAt": "2026-07-01T12:00:00.000Z",
+  "modelVersion": 11,
+  "algorithm": "tars-v11-wide-field-fm-deepfm-lite-untyped-bandit",
+  "policyVersion": "tars-v11-untyped-action-bandit",
+  "settings": {
+    "enabled": true,
+    "continuousTraining": true,
+    "exploration": 0.12,
+    "minTrainingEvents": 8
+  },
+  "trainedAt": "2026-06-30T12:00:00.000Z",
+  "trainingEvents": 42,
+  "trainedThroughEventId": "decision-42",
+  "validationLoss": 0.18,
+  "weights": {
+    "bias": 0.2,
+    "durationFit": 0.7
+  },
+  "featureCounts": {
+    "bias": 42,
+    "durationFit": 39
+  },
+  "stumps": [],
+  "headModels": {},
+  "utilityWeights": {
+    "start": 1
+  },
+  "deepGate": 0.1,
+  "embeddingDimensions": 6
+}

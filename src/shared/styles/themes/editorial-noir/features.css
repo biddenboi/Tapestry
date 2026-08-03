@@ -1,0 +1,9 @@
+[data-theme="editorial_noir"] :is(.chronicle-card h3, .event-local-page h1, .habit-page h1) {
+  max-width: 18ch;
+  font-family: Georgia, "Times New Roman", serif;
+  text-transform: uppercase;
+}
+
+[data-theme="editorial_noir"] .chronicle-card:nth-child(even) {
+  transform: translateX(clamp(0px, 3vw, 34px));
+}

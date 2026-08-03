@@ -1,0 +1,27 @@
+{
+  "id": "/tapestry",
+  "name": "Tapestry Mobile Companion",
+  "short_name": "Tapestry",
+  "description": "A private, local-first companion for Tapestry.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c101b",
+  "theme_color": "#101522",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "./tapestry-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./tapestry-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

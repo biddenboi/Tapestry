@@ -1,0 +1,7 @@
+[data-theme="minimalist_light"] {
+  --theme-enter-animation: recipe-daylight-in 150ms ease-out both;
+}
+
+@keyframes recipe-daylight-in {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)); }
+}

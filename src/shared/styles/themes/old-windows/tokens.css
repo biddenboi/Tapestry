@@ -1,0 +1,5 @@
+[data-theme="old_windows"] {
+  --recipe-titlebar-height: 28px;
+  --recipe-bevel-light: #ffffe3;
+  --recipe-bevel-dark: #626755;
+}

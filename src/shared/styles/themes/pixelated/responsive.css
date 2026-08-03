@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="pixelated"] .local-section-nav__label { white-space: nowrap; }
+}

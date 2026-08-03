@@ -1,0 +1,5 @@
+[data-theme="obsidian"] {
+  --recipe-pane-rule: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  --recipe-node-size: 6px;
+  --recipe-motion-distance: 8px;
+}

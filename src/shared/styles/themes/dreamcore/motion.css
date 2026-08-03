@@ -1,0 +1,7 @@
+[data-theme="dreamcore"] {
+  --theme-enter-animation: recipe-dream-drift 520ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes recipe-dream-drift {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)) scale(.99); filter: blur(3px); }
+}

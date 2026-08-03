@@ -1,0 +1,121 @@
+/* ── Shared ELO chart ───────────────────────────────────── */
+.elo-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  flex: 1;
+}
+
+.elo-span-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.elo-series-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-height: 22px;
+  padding: 2px 4px;
+  color: var(--text-muted);
+  font: 600 9px/1.2 'JetBrains Mono', monospace;
+}
+
+.elo-series-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.elo-series-legend i {
+  width: 15px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.elo-series-legend i.is-current {
+  background: var(--accent-bright);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.elo-series-legend b {
+  color: var(--text-bright);
+  font-size: 8px;
+}
+
+.elo-span-btn {
+  font-size: 9px;
+  padding: 3px 9px;
+  letter-spacing: 0.1em;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  clip-path: none;
+}
+.elo-span-btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--text-bright);
+  background: var(--bg-hover);
+  box-shadow: none;
+}
+.elo-span-btn.active {
+  background: var(--accent);
+  border-color: var(--accent-bright);
+  color: #fff;
+  box-shadow: none;
+}
+
+.elo-chart-frame {
+  width: 100%;
+  aspect-ratio: 640 / 230;
+  height: auto;
+  max-height: 230px;
+  min-height: 0;
+}
+
+.elo-chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.elo-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 120px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.elo-empty-icon {
+  font-size: 22px;
+  opacity: 0.3;
+}
+
+.elo-current-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ecb-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-bright);
+}
+
+.ecb-lbl {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+}

@@ -1,0 +1,421 @@
+/* ── Shared Task Modal layout ────────────────────────────── */
+
+.task-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 160;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-modal {
+    position: relative;
+    z-index: 1;
+    width: min(740px, 94vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    max-height: 90vh;
+}
+
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.task-modal-header {
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+/* ── Body ───────────────────────────────────────────────── */
+.task-form-body {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.task-form-body label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.task-form-body label:focus-within {
+    color: var(--accent-bright);
+}
+
+.task-form-body label.full-width { width: 100%; }
+
+.task-form-body input[type="text"],
+.task-form-body input[type="number"],
+.task-form-body input[type="date"],
+.task-form-body input[type="datetime-local"],
+.task-form-body textarea {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13.5px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+}
+
+.task-form-body input:focus,
+.task-form-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.task-form-body textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+/* Two-column row */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+/* ── Range input (session duration slider) ──────────────── */
+.range-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bg-raised);
+    border: none;
+    outline: none;
+    padding: 0;
+    box-shadow: none;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
+.range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-bright);
+    border: 2px solid var(--bg-card);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.12s;
+    box-shadow: var(--glow-blue);
+}
+
+.range-input::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.range-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.preview-navigation-error {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--red) 55%, var(--border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--red) 9%, var(--bg-surface));
+    color: var(--red);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.preview-plan-card {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--bg-raised) 72%, transparent);
+}
+
+.preview-plan-card__toggle {
+    width: 100%;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 13px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    clip-path: none;
+}
+
+.preview-plan-card__toggle span,
+.preview-plan-card__toggle strong,
+.preview-plan-card__toggle small {
+    display: block;
+}
+
+.preview-plan-card__toggle strong {
+    color: var(--text-bright);
+    font-size: 12px;
+}
+
+.preview-plan-card__toggle small {
+    margin-top: 3px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.preview-plan-card__toggle i {
+    color: var(--accent-bright);
+    font: 700 17px/1 'JetBrains Mono', monospace;
+    font-style: normal;
+}
+
+.preview-plan-card__body {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr auto;
+    align-items: end;
+    gap: 10px;
+    padding: 12px 13px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.preview-plan-card__body label span {
+    color: var(--text-dim);
+    font-size: 9px;
+}
+
+.preview-plan-card__body button {
+    min-height: 37px;
+    white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+    .preview-plan-card__body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Plan editor (MarkdownEditor inside task form) ──────── */
+.plan-editor {
+    min-height: 220px;
+    height: 30vh;
+    overflow-y:scroll;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.task-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+}
+
+/* ── Session-specific: title bar in session view ────────── */
+.session-task-info {
+    padding: 16px 22px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.session-task-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+.session-task-reason {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ── Plan view in session (read-only markdown) ──────────── */
+.session-plan-wrap {
+    padding: 16px 22px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.session-plan-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.session-plan-label::before {
+    content: '';
+    width: 3px;
+    height: 10px;
+    background: var(--accent);
+    display: inline-block;
+}
+
+.session-plan-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    min-height: 120px;
+}
+
+/* ── Timer inside session modal ─────────────────────────── */
+.session-timer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 22px 14px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Session commitment (inline: input · MIN · slider · bonus) ── */
+.preview-commitment-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: visible;
+}
+
+.preview-focus-note {
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.match-promise-preview {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-match, var(--accent)) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-match, var(--accent)) 8%, var(--bg-surface));
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.match-promise-preview > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+}
+
+.match-promise-preview strong {
+  color: var(--accent-bright);
+  white-space: nowrap;
+}
+
+.match-promise-preview p,
+.match-promise-preview small {
+  display: block;
+  margin: 6px 0 0;
+}
+
+.match-promise-preview small {
+  color: var(--warning, #f4b860);
+}
+
+.preview-commitment-slider {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+}
+
+/* Override the global .task-form-body input[type="number"] { width: 100% } */
+.preview-commitment-row .preview-minutes-input {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    outline: none;
+    width: 68px !important;
+    flex: 0 0 68px !important;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+}
+
+.preview-commitment-row .preview-minutes-input::-webkit-inner-spin-button,
+.preview-commitment-row .preview-minutes-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+.preview-commitment-row .preview-minutes-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.preview-minutes-unit {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    flex: 0 0 auto;
+}
+
+.preview-commitment-bonus {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    color: var(--accent-bright);
+    opacity: 0.75;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}

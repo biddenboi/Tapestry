@@ -1,0 +1,5 @@
+[data-theme="minimalist"] {
+  --recipe-rule: 1px solid rgba(255, 255, 255, .1);
+  --recipe-ornament-opacity: 0;
+  --recipe-motion-distance: 4px;
+}

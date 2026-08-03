@@ -1,0 +1,5 @@
+[data-theme="solarpunk"] {
+  --recipe-organic-radius: 20px 8px 24px 10px;
+  --recipe-leaf-shadow: 0 16px 42px rgba(31, 98, 63, .14);
+  --recipe-motion-distance: 8px;
+}

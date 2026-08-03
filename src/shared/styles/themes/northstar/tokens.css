@@ -1,0 +1,8 @@
+[data-theme="northstar"] {
+  color-scheme: dark; --bg-void:#050b18; --bg:#071022; --bg-surface:#0c1930; --bg-card:#11213b; --bg-raised:#172b49; --bg-hover:#1d3659;
+  --accent:#258bc4; --accent-bright:#7dd3fc; --accent-dim:#1d587d; --accent-glow:rgba(125,211,252,.13); --accent-border:rgba(125,211,252,.42);
+  --text:#d7e4f3; --text-bright:#f5fbff; --text-muted:#93abc4; --text-dim:#627c99; --border:rgba(148,197,231,.18); --border-strong:rgba(148,197,231,.34); --border-subtle:rgba(148,197,231,.09);
+  --green:#54d6b0; --red:#ff718b; --gold:#f4cf72; --purple:#b59cff; --radius-xs:4px; --radius-sm:7px; --radius-md:11px; --radius-lg:15px; --radius-xl:20px;
+  --font-ui:Inter,system-ui,sans-serif; --font-body:var(--font-ui); --font-display:"Rajdhani",var(--font-ui); --theme-card-radius:12px; --theme-button-radius:8px;
+  --theme-card-shadow:0 18px 48px rgba(0,5,18,.36),inset 0 1px rgba(220,245,255,.04); --theme-page-texture:radial-gradient(circle at 20% 15%,rgba(125,211,252,.15) 0 1px,transparent 1.8px),radial-gradient(circle at 78% 34%,rgba(255,255,255,.12) 0 1px,transparent 1.7px); --theme-page-size:92px 92px,137px 137px;
+}

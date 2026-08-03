@@ -1,0 +1,95 @@
+{
+  "recordedAt": "2026-07-12T18:54:10.161Z",
+  "origin": "http://127.0.0.1:4179",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36",
+  "checks": {
+    "idempotentCommand": true,
+    "rollback": true,
+    "secondTabReadonly": true,
+    "timeoutAndCallerDisappearance": true,
+    "persistenceAndCleanShutdown": true,
+    "workerTerminationRollback": true,
+    "integrity": true
+  },
+  "initialization": {
+    "initialized": true,
+    "role": "writer",
+    "mode": "persistent",
+    "filename": "/tapestry-sqlite-runtime-verification.sqlite3",
+    "sqliteVersion": "3.53.0",
+    "sourceId": "2026-04-09 11:41:38 4525003a53a7fc63ca75c59b22c79608659ca12f0131f52c18637f829977f20b",
+    "vfs": "tapestry-runtime-verification-sahpool",
+    "pragmas": {
+      "foreignKeys": 1,
+      "busyTimeoutMs": 750,
+      "journalMode": "delete",
+      "applicationId": 1414550356
+    },
+    "previousCleanShutdown": null,
+    "uncleanIntegrity": null,
+    "poolCapacity": 8,
+    "lease": {
+      "acquired": true,
+      "name": "tapestry.sqlite.writer.v1",
+      "reused": false
+    }
+  },
+  "afterTerminationInitialization": {
+    "initialized": true,
+    "role": "writer",
+    "mode": "persistent",
+    "filename": "/tapestry-sqlite-runtime-verification.sqlite3",
+    "sqliteVersion": "3.53.0",
+    "sourceId": "2026-04-09 11:41:38 4525003a53a7fc63ca75c59b22c79608659ca12f0131f52c18637f829977f20b",
+    "vfs": "tapestry-runtime-verification-sahpool",
+    "pragmas": {
+      "foreignKeys": 1,
+      "busyTimeoutMs": 750,
+      "journalMode": "delete",
+      "applicationId": 1414550356
+    },
+    "previousCleanShutdown": false,
+    "uncleanIntegrity": {
+      "ok": true,
+      "mode": "quick",
+      "reason": "unclean-shutdown",
+      "checkedAt": "2026-07-12T18:54:13.669Z",
+      "integrityRows": [
+        "ok"
+      ],
+      "foreignKeyViolations": []
+    },
+    "poolCapacity": 8,
+    "lease": {
+      "acquired": true,
+      "name": "tapestry.sqlite.writer.v1",
+      "reused": false
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "mode": "quick",
+    "reason": "browser-verification",
+    "checkedAt": "2026-07-12T18:54:13.684Z",
+    "integrityRows": [
+      "ok"
+    ],
+    "foreignKeyViolations": []
+  },
+  "ok": true,
+  "httpStatus": 200,
+  "browserLogs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+.instance-standby-gate {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: var(--bg-primary, #0c101b);
+  color: var(--text-primary, #e6eaf2);
+}
+
+.instance-standby-gate > div {
+  width: min(100%, 460px);
+  padding: 28px;
+  border: 1px solid var(--border-subtle, #2d3648);
+  background: var(--bg-card, #151c2a);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 35%);
+}
+
+.instance-standby-gate span {
+  color: var(--color-task, #65d6c4);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.instance-standby-gate h1 { margin: 10px 0; font-size: clamp(24px, 7vw, 36px); }
+.instance-standby-gate p { color: var(--text-muted, #98a2b6); line-height: 1.55; }
+.instance-standby-gate button { min-width: 160px; min-height: 46px; margin-top: 8px; }
+.instance-standby-gate small { display: block; margin-top: 12px; color: #fb7185; }

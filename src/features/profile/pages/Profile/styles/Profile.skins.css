@@ -1,0 +1,709 @@
+/* ── Profile skin system ─────────────────────────────────── */
+.profile-skin-page {
+  font-family: var(--profile-font, var(--font-ui));
+}
+
+.profile-skin-page .profile-hero::before {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    var(--profile-accent-soft) 8px,
+    var(--profile-accent-soft) 9px
+  );
+}
+
+.profile-skin-view {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-areas:
+    "identity elo"
+    "stats elo"
+    "achievements highlights"
+    "activity activity";
+  gap: 14px;
+  align-items: stretch;
+}
+
+.profile-skin-panel {
+  min-width: 0;
+  width: 100%;
+  align-self: stretch;
+  background:
+    linear-gradient(135deg, var(--profile-accent-soft), transparent 42%),
+    var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 16px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.profile-skin-identity { grid-area: identity; }
+.profile-skin-stats { grid-area: stats; }
+.profile-skin-elo { grid-area: elo; }
+.profile-skin-highlights { grid-area: highlights; }
+.profile-skin-achievements { grid-area: achievements; }
+.profile-skin-activity { grid-area: activity; }
+
+.profile-skin-kicker,
+.profile-skin-section-head span,
+.profile-customizer-preview-head span {
+  font-family: var(--profile-font, var(--font-ui));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--profile-accent);
+  text-transform: uppercase;
+}
+
+.profile-skin-identity h3 {
+  margin: 8px 0 4px;
+  color: var(--text-bright);
+  font-family: var(--profile-font, var(--font-ui));
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.profile-skin-title {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 5px 10px;
+  background: var(--profile-accent-wash);
+  border: 1px solid var(--accent-border);
+  color: var(--text-bright);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.profile-skin-quote {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-border);
+  color: var(--text-bright);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.profile-skin-about {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+}
+
+.profile-skin-empty-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-skin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.profile-skin-links a,
+.profile-skin-links span {
+  max-width: 100%;
+  padding: 5px 9px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-bright);
+  font-size: 11px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.profile-skin-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-skin-section-head small,
+.profile-customizer-preview-head small {
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+.profile-skin-stats .profile-summary-band {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.profile-skin-stats .profile-summary-stat {
+  padding: 10px;
+}
+
+.profile-skin-elo {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+.profile-skin-activity {
+  align-self: stretch;
+}
+
+.profile-skin-elo .profile-elo-chart {
+  flex: 1;
+  min-height: 280px;
+}
+
+.profile-skin-elo .elo-chart-frame {
+  height: 100%;
+  min-height: 280px;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.profile-skin-highlights .profile-highlight-grid {
+  grid-template-columns: 1fr;
+}
+
+.profile-skin-achievement-shelf {
+  width: 100%;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+  clip-path: none;
+}
+
+.profile-skin-achievement-shelf:hover {
+  border-color: var(--accent-border);
+  background: var(--profile-accent-soft);
+  box-shadow: none;
+}
+
+.profile-skin-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-skin-text-button {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  clip-path: none;
+}
+
+.profile-skin-text-button:hover {
+  border-color: var(--accent-border);
+  color: var(--text-bright);
+  background: var(--profile-accent-soft);
+  box-shadow: none;
+}
+
+.profile-skin-view--poster {
+  grid-template-areas:
+    "identity identity"
+    "elo stats"
+    "highlights achievements"
+    "activity activity";
+}
+
+.profile-skin-view--poster .profile-skin-identity h3 {
+  max-width: 920px;
+  font-size: clamp(34px, 5vw, 64px);
+}
+
+.profile-skin-view--terminal .profile-skin-panel {
+  background:
+    linear-gradient(180deg, rgba(0, 214, 143, 0.055), transparent),
+    #07110d;
+  border-color: rgba(0, 214, 143, 0.24);
+}
+
+.profile-skin-view--terminal .profile-skin-identity h3,
+.profile-skin-view--terminal .profile-skin-title,
+.profile-skin-view--terminal .profile-history-title {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.profile-skin-view--zine {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+  grid-template-areas:
+    "identity achievements"
+    "activity elo"
+    "highlights stats";
+}
+
+.profile-skin-view--zine .profile-skin-panel,
+.profile-skin-view--notebook .profile-skin-panel {
+  clip-path: none;
+}
+
+.profile-skin-view--notebook {
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  grid-template-areas:
+    "identity stats"
+    "activity elo"
+    "activity highlights"
+    "achievements achievements";
+}
+
+.profile-skin-view--gallery {
+  grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.28fr);
+  grid-template-areas:
+    "identity elo"
+    "achievements elo"
+    "stats highlights"
+    "activity activity";
+}
+
+.profile-skin-view--collector {
+  grid-template-areas:
+    "achievements identity"
+    "stats elo"
+    "highlights elo"
+    "activity activity";
+}
+
+.profile-skin-view--dossier .profile-skin-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 61, 87, 0.08), transparent 44%),
+    var(--bg-card);
+}
+
+.profile-skin-view--preview {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "identity"
+    "stats"
+    "elo"
+    "achievements"
+    "highlights"
+    "activity";
+  gap: 10px;
+}
+
+.profile-skin-view--preview .profile-skin-panel {
+  padding: 12px;
+}
+
+.profile-skin-view--preview .profile-skin-identity h3 {
+  font-size: 24px;
+}
+
+.profile-skin-view--preview .profile-summary-band {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-skin-view--preview .profile-skin-elo .profile-elo-chart,
+.profile-skin-view--preview .profile-skin-elo .elo-chart-frame {
+  min-height: 170px;
+}
+
+.profile-skin-view--preview .profile-highlight-grid {
+  grid-template-columns: 1fr;
+}
+
+/* ── Tumblr-like profile customization ───────────────────── */
+.profile-customizer {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.profile-customizer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-customizer-section {
+  overflow: visible;
+}
+
+.profile-skin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.profile-skin-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-areas:
+    "swatch title"
+    "copy copy"
+    "lock lock";
+  gap: 7px 10px;
+  padding: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  text-align: left;
+  text-transform: none;
+  clip-path: none;
+}
+
+.profile-skin-card:hover,
+.profile-skin-card.active {
+  border-color: var(--accent-border);
+  background: var(--profile-accent-soft);
+  box-shadow: none;
+}
+
+.profile-skin-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.profile-skin-card-swatch {
+  grid-area: swatch;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+}
+
+.profile-skin-card strong {
+  grid-area: title;
+  color: var(--text-bright);
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.profile-skin-card span:not(.profile-skin-card-swatch) {
+  grid-area: copy;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.profile-highlight-card,
+.profile-highlight-card .phc-value,
+.profile-highlight-card .phc-detail,
+.profile-skin-achievement-shelf,
+.profile-skin-text-button,
+.profile-skin-links a,
+.profile-skin-links span {
+  text-transform: none;
+}
+
+.profile-highlight-card .phc-detail {
+  letter-spacing: 0;
+}
+
+.profile-skin-card small {
+  grid-area: lock;
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.profile-customizer input,
+.profile-customizer select,
+.profile-customizer textarea,
+.profile-customizer-inline-button {
+  min-width: 0;
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-bright);
+  padding: 9px 10px;
+  font-family: var(--profile-font, var(--font-ui));
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  clip-path: none;
+}
+
+.profile-customizer-inline-button {
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.profile-customizer-inline-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.profile-form-label--wide {
+  grid-column: 1 / -1;
+}
+
+.profile-customizer-md {
+  min-height: 150px;
+  margin-bottom: 12px;
+}
+
+.profile-customizer-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-customizer-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.profile-customizer-toggles input {
+  width: auto;
+}
+
+.profile-customizer-preview {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 110px);
+  overflow: auto;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, var(--profile-accent-soft), transparent 42%),
+    var(--bg-surface);
+  border: 1px solid var(--accent-border);
+}
+
+.profile-customizer-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Current profile layout: dense stacks, no row-gap grid waiting. */
+.profile-page--has-background {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.profile-page--has-background .profile-hero {
+  background: transparent;
+}
+
+.profile-page--has-background .profile-hero-overlay,
+.profile-page--has-background .profile-hero-overlay--strong {
+  background: transparent;
+}
+
+.profile-page--has-background .profile-grid {
+  background: transparent;
+}
+
+.profile-skin-view,
+.profile-skin-view--poster,
+.profile-skin-view--terminal,
+.profile-skin-view--zine,
+.profile-skin-view--notebook,
+.profile-skin-view--gallery,
+.profile-skin-view--collector,
+.profile-skin-view--dossier {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+  grid-template-areas: none;
+  gap: 14px;
+  align-items: start;
+}
+
+.profile-skin-about-panel {
+  grid-column: 1 / -1;
+}
+
+.profile-skin-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-skin-stats,
+.profile-skin-elo,
+.profile-skin-highlights,
+.profile-skin-achievements,
+.profile-skin-activity {
+  grid-area: auto;
+}
+
+.profile-skin-stats .profile-summary-band {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-skin-elo .profile-elo-chart,
+.profile-skin-elo .elo-chart-frame {
+  min-height: 240px;
+}
+
+.profile-skin-highlights .profile-highlight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-skin-highlights .profile-highlight-card {
+  min-height: 86px;
+}
+
+.profile-skin-achievement-shelf {
+  min-height: 76px;
+}
+
+.profile-skin-view--poster .profile-skin-identity h3 {
+  font-size: clamp(24px, 3vw, 38px);
+}
+
+.profile-customizer {
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  grid-template-areas:
+    "skins identity"
+    "skins cosmetics"
+    "save save";
+  gap: 14px;
+}
+
+.profile-customizer-section--skins {
+  grid-area: skins;
+}
+
+.profile-customizer-section--identity {
+  grid-area: identity;
+}
+
+.profile-customizer-section--cosmetics {
+  grid-area: cosmetics;
+}
+
+.profile-skin-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-skin-card {
+  padding: 10px;
+}
+
+.profile-skin-card span:not(.profile-skin-card-swatch) {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.profile-customizer-preview,
+.profile-customizer-preview-head {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .profile-body-grid { grid-template-columns: 1fr; }
+  .profile-right-col { grid-row: 1; }
+  .profile-summary-band { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .profile-social-panel { grid-template-columns: 1fr; }
+  .profile-skin-view,
+  .profile-skin-view--zine,
+  .profile-skin-view--notebook,
+  .profile-skin-view--gallery,
+  .profile-skin-view--collector {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "identity"
+      "stats"
+      "elo"
+      "achievements"
+      "highlights"
+      "activity";
+  }
+  .profile-customizer {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "skins"
+      "identity"
+      "cosmetics";
+  }
+  .profile-customizer-preview {
+    position: static;
+    max-height: none;
+  }
+  .profile-module-grid,
+  .profile-personalize-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-module--wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .profile-overview-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .profile-hero-content { flex-direction: column; align-items: flex-start; }
+  .profile-grid { padding: 0 16px 20px; }
+  .profile-stats-row { flex-wrap: wrap; }
+  .profile-summary-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-tabs { overflow-x: auto; }
+  .profile-tab { flex: 1; min-width: 110px; padding-inline: 10px; }
+  .profile-panel-header { flex-direction: column; }
+  .profile-highlight-grid { grid-template-columns: 1fr; }
+  .profile-timeline-tools { grid-template-columns: 1fr; }
+  .profile-match-summary-band { grid-template-columns: 1fr; }
+  .profile-elo-badge { text-align: left; }
+  .profile-elo-chart .elo-chart-frame { height: 200px; }
+  .profile-skin-card-grid,
+  .profile-customizer-toggles {
+    grid-template-columns: 1fr;
+  }
+  .profile-skin-stats .profile-summary-band {
+    grid-template-columns: 1fr;
+  }
+  .profile-featured-grid,
+  .profile-form-grid,
+  .profile-link-row,
+  .profile-wall-compose,
+  .profile-module-editor-row {
+    grid-template-columns: 1fr;
+  }
+  .profile-module-editor-row {
+    align-items: stretch;
+  }
+  .profile-mini-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}

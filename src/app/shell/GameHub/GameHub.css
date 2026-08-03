@@ -1,0 +1,11 @@
+@import './styles/GameHub.base.css';
+@import './styles/GameHub.panel.css';
+@import './styles/GameHub.overlays.css';
+@import './styles/GameHub.corrections.css';
+@import './styles/GameHub.current.css';
+
+.hub-world-button.is-opening-silhouette:not(.active) {
+  opacity: .42;
+  filter: saturate(.2);
+  border-style: dashed;
+}

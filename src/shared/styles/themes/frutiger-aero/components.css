@@ -1,0 +1,9 @@
+[data-theme="frutiger_aero"] :is(.chronicle-card, .event-calendar-day, .event-review-summary) {
+  border: var(--recipe-aero-border);
+  box-shadow: var(--recipe-aero-shadow);
+  backdrop-filter: blur(12px) saturate(1.2);
+}
+
+[data-theme="frutiger_aero"] .local-section-nav__item[aria-selected="true"] {
+  background-image: linear-gradient(rgba(255, 255, 255, .6), rgba(255, 255, 255, .08));
+}

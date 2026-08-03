@@ -1,0 +1,9 @@
+[data-theme="kawaii"] :is(.chronicle-card, .event-calendar-day, .event-review-summary) {
+  border: var(--recipe-sticker-outline);
+  box-shadow: var(--recipe-soft-shadow);
+}
+
+[data-theme="kawaii"] .local-section-nav__item[aria-selected="true"]::after {
+  content: "✦";
+  margin-left: 3px;
+}

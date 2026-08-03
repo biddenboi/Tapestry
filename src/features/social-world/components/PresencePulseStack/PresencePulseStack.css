@@ -1,0 +1,80 @@
+.presence-pulse-stack {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 3;
+  display: block;
+  padding: 0;
+}
+
+.presence-pulse-stack__members {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presence-pulse-stack__heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.presence-pulse-stack__heading:focus {
+  right: 0;
+  bottom: 50px;
+  width: max-content;
+  height: auto;
+  max-width: min(240px, calc(100vw - 16px));
+  padding: 8px;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 1px solid currentColor;
+  background: var(--bg-card, #111827);
+  color: var(--text-bright, #fff);
+  font-size: 12px;
+  outline: 2px solid currentColor;
+}
+
+.presence-pulse {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  min-width: 0;
+  height: fit-content;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 0;
+  transition: none;
+}
+
+button.presence-pulse:hover:not(:disabled),
+button.presence-pulse:focus-visible {
+  z-index: auto;
+  transform: none;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+@media (max-width: 620px) {
+  .presence-pulse-stack { right: 18px; bottom: 22px; }
+}
+
+@media (max-width: 400px) {
+  .presence-pulse-stack { right: 8px; bottom: 12px; }
+}
+
+@media (forced-colors: active) {
+  .presence-pulse:focus-visible { outline: 2px solid ButtonText; }
+}

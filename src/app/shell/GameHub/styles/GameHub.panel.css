@@ -1,0 +1,252 @@
+/* ── Panel backdrop ──────────────────────────────────────── */
+.hub-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  z-index: 90;
+  animation: fade-in 0.15s ease both;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Slide-in panel ──────────────────────────────────────── */
+.hub-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(520px, 92vw);
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-panel-strong);
+  animation: slide-right 0.24s cubic-bezier(0.22,1,0.36,1) both;
+  will-change: transform;
+}
+
+/* Narrow panel styles for compact contextual surfaces. */
+.hub-panel--full { left: 0; width: auto; }
+
+.hub-panel-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  z-index: 10;
+  clip-path: none;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color 0.12s;
+}
+.hub-panel-close:hover {
+  color: var(--red);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.hub-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-inbox-drawer .ui-drawer__body {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 760px) {
+  .hub-world-nav {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    max-width: calc(100% - 20px);
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 2px;
+    transform: translateX(-50%);
+  }
+
+  .hub-world-actions {
+    top: 10px;
+    right: 10px;
+    gap: 8px;
+  }
+
+  .hub-world-button,
+  .hub-world-avatar-wrap {
+    width: 42px;
+    height: 42px;
+  }
+
+  .hub-avatar-ring,
+  .hub-world-avatar,
+  .hub-world-avatar--init {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hub-nav-label {
+    display: none;
+  }
+
+  .hub-world-panel,
+  .hub-lobby-menu {
+    inset: 8px;
+    width: auto;
+    border-radius: 8px;
+  }
+
+  .hub-lobby-menu .lobby-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hub-lobby-menu .lobby-player-card {
+    position: relative;
+    max-height: none;
+    height: auto;
+    padding: 22px 18px;
+  }
+
+  .hub-panel--full {
+    left: 0;
+  }
+}
+
+.hub-panel-error {
+  margin: 24px;
+  padding: 18px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 61, 87, 0.32);
+  color: var(--text);
+}
+
+.hub-panel-error-k {
+  display: block;
+  margin-bottom: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--red);
+}
+
+.hub-panel-error strong {
+  color: var(--text-bright);
+}
+
+/* Settings panel: gradient pinned to the container viewport, not the scrolling content */
+.hub-panel-content:has(.settings-page) {
+  background:
+    linear-gradient(180deg, var(--accent-glow) 0%, transparent 260px),
+    var(--bg-void);
+}
+
+/* ── Inbox panel variant ─────────────────────────────────── */
+.hub-panel--inbox {
+  width: min(380px, 92vw);
+}
+
+.hub-panel-loading {
+  display: grid;
+  min-height: 12rem;
+  place-items: center;
+  color: var(--text-muted, #8b93a7);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+
+@media (max-width: 760px) {
+  .hub-lobby-menu {
+    inset: 8px;
+    width: auto;
+    left: 8px;
+  }
+
+  .hub-lobby-menu .lobby {
+    overflow-y: auto;
+  }
+
+  .hub-lobby-menu .lobby-center {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .hub-world-panel--tasks,
+  .hub-world-panel--tasks.is-expanded,
+  .hub-world-panel--events,
+  .hub-world-panel--inventory,
+  .hub-world-panel--shop,
+  .hub-world-panel--events:has(.evt-form),
+  .hub-world-panel--events:has(.evt-form-pick) {
+    inset: 8px;
+    width: auto;
+    height: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 64px;
+  }
+
+  .hub-world-panel--feed {
+    inset: auto;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: calc(100vw - 22px);
+    height: calc(100vh - 116px);
+    transform: translate(-50%, -50%);
+  }
+
+  .hub-world-panel--shop .add-item-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    width: min(520px, 96vw);
+  }
+}
+
+.domain-hydration-error {
+  width: min(560px, calc(100% - 40px));
+  margin: 64px auto;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--color-match) 58%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-surface) 94%, black);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+  display: grid;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.domain-hydration-error strong {
+  color: var(--text-bright);
+  font-size: 1rem;
+}
+
+.domain-hydration-error span {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.domain-hydration-error button {
+  justify-self: start;
+  margin-top: 4px;
+}

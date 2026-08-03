@@ -1,0 +1,7 @@
+[data-theme="solarpunk"] :is(.chronicle-page, .habit-page, .event-local-page) {
+  background-image: radial-gradient(ellipse at 82% 4%, rgba(109, 187, 114, .14), transparent 25rem);
+}
+
+[data-theme="solarpunk"] .event-calendar-week__days span.has-activity {
+  border-radius: 50% 50% 42% 58%;
+}

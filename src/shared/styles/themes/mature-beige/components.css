@@ -1,0 +1,8 @@
+[data-theme="mature_beige"] :is(.chronicle-card, .event-calendar-day, .event-review-summary) {
+  border: var(--recipe-folio-rule);
+  box-shadow: var(--recipe-paper-shadow);
+}
+
+[data-theme="mature_beige"] .local-section-nav__item {
+  font-family: Georgia, "Times New Roman", serif;
+}

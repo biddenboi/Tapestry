@@ -1,0 +1,9 @@
+[data-theme="old_windows"] :is(.chronicle-card, .event-calendar-day, .event-boundary-grid article) {
+  border-width: 2px;
+  border-style: outset;
+  box-shadow: inset 1px 1px var(--recipe-bevel-light), inset -2px -2px var(--recipe-bevel-dark);
+}
+
+[data-theme="old_windows"] .local-section-nav__rail {
+  border-style: outset;
+}

@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="obsidian"] .local-section-nav { border-left: 0; border-right: 0; }
+}

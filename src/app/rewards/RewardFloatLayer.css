@@ -1,0 +1,75 @@
+.reward-float-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.reward-float {
+    position: absolute;
+    left: var(--reward-x);
+    top: var(--reward-y);
+    padding: 4px 8px;
+    border: 1px solid color-mix(in srgb, var(--accent-bright) 42%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-void) 76%, transparent);
+    color: var(--text-bright);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+    white-space: nowrap;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    animation: reward-float-away 4.05s cubic-bezier(0.2, 0.8, 0.2, 1) var(--reward-delay) both;
+}
+
+.reward-float--coins {
+    color: var(--gold);
+    border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.reward-float--contribution {
+    color: var(--color-event);
+    border-color: color-mix(in srgb, var(--color-event) 45%, transparent);
+}
+
+.reward-float--points {
+    color: var(--color-match);
+    border-color: color-mix(in srgb, var(--color-match) 45%, transparent);
+}
+
+.reward-float--post {
+    color: var(--color-feed);
+    border-color: color-mix(in srgb, var(--color-feed) 45%, transparent);
+}
+
+.reward-float--event {
+    color: var(--color-event);
+    border-color: color-mix(in srgb, var(--color-event) 45%, transparent);
+}
+
+.reward-float--event-penalty {
+    color: var(--red);
+    border-color: color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+@keyframes reward-float-away {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 12px) scale(0.92);
+        filter: blur(1px);
+    }
+    16% {
+        opacity: 1;
+        filter: blur(0);
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--reward-drift-x, 0px)), calc(-1 * var(--reward-drift-y, 44px))) scale(1.04);
+        filter: blur(1px);
+    }
+}

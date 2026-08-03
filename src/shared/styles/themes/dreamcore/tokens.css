@@ -1,0 +1,5 @@
+[data-theme="dreamcore"] {
+  --recipe-haze: blur(18px) saturate(1.2);
+  --recipe-drift-shadow: 0 24px 70px rgba(91, 56, 140, .24);
+  --recipe-motion-distance: 12px;
+}

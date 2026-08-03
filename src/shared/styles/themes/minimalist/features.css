@@ -1,0 +1,7 @@
+[data-theme="minimalist"] :is(.habit-card, .shop-card, .chronicle-card) {
+  background-image: none;
+}
+
+[data-theme="minimalist"] :is(.habit-section-heading, .chronicle-time-group) {
+  letter-spacing: .14em;
+}

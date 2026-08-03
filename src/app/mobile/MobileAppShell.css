@@ -1,0 +1,76 @@
+@import './styles/MobileFoundation.css';
+@import './styles/MobileToday.css';
+@import './styles/MobileSheets.css';
+@import './styles/MobileFeatures.css';
+
+.mobile-app-shell {
+  --mobile-nav-height: 68px;
+  --mobile-active-controller-height: 0px;
+  /* Mobile surfaces consume stable aliases while every cosmetic theme owns the
+     canonical desktop tokens. Keep the aliases inherited so sheets and lazy
+     feature presentations change atomically with the selected theme. */
+  --bg-primary: var(--bg-void, #0c101b);
+  --bg-input: var(--bg-surface, var(--bg-primary));
+  --text-primary: var(--text, #e6eaf2);
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  background: var(--bg-primary, #0c101b);
+  color: var(--text-primary, #e6eaf2);
+}
+
+.mobile-app-shell:has(.mobile-active-controller) { --mobile-active-controller-height: 52px; }
+.mobile-app-content { min-width: 0; min-height: 0; overflow: hidden; }
+.mobile-tab-panel { width: 100%; height: 100%; min-width: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.mobile-tab-panel[hidden] { display: none !important; }
+.mobile-feature-loading { display: grid; min-height: 44vh; place-items: center; color: var(--text-muted, #98a2b6); font-size: .8rem; }
+
+.mobile-bottom-navigation {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: var(--mobile-nav-height);
+  padding: 5px max(6px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  border-top: 1px solid var(--border-subtle, #2d3648);
+  background: color-mix(in srgb, var(--bg-primary, #0c101b) 94%, transparent);
+  backdrop-filter: blur(16px);
+}
+.mobile-bottom-navigation button { position: relative; display: flex; min-width: 0; min-height: 52px; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 4px 2px; border: 0; background: transparent; color: var(--text-muted, #98a2b6); touch-action: manipulation; }
+.mobile-bottom-navigation button > span { font-size: .68rem; letter-spacing: .02em; }
+.mobile-bottom-navigation button.is-active { color: var(--color-task, #65d6c4); }
+.mobile-bottom-navigation button.is-active::before { position: absolute; top: -5px; width: 26px; height: 2px; background: currentColor; box-shadow: 0 0 9px currentColor; content: ''; }
+.mobile-app-shell[data-mobile-tab="goals"] .mobile-bottom-navigation button.is-active { color: var(--color-goal, #a78bfa); }
+.mobile-app-shell[data-mobile-tab="chronicle"] .mobile-bottom-navigation button.is-active { color: var(--color-feed, #38bdf8); }
+.mobile-app-shell[data-mobile-tab="shop"] .mobile-bottom-navigation button.is-active { color: var(--color-shop, #fbbf24); }
+.mobile-app-shell[data-mobile-tab="profile"] .mobile-bottom-navigation button.is-active { color: var(--color-profile, #879cff); }
+
+.mobile-active-controller { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 52px; padding: 7px max(12px, env(safe-area-inset-right)) 7px max(12px, env(safe-area-inset-left)); border-top: 1px solid var(--border-subtle); background: var(--bg-card); }
+.mobile-active-controller > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.mobile-active-controller strong, .mobile-active-controller span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-active-controller strong { color: var(--text-bright); font-size: .75rem; }
+.mobile-active-controller span { color: var(--text-muted); font-size: .68rem; }
+
+.mobile-shell-fab { position: fixed; z-index: 35; right: max(18px, env(safe-area-inset-right)); bottom: calc(var(--mobile-nav-height) + var(--mobile-active-controller-height) + 16px + env(safe-area-inset-bottom)); display: grid; width: 54px; height: 54px; place-items: center; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--color-task, #65d6c4) 55%, transparent); background: var(--color-task, #65d6c4); color: #07110f; box-shadow: 0 12px 30px rgb(0 0 0 / 38%); }
+
+.mobile-feedback-layer { position: fixed; z-index: 75; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); left: max(12px, env(safe-area-inset-left)); display: grid; justify-items: center; gap: 7px; pointer-events: none; }
+.mobile-feedback-card { display: block; width: min(100%, 390px); min-height: 60px; padding: 10px 13px; border: 1px solid color-mix(in srgb, var(--color-task) 50%, var(--border-subtle)); background: color-mix(in srgb, var(--bg-card) 94%, transparent); color: var(--text-bright); box-shadow: 0 16px 40px rgb(0 0 0 / 42%); text-align: left; pointer-events: auto; animation: mobile-feedback-in 220ms ease-out both; }
+.mobile-feedback-card__main { display: flex; align-items: center; gap: 10px; }
+.mobile-feedback-card__copy { display: grid; min-width: 0; gap: 3px; }
+.mobile-feedback-card__copy > span { color: var(--color-task); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; }
+.mobile-feedback-card__copy > div { display: flex; flex-wrap: wrap; gap: 8px; color: var(--color-task); font-size: .75rem; }
+.mobile-feedback-card.is-major { border-color: var(--color-warning, #fbbf24); }
+@keyframes mobile-feedback-in { from { opacity: 0; transform: translateY(-10px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-app-shell *, .mobile-app-shell *::before, .mobile-app-shell *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+html[data-reduced-motion] .mobile-app-shell *, html[data-reduced-motion] .mobile-app-shell *::before, html[data-reduced-motion] .mobile-app-shell *::after { animation: none !important; transition: none !important; }
+html[data-high-contrast] .mobile-app-shell {
+  --border-subtle: color-mix(in srgb, var(--text-bright, #fff) 48%, transparent);
+  --border-strong: color-mix(in srgb, var(--text-bright, #fff) 72%, transparent);
+  --text-muted: color-mix(in srgb, var(--text-bright, #fff) 78%, var(--bg-primary, #0c101b));
+}
+html[data-high-contrast] .mobile-app-shell :focus-visible { outline: 3px solid var(--color-task, #65d6c4); outline-offset: 2px; }
+html[data-large-mobile-text] .mobile-app-shell { font-size: 112.5%; }

@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="mature_beige"] .event-local-page { padding-inline: 4px; }
+}

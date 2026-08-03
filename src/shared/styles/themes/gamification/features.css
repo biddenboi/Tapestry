@@ -1,0 +1,4 @@
+[data-theme="gamification"] :is(.habit-page-eyebrow, .chronicle-kicker, .event-local-page__header > span)::before {
+  content: "◆ ";
+  color: var(--gold);
+}

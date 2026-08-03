@@ -1,0 +1,2 @@
+[data-theme="commons"] :is(.local-section-nav,.ui-panel,.settings-section) { border-color:rgba(25,84,65,.18); }
+[data-theme="commons"] .local-section-nav__rail { justify-content:center; }

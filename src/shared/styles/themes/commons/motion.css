@@ -1,0 +1,2 @@
+[data-theme="commons"] { --theme-enter-animation:commons-enter 260ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes commons-enter { from { opacity:0; transform:translateY(8px) scale(.985); } }

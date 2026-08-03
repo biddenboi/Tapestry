@@ -1,0 +1,5 @@
+[data-theme="gamification"] {
+  --recipe-ornate-rule: 3px double color-mix(in srgb, var(--gold) 75%, var(--border));
+  --recipe-crest-shadow: 0 0 22px rgba(255, 198, 72, .18);
+  --recipe-motion-distance: 10px;
+}

@@ -1,0 +1,5 @@
+[data-theme="pixelated"] :is(.chronicle-card, .event-calendar-day, .event-boundary-history) {
+  border-radius: 0;
+  box-shadow: var(--recipe-pixel-shadow);
+  clip-path: polygon(var(--recipe-pixel-unit) 0, 100% 0, 100% calc(100% - var(--recipe-pixel-unit)), calc(100% - var(--recipe-pixel-unit)) 100%, 0 100%, 0 var(--recipe-pixel-unit));
+}

@@ -1,0 +1,318 @@
+/* ── Confirm overlay ─────────────────────────────────────── */
+
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 170;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-card {
+    position: relative;
+    z-index: 1;
+    width: min(460px, 88vw);
+    background: var(--bg-card);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--glow-blue), var(--box-shadow);
+    animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.confirm-header {
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
+}
+
+.confirm-body {
+    padding: 22px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.confirm-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.03em;
+}
+
+.confirm-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.confirm-desc strong { color: var(--text); }
+
+.confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.sleep-ritual-card {
+    width: min(540px, 92vw);
+    max-height: 94vh;
+    overflow-y: auto;
+    border-color: color-mix(in srgb, var(--color-event) 58%, var(--border));
+    box-shadow: 0 0 30px color-mix(in srgb, var(--color-event) 16%, transparent), var(--box-shadow-lg);
+}
+
+.sleep-ritual-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--color-event);
+}
+
+.sleep-ritual-header span:last-child {
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+}
+
+.sleep-ritual-readout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border);
+}
+
+.sleep-ritual-readout span {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.sleep-ritual-readout b {
+    color: var(--text-bright);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.sleep-ritual-buff {
+    --accent-bright: var(--color-event);
+    --accent-border: color-mix(in srgb, var(--color-event) 42%, transparent);
+    --accent-glow: color-mix(in srgb, var(--color-event) 15%, transparent);
+}
+
+.goodnight-overlay {
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--color-event) 14%, transparent), transparent 40%),
+        var(--bg-base);
+}
+
+.goodnight-overlay .blanker {
+    opacity: 0.86;
+    animation: goodnight-dim 520ms ease-out both;
+}
+
+.goodnight-card {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 90vw);
+    min-height: 390px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 46px 38px;
+    overflow: hidden;
+    text-align: center;
+    color: var(--text);
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 92%, var(--color-event)), var(--bg-card));
+    border: 1px solid color-mix(in srgb, var(--color-event) 50%, var(--border));
+    box-shadow:
+        0 28px 90px rgba(0, 0, 0, 0.44),
+        0 0 54px color-mix(in srgb, var(--color-event) 18%, transparent);
+    animation: goodnight-card-arrive 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.goodnight-card::before,
+.goodnight-card::after {
+    content: '';
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border: 1px solid color-mix(in srgb, var(--color-event) 18%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: goodnight-ripple 1.6s ease-out both;
+}
+
+.goodnight-card::after {
+    animation-delay: 280ms;
+}
+
+.goodnight-orbit {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 8px;
+}
+
+.goodnight-orbit::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid color-mix(in srgb, var(--color-event) 48%, transparent);
+    border-radius: 50%;
+    box-shadow: 0 0 30px color-mix(in srgb, var(--color-event) 24%, transparent);
+}
+
+.goodnight-orbit span {
+    color: var(--color-event);
+    font-size: 52px;
+    line-height: 1;
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--color-event) 58%, transparent));
+    animation: goodnight-moon 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.goodnight-orbit i {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    top: 4px;
+    left: 44px;
+    border-radius: 50%;
+    background: var(--text-bright);
+    box-shadow: 0 0 12px var(--text-bright);
+    transform-origin: 4px 44px;
+    animation: goodnight-orbit 1.5s ease-in-out both;
+}
+
+.goodnight-eyebrow {
+    margin: 0;
+    color: var(--color-event);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.goodnight-card h1 {
+    margin: 0;
+    color: var(--text-bright);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(30px, 6vw, 44px);
+    line-height: 1;
+}
+
+.goodnight-card > p:not(.goodnight-eyebrow) {
+    max-width: 380px;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.goodnight-checks {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.goodnight-checks i {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--color-event) 52%, transparent);
+    color: var(--color-event);
+    font-style: normal;
+    animation: goodnight-check 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.goodnight-checks i:nth-child(2) { animation-delay: 180ms; }
+.goodnight-checks i:nth-child(3) { animation-delay: 360ms; }
+
+.goodnight-card > button {
+    margin-top: 10px;
+}
+
+.goodnight-overlay.is-resting .goodnight-orbit i {
+    animation: goodnight-orbit-idle 4s linear infinite;
+}
+
+@keyframes goodnight-dim {
+    from { opacity: 0; }
+    to { opacity: 0.86; }
+}
+
+@keyframes goodnight-card-arrive {
+    from { opacity: 0; transform: translateY(22px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes goodnight-moon {
+    from { opacity: 0; transform: translateY(12px) rotate(-14deg) scale(0.7); }
+    to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes goodnight-orbit {
+    from { transform: rotate(-90deg); opacity: 0; }
+    25% { opacity: 1; }
+    to { transform: rotate(270deg); opacity: 1; }
+}
+
+@keyframes goodnight-orbit-idle {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes goodnight-ripple {
+    from { opacity: 0.5; transform: scale(0.35); }
+    to { opacity: 0; transform: scale(1.35); }
+}
+
+@keyframes goodnight-check {
+    from { opacity: 0; transform: translateY(8px) scale(0.72); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .goodnight-overlay *,
+    .goodnight-overlay *::before,
+    .goodnight-overlay *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+html[data-reduced-motion] .goodnight-overlay *,
+html[data-reduced-motion] .goodnight-overlay *::before,
+html[data-reduced-motion] .goodnight-overlay *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+}

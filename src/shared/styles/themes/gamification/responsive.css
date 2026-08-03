@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="gamification"] .local-section-nav__rail { padding-bottom: 8px; }
+}

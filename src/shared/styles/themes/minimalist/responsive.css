@@ -1,0 +1,3 @@
+@media (max-width: 720px) {
+  [data-theme="minimalist"] .local-section-nav__rail { padding-inline: 10px; }
+}

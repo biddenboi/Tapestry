@@ -1,0 +1,92 @@
+.recognition-v2 { --board-paper: color-mix(in srgb, var(--bg-surface, #101727) 94%, var(--text, #fff) 6%); color: var(--text, #e8eefb); background: var(--bg-surface, #0b1220); border: 1px solid var(--border, #2a3a55); min-width: 0; }
+.recognition-v2__toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; padding: 18px 22px; background: color-mix(in srgb, var(--bg-card, #101827) 88%, var(--accent, #4da3ff) 12%); border-bottom: 1px solid var(--border, #2a3a55); }
+.recognition-v2__toolbar > div:first-child { min-width: 0; }
+.recognition-v2__toolbar span, .recognition-v2__inspector header span, .recognition-v2__inspector section > span, .recognition-v2__commit span { color: var(--accent, #64b5ff); font: 800 10px/1.2 var(--font-mono, monospace); letter-spacing: .18em; text-transform: uppercase; }
+.recognition-v2__toolbar h2 { margin: 4px 0 2px; font-size: clamp(22px, 2vw, 32px); }
+.recognition-v2__toolbar p { margin: 0; max-width: 720px; color: var(--text-muted, #a9b8cf); font-size: 13px; }
+.recognition-v2__controls { display: flex; align-items: center; gap: 6px; }
+.recognition-v2__controls button, .recognition-v2__inspector button, .recognition-v2__commit button { color: inherit; background: var(--bg-raised, #17233a); border: 1px solid var(--border, #35506f); min-height: 36px; padding: 0 13px; font: 800 12px/1 var(--font-ui, sans-serif); cursor: pointer; }
+.recognition-v2__controls b { min-width: 48px; text-align: center; font: 700 11px/1 var(--font-mono, monospace); }
+.recognition-v2__workspace { position: relative; min-height: 700px; }
+.recognition-v2__viewport { position: relative; min-width: 0; height: clamp(700px, 72vh, 860px); overflow: hidden; outline: none; cursor: grab; touch-action: none; background-color: var(--board-paper); background-image: linear-gradient(color-mix(in srgb, var(--border, #32445e) 46%, transparent) 1px, transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--border,#32445e) 46%,transparent) 1px,transparent 1px),linear-gradient(color-mix(in srgb,var(--border,#32445e) 24%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--border,#32445e) 24%,transparent) 1px,transparent 1px); background-size: 80px 80px,80px 80px,20px 20px,20px 20px; }
+.recognition-v2__viewport:active { cursor: grabbing; }
+.recognition-v2__viewport:focus-visible { box-shadow: inset 0 0 0 3px var(--accent, #4da3ff); }
+.recognition-v2__canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform 260ms cubic-bezier(.2,.8,.2,1); }
+.recognition-v2__connections { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.recognition-v2__connections path { fill: none; stroke: color-mix(in srgb, var(--branch-color) 40%, var(--border, #33445b)); stroke-width: 5; stroke-dasharray: 13 13; opacity: .58; }
+.recognition-v2__connections path.is-active { stroke: var(--branch-color); opacity: .95; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--branch-color) 48%, transparent)); }
+.recognition-v2__connections path.is-evidence { stroke-width: 2.5; stroke-dasharray: 5 7; opacity: .68; }
+.recognition-v2__chapter-column { position: absolute; top: 54px; bottom: 56px; width: 520px; transform: translateX(-260px); pointer-events: none; border-left: 1px dashed color-mix(in srgb, var(--border, #394b66) 65%, transparent); border-right: 1px dashed color-mix(in srgb, var(--border, #394b66) 65%, transparent); background: color-mix(in srgb, var(--bg-surface, #0c1422) 98%, var(--accent, #4da3ff) 2%); opacity: .42; }
+.recognition-v2__chapter-column.is-current { opacity: 1; background: color-mix(in srgb, var(--bg-card, #0c1422) 92%, var(--accent, #4da3ff) 8%); }
+.recognition-v2__chapter-column > span { position: absolute; top: -32px; left: 20px; color: var(--text, #eef4ff); font: 850 16px/1 var(--font-ui, sans-serif); text-transform: uppercase; letter-spacing: .1em; }
+.recognition-v2__chapter-column > small { position: absolute; top: -29px; right: 20px; color: var(--text-muted, #91a1ba); font: 700 10px/1 var(--font-mono, monospace); }
+.recognition-v2__viewport.is-chapter-focus .recognition-v2__chapter-column:not(.is-current) > :is(span, small) { display: none; }
+.recognition-v2__lane-index { position: absolute; z-index: 8; inset: 0; overflow: hidden; pointer-events: none; }
+.recognition-v2__lane-label { position: absolute; left: 0; width: 188px; min-height: 58px; transform: translateY(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 15px; color: var(--text, #e9f1ff); background: linear-gradient(90deg, color-mix(in srgb, var(--board-paper) 97%, transparent) 72%, transparent); pointer-events: none; }
+.recognition-v2__lane-label > i { color: var(--branch-color); font-style: normal; font-size: 18px; }
+.recognition-v2__lane-label span { display: grid; gap: 3px; }
+.recognition-v2__lane-label b { font-size: 14px; }
+.recognition-v2__lane-label small { color: var(--text-muted, #95a5bc); font: 650 9px/1.2 var(--font-ui, sans-serif); }
+.recognition-v2__map-key { position: absolute; z-index: 12; top: 12px; right: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 10px; max-width: min(430px, calc(100% - 220px)); padding: 8px 10px; color: var(--text-muted, #95a5bc); background: color-mix(in srgb, var(--board-paper) 91%, transparent); border: 1px solid color-mix(in srgb, var(--border, #394b66) 72%, transparent); border-radius: 8px; backdrop-filter: blur(10px); font: 700 9px/1 var(--font-ui, sans-serif); pointer-events: none; }
+.recognition-v2__map-key b { color: var(--text, #edf4ff); font: 800 8px/1 var(--font-mono, monospace); letter-spacing: .12em; }
+.recognition-v2__map-key span { display: inline-flex; align-items: center; gap: 4px; }
+.recognition-v2__map-key i { color: var(--accent, #4da3ff); font-style: normal; }
+.recognition-node { --size: 62px; position: absolute; z-index: 3; left: 0; top: 0; width: var(--size); height: var(--size); transform: translate(-50%, -50%); display: grid; place-items: center; padding: 0; color: var(--text, #eef4ff); background: color-mix(in srgb, var(--bg-raised, #172238) 92%, var(--branch-color) 8%); border: 2px solid color-mix(in srgb, var(--branch-color) 62%, var(--border, #344a65)); border-radius: 50%; box-shadow: 0 7px 20px color-mix(in srgb, #000 34%, transparent); cursor: pointer; }
+.recognition-node > i { font: 900 20px/1 var(--font-ui, sans-serif); color: var(--branch-color); font-style: normal; }
+.recognition-node::after { content: attr(data-tooltip); position: absolute; z-index: 20; left: 50%; bottom: calc(100% + 12px); width: max-content; max-width: 250px; transform: translate(-50%, 5px); padding: 8px 10px; color: var(--text-bright, #fff); background: var(--bg-card, #0a101b); border: 1px solid var(--branch-color); border-radius: 5px; box-shadow: 0 8px 24px color-mix(in srgb, #000 42%, transparent); font: 750 12px/1.3 var(--font-ui, sans-serif); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 120ms, transform 120ms, visibility 0s linear 120ms; }
+.recognition-node:hover::after, .recognition-node:focus-visible::after { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition-delay: 800ms; }
+.recognition-node:focus-visible { outline: 4px solid color-mix(in srgb, var(--branch-color) 55%, white); outline-offset: 5px; z-index: 9; }
+.recognition-node.is-silhouetted { opacity: .64; filter: grayscale(.6); }
+.recognition-node.is-silhouetted.is-current-chapter { opacity: .8; filter: grayscale(.38); }
+.recognition-node.is-excluded { opacity: .38; filter: grayscale(1); }
+.recognition-node.is-claimed { box-shadow: 0 0 0 5px color-mix(in srgb, var(--branch-color) 20%, transparent),0 8px 22px #0007; }
+.recognition-node.is-eligible { animation: recognition-pulse 2.4s ease-in-out infinite; }
+.recognition-node--stat { background: conic-gradient(var(--branch-color) var(--dial), color-mix(in srgb, var(--bg-raised, #172238) 92%, transparent) 0); border-width: 3px; box-shadow: inset 0 0 0 6px var(--board-paper),0 5px 16px color-mix(in srgb, #000 38%, transparent); }
+.recognition-node--stat > i { font-size: 17px; transform: translateY(-7px); }
+.recognition-node--stat > small { position: absolute; top: 34px; color: var(--text, #eef4ff); font: 850 10px/1 var(--font-mono, monospace); }
+.recognition-node--achievement { --size: 70px; border-radius: 13px; transform: translate(-50%, -50%) rotate(45deg); }
+.recognition-node--achievement > i { transform: rotate(-45deg); }
+.recognition-node--interface-reveal { --size: 52px; border-style: dashed; }
+.recognition-node--capability { --size: 68px; clip-path: polygon(25% 7%,75% 7%,100% 50%,75% 93%,25% 93%,0 50%); border-radius: 0; }
+.recognition-node--classic-reward { --size: 60px; border-radius: 12px; border-color: #e2b94f; --branch-color: #e2b94f !important; }
+.recognition-node--chapter-seal { --size: 108px; border-color: #e2b94f; --branch-color: #e2b94f !important; }
+.recognition-node--chapter-seal span { position: absolute; top: 66px; font: 850 12px/1 var(--font-ui, sans-serif); }
+.recognition-node--capstone { --size: 112px; border-radius: 20px; }
+.recognition-node--capstone > i { position: absolute; top: 22px; }
+.recognition-node--capstone > span { display: grid; gap: 7px; margin-top: 30px; width: 94px; padding: 0 4px; font: 850 13px/1.1 var(--font-ui, sans-serif); overflow-wrap: anywhere; }
+.recognition-node--capstone > span small { color: var(--text-muted, #9cacbf); font: 750 9px/1 var(--font-mono, monospace); }
+.recognition-node--capstone.is-selected { background: color-mix(in srgb, var(--branch-color) 28%, var(--bg-raised, #172238)); box-shadow: 0 0 0 6px color-mix(in srgb, var(--branch-color) 22%, transparent),0 8px 26px color-mix(in srgb, #000 44%, transparent); }
+.recognition-v2__inspector { position: absolute; z-index: 30; inset: 0 0 0 auto; width: min(370px, 92vw); min-width: 0; border-left: 1px solid var(--border, #2d425d); background: color-mix(in srgb, var(--bg-card, #141f33) 97%, transparent); height: clamp(700px, 72vh, 860px); display: grid; grid-template-rows: auto minmax(0, 1fr); box-shadow: -18px 0 44px color-mix(in srgb, #000 48%, transparent); }
+.recognition-v2__inspector > header { display: flex; justify-content: space-between; gap: 16px; padding: 20px; border-bottom: 1px solid var(--border, #2d425d); }
+.recognition-v2__inspector h2 { margin: 5px 0 0; font-size: 22px; overflow-wrap: anywhere; }
+.recognition-v2__inspector header button { width: 36px; padding: 0; }
+.recognition-v2__inspector-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px; }
+.recognition-v2__inspector-scroll > p { color: var(--text-muted, #a9b7ca); line-height: 1.55; }
+.recognition-v2__inspector section { display: grid; gap: 10px; margin-top: 16px; padding: 15px; background: color-mix(in srgb, var(--bg-surface, #0c1422) 86%, transparent); border: 1px solid var(--border, #2d425d); }
+.recognition-v2__inspector section > div { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+.recognition-v2__inspector section > div small { grid-column: 2; color: var(--text-muted, #98a9c0); }
+.recognition-v2__meter { height: 7px; overflow: hidden; border-radius: 99px; background: var(--bg, #0c1422); }
+.recognition-v2__meter i { display: block; height: 100%; background: var(--accent, #4da3ff); }
+.recognition-v2__claim { width: 100%; margin-top: 18px; background: var(--accent, #4da3ff) !important; color: var(--accent-contrast, #08111d) !important; }
+.recognition-v2__owned { color: #45ddb1 !important; font-weight: 800; }
+.recognition-v2__warning { color: #ffb95e !important; }
+.recognition-v2__footer { display: grid; gap: 10px; padding: 13px 18px; border-top: 1px solid var(--border, #2d425d); background: color-mix(in srgb, var(--bg-card, #0c1422) 92%, var(--text, #fff) 8%); }
+.recognition-v2__legend { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 13px; font-size: 11px; }
+.recognition-v2__legend > b { margin-right: 4px; text-transform: uppercase; letter-spacing: .14em; }
+.recognition-v2__legend span { display: inline-flex; gap: 6px; align-items: center; }
+.recognition-v2__legend i { color: var(--accent, #4da3ff); font-style: normal; }
+.recognition-v2__legend small { color: var(--text-muted, #99abc2); margin-left: -8px; }
+.recognition-v2__footer > p { margin: 0; color: var(--text-muted, #99abc2); font: 650 10px/1.4 var(--font-mono, monospace); }
+.recognition-v2__commit { position: sticky; z-index: 15; bottom: 0; display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 15px 20px; color: var(--text, #eef4ff); background: color-mix(in srgb, var(--bg-raised, #172238) 95%, #000); border-top: 1px solid var(--accent, #4da3ff); box-shadow: 0 -10px 30px color-mix(in srgb, #000 38%, transparent); }
+.recognition-v2__commit div { display: grid; gap: 4px; }
+.recognition-v2__commit p { margin: 0; color: var(--text-muted, #9dadc2); font-size: 11px; }
+.recognition-v2__commit button { background: var(--accent, #4da3ff); color: var(--accent-contrast, #07101c); }
+@keyframes recognition-pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--branch-color) 20%, transparent),0 8px 20px #0008; } }
+@media (max-width: 980px) { .recognition-v2__toolbar { grid-template-columns: 1fr; } .recognition-v2__controls { flex-wrap: wrap; } }
+@media (max-width: 640px) { .recognition-v2__viewport, .recognition-v2__inspector { height: 700px; } .recognition-v2__toolbar { padding: 15px; } }
+@media (max-width: 640px) { .recognition-v2__map-key { left: 10px; right: 10px; max-width: none; } }
+@media (prefers-reduced-motion: reduce) { .recognition-v2__canvas { transition: none; } .recognition-node.is-eligible { animation: none; box-shadow: 0 0 0 5px color-mix(in srgb, var(--branch-color) 20%, transparent); } }
+[data-reduced-motion='true'] .recognition-v2__canvas, .reduce-motion .recognition-v2__canvas { transition: none; }
+[data-reduced-motion='true'] .recognition-node.is-eligible, .reduce-motion .recognition-node.is-eligible { animation: none; box-shadow: 0 0 0 5px color-mix(in srgb, var(--branch-color) 20%, transparent); }
+[data-high-contrast='true'] .recognition-node { border-width: 3px; box-shadow: none; }
+[data-high-contrast='true'] .recognition-v2__connections path { opacity: 1; filter: none; }

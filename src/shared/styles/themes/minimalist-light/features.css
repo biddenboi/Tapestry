@@ -1,0 +1,4 @@
+[data-theme="minimalist_light"] :is(.habit-section-heading, .chronicle-time-group) {
+  color: #475569;
+  letter-spacing: .12em;
+}

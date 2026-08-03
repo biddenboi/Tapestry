@@ -1,0 +1,5 @@
+[data-theme="kawaii"] {
+  --recipe-sticker-outline: 2px solid rgba(150, 80, 145, .22);
+  --recipe-soft-shadow: 0 9px 0 rgba(192, 133, 186, .12);
+  --recipe-motion-distance: 7px;
+}

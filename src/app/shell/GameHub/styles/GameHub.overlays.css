@@ -1,0 +1,485 @@
+/* ── World shell refinements: reminders, compact panels, capsules ────── */
+.hub-reminder-stack {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 44;
+  width: min(430px, calc(100vw - 148px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.hub-reminder-toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 24px;
+  align-items: start;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
+  border-radius: 8px;
+  background: var(--surface-card-glass);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+  animation: hub-toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hub-reminder-toast__icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  color: var(--gold);
+  font: 800 14px/1 'JetBrains Mono', monospace;
+}
+
+.hub-reminder-toast__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  clip-path: none;
+  box-shadow: none;
+}
+
+.hub-reminder-toast__body:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.hub-reminder-toast__body span {
+  color: var(--gold);
+  font: 800 9px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hub-reminder-toast__body strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-bright);
+  font: 700 14px/1.15 'Rajdhani', sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-reminder-toast__body small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-reminder-toast__dismiss {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 76%, transparent);
+  border-radius: 6px;
+  background: var(--surface-glass);
+  color: var(--text-dim);
+  clip-path: none;
+  box-shadow: none;
+  font: 800 11px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hub-reminder-toast__dismiss:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
+.hub-reminder-toast__why {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  min-height: 20px;
+  padding: 2px 5px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.hub-reminder-toast__reason {
+  grid-column: 2 / -1;
+  margin: 0;
+  padding: 7px 26px 7px 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.hub-world-panel--tasks:not(.is-expanded) {
+  width: min(420px, calc(100vw - 104px));
+  height: min(430px, calc(100vh - 96px));
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.hub-world-panel--tasks:not(.is-expanded) .hub-overlay-close {
+  top: 13px;
+  right: 12px;
+}
+
+
+.hub-world-panel--events {
+  width: min(470px, calc(100vw - 104px));
+  overflow: visible;
+}
+
+.hub-world-panel--events .hub-page {
+  position: relative;
+  overflow: visible;
+}
+
+.hub-world-panel--events .evt-page {
+  border-radius: 8px;
+}
+
+.hub-world-panel--events .evt-main-header {
+  padding: 18px 54px 14px 20px;
+}
+
+.hub-world-panel--events .evt-main-header .ui-page-header__title {
+  font-size: 42px;
+  line-height: 0.95;
+}
+
+.hub-world-panel--events .evt-main-header .ui-page-header__description {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hub-world-panel--events .evt-status-bar {
+  height: 30px;
+  padding: 0 16px;
+}
+
+.hub-world-panel--events .evt-list,
+.hub-world-panel--events .evt-goals-board {
+  padding: 16px 18px 24px;
+  gap: 18px;
+}
+
+.hub-world-panel--events .evt-section-heading {
+  align-items: center;
+}
+
+.hub-world-panel--events .evt-empty {
+  min-height: 116px;
+  padding: 22px;
+}
+
+.hub-world-panel--events .evt-editor-capsule {
+  left: calc(100% + 18px);
+  right: auto;
+  width: min(420px, calc(100vw - 72px - 100% - 36px));
+  min-width: 292px;
+}
+
+.hub-world-panel--events .evt-card {
+  grid-template-columns: 92px minmax(0, 1fr) minmax(86px, auto);
+  min-height: 104px;
+  border-radius: 8px;
+}
+
+.hub-world-panel--events .evt-card-banner {
+  min-height: 104px;
+  padding: 10px;
+}
+
+.hub-world-panel--events .evt-card-banner-empty {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.hub-world-panel--events .evt-type-badge {
+  max-width: 72px;
+  overflow: hidden;
+  padding: 3px 7px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+}
+
+.hub-world-panel--events .evt-card-body {
+  padding: 12px 10px;
+  gap: 5px;
+}
+
+.hub-world-panel--events .evt-card-name {
+  font-size: 16px;
+  line-height: 1.05;
+}
+
+.hub-world-panel--events .evt-card-desc {
+  font-size: 11px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.hub-world-panel--events .evt-card-meta {
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 8px;
+}
+
+.hub-world-panel--events .evt-card-meta-pill {
+  padding: 2px 5px;
+}
+
+.hub-world-panel--events .evt-card-side {
+  min-width: 86px;
+  padding: 12px 10px;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.hub-world-panel--events .evt-card-side-num {
+  font-size: 20px;
+}
+
+.hub-world-panel--events .evt-card-side-lbl {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-align: right;
+}
+
+.hub-world-panel--events .evt-card-side-buff {
+  max-width: 76px;
+  overflow: hidden;
+  font-size: 9px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-world-panel--feed {
+  width: min(700px, calc(100vw - 168px));
+  height: min(78vh, 720px);
+}
+
+.hub-world-panel--feed .feed-wrap {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  height: 100%;
+}
+
+.hub-world-panel--feed .feed-header {
+  width: 100%;
+  margin: 0;
+  padding: 13px 14px;
+  border-color: color-mix(in srgb, var(--color-feed) 34%, transparent);
+  background: var(--surface-glass);
+}
+
+.hub-world-panel--feed .feed-header .ui-page-header__title {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.hub-world-panel--feed .feed-header .ui-page-header__description {
+  font-size: 12px;
+}
+
+.hub-world-panel--feed .feed-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.hub-world-panel--feed .feed-search-wrap {
+  width: min(300px, 44vw);
+  background: var(--surface-card-glass);
+}
+
+.hub-world-panel--feed .feed-list {
+  width: 100%;
+  min-height: 0;
+  padding: 4px 8px 18px;
+  gap: 12px;
+  align-items: center;
+  mask-image: linear-gradient(180deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+}
+
+.hub-world-panel--feed .feed-card-slot {
+  width: min(620px, 100%);
+}
+
+.hub-world-panel--feed .feed-card {
+  min-height: 128px;
+  border-left-width: 0;
+  background: var(--surface-card-glass);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.hub-world-panel--feed .feed-card-header {
+  background: var(--surface-glass);
+}
+
+.hub-world-panel--inventory {
+  width: min(590px, calc(100vw - 140px));
+}
+
+.hub-world-panel--shop {
+  width: min(500px, calc(100vw - 390px));
+}
+
+.hub-world-panel--shop {
+  overflow: visible;
+}
+
+.hub-world-panel--shop .hub-page,
+.hub-world-panel--shop .shop-page,
+.hub-world-panel--shop .shop-body {
+  overflow: visible;
+}
+
+.hub-world-panel--shop .shop-body {
+  display: block;
+}
+
+.hub-world-panel--shop .shop-grid-area {
+  height: calc(100vh - 144px);
+  overflow-y: auto;
+}
+
+.hub-world-panel--shop .cart-sidebar {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  width: min(280px, calc(100vw - 604px));
+  min-width: 252px;
+  max-height: none;
+  border: 1px solid color-mix(in srgb, var(--color-shop) 30%, transparent);
+  border-radius: 8px;
+  background: var(--surface-glass-strong);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+  animation: hub-capsule-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hub-world-panel--shop .add-item-overlay {
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 18px;
+  background: color-mix(in srgb, var(--bg-void) 18%, transparent);
+}
+
+.hub-world-panel--shop .add-item-form {
+  width: min(520px, calc(100vw - 612px));
+  min-width: 300px;
+  max-height: calc(100vh - 36px);
+  overflow: hidden;
+}
+
+.hub-world-panel--shop .add-item-form .form-grid {
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+}
+
+.hub-world-panel--shop .add-item-form .span2 {
+  grid-column: auto;
+}
+
+.hub-world-panel--profile {
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--bg-void);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.hub-world-panel--profile .hub-overlay-close {
+  top: 14px;
+  right: 14px;
+}
+
+@keyframes hub-toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 980px) {
+  .hub-world-panel--shop {
+    width: min(500px, calc(100vw - 104px));
+  }
+
+  .hub-world-panel--shop .cart-sidebar {
+    right: 18px;
+    width: min(250px, 32vw);
+    min-width: 220px;
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    width: min(420px, calc(100vw - 520px));
+  }
+}
+
+@media (max-width: 760px) {
+  .hub-reminder-stack {
+    top: 76px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    transform: none;
+  }
+
+  .hub-world-panel--events,
+  .hub-world-panel--inventory,
+  .hub-world-panel--shop {
+    left: 14px;
+    right: 14px;
+    width: auto;
+  }
+
+  .hub-world-panel--shop .cart-sidebar {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-height: 280px;
+    margin-top: 12px;
+  }
+
+  .hub-world-panel--shop .shop-body {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .hub-world-panel--shop .shop-grid-area {
+    height: auto;
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    width: min(520px, calc(100vw - 36px));
+    min-width: 0;
+  }
+}

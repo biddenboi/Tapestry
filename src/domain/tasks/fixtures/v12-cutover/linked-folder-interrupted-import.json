@@ -1,0 +1,241 @@
+{
+  "fixtureVersion": 2,
+  "interruptionPoint": "after-v12-import-journal-before-generation-commit",
+  "baseStores": {
+    "appSettings": [
+      {
+        "UUID": "task-recommender-v12-checkpoint:player-1",
+        "parent": "player-1",
+        "value": {
+          "model": {
+            "modelVersion": 1,
+            "marker": "previous"
+          },
+          "targetModel": {
+            "modelVersion": 1
+          },
+          "manifest": {
+            "status": "promoted"
+          }
+        }
+      }
+    ],
+    "taskRecommendations": [
+      {
+        "UUID": "previous-v12-event",
+        "parent": "player-1",
+        "protocolFamily": "task-recommender-v12",
+        "protocolVersion": 1,
+        "sequence": 1,
+        "type": "recommendation_decision_created",
+        "decisionUUID": "previous-decision",
+        "taskUUID": "task-old",
+        "occurredAt": "2026-07-01T11:00:00.000Z",
+        "payload": {}
+      }
+    ]
+  },
+  "pendingMutation": {
+    "version": 23,
+    "type": "atomic-batch",
+    "label": "task-recommender-v12-import",
+    "operations": [
+      {
+        "type": "put",
+        "store": "appSettings",
+        "record": {
+          "UUID": "task-recommender-v12-import-recovery:player-1:fixture",
+          "parent": "player-1",
+          "value": {
+            "recoverySchemaVersion": 2,
+            "status": "available",
+            "boundary": "v12-only",
+            "previousCheckpoint": {
+              "UUID": "task-recommender-v12-checkpoint:player-1",
+              "parent": "player-1",
+              "value": {
+                "model": {
+                  "modelVersion": 1,
+                  "marker": "previous"
+                },
+                "targetModel": {
+                  "modelVersion": 1
+                },
+                "manifest": {
+                  "status": "promoted"
+                }
+              }
+            },
+            "previousProtocolEvents": [
+              {
+                "UUID": "previous-v12-event",
+                "parent": "player-1",
+                "protocolFamily": "task-recommender-v12",
+                "protocolVersion": 1,
+                "sequence": 1,
+                "type": "recommendation_decision_created",
+                "decisionUUID": "previous-decision",
+                "taskUUID": "task-old",
+                "occurredAt": "2026-07-01T11:00:00.000Z",
+                "payload": {}
+              }
+            ],
+            "importedProtocolEventUUIDs": [
+              "imported-v12-event"
+            ],
+            "importedFingerprint": "fixture"
+          }
+        }
+      },
+      {
+        "type": "put",
+        "store": "appSettings",
+        "record": {
+          "UUID": "task-recommender-v12-checkpoint:player-1",
+          "parent": "player-1",
+          "value": {
+            "model": {
+              "modelVersion": 1,
+              "marker": "imported"
+            },
+            "targetModel": {
+              "modelVersion": 1
+            },
+            "manifest": {
+              "status": "promoted"
+            }
+          }
+        }
+      },
+      {
+        "type": "put",
+        "store": "taskRecommendations",
+        "record": {
+          "UUID": "imported-v12-event",
+          "parent": "player-1",
+          "protocolFamily": "task-recommender-v12",
+          "protocolVersion": 1,
+          "sequence": 2,
+          "type": "recommendation_decision_created",
+          "decisionUUID": "imported-decision",
+          "taskUUID": "task-new",
+          "occurredAt": "2026-07-01T12:00:00.000Z",
+          "payload": {}
+        }
+      },
+      {
+        "type": "put",
+        "store": "appSettings",
+        "record": {
+          "UUID": "task-recommender-v12-import:player-1:fixture",
+          "parent": "player-1",
+          "value": {
+            "importSchemaVersion": 2,
+            "status": "pending-linked-folder",
+            "recoveryUUID": "task-recommender-v12-import-recovery:player-1:fixture",
+            "runtimeFallbackAllowed": false
+          }
+        }
+      }
+    ]
+  },
+  "expectedRecoveredStores": {
+    "appSettings": [
+      {
+        "UUID": "task-recommender-v12-import-recovery:player-1:fixture",
+        "parent": "player-1",
+        "value": {
+          "recoverySchemaVersion": 2,
+          "status": "available",
+          "boundary": "v12-only",
+          "previousCheckpoint": {
+            "UUID": "task-recommender-v12-checkpoint:player-1",
+            "parent": "player-1",
+            "value": {
+              "model": {
+                "modelVersion": 1,
+                "marker": "previous"
+              },
+              "targetModel": {
+                "modelVersion": 1
+              },
+              "manifest": {
+                "status": "promoted"
+              }
+            }
+          },
+          "previousProtocolEvents": [
+            {
+              "UUID": "previous-v12-event",
+              "parent": "player-1",
+              "protocolFamily": "task-recommender-v12",
+              "protocolVersion": 1,
+              "sequence": 1,
+              "type": "recommendation_decision_created",
+              "decisionUUID": "previous-decision",
+              "taskUUID": "task-old",
+              "occurredAt": "2026-07-01T11:00:00.000Z",
+              "payload": {}
+            }
+          ],
+          "importedProtocolEventUUIDs": [
+            "imported-v12-event"
+          ],
+          "importedFingerprint": "fixture"
+        }
+      },
+      {
+        "UUID": "task-recommender-v12-checkpoint:player-1",
+        "parent": "player-1",
+        "value": {
+          "model": {
+            "modelVersion": 1,
+            "marker": "imported"
+          },
+          "targetModel": {
+            "modelVersion": 1
+          },
+          "manifest": {
+            "status": "promoted"
+          }
+        }
+      },
+      {
+        "UUID": "task-recommender-v12-import:player-1:fixture",
+        "parent": "player-1",
+        "value": {
+          "importSchemaVersion": 2,
+          "status": "pending-linked-folder",
+          "recoveryUUID": "task-recommender-v12-import-recovery:player-1:fixture",
+          "runtimeFallbackAllowed": false
+        }
+      }
+    ],
+    "taskRecommendations": [
+      {
+        "UUID": "previous-v12-event",
+        "parent": "player-1",
+        "protocolFamily": "task-recommender-v12",
+        "protocolVersion": 1,
+        "sequence": 1,
+        "type": "recommendation_decision_created",
+        "decisionUUID": "previous-decision",
+        "taskUUID": "task-old",
+        "occurredAt": "2026-07-01T11:00:00.000Z",
+        "payload": {}
+      },
+      {
+        "UUID": "imported-v12-event",
+        "parent": "player-1",
+        "protocolFamily": "task-recommender-v12",
+        "protocolVersion": 1,
+        "sequence": 2,
+        "type": "recommendation_decision_created",
+        "decisionUUID": "imported-decision",
+        "taskUUID": "task-new",
+        "occurredAt": "2026-07-01T12:00:00.000Z",
+        "payload": {}
+      }
+    ]
+  }
+}

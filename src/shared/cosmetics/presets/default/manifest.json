@@ -1,0 +1,39 @@
+{
+  "id": "default",
+  "version": 1,
+  "setId": "default",
+  "label": "Default",
+  "description": "Default preset appearance set.",
+  "equipSlots": [
+    "navigationSkin",
+    "workspaceBackdrop",
+    "profileBackdrop",
+    "avatarFrame",
+    "lobbyCard",
+    "matchCard",
+    "standingsRow",
+    "motionEffect"
+  ],
+  "supportedSurfaces": [
+    "navigation",
+    "workspace",
+    "profile",
+    "avatar",
+    "lobby",
+    "match",
+    "standings"
+  ],
+  "assets": {
+    "default": "surface.svg",
+    "compact": "surface.svg",
+    "preview": "surface.svg"
+  },
+  "tokens": {
+    "accent": "#6f9cff",
+    "base": "#12223d"
+  },
+  "motion": "none",
+  "reducedMotion": "static",
+  "fallbackId": "default",
+  "rewardSource": "default"
+}

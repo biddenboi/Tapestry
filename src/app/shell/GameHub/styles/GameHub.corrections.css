@@ -1,0 +1,191 @@
+/* ── Final world overlay corrections ─────────────────────── */
+.hub-world-panel--tasks.is-expanded {
+  inset: 0;
+  width: auto;
+  height: auto;
+  z-index: 92;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-card-glass);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  transform-origin: center;
+  animation-name: hub-surface-in;
+}
+
+.hub-world-panel--tasks.is-expanded .hub-page {
+  overflow: auto;
+}
+
+.hub-world-panel--tasks.is-expanded .todo-list {
+  min-height: 100%;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-void) 84%, transparent);
+}
+
+.hub-world-panel--tasks.is-expanded .hub-overlay-close {
+  top: 14px;
+  right: 14px;
+}
+
+.hub-world-panel--feed {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-glass);
+  box-shadow: none;
+  backdrop-filter: blur(3px);
+  transform: none;
+  animation-name: hub-surface-in;
+}
+
+.hub-world-panel--feed .hub-page {
+  overflow: auto;
+  background: transparent;
+}
+
+.hub-world-panel--feed .feed-wrap {
+  display: flex;
+  height: 100%;
+  align-items: stretch;
+  gap: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.hub-world-panel--feed .feed-header {
+  width: 100%;
+  margin: 0;
+  padding: 18px 54px 14px 24px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-void) 72%, transparent);
+  box-shadow: none;
+}
+
+.hub-world-panel--feed .feed-header .ui-page-header__title {
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 0.95;
+}
+
+.hub-world-panel--feed .feed-header .ui-page-header__description {
+  font-size: 14px;
+}
+
+.hub-world-panel--feed .feed-list {
+  width: auto;
+  min-height: 0;
+  align-items: stretch;
+  gap: 16px;
+  padding: 20px 24px 32px;
+  overflow-y: auto;
+  mask-image: none;
+}
+
+.hub-world-panel--feed .feed-card-slot {
+  width: auto;
+  filter: none;
+}
+
+.hub-world-panel--feed .feed-card {
+  min-height: 152px;
+  border-left-width: 3px;
+  background: var(--surface-card-glass);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.26);
+}
+
+.hub-world-panel--feed .feed-card-header {
+  background: var(--surface-glass);
+}
+
+.hub-world-panel--shop {
+  --shop-gap: 22px;
+  --shop-cart-width: 300px;
+  --shop-panel-width: min(660px, calc(100vw - 72px - var(--shop-gap) - var(--shop-cart-width) - 18px));
+  width: var(--shop-panel-width);
+}
+
+.hub-world-panel--shop .shop-grid-area {
+  padding: 20px;
+}
+
+.hub-world-panel--shop .cart-sidebar {
+  left: calc(100% + var(--shop-gap));
+  right: auto;
+  width: var(--shop-cart-width);
+  min-width: 0;
+  z-index: 142;
+}
+
+.hub-world-panel--shop .add-item-overlay {
+  z-index: 150;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 18px;
+  background: color-mix(in srgb, var(--bg-void) 18%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.hub-world-panel--shop .add-item-form {
+  --shop-form-width: min(420px, max(340px, calc(100vw - 538px)));
+  position: fixed;
+  top: 18px;
+  left: min(calc(100% + var(--shop-gap)), calc(100vw - 72px - var(--shop-form-width) - 18px));
+  bottom: 18px;
+  width: var(--shop-form-width);
+  min-width: 0;
+  max-height: none;
+  z-index: 151;
+}
+
+.hub-world-panel--shop .money-log-form {
+  width: min(420px, calc(100vw - 112px));
+}
+
+@media (max-width: 980px) {
+  .hub-world-panel--shop {
+    --shop-gap: 18px;
+    --shop-cart-width: clamp(220px, 28vw, 260px);
+    --shop-panel-width: min(560px, calc(100vw - 72px - var(--shop-gap) - var(--shop-cart-width) - 18px));
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    --shop-form-width: min(360px, max(320px, calc(100vw - 538px)));
+    width: var(--shop-form-width);
+  }
+}
+
+@media (max-width: 760px) {
+  .hub-world-panel--tasks.is-expanded,
+  .hub-world-panel--feed {
+    inset: 0;
+    width: auto;
+    height: auto;
+    bottom: 0;
+    transform: none;
+  }
+
+  .hub-world-panel--shop {
+    --shop-gap: 0px;
+    --shop-panel-width: auto;
+    --shop-cart-width: auto;
+  }
+
+  .hub-world-panel--shop .cart-sidebar {
+    left: auto;
+    right: auto;
+    width: 100%;
+  }
+
+  .hub-world-panel--shop .add-item-form {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: min(520px, calc(100vw - 36px));
+    min-width: 0;
+    max-height: calc(100vh - 36px);
+  }
+}

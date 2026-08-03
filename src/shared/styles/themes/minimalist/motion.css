@@ -1,0 +1,7 @@
+[data-theme="minimalist"] {
+  --theme-enter-animation: recipe-minimalist-in 140ms ease-out both;
+}
+
+@keyframes recipe-minimalist-in {
+  from { opacity: 0; transform: translateY(var(--recipe-motion-distance)); }
+}

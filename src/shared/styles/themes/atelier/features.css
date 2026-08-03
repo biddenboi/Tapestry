@@ -1,0 +1,2 @@
+[data-theme="atelier"] :is(.habit-card,.chronicle-card,.goal-card) { background-image:linear-gradient(105deg,rgba(169,85,49,.055),transparent 38%); }
+[data-theme="atelier"] :is(.habit-section-heading,.chronicle-time-group) { font-family:var(--font-display); font-style:italic; }

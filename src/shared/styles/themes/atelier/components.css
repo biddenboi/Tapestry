@@ -1,0 +1,2 @@
+[data-theme="atelier"] :is(.ui-panel,.settings-section,.profile-block,.road-node) { border-width:1px 1px 3px; }
+[data-theme="atelier"] button { text-transform:none; }

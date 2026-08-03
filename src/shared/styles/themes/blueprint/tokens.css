@@ -1,0 +1,5 @@
+[data-theme="blueprint"] {
+  --recipe-grid-size: 24px;
+  --recipe-drawing-rule: 1px solid rgba(104, 218, 255, .38);
+  --recipe-motion-distance: 6px;
+}

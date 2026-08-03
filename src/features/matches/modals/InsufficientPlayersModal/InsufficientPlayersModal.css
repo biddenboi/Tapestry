@@ -1,0 +1,80 @@
+/* InsufficientPlayersModal — friction message shown at Silver+ when the
+ * candidate pool is too small to start a match. Visually quiet on purpose
+ * — this is a "you can't do this right now" message, not a celebration.
+ *
+ * Reuses the .task-modal / .blanker chrome already defined elsewhere in
+ * the codebase (see TaskCreationMenu.css) for backdrop and modal sizing.
+ */
+
+.insufficient-modal {
+  max-width: 440px;
+  text-align: center;
+  padding: 32px 28px 24px;
+}
+
+.insufficient-modal.ui-modal {
+  width: min(var(--modal-width-sm), calc(100vw - 32px));
+  border-radius: var(--radius-lg);
+  clip-path: none;
+}
+
+.insufficient-icon {
+  font-size: 36px;
+  line-height: 1;
+  color: var(--accent, #4da3ff);
+  opacity: 0.55;
+  margin-bottom: 12px;
+  text-shadow: 0 0 18px var(--accent, rgba(77, 163, 255, 0.45));
+}
+
+.insufficient-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0 0 14px;
+  color: var(--text-primary, #f4f4f5);
+}
+
+.insufficient-rank {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #71717a);
+  margin: 0 0 18px;
+}
+
+.insufficient-rank strong {
+  color: var(--text-primary, #f4f4f5);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.insufficient-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary, #a1a1aa);
+  margin: 0 auto 22px;
+  max-width: 340px;
+}
+
+.insufficient-stat {
+  display: inline-block;
+  padding: 6px 14px;
+  margin: 0 0 24px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted, #a1a1aa);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.insufficient-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.insufficient-actions .primary {
+  min-width: 160px;
+}

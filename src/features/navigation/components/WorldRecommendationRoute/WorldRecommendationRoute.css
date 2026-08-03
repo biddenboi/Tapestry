@@ -1,0 +1,149 @@
+.world-recommendation-route {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.world-recommendation-route__path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent-bright) 72%, var(--text-bright));
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-dasharray: 4 5;
+  opacity: 0.68;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 48%, transparent));
+  vector-effect: non-scaling-stroke;
+}
+
+.world-recommendation-route__origin-halo {
+  fill: color-mix(in srgb, var(--accent-bright) 20%, transparent);
+  stroke: color-mix(in srgb, var(--accent-bright) 48%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  animation: world-route-halo 2.8s ease-in-out infinite;
+}
+
+.world-recommendation-route__origin-core,
+.world-recommendation-route__destination-core {
+  fill: var(--accent-bright);
+  stroke: color-mix(in srgb, var(--bg-void) 74%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-recommendation-route__destination-ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent-bright) 66%, var(--text-bright));
+  stroke-width: 1;
+  opacity: 0.72;
+  vector-effect: non-scaling-stroke;
+}
+
+.social-world-location[data-next-move-destination='true'] {
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--accent-bright) 74%, var(--location-tone));
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.3),
+    0 0 0 2px color-mix(in srgb, var(--accent-bright) 10%, transparent);
+}
+
+.social-world-location[data-next-move-destination='true']::after {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  content: 'NEXT';
+  color: color-mix(in srgb, var(--accent-bright) 86%, var(--text-bright));
+  font: 800 7px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.14em;
+}
+
+@keyframes world-route-halo {
+  0%, 100% { opacity: 0.42; filter: drop-shadow(0 0 1px transparent); }
+  50% { opacity: 0.88; filter: drop-shadow(0 0 4px var(--accent)); }
+}
+
+[data-theme='old_windows'] .world-recommendation-route__path,
+[data-theme='pixelated'] .world-recommendation-route__path {
+  stroke-linecap: square;
+  stroke-dasharray: 4 4;
+  filter: none;
+}
+
+[data-theme='old_windows'] .social-world-location[data-next-move-destination='true'],
+[data-theme='pixelated'] .social-world-location[data-next-move-destination='true'] {
+  border-radius: 0;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--text-bright) 34%, transparent);
+}
+
+[data-theme='minimalist_light'] .world-recommendation-route__path,
+[data-theme='mature_beige'] .world-recommendation-route__path {
+  stroke: color-mix(in srgb, var(--accent) 82%, #1c2430);
+  opacity: 0.78;
+  filter: none;
+}
+
+[data-theme='minimalist_light'] .world-recommendation-route__origin-core,
+[data-theme='minimalist_light'] .world-recommendation-route__destination-core,
+[data-theme='mature_beige'] .world-recommendation-route__origin-core,
+[data-theme='mature_beige'] .world-recommendation-route__destination-core {
+  stroke: #fff;
+}
+
+[data-theme='kawaii'] .world-recommendation-route__path {
+  stroke-linecap: round;
+  stroke-dasharray: 2 6;
+}
+
+[data-theme='gamification'] .world-recommendation-route__destination-ring {
+  stroke: var(--gold);
+}
+
+@media (max-width: 760px) {
+  .world-recommendation-route {
+    display: none;
+  }
+
+  .social-world-location[data-next-move-destination='true'] {
+    border-width: 2px;
+    padding-left: 18px;
+  }
+
+  .social-world-location[data-next-move-destination='true']::before {
+    position: absolute;
+    top: 50%;
+    left: 7px;
+    width: 5px;
+    height: 5px;
+    content: '';
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background: var(--accent-bright);
+  }
+}
+
+@media (forced-colors: active) {
+  .world-recommendation-route__path,
+  .world-recommendation-route__origin-halo,
+  .world-recommendation-route__origin-core,
+  .world-recommendation-route__destination-ring,
+  .world-recommendation-route__destination-core {
+    stroke: Highlight;
+  }
+
+  .social-world-location[data-next-move-destination='true'] {
+    border: 2px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-recommendation-route__origin-halo {
+    animation: none;
+    opacity: 0.72;
+    filter: none;
+  }
+}

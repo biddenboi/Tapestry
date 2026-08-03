@@ -1,0 +1,56 @@
+/* App.css — game-hub overrides (global tokens live in index.css) */
+
+/* Remove old nav-bar animations if any linger */
+/* .nav-bar is unused and should not render. */
+.nav-bar { display: none; }
+
+/* Ensure full viewport coverage with no scrollbar on root */
+html, body, #root {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+}
+
+/* Consistent modal close targets. Several older surfaces define their own tiny
+   close buttons, so this global affordance keeps every dismiss control usable. */
+button.close-btn,
+.ui-modal__close,
+.ui-drawer__close,
+.hub-panel-close,
+.ach-modal-close,
+.qn-close,
+.post-composer-close,
+.rpm-close,
+.be-close,
+.pbe-close {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    flex: 0 0 40px !important;
+    border-radius: 999px !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    clip-path: none !important;
+}
+
+button.close-btn:hover,
+.ui-modal__close:hover:not(:disabled),
+.ui-drawer__close:hover:not(:disabled),
+.hub-panel-close:hover,
+.ach-modal-close:hover,
+.qn-close:hover,
+.post-composer-close:hover,
+.rpm-close:hover,
+.be-close:hover,
+.pbe-close:hover {
+    background: var(--bg-raised) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-bright) !important;
+    box-shadow: none !important;
+}
