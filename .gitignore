@@ -54,3 +54,4 @@ dist/linux-unpacked/
 .env
 .env.local
 .env.*.local
+supabase/.temp/
