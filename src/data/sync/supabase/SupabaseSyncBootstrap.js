@@ -165,7 +165,14 @@ export class SupabaseSyncBootstrap {
           .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || '')))[0];
         const schemaVersion = Math.max(0, Number(manifest?.data?.schemaVersion) || 0);
         if (!profiles.length || schemaVersion < MOBILE_WORKING_SET_SCHEMA_VERSION) {
-          await publishMobileBootstrapData(this.databaseConnection, transport);
+          try {
+            await publishMobileBootstrapData(this.databaseConnection, transport);
+          } catch (error) {
+            console.warn(
+              '[Tapestry] Initial mobile working-set publication was deferred; routine sync remains connected.',
+              error,
+            );
+          }
         }
       }
       this.auth.setSyncState('ready');
