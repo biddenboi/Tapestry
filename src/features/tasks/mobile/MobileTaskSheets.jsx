@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
+import NiceModal from '@ebay/nice-modal-react';
 import { useAppContext } from '@app/hooks/useAppContext.js';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { STORES } from '@domain/constants.js';
+import {
+  DEFAULT_WORKSPACE_ID,
+  isPlanningRecordInWorkspace,
+} from '@domain/planning/WorkspacePlanningScope.js';
 import { deleteTaskCommand } from '@domain/tasks/TaskCommands.js';
 import { saveTaskDraftCommand } from '@domain/tasks/TaskDraftCommand.js';
 import { formatTaskRecurrence } from '@domain/tasks/TaskRecurrence.js';
 import { parseCombinedInput } from '@shared/nlp/NLP.js';
+import { Icon } from '@shared/icons/Icon.jsx';
 import { completeTodoNow } from '@features/tasks/domain/completeTodoNow.js';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
 import { simpleMobileFeedback, taskCompletionFeedback } from '@app/mobile/application/MobileFeedback.js';
+import { loadTaskSessionMenu } from '@features/tasks/loaders.js';
 
 const TASK_GOAL_INVALIDATION = Object.freeze([
   ...new Set([...DOMAIN_INVALIDATION.taskWrite, ...DOMAIN_INVALIDATION.goalLinkWrite]),
@@ -51,6 +58,13 @@ export function startTaskFromMobile(setActiveTask, task, reason = 'Started from 
   });
 }
 
+async function presentTaskSessionFromMobile(setActiveTask, task, closeSurface, reason) {
+  const TaskSessionMenu = await loadTaskSessionMenu();
+  startTaskFromMobile(setActiveTask, task, reason);
+  closeSurface({ force: true });
+  requestAnimationFrame(() => NiceModal.show(TaskSessionMenu));
+}
+
 export function MobileDatePickerSheet({ payload }) {
   const { closeSurface } = useMobileSurface();
   const [value, setValue] = useState(payload.selectedDate);
@@ -63,6 +77,27 @@ export function MobileDatePickerSheet({ payload }) {
         <button type="button" className="primary" onClick={() => { payload.onSelect(value); closeSurface({ force: true }); }}>Select</button>
       </div>
     </div>
+  );
+}
+
+export function MobileCreateMenu({ payload }) {
+  const { closeSurface, openSurface } = useMobileSurface();
+  const open = (type) => openSurface(type, {
+    selectedDate: payload.selectedDate,
+    onSaved: payload.onSaved,
+  });
+  return (
+    <section className="mobile-sheet mobile-create-menu" role="dialog" aria-modal="true" aria-labelledby="mobile-create-menu-title">
+      <header><div><span>Create</span><h2 id="mobile-create-menu-title">What would you like to add?</h2></div><button type="button" onClick={() => closeSurface()}>Close</button></header>
+      <div className="mobile-create-menu__grid">
+        <button type="button" onClick={() => open('task-composer')}>
+          <span><Icon name="tasks" size={26} /></span><strong>Task</strong><small>Plan work for this day</small>
+        </button>
+        <button type="button" onClick={() => open('reminder-composer')}>
+          <span><Icon name="bell" size={26} /></span><strong>Reminder</strong><small>Get notified at a time</small>
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -81,6 +116,18 @@ export function MobileTaskActionSheet({ payload }) {
   const { closeSurface, openSurface, presentFeedback } = useMobileSurface();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  const start = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await presentTaskSessionFromMobile(setActiveTask, task, closeSurface);
+    } catch (startError) {
+      setError(startError?.message || 'The task session could not be opened.');
+      setBusy(false);
+    }
+  };
 
   const complete = async () => {
     if (busy) return;
@@ -129,7 +176,7 @@ export function MobileTaskActionSheet({ payload }) {
       <header><div><span>Task</span><h2 id="mobile-task-actions-title">{task.name || 'Untitled task'}</h2><small>{taskTiming(task)}</small></div><button type="button" onClick={() => closeSurface()}>Close</button></header>
       {task.projectName && <p className="mobile-sheet-context">{task.projectName}</p>}
       <div className="mobile-sheet-primary-grid">
-        <button type="button" className="primary" onClick={() => { startTaskFromMobile(setActiveTask, task); closeSurface({ force: true }); }}>Start</button>
+        <button type="button" className="primary" onClick={start} disabled={busy}>Start</button>
         <button type="button" onClick={complete} disabled={busy}>Complete</button>
       </div>
       <div className="mobile-sheet-menu">
@@ -146,14 +193,33 @@ export function MobileSystemDirectionSheet({ payload }) {
   const { activeTask: [, setActiveTask] } = useAppContext();
   const { closeSurface } = useMobileSurface();
   const { task, reason, onChooseAnother } = payload;
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState('');
+  const start = async () => {
+    if (starting) return;
+    setStarting(true);
+    setError('');
+    try {
+      await presentTaskSessionFromMobile(
+        setActiveTask,
+        task,
+        closeSurface,
+        'Accepted system direction',
+      );
+    } catch (startError) {
+      setError(startError?.message || 'The task session could not be opened.');
+      setStarting(false);
+    }
+  };
   return (
     <div className="mobile-sheet mobile-system-direction" role="dialog" aria-modal="true" aria-labelledby="mobile-direction-title">
       <header><div><span>System direction</span><h2 id="mobile-direction-title">{task.name}</h2><small>{taskTiming(task)}</small></div><button type="button" onClick={() => closeSurface()}>Close</button></header>
       <p><b>Reason:</b> {reason || task.reasonToSelect || 'This is the strongest available next action.'}</p>
       <div className="mobile-sheet-actions">
         <button type="button" onClick={() => { closeSurface({ force: true }); onChooseAnother?.(); }}>Choose another</button>
-        <button type="button" className="primary" onClick={() => { startTaskFromMobile(setActiveTask, task, 'Accepted system direction'); closeSurface({ force: true }); }}>Start</button>
+        <button type="button" className="primary" onClick={start} disabled={starting}>Start</button>
       </div>
+      {error && <div className="mobile-sheet-error" role="alert">{error}</div>}
     </div>
   );
 }
@@ -184,7 +250,8 @@ export function MobileTaskComposer({ payload }) {
 
   useEffect(() => {
     databaseConnection.getAll(STORES.project).then((rows) => setProjects(rows.filter((goal) => (
-      goal.lifecycleStatus === 'active' || goal.status === 'active' || (!goal.lifecycleStatus && !goal.archivedAt)
+      isPlanningRecordInWorkspace(goal, DEFAULT_WORKSPACE_ID)
+      && (goal.lifecycleStatus === 'active' || goal.status === 'active' || (!goal.lifecycleStatus && !goal.archivedAt))
     )))).catch(() => setProjects([]));
   }, [databaseConnection]);
 

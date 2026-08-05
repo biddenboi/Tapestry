@@ -5,6 +5,7 @@ import SQLITE_MIGRATIONS from '../persistence/sqlite/migrations/index.js';
 import SqliteDocumentRepository from '../persistence/sqlite/SqliteDocumentRepository.js';
 import DeviceIdentityService from './DeviceIdentityService.js';
 import SyncRuntime from './SyncRuntime.js';
+import { referenceCaptureGuard } from './ReferenceCaptureGuard.js';
 import {
   buildSyncOutboxStatement,
   normalizeSyncContext,
@@ -110,6 +111,261 @@ test('remote-sync context is structurally unable to enqueue an outgoing operatio
     origin: SYNC_ORIGIN.remote,
     enqueueSync: true,
   }), (error) => error?.code === 'sync-remote-reenqueue-forbidden');
+});
+
+test('remote document application cannot echo into the durable reference outbox', async (t) => {
+  const { client, documents } = await createContext();
+  t.after(() => client.close());
+  const guard = referenceCaptureGuard(SYNC_ORIGIN.remote);
+
+  await documents.commitBatch({
+    label: 'remote-reference-apply',
+    beforeStatements: guard.beforeStatements,
+    operations: [{
+      type: 'put',
+      store: 'todos',
+      record: {
+        UUID: 'remote-todo',
+        parent: 'player-1',
+        name: 'From another device',
+        syncUpdatedAt: FIXED.toISOString(),
+      },
+    }],
+    afterStatements: guard.afterStatements,
+  });
+
+  assert.equal(await client.query({
+    sql: 'SELECT COUNT(*) FROM sync_reference_outbox',
+    result: 'value',
+  }), 0);
+
+  await documents.put('todos', {
+    UUID: 'local-todo',
+    parent: 'player-1',
+    name: 'Local edit',
+    syncUpdatedAt: FIXED.toISOString(),
+  });
+  assert.equal(await client.query({
+    sql: "SELECT COUNT(*) FROM sync_reference_outbox WHERE record_id='local-todo'",
+    result: 'value',
+  }), 1);
+});
+
+test('a configured device is registered once instead of once per sync pass', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  let registrations = 0;
+  const runtime = new SyncRuntime({
+    client,
+    transport: {
+      async registerDevice() { registrations += 1; return { registered: true }; },
+      async push() { return []; },
+    },
+    now: () => FIXED,
+    windowRef: null,
+  });
+  await runtime.initialize({ start: false });
+
+  await runtime.synchronize({ reason: 'first' });
+  await runtime.synchronize({ reason: 'second' });
+
+  assert.equal(registrations, 1);
+});
+
+test('registration outages stay in-app for over one minute with one request and backoff', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  let virtualNow = 0;
+  let nextTimerId = 1;
+  const timers = new Map();
+  const settle = async () => {
+    for (let index = 0; index < 30; index += 1) await Promise.resolve();
+  };
+  const advanceTo = async (target) => {
+    while (true) {
+      await settle();
+      const next = [...timers.entries()]
+        .map(([id, timer]) => ({ id, ...timer }))
+        .filter((timer) => timer.at <= target)
+        .sort((left, right) => left.at - right.at || left.id - right.id)[0];
+      if (!next) break;
+      timers.delete(next.id);
+      virtualNow = next.at;
+      next.callback();
+    }
+    virtualNow = target;
+    await settle();
+  };
+  const setTimeoutFn = (callback, delay) => {
+    const id = nextTimerId;
+    nextTimerId += 1;
+    timers.set(id, { callback, at: virtualNow + Math.max(0, Number(delay) || 0) });
+    return id;
+  };
+  const clearTimeoutFn = (id) => timers.delete(id);
+
+  let registrationCalls = 0;
+  let activeRegistrations = 0;
+  let maximumActiveRegistrations = 0;
+  let reloads = 0;
+  const profileState = {
+    activePlayerUUID: 'profile-stays-selected',
+    async commitAtomicMutation() { return { changed: false }; },
+  };
+  const runtime = new SyncRuntime({
+    client,
+    connection: profileState,
+    transport: {
+      registerDevice(_device, { signal } = {}) {
+        registrationCalls += 1;
+        activeRegistrations += 1;
+        maximumActiveRegistrations = Math.max(maximumActiveRegistrations, activeRegistrations);
+        return new Promise((_, reject) => {
+          signal?.addEventListener?.('abort', () => {
+            activeRegistrations -= 1;
+            const error = new Error('registration aborted');
+            error.name = 'AbortError';
+            reject(error);
+          }, { once: true });
+        });
+      },
+      async push() { return []; },
+    },
+    now: () => new Date(FIXED.getTime() + virtualNow),
+    windowRef: {
+      location: { reload() { reloads += 1; } },
+      dispatchEvent() {},
+    },
+    setTimeoutFn,
+    clearTimeoutFn,
+    deviceRegistrationTimeoutMs: 10_000,
+  });
+  await runtime.initialize({ start: false });
+
+  const firstSync = runtime.synchronize({ reason: 'server-unavailable' });
+  await advanceTo(10_000);
+  await assert.rejects(firstSync, (error) => (
+    error?.code === 'sync-device-registration-timeout'
+  ));
+  assert.equal(runtime.getStatus().status, 'error');
+  assert.equal(runtime.syncPromise, null);
+
+  // Drive the background retry clock beyond one minute without sleeping. At
+  // no point may a retry overlap, remount/reset application state, or reload.
+  await advanceTo(65_000);
+  assert.equal(maximumActiveRegistrations, 1);
+  assert.equal(activeRegistrations, 0);
+  assert.equal(registrationCalls, 5);
+  assert.equal(runtime.getStatus().status, 'error');
+  assert.equal(runtime.syncPromise, null);
+  assert.equal(reloads, 0);
+  assert.equal(profileState.activePlayerUUID, 'profile-stays-selected');
+  assert.ok([...timers.values()].some(({ at }) => at > virtualNow));
+  runtime.stop();
+});
+
+test('a sync nudge received during a pass schedules one follow-up pass', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  const scheduled = [];
+  const runtime = new SyncRuntime({
+    client,
+    transport: { async push() { return []; } },
+    now: () => FIXED,
+    windowRef: null,
+    setTimeoutFn: (callback, delay) => {
+      scheduled.push({ callback, delay });
+      return scheduled.length;
+    },
+    clearTimeoutFn: () => undefined,
+  });
+  await runtime.initialize({ start: false });
+  runtime.afterSynchronize = async () => {
+    runtime.scheduleSync('write-during-sync');
+    return null;
+  };
+
+  await runtime.synchronize({ reason: 'current-pass' });
+
+  assert.equal(scheduled.length, 1);
+  assert.equal(runtime.scheduledTimer, 1);
+  runtime.cancelScheduledSync();
+});
+
+test('commit scheduling preserves live, prompt, and background urgency lanes', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  const scheduled = [];
+  const cleared = [];
+  const runtime = new SyncRuntime({
+    client,
+    transport: { async push() { return []; } },
+    now: () => FIXED,
+    windowRef: null,
+    setTimeoutFn: (callback, delay) => {
+      scheduled.push({ callback, delay });
+      return scheduled.length;
+    },
+    clearTimeoutFn: (timer) => { cleared.push(timer); },
+  });
+  await runtime.initialize({ start: false });
+
+  runtime.databaseCommitted({ command: { label: 'delete-social-encounter-memories' } });
+  assert.equal(scheduled.at(-1).delay, 15_000);
+  await runtime.operationCommitted({ referenceTypes: ['task'], label: 'generic-put:todos' });
+  assert.equal(scheduled.at(-1).delay, 750);
+  assert.deepEqual(cleared, [1]);
+  await runtime.operationCommitted({ referenceTypes: ['action-session'], label: 'action-session-start' });
+  assert.equal(scheduled.at(-1).delay, 0);
+  assert.deepEqual(cleared, [1, 2]);
+  runtime.cancelScheduledSync();
+});
+
+test('checkpoint upload stays dirty when a newer SQLite generation lands in flight', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  let releaseUpload;
+  let uploadStarted;
+  const started = new Promise((resolve) => { uploadStarted = resolve; });
+  const runtime = new SyncRuntime({
+    client,
+    connection: {
+      async commitAtomicMutation() { return { changed: false }; },
+      async flushWrites() {},
+      persistenceRuntime: {
+        sqliteStorageAdapter: {
+          async exportSnapshot() {
+            return {
+              byteArray: new Uint8Array([1, 2, 3]),
+              quickCheck: 'ok',
+              foreignKeyViolations: [],
+            };
+          },
+        },
+      },
+    },
+    transport: {
+      async uploadDatabaseCheckpoint() {
+        uploadStarted();
+        return new Promise((resolve) => { releaseUpload = resolve; });
+      },
+    },
+    now: () => FIXED,
+    windowRef: null,
+    setTimeoutFn: () => 1,
+    clearTimeoutFn: () => undefined,
+  });
+  await runtime.initialize({ start: false });
+  runtime.setCheckpointPublishingEnabled(true);
+  runtime.databaseCommitted();
+  const upload = runtime.publishCloudCheckpoint({ force: true });
+  await started;
+  runtime.databaseCommitted();
+  releaseUpload({ uploaded: true });
+  await upload;
+
+  assert.equal(runtime.checkpointDirty, true);
+  assert.equal(runtime.checkpointGeneration, 2);
 });
 
 test('SyncRuntime retries interrupted uploads and settles accepted operations', async (t) => {

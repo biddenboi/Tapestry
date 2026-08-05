@@ -93,9 +93,9 @@ function getActivityModel(item) {
     title: item.description || item.title || item.name || 'Activity detail',
     tone: 'event',
     primary: titleCase(type).slice(0, 4).toUpperCase() || 'HAB',
-    primaryLabel: titleCase(type || 'Habit'),
+    primaryLabel: titleCase(type || 'Event'),
     caption: item.description || item.title || item.name || 'No additional details.',
-    kind: titleCase(type || 'Habit'),
+    kind: titleCase(type || 'Event'),
     timestamp,
   };
 }

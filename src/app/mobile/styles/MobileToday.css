@@ -1,6 +1,6 @@
 .mobile-date-title { min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
 .mobile-date-title span { display: block; }
-.mobile-date-rail { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 15px; }
+.mobile-date-rail { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 15px; touch-action: pan-y; }
 .mobile-date-rail button { display: flex; min-width: 0; min-height: 54px; align-items: center; justify-content: center; flex-direction: column; gap: 3px; padding: 3px 0; border-color: transparent; background: transparent; color: var(--text-muted); }
 .mobile-date-rail button span { font-size: .66rem; text-transform: uppercase; }
 .mobile-date-rail button b { font-size: .86rem; }
@@ -13,7 +13,12 @@
 .mobile-agenda-list { padding-bottom: 78px; }
 .mobile-agenda-list > h2 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; color: var(--text-muted); font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; }
 .mobile-task-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); min-height: 62px; margin-top: 7px; border: 1px solid var(--border-subtle); background: var(--bg-card); }
-.mobile-task-row.is-overdue { border-left: 3px solid var(--color-warning, #f59e0b); }
+.mobile-task-row { border-left: 3px solid var(--task-color, var(--color-task)); }
+.mobile-task-row.is-dormant { border-left-color: var(--border-subtle); }
+.mobile-task-row.is-idle { border-left-color: var(--task-color, var(--color-task)); }
+.mobile-task-row.is-active { border-left-color: var(--accent, var(--color-task)); }
+.mobile-task-row.is-urgent { border-left-color: var(--gold, #f59e0b); }
+.mobile-task-row.is-critical { border-left-color: var(--red, #ef4444); }
 .mobile-task-checkbox { display: grid; min-width: 48px; min-height: 48px; place-items: center; border: 0; border-right: 1px solid var(--border-subtle); background: transparent; }
 .mobile-task-checkbox > span { width: 20px; height: 20px; border: 2px solid color-mix(in srgb, var(--color-task) 68%, var(--text-muted)); border-radius: 3px; }
 .mobile-task-row.is-completing .mobile-task-checkbox > span { background: var(--color-task); box-shadow: 0 0 14px var(--color-task); animation: mobile-check-fill 260ms ease-out both; }

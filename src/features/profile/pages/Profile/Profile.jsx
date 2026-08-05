@@ -112,7 +112,11 @@ export default function Profile({ uuid: targetUUID }) {
     commitCurrentProfile,
   } = useAppContext();
   const { canLoad, isActive } = usePanelLifecycle();
-  const [player, setPlayer]       = useState(null);
+  const [player, setPlayer]       = useState(() => (
+    !targetUUID || String(targetUUID) === String(currentPlayer?.UUID || '')
+      ? currentPlayer || null
+      : null
+  ));
   const [friends, setFriends]     = useState([]);
   const [history, setHistory]     = useState([]);
   const [playerSearch, setPlayerSearch] = useState('');
@@ -131,7 +135,6 @@ export default function Profile({ uuid: targetUUID }) {
   const [goals, setGoals] = useState([]);
   const [profileSummary, setProfileSummary] = useState(null);
   const [profileRating, setProfileRating] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
   const [profileLoadError, setProfileLoadError] = useState(false);
   const [profileUnavailable, setProfileUnavailable] = useState(false);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
@@ -232,9 +235,12 @@ export default function Profile({ uuid: targetUUID }) {
       ensureDomainLoaded,
       currentPlayer,
       profileUUID: resolvedProfileUUID,
-      viewerIGT,
+      // Materialized standings change on committed domain revisions, not on
+      // every wall-clock minute. Avoid turning the profile into a polling
+      // surface while the user is simply reading it or switching local tabs.
+      viewerIGT: getCurrentIGT(currentPlayer),
     })
-  ), [currentPlayer, databaseConnection, ensureDomainLoaded, resolvedProfileUUID, viewerIGTBucket]);
+  ), [currentPlayer, databaseConnection, ensureDomainLoaded, resolvedProfileUUID]);
 
   const applyMaterializedSummary = useCallback((data) => {
     if (!data) return;
@@ -261,7 +267,6 @@ export default function Profile({ uuid: targetUUID }) {
     let cancelled = false;
     const requestId = summaryRequestRef.current + 1;
     summaryRequestRef.current = requestId;
-    setSummaryLoading(true);
     setProfileLoadError(false);
     setProfileUnavailable(false);
     loadMaterializedSummary()
@@ -278,9 +283,6 @@ export default function Profile({ uuid: targetUUID }) {
           setProfileLoadError(true);
           console.warn('[Profile] summary load failed:', error);
         }
-      })
-      .finally(() => {
-        if (!cancelled && summaryRequestRef.current === requestId) setSummaryLoading(false);
       });
     return () => { cancelled = true; };
   }, [
@@ -558,6 +560,7 @@ export default function Profile({ uuid: targetUUID }) {
   const totalContribution = timelineLoaded
     ? getContributionTotal(contributions, player?.UUID)
     : Number(profileSummary?.contributionTotal || 0);
+  const viewedInGameTime = formatInGameTime(getCurrentIGT(player, timestamp));
   const contributionDistribution = timelineLoaded
     ? buildContributionByGoal(contributions, goals, player?.UUID)
     : (profileSummary?.contributionDistribution || []);
@@ -859,10 +862,12 @@ export default function Profile({ uuid: targetUUID }) {
     }
   };
 
-  if (summaryLoading) return <div className="profile-page"><div className="profile-empty">Loading profile summary…</div></div>;
-  if (profileUnavailable) return <div className="profile-page"><div className="profile-empty">Public profile unavailable.</div></div>;
-  if (profileLoadError) return <div className="profile-page"><div className="profile-empty">Profile unavailable.</div></div>;
-  if (!player) return <div className="profile-page"><div className="profile-empty">Profile not found.</div></div>;
+  // A background refresh must never replace an already-rendered profile with a
+  // loading/error interstitial. Keep the last coherent snapshot on screen and
+  // surface terminal errors only when there is genuinely nothing to render.
+  if (profileUnavailable && !player) return <div className="profile-page"><div className="profile-empty">Public profile unavailable.</div></div>;
+  if (profileLoadError && !player) return <div className="profile-page"><div className="profile-empty">Profile unavailable.</div></div>;
+  if (!player) return <div className="profile-page" aria-busy="true" />;
 
   const elo       = player.elo || 0;
   const hasVisibleRating = profileView?.hasVisibleRating === true;
@@ -1200,6 +1205,10 @@ export default function Profile({ uuid: targetUUID }) {
                   <ContributionIcon size={19} />
                   <strong>{totalContribution.toLocaleString()}</strong>
                   <span>Contribution</span>
+                </div>
+                <div className="profile-igt-total" title="In-game time for this profile">
+                  <strong>{viewedInGameTime}</strong>
+                  <span>IGT</span>
                 </div>
                 <div className="profile-rank-progress">
                   {hasVisibleRating && (

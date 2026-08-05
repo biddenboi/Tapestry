@@ -167,7 +167,6 @@ export default function SocialWorldRuntime() {
   useEffect(() => {
     if (!runtimeActive || !selectedProfileId || !currentPlayer?.UUID) return undefined;
     const request = createRequestScope();
-    setProfileCard(null);
     setProfileCardError(null);
     profileCardController.load({
       viewerId: currentPlayer.UUID,
@@ -207,7 +206,6 @@ export default function SocialWorldRuntime() {
   useEffect(() => {
     if (!runtimeActive || !selectedTavern || !currentPlayer?.UUID) return undefined;
     const request = createRequestScope();
-    setTavernCards([]);
     setTavernError(null);
     if (!selectedTavern.occupants.length) {
       request.finish();

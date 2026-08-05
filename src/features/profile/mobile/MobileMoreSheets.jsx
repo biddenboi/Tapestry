@@ -15,17 +15,13 @@ function notificationActorUUID(item) {
 
 export function MobilePlayerSheet({ payload }) {
   const { closeSurface } = useMobileSurface();
-  const { currentPlayer, profiles, metrics } = payload;
+  const { currentPlayer, metrics } = payload;
 
   return (
     <section className="mobile-sheet mobile-player-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-player-sheet-title">
       <header><div><span>Current player</span><h2 id="mobile-player-sheet-title">Identity</h2></div><button type="button" onClick={() => closeSurface()}>Close</button></header>
       <ProfileIdentity player={currentPlayer} rank="full" avatarSize={70} />
-      <div className="mobile-player-sheet-stats"><span><b>{metrics.contribution}</b>Contribution</span><span><b>{metrics.points}</b>Points</span><span><b>{metrics.elo}</b>Elo</span><span><b>{metrics.coins}</b>Coins</span></div>
-      <section className="mobile-player-sheet-profiles"><h3>Profiles</h3><p>Profiles can only be changed during Start Day or End Day.</p>{profiles.map((profile) => {
-        const active = String(profile.UUID) === String(currentPlayer.UUID);
-        return <div key={profile.UUID} className={active ? 'is-active' : ''}><ProfileIdentity player={profile} compact rank="compact" avatarSize={42} /><b>{active ? 'Active' : 'Available at day boundary'}</b></div>;
-      })}</section>
+      <div className="mobile-player-sheet-stats"><span><b>{metrics.contribution}</b>Contribution</span><span><b>{metrics.points}</b>Points</span><span><b>{metrics.elo == null ? 'Unrated' : metrics.elo}</b>Elo</span><span><b>{metrics.coins}</b>Coins</span><span><b>{metrics.igt}</b>IGT</span></div>
     </section>
   );
 }

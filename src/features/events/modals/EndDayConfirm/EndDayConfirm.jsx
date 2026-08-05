@@ -20,6 +20,7 @@ import RitualStopwatchFlow, { RitualTimingVisual } from '@features/events/compon
 import {
   completeRoutineRun,
   completeRoutineStep,
+  dismissRoutineRun,
   getRoutineStepReceipts,
   localRoutineDate,
   startRoutineRun,
@@ -83,6 +84,7 @@ export default NiceModal.create(({ origin = 'desktop' } = {}) => {
   const [submitting, setSubmitting] = useState(false);
   const [completionPhase, setCompletionPhase] = useState('checklist');
   const closeTimerRef = useRef(null);
+  const closingRef = useRef(false);
 
   useInterval(() => setNow(Date.now()), modal.visible ? 1000 : null);
   useEffect(() => () => {
@@ -107,7 +109,10 @@ export default NiceModal.create(({ origin = 'desktop' } = {}) => {
         origin,
       });
       const receipts = await getRoutineStepReceipts(databaseConnection, run.id);
-      if (cancelled) return;
+      if (cancelled || closingRef.current) {
+        await dismissRoutineRun(databaseConnection, run.id, { origin });
+        return;
+      }
       setRoutineRun(run);
       setCheckedItems(new Set(receipts.map(({ stepId }) => Number(String(stepId).replace('step-', '')) - 1)));
     };
@@ -127,9 +132,14 @@ export default NiceModal.create(({ origin = 'desktop' } = {}) => {
     ))).catch((error) => console.warn('[EndDayConfirm] routine step failed:', error));
   };
 
-  const close = () => {
+  const close = async () => {
+    closingRef.current = true;
     modal.hide();
     modal.remove();
+    if (routineRun?.id && routineRun.status === 'active') {
+      await dismissRoutineRun(databaseConnection, routineRun.id, { origin });
+      invalidateDomains(DOMAIN_INVALIDATION.dailyLifecycleWrite);
+    }
   };
 
   const handleAccept = async (finalCheckedItems = checkedItems) => {
@@ -271,7 +281,7 @@ export default NiceModal.create(({ origin = 'desktop' } = {}) => {
           )}
         </div>
         <div className="confirm-footer">
-          <button onClick={close}>Return</button>
+          <button onClick={() => void close()}>Return</button>
           {checklist.length === 0 && (
             <button className="primary" onClick={() => handleAccept()} disabled={submitting}>
               {submitting ? 'Ending...' : 'End day'}

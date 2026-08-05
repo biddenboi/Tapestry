@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   MobileDatePickerSheet,
+  MobileCreateMenu,
   MobileSystemDirectionSheet,
   MobileTaskActionSheet,
   MobileTaskComposer,
@@ -15,11 +16,14 @@ import {
   MobileChronicleEntrySheet,
 } from '@features/chronicle/mobile/MobileChronicleSheets.jsx';
 import MobileShopDetailSheet from '@features/shop/mobile/MobileShopSheets.jsx';
+import MobileMatchTaskPicker from '@features/matches/mobile/MobileMatchTaskPicker.jsx';
+import MobileDayPenaltySheet from '@features/profile/mobile/MobileDayPenaltySheet.jsx';
 import { MobileNotificationsSheet, MobilePlayerSheet } from '@features/profile/mobile/MobileMoreSheets.jsx';
 import { useMobileSurface } from './MobileSurfaceContext.jsx';
 
 const SURFACES = Object.freeze({
   'date-picker': MobileDatePickerSheet,
+  'create-menu': MobileCreateMenu,
   'system-direction': MobileSystemDirectionSheet,
   'task-actions': MobileTaskActionSheet,
   'task-composer': MobileTaskComposer,
@@ -29,6 +33,8 @@ const SURFACES = Object.freeze({
   'chronicle-composer': MobileChronicleComposer,
   'chronicle-entry': MobileChronicleEntrySheet,
   'shop-detail': MobileShopDetailSheet,
+  'match-task-picker': MobileMatchTaskPicker,
+  'day-penalty': MobileDayPenaltySheet,
   'player-sheet': MobilePlayerSheet,
   notifications: MobileNotificationsSheet,
 });

@@ -436,9 +436,9 @@ export const ACHIEVEMENT_GROUPS = [
     icon: ICONS.event_runner,
     color: '#2dd4bf',
     tiers: [
-      { tier: 1, label: 'Habit Runner I',   desc: 'Logged 10 habit check-ins or quantity updates.' },
-      { tier: 2, label: 'Signal Keeper II', desc: 'Logged 100 habit check-ins or quantity updates.' },
-      { tier: 3, label: 'System Master III',desc: 'Logged 500 habit check-ins or quantity updates.' },
+      { tier: 1, label: 'Event Runner I',   desc: 'Logged 10 Event check-ins or quantity updates.' },
+      { tier: 2, label: 'Signal Keeper II', desc: 'Logged 100 Event check-ins or quantity updates.' },
+      { tier: 3, label: 'System Master III',desc: 'Logged 500 Event check-ins or quantity updates.' },
     ],
   },
   {
@@ -494,7 +494,7 @@ export const ACHIEVEMENT_GROUPS = [
 export const ACHIEVEMENT_CATEGORIES = [
   { id: 'competition', label: 'Competition' },
   { id: 'discipline', label: 'Discipline' },
-  { id: 'events', label: 'Habits' },
+  { id: 'events', label: 'Events' },
   { id: 'economy', label: 'Economy' },
   { id: 'collection', label: 'Collection' },
   { id: 'social', label: 'Social' },
@@ -593,9 +593,9 @@ const ACHIEVEMENT_GROUP_META = {
     summary: 'Build consecutive days with completed work.',
   },
   event_runner: {
-    name: 'Habit Runner',
+    name: 'Event Runner',
     category: 'events',
-    summary: 'Use habits and subquests consistently.',
+    summary: 'Use Events and subquests consistently.',
   },
   fellowship: {
     name: 'Fellowship',
@@ -880,7 +880,7 @@ function computeCounterProgress(groupId, tier, counters, leaderboard = {}) {
     case 'consistency': return bounded(counters.longestTaskDayStreak, 'Best day streak');
     case 'basket': return bounded(counters.timelineEntries, 'Timeline entries');
     case 'hobbyist': return bounded(counters.ownedCosmetics, 'Cosmetics owned');
-    case 'event_runner': return bounded(counters.eventLogs, 'Habit logs');
+    case 'event_runner': return bounded(counters.eventLogs, 'Event logs');
     case 'fellowship': return bounded(Number(counters.fellowshipContribution || 0), 'Completed day closes');
     case 'treasurer': return bounded(Math.floor(Number(counters.economyLoggedTotal || 0)), 'Economy income logged');
     case 'signature': return bounded(counters.profileSignatureScore, 'Profile elements customized');
@@ -1022,7 +1022,7 @@ export function computeAchievementProgress(groupId, tier, playerData = {}) {
       const max = ACHIEVEMENT_THRESHOLDS.event_runner[tier - 1];
       if (!max) return null;
       const count = eventLogCount(eventLogs, playerUUID);
-      return { value: Math.min(count, max), max, label: 'Habit logs' };
+      return { value: Math.min(count, max), max, label: 'Event logs' };
     }
     case 'fellowship': {
       const max = ACHIEVEMENT_THRESHOLDS.fellowship[tier - 1];

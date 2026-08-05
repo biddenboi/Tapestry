@@ -41,7 +41,7 @@ export const OPENING_TRAIL_STEPS = Object.freeze([
   { id: 'session-outcome', step: 2, label: 'Make work visible', milestone: 'Record the first task-session outcome', reveals: ['tasks.all', 'inventory.basic', 'road'] },
   { id: 'task-depth', step: 3, label: 'Build continuity', milestone: 'Complete two tasks or resume a saved next action', reveals: ['tasks.history', 'tasks.inspector.full'] },
   { id: 'planning', step: 4, label: 'Shape what comes next', milestone: 'Create a reminder or queue three tasks', reveals: ['tasks.planning', 'reminders'] },
-  { id: 'rhythm', step: 5, label: 'Find a rhythm', milestone: 'Log the first Habit or rhythm opportunity', reveals: ['events.calendar', 'events.rhythms.full'] },
+  { id: 'rhythm', step: 5, label: 'Find a rhythm', milestone: 'Log the first Event or rhythm opportunity', reveals: ['events.calendar', 'events.rhythms.full'] },
   { id: 'goal', step: 6, label: 'Choose a horizon', milestone: 'Make a Goal executable or complete a milestone', reveals: ['events.goals', 'events.boundaries', 'events.reviews'] },
   { id: 'entry', step: 7, label: 'Leave a record', milestone: 'Publish the first substantive Entry', reveals: ['feed.stories', 'feed.essays', 'story.create'] },
   { id: 'resurface', step: 8, label: 'Look again', milestone: 'Meaningfully view five Feed items or complete a retrospective action', reveals: ['feed.wander', 'chronicle.resurface'] },

@@ -61,6 +61,58 @@ test('replay uses recorded Elo evidence without double-counting inherited baseli
     Object.keys(replayed.matches[0].result.playerEloChanges),
     ['honor'],
   );
+
+  const terenryTimeline = igt.buildPlayerEloTimeline(players[1], [legacyOwnerOnly]);
+  const projectedTerenry = igt.projectPlayerEloTimeline(terenryTimeline, 10);
+  assert.equal(projectedTerenry.hasVisibleRating, true);
+  assert.equal(projectedTerenry.elo, 157);
+  assert.equal(projectedTerenry.visibleRatedResults[0].inferredParticipation, true);
+});
+
+test('IGT comparison aligns players by elapsed game time, not wall-clock start date', () => {
+  const earlyWallClock = {
+    UUID: 'early-wall-clock',
+    parent: 'alpha',
+    status: 'complete',
+    ratingMode: 'rated',
+    participantUUIDs: ['alpha'],
+    completedInGameTimestamp: 20,
+    teams: [[{ UUID: 'alpha', elo: 100 }]],
+    result: {
+      inGameTimestamp: 20,
+      concludedAt: '2024-01-01T00:00:00.000Z',
+      eloChange: 5,
+    },
+  };
+  const lateWallClock = {
+    UUID: 'late-wall-clock',
+    parent: 'beta',
+    status: 'complete',
+    ratingMode: 'rated',
+    participantUUIDs: ['beta'],
+    completedInGameTimestamp: 20,
+    teams: [[{ UUID: 'beta', elo: 100 }]],
+    result: {
+      inGameTimestamp: 20,
+      concludedAt: '2026-08-03T00:00:00.000Z',
+      eloChange: 5,
+    },
+  };
+  const alpha = igt.projectPlayerEloTimeline(
+    igt.buildPlayerEloTimeline(player('alpha', 105, 100), [earlyWallClock]),
+    20,
+  );
+  const beta = igt.projectPlayerEloTimeline(
+    igt.buildPlayerEloTimeline(player('beta', 105, 100), [lateWallClock]),
+    20,
+  );
+  assert.equal(alpha.elo, beta.elo);
+  assert.equal(alpha.hasVisibleRating, true);
+  assert.equal(beta.hasVisibleRating, true);
+  assert.equal(igt.projectPlayerEloTimeline(
+    igt.buildPlayerEloTimeline(player('beta', 105, 100), [lateWallClock]),
+    19,
+  ).hasVisibleRating, false);
 });
 
 test('replay applies full persisted participant changes when they exist', () => {

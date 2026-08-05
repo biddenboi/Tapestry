@@ -64,7 +64,9 @@ export default function MobileTasksPage() {
       setGoals([]);
       return;
     }
-    const agenda = await queryMobileWorkspaceAgenda(databaseConnection);
+    const agenda = await queryMobileWorkspaceAgenda(databaseConnection, {
+      playerUUID: currentPlayer.UUID,
+    });
     setTasks(agenda.tasks);
     setReminders(agenda.reminders);
     setGoals(agenda.goals);
@@ -79,14 +81,14 @@ export default function MobileTasksPage() {
     });
   }, []);
 
-  const addTask = useCallback(() => {
-    openSurface('task-composer', { selectedDate, onSaved: reload });
+  const openCreateMenu = useCallback(() => {
+    openSurface('create-menu', { selectedDate, onSaved: reload });
   }, [openSurface, reload, selectedDate]);
 
   useEffect(() => registerPrimaryAction({
-    label: `Add task for ${selectedDateTitle(selectedDate, today)}`,
-    onInvoke: addTask,
-  }), [addTask, registerPrimaryAction, selectedDate, today]);
+    label: `Create task or reminder for ${selectedDateTitle(selectedDate, today)}`,
+    onInvoke: openCreateMenu,
+  }), [openCreateMenu, registerPrimaryAction, selectedDate, today]);
 
   const goalNames = useMemo(() => new Map(goals.map((goal) => [String(goal.UUID), goal.name])), [goals]);
   const visibleTasks = useMemo(() => tasks
@@ -177,12 +179,6 @@ export default function MobileTasksPage() {
       className="mobile-page mobile-today-page"
       data-slide-direction={slideDirection}
       onAnimationEnd={() => setSlideDirection('none')}
-      onTouchStart={(event) => {
-        const touch = event.touches?.[0];
-        touchStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
-      }}
-      onTouchEnd={finishSwipe}
-      onTouchCancel={() => { touchStartRef.current = null; }}
     >
       <header className="mobile-page-header">
         <button type="button" className="mobile-date-title" onClick={() => openSurface('date-picker', { selectedDate, onSelect: selectDate })}>
@@ -192,7 +188,16 @@ export default function MobileTasksPage() {
           ? <button type="button" disabled={nextBusy || !tasks.length} onClick={getNext}>{nextBusy ? 'Choosing…' : 'Get Next'}</button>
           : <button type="button" onClick={() => selectDate(today)}>Today</button>}
       </header>
-      <nav className="mobile-date-rail" aria-label="Task date">
+      <nav
+        className="mobile-date-rail"
+        aria-label="Task date"
+        onTouchStart={(event) => {
+          const touch = event.touches?.[0];
+          touchStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+        }}
+        onTouchEnd={finishSwipe}
+        onTouchCancel={() => { touchStartRef.current = null; }}
+      >
         {dateRail.map((key) => {
           const date = mobileDateFromKey(key);
           return (
@@ -213,7 +218,11 @@ export default function MobileTasksPage() {
         {visibleTasks.map((task) => {
           const overdue = selectedDate === today && mobileDueKey(task.dueDate) < today;
           return (
-            <article key={task.UUID} className={`mobile-task-row ${overdue ? 'is-overdue' : ''} ${busyId === task.UUID ? 'is-completing' : ''}`}>
+            <article
+              key={task.UUID}
+              className={`mobile-task-row is-${task.slopeTier || 'dormant'} ${overdue ? 'is-overdue' : ''} ${busyId === task.UUID ? 'is-completing' : ''}`}
+              style={{ '--task-color': task.projectColor || 'var(--color-task)' }}
+            >
               <button type="button" className="mobile-task-checkbox" disabled={busyId === task.UUID} onClick={() => completeTask(task)} aria-label={`Complete ${task.name || 'task'}`}><span aria-hidden="true" /></button>
               <button type="button" className="mobile-task-row__body" onClick={() => openTask(task)}>
                 <strong>{task.name || 'Untitled task'}</strong>
@@ -224,7 +233,6 @@ export default function MobileTasksPage() {
         })}
         {!visibleTasks.length && <div className="mobile-agenda-empty"><strong>This day is clear</strong><span>Add a task or choose another day.</span></div>}
       </section>
-      <button type="button" className="mobile-reminder-add" onClick={() => openSurface('reminder-composer', { selectedDate, onSaved: reload })}>Add reminder</button>
     </section>
   );
 }

@@ -20,9 +20,10 @@ import {
   withDerivedCacheMetadata,
 } from '@shared/cache/DerivedCache.js';
 import { getCanonicalTaskPoints } from '@domain/tasks/Tasks.js';
-// v11 rebuilds universal Points from whole direct-work values and keeps the
-// viewer-specific Fellow/IGT projection outside the shared snapshot.
-export const MATERIALIZED_LEADERBOARD_SCHEMA_VERSION = 11;
+// v13 retains rated-participation evidence for legacy matches and a compact
+// Contribution ledger. Both leaderboards are projected at the viewer's exact
+// IGT rather than mixing current totals with a historical profile view.
+export const MATERIALIZED_LEADERBOARD_SCHEMA_VERSION = 13;
 export const MATCH_LEADERBOARD_SNAPSHOT_ID = 'matchLeaderboardSnapshot:v1';
 export const CONTRIBUTION_LEADERBOARD_SNAPSHOT_ID = 'contributionLeaderboardSnapshot:v1';
 export const MATERIALIZED_LEADERBOARDS_UPDATED_EVENT = 'tapestry:materialized-leaderboards-updated';
@@ -178,6 +179,28 @@ function contributionTotals(contributions = []) {
   return totals;
 }
 
+function contributionEventsByPlayer(contributions = []) {
+  const byPlayer = {};
+  for (const [index, row] of (contributions || []).entries()) {
+    const parent = cleanId(row?.parent || row?.playerUUID);
+    if (!parent) continue;
+    const inGameTimestamp = Number(row?.inGameTimestamp);
+    if (!byPlayer[parent]) byPlayer[parent] = [];
+    byPlayer[parent].push({
+      UUID: String(row?.UUID || `${parent}:contribution:${index}`),
+      inGameTimestamp: Number.isFinite(inGameTimestamp) ? Math.max(0, inGameTimestamp) : 0,
+      value: Number(row?.value || row?.contribution || 0),
+    });
+  }
+  for (const events of Object.values(byPlayer)) {
+    events.sort((left, right) => (
+      left.inGameTimestamp - right.inGameTimestamp
+      || left.UUID.localeCompare(right.UUID)
+    ));
+  }
+  return byPlayer;
+}
+
 function matchTimelineIGT(match) {
   const completed = getReliableMatchCompletionIGT(match);
   if (completed != null) return completed;
@@ -326,11 +349,13 @@ export function buildContributionLeaderboardSnapshot({
 } = {}) {
   const participantSummaries = (players || []).map(toParticipantSummary).filter(Boolean);
   const totalsByPlayer = contributionTotals(contributions);
+  const ledgerByPlayer = contributionEventsByPlayer(contributions);
   return withDerivedCacheMetadata({
     schemaVersion: MATERIALIZED_LEADERBOARD_SCHEMA_VERSION,
     updatedAt: generatedAt,
     participantSummaries,
     totalsByPlayer,
+    ledgerByPlayer,
     rankedUUIDs: rankedPlayerUUIDs(participantSummaries, (player) => totalsByPlayer[player.UUID] || 0),
   }, {
     generatedAt,
@@ -365,6 +390,7 @@ function emptyContributionSnapshot() {
     updatedAt: null,
     participantSummaries: [],
     totalsByPlayer: {},
+    ledgerByPlayer: {},
     rankedUUIDs: [],
   }, { sourceVersions: {}, generatedAt: null });
 }
@@ -417,6 +443,36 @@ export async function readMaterializedLeaderboardSnapshotsSWR(databaseConnection
 function viewerBoundary(viewerIGT) {
   const value = Number(viewerIGT);
   return Number.isFinite(value) ? Math.max(0, value) : Infinity;
+}
+
+/** Pure Contribution projection using the same IGT boundary as profile and Elo views. */
+export function projectContributionLeaderboardAtIGT(snapshot, {
+  viewerIGT = Infinity,
+} = {}) {
+  const boundary = viewerBoundary(viewerIGT);
+  const participants = snapshot?.participantSummaries || [];
+  const ledger = snapshot?.ledgerByPlayer || {};
+  const totalsByPlayer = Object.fromEntries(participants.map(({ UUID }) => {
+    const events = ledger[String(UUID)];
+    if (!Array.isArray(events)) {
+      // Compatibility fallback is only reachable for an already-materialized
+      // snapshot in memory during a schema upgrade; v13 rebuilds immediately.
+      return [String(UUID), boundary === Infinity
+        ? Math.max(0, Number(snapshot?.totalsByPlayer?.[UUID]) || 0)
+        : 0];
+    }
+    return [String(UUID), events.reduce((total, event) => (
+      Number(event?.inGameTimestamp || 0) <= boundary
+        ? total + Number(event?.value || 0)
+        : total
+    ), 0)];
+  }));
+  return {
+    ...snapshot,
+    totalsByPlayer,
+    rankedUUIDs: rankedPlayerUUIDs(participants, (player) => totalsByPlayer[player.UUID] || 0),
+    viewerIGT: boundary,
+  };
 }
 
 function visibleMatchTimestamp(match) {
@@ -532,6 +588,10 @@ export async function readLobbyMaterializedData(databaseConnection, playerUUID, 
   const snapshots = await readMaterializedLeaderboardSnapshotsSWR(databaseConnection);
   const playerId = cleanId(playerUUID);
   const projection = cachedLobbyProjection(databaseConnection, snapshots.match, playerId, viewerIGT);
+  const contributionProjection = projectContributionLeaderboardAtIGT(
+    snapshots.contribution,
+    { viewerIGT },
+  );
   const participantMap = new Map();
   for (const participant of [
     ...(snapshots.contribution.participantSummaries || []),
@@ -541,6 +601,7 @@ export async function readLobbyMaterializedData(databaseConnection, playerUUID, 
   }
   return {
     ...snapshots,
+    contribution: contributionProjection,
     match: {
       ...snapshots.match,
       globalRankedUUIDs: projection.globalRankedUUIDs,

@@ -68,7 +68,7 @@ const formatDate = (value, fallback = 'No target') => {
 const actionEntityLabel = (type) => ({
   todo: 'Task',
   task: 'Completed task',
-  habit: 'Habit',
+  habit: 'Event',
   reminder: 'Reminder',
   event: 'Event',
 }[type] || 'Action');
@@ -217,7 +217,7 @@ function PurposeKey() {
       <dl>
         <div><dt>Areas</dt><dd>Ongoing responsibilities or directions. They stay relevant; they are not completed.</dd></div>
         <div><dt>Goals</dt><dd>Finite outcomes with an observable finish condition.</dd></div>
-        <div><dt>Tasks &amp; Habits</dt><dd>Concrete work: Tasks are finishable actions; Habits repeat on a rhythm.</dd></div>
+        <div><dt>Tasks &amp; Events</dt><dd>Concrete work: Tasks are finishable actions; Events repeat on a rhythm.</dd></div>
         <div><dt>Stories</dt><dd>Writing collections that preserve a season or narrative; they do not measure progress.</dd></div>
       </dl>
     </section>
@@ -586,11 +586,11 @@ function SupportingWork({ detail, repository, currentPlayer, onChanged }) {
   return (
     <section className="goals-panel goals-supporting">
       <div className="goals-panel__heading">
-        <div><span>Supporting work</span><p>Work remains editable in Tasks, Habits, Reminders, and Journals.</p></div>
+        <div><span>Supporting work</span><p>Work remains editable in Tasks, Events, Reminders, and Journals.</p></div>
       </div>
       <div className="goals-supporting__summary">
         <span><b>{(counts.todo || 0) + (counts.task || 0)}</b> tasks</span>
-        <span><b>{counts.habit || 0}</b> habits</span>
+        <span><b>{counts.habit || 0}</b> events</span>
         <span><b>{counts.reminder || 0}</b> reminders</span>
         <span><b>{counts.journal || 0}</b> journals</span>
       </div>
@@ -1076,7 +1076,7 @@ function GoalForm({
         <div className="goals-form__intro">
           <span>{goal ? 'Refine the outcome' : 'Start with meaning'}</span>
           <h1>{goal ? 'Edit Goal' : 'What are you trying to accomplish?'}</h1>
-          <p>A Goal is finite. Ongoing responsibilities belong in Areas and Habits.</p>
+          <p>A Goal is finite. Ongoing responsibilities belong in Areas and Events.</p>
         </div>
         <section>
           <div className="goals-form__section-title"><span>Meaning</span><small>Required</small></div>
@@ -1171,7 +1171,7 @@ function GoalForm({
             <div className="goals-action-picker">
               <div className="goals-action-picker__heading"><span>Current next action</span><button type="button" className={!nextActionKey ? 'active' : ''} onClick={() => setNextActionKey('')}>Choose later</button></div>
               <div className="goals-action-picker__tools">
-                <input value={actionQuery} onChange={(event) => setActionQuery(event.target.value)} placeholder="Search tasks, Habits, and reminders…" />
+                <input value={actionQuery} onChange={(event) => setActionQuery(event.target.value)} placeholder="Search tasks, Events, and reminders…" />
                 <div>{['all', 'todo', 'habit', 'reminder'].map((type) => <button type="button" key={type} className={actionType === type ? 'active' : ''} onClick={() => setActionType(type)}>{type === 'all' ? 'All' : actionEntityLabel(type)}</button>)}</div>
               </div>
               <div className="goals-action-picker__grid">

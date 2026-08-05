@@ -46,6 +46,7 @@ import {
   failTaskPlanReceipt,
   isTaskPlanReceiptValid,
 } from '@domain/planning/TaskPlanReceipt.js';
+import { requestLiveReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
 
 const TaskSessionContext = createContext(null);
 
@@ -81,14 +82,32 @@ function localSessionFromRecord(record, task, sourceGameState, sourceDojoSession
     matchScoreFinalizedAt: record.matchScoreFinalizedAt || null,
     matchScoreEventUUID: record.matchScoreEventUUID || null,
     matchScoreBreakdown: record.matchScoreBreakdown || null,
+    recordUpdatedAt: record.updatedAt || record.startedAt || null,
     canMinimize: sourceGameState !== GAME_STATE.dojo && !sourceDojoSessionUUID,
     settlementError: null,
+  };
+}
+
+function activeTaskFromRecord(record, todo = null) {
+  return {
+    ...(todo || {}),
+    UUID: record.targetUUID,
+    name: todo?.name || record.targetName || 'Unfinished action',
+    projectId: todo?.projectId || record.goalUUID || null,
+    createdAt: record.startedAt,
+    sessionRequestedAt: record.startedAt,
+    sessionDuration: record.committedMs || 0,
+    actionSessionUUID: record.UUID,
+    dojoSessionUUID: record.dojoSessionUUID || null,
+    continuitySource: record.source,
+    restoredFromContinuity: true,
   };
 }
 
 export function TaskSessionProvider({ children }) {
   const {
     databaseConnection,
+    domainRevisions,
     invalidateDomains,
     emitRewardEvent,
     playSound,
@@ -108,6 +127,7 @@ export function TaskSessionProvider({ children }) {
   const expandedSurfaceRef = useRef(null);
   const restoreAttemptRef = useRef(null);
   const recoveredMatchSurfaceRef = useRef(null);
+  const automaticSurfaceSessionRef = useRef(null);
   const activeSessionKey = taskSessionRequestKey(activeTask);
 
   const replaceSession = useCallback((next) => {
@@ -151,19 +171,7 @@ export function TaskSessionProvider({ children }) {
           await databaseConnection.add(STORES.actionSession, repairedRecord);
         }
         if (cancelled) return;
-        setActiveTask({
-          ...(todo || {}),
-          UUID: repairedRecord.targetUUID,
-          name: todo?.name || repairedRecord.targetName || 'Unfinished action',
-          projectId: todo?.projectId || repairedRecord.goalUUID || null,
-          createdAt: repairedRecord.startedAt,
-          sessionRequestedAt: repairedRecord.startedAt,
-          sessionDuration: repairedRecord.committedMs || 0,
-          actionSessionUUID: repairedRecord.UUID,
-          dojoSessionUUID: repairedRecord.dojoSessionUUID || null,
-          continuitySource: repairedRecord.source,
-          restoredFromContinuity: true,
-        });
+        setActiveTask(activeTaskFromRecord(repairedRecord, todo));
       })
       .catch((error) => console.warn('[TaskSessionProvider] session restore failed:', error))
       .finally(() => {
@@ -175,6 +183,7 @@ export function TaskSessionProvider({ children }) {
     currentPlayer?.UUID,
     currentPlayerLoaded,
     databaseConnection,
+    domainRevisions.tasks,
     ensureDomainLoaded,
     replacePanel,
     setActiveMatch,
@@ -199,9 +208,23 @@ export function TaskSessionProvider({ children }) {
     const hydrate = async () => {
       const parent = currentPlayer?.UUID ? currentPlayer : await databaseConnection.getCurrentPlayer();
       if (!parent?.UUID) return;
-      const record = activeTask.actionSessionUUID
+      let record = activeTask.actionSessionUUID
         ? await databaseConnection.get(STORES.actionSession, activeTask.actionSessionUUID)
-        : await startActionSession(databaseConnection, {
+        : null;
+      if (!record) {
+        // Pull the live session set immediately before claiming a task. This
+        // closes the ordinary desktop/phone race without waiting for the next
+        // polling interval. The server mirror resolves a true simultaneous
+        // race deterministically and the losing client follows that record.
+        await requestLiveReferenceSync(databaseConnection, 'action-session-start-preflight')
+          .catch(() => undefined);
+        const existing = await getActiveActionSession(databaseConnection, parent.UUID);
+        if (existing && String(existing.targetUUID) !== String(activeTask.UUID)) {
+          const existingTodo = await databaseConnection.get(STORES.todo, existing.targetUUID);
+          if (!cancelled) setActiveTask(activeTaskFromRecord(existing, existingTodo));
+          return;
+        }
+        record = existing || await startActionSession(databaseConnection, {
             playerUUID: parent.UUID,
             task: activeTask,
             matchUUID: requestedSourceGameState === GAME_STATE.match ? activeMatch?.UUID || null : null,
@@ -209,6 +232,7 @@ export function TaskSessionProvider({ children }) {
             source: sourceForSession(requestedSourceGameState, activeTask),
             startedAt: taskSessionRequestedAt(activeTask),
           });
+      }
       if (!record || cancelled) return;
       if (!activeTask.actionSessionUUID) {
         setActiveTask((previous) => ({
@@ -231,6 +255,7 @@ export function TaskSessionProvider({ children }) {
         durableDojoSessionUUID,
       ));
       setNowMs(Date.now());
+      void requestLiveReferenceSync(databaseConnection, 'action-session-started');
     };
     hydrate().catch((error) => {
       console.warn('[TaskSessionProvider] durable session start failed:', error);
@@ -249,6 +274,69 @@ export function TaskSessionProvider({ children }) {
     setActiveTask,
     updateSession,
   ]);
+
+  useEffect(() => {
+    const current = sessionRef.current;
+    if (!current?.actionSessionUUID) return undefined;
+    let cancelled = false;
+    databaseConnection.get(STORES.actionSession, current.actionSessionUUID)
+      .then((record) => {
+        if (
+          cancelled
+          || !record
+        ) return;
+        if (record.outcome !== ACTION_SESSION_OUTCOME.active) {
+          expandedSurfaceRef.current?.close?.();
+          automaticSurfaceSessionRef.current = null;
+          replaceSession(null);
+          setActiveTask({});
+          return;
+        }
+        if (String(record.updatedAt || record.startedAt || '') === String(current.recordUpdatedAt || '')) return;
+        const refreshed = localSessionFromRecord(
+          record,
+          current.task,
+          current.sourceGameState,
+          current.sourceDojoSessionUUID,
+        );
+        replaceSession({
+          ...refreshed,
+          mode: current.mode,
+          submittingAction: current.submittingAction,
+          restoredFromContinuity: current.restoredFromContinuity,
+        });
+        setActiveTask((previous) => ({ ...previous, presencePaused: Boolean(record.pausedAt) }));
+        setNowMs(Date.now());
+      })
+      .catch((error) => console.warn('[TaskSessionProvider] live session refresh failed:', error));
+    return () => { cancelled = true; };
+  }, [databaseConnection, domainRevisions.tasks, replaceSession, setActiveTask]);
+
+  useEffect(() => {
+    if (
+      !session?.restoredFromContinuity
+      || session.sourceGameState === GAME_STATE.match
+      || automaticSurfaceSessionRef.current === session.sessionId
+      || expandedSurfaceRef.current
+    ) return undefined;
+    let cancelled = false;
+    loadTaskSessionMenu()
+      .then((TaskSessionMenu) => {
+        if (cancelled) return;
+        automaticSurfaceSessionRef.current = session.sessionId;
+        updateSession((current) => current?.sessionId === session.sessionId
+          ? { ...current, mode: 'expanded' }
+          : current);
+        requestAnimationFrame(() => {
+          NiceModal.show(TaskSessionMenu).catch((error) => {
+            automaticSurfaceSessionRef.current = null;
+            console.warn('[TaskSessionProvider] synchronized task surface failed:', error);
+          });
+        });
+      })
+      .catch((error) => console.warn('[TaskSessionProvider] synchronized task menu load failed:', error));
+    return () => { cancelled = true; };
+  }, [session?.restoredFromContinuity, session?.sessionId, session?.sourceGameState, updateSession]);
 
   useEffect(() => {
     const current = session;
@@ -355,9 +443,14 @@ export function TaskSessionProvider({ children }) {
     const durableCommand = pausing
       ? pauseActionSession(databaseConnection, current.actionSessionUUID, new Date(atMs))
       : resumeActionSession(databaseConnection, current.actionSessionUUID, new Date(atMs));
-    durableCommand.catch((error) => {
-      console.warn(`[TaskSessionProvider] durable ${pausing ? 'pause' : 'resume'} failed:`, error);
-    });
+    durableCommand
+      .then(() => requestLiveReferenceSync(
+        databaseConnection,
+        pausing ? 'action-session-paused' : 'action-session-resumed',
+      ))
+      .catch((error) => {
+        console.warn(`[TaskSessionProvider] durable ${pausing ? 'pause' : 'resume'} failed:`, error);
+      });
     const presenceCommand = {
       playerId: currentPlayer?.UUID,
       viewerIGT: getCurrentIGT(currentPlayer, atMs),

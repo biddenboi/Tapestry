@@ -11,6 +11,7 @@ import { timeAsHHMMSS } from '@domain/time/Time.js';
 import { useTaskSession } from '@features/tasks/context/TaskSessionProvider.jsx';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
 import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
+import { requestLiveReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
 
 function remainingForMatch(match, now = Date.now()) {
   if (!match?.lockedAt || match.status !== MATCH_STATUS.active) return getMatchDurationMs(match);
@@ -44,6 +45,31 @@ export default function MobileMatchRuntime({ onBack }) {
 
   useEffect(() => { void reload(); }, [reload, domainRevisions.tasks, domainRevisions.matches]);
   useEffect(() => {
+    if (!activeMatch?.UUID) return undefined;
+    let cancelled = false;
+    databaseConnection.get('matches', activeMatch.UUID)
+      .then((canonical) => {
+        if (
+          cancelled
+          || !canonical
+          || (
+            String(canonical.updatedAt || canonical.result?.concludedAt || '')
+            === String(activeMatch.updatedAt || activeMatch.result?.concludedAt || '')
+            && canonical.status === activeMatch.status
+          )
+        ) return;
+        if (canonical.status === 'cancelled') {
+          setActiveMatch(null);
+          setGameState(GAME_STATE.idle);
+          onBack?.();
+          return;
+        }
+        setActiveMatch(canonical);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [activeMatch, databaseConnection, domainRevisions.matches, onBack, setActiveMatch, setGameState]);
+  useEffect(() => {
     if (activeMatch?.status !== MATCH_STATUS.active) {
       setRemaining(remainingForMatch(activeMatch));
       return undefined;
@@ -71,6 +97,9 @@ export default function MobileMatchRuntime({ onBack }) {
     });
     setActiveMatch(updated);
     invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
+    await requestLiveReferenceSync(databaseConnection, 'mobile-match-state').catch((syncError) => {
+      console.warn('[Mobile Match] shared state will retry in the background.', syncError);
+    });
     return updated;
   };
 
@@ -127,7 +156,9 @@ export default function MobileMatchRuntime({ onBack }) {
       setActiveMatch(result.match);
       updateCurrentPlayer(result.player);
       invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
-      databaseConnection.syncRuntime?.scheduleSync?.('mobile-match-complete');
+      await requestLiveReferenceSync(databaseConnection, 'mobile-match-complete').catch((syncError) => {
+        console.warn('[Mobile Match] completed result will retry in the background.', syncError);
+      });
       void import('@domain/matches/MatchPostMatchJobs.js')
         .then(({ queuePostMatchJobs }) => queuePostMatchJobs(databaseConnection, result.match))
         .catch((postMatchError) => console.warn('[Mobile Match] post-match processing will retry.', postMatchError));
@@ -163,6 +194,11 @@ export default function MobileMatchRuntime({ onBack }) {
       setBusy(false);
     }
   };
+
+  const chooseTask = () => openSurface('match-task-picker', {
+    tasks: runtime.todos,
+    onChoose: (task) => openSurface('task-actions', { task, onChanged: reload }),
+  });
 
   if (!activeMatch) return <div className="mobile-runtime-empty">The synced Match is still loading.</div>;
   if (activeMatch.status === MATCH_STATUS.complete) {
@@ -221,8 +257,9 @@ export default function MobileMatchRuntime({ onBack }) {
       <div className="mobile-match-scoreboard"><strong>{Number(totals[0] || 0).toLocaleString()}</strong><span>VS</span><strong>{Number(totals[1] || 0).toLocaleString()}</strong></div>
       <div className="mobile-match-roster mobile-match-roster--compact">{teams.map((team, index) => <section key={`active-team-${index}`}><h2>{index === currentTeamIndex ? 'Your team' : 'Opponents'}</h2>{team.map((player) => <div key={player.UUID}><ProfileIdentity player={player} compact avatarOnly avatarSize={32} /><span>{player.username || player.name}</span><strong>{Number(scores[player.UUID] || 0).toLocaleString()}</strong></div>)}</section>)}</div>
       {activeTask?.createdAt && <article className="mobile-runtime-active-card"><span>Match work in progress</span><h2>{activeTask.name}</h2><p>The shared Action Session keeps this work pinned to the Match on phone and desktop.</p></article>}
-      <div className="mobile-runtime-actions">
+      <div className="mobile-runtime-actions mobile-runtime-actions--three">
         <button type="button" onClick={() => openSurface('task-composer', {})} disabled={busy || Boolean(activeTask?.createdAt)}>Add task</button>
+        <button type="button" onClick={chooseTask} disabled={busy || Boolean(activeTask?.createdAt) || !runtime.todos.length}>Choose task</button>
         <button type="button" className="primary" onClick={startNext} disabled={busy || Boolean(activeTask?.createdAt)}>{busy ? 'Finding…' : 'Start next'}</button>
       </div>
       <button type="button" className="mobile-match-forfeit" disabled={busy} onClick={() => { if (window.confirm('Forfeit this Match? The result and Elo change will sync to desktop.')) void conclude(true); }}>Forfeit Match</button>

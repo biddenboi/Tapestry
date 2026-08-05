@@ -11,6 +11,7 @@ import {
   resolveThemeId,
 } from '@domain/themes/ThemeRegistry.js';
 import { applyCosmeticEquipmentToElement } from '@domain/cosmetics/CosmeticCatalog.js';
+import { getAchievementByKey } from '@domain/achievements/Achievements.js';
 import { useInterval } from '@shared/hooks/useInterval.js';
 import NiceModal from '@ebay/nice-modal-react';
 import GameHub from '@app/shell/GameHub/GameHub.jsx';
@@ -47,6 +48,7 @@ import {
 import { refreshDueAppBadge } from '@shared/runtime/DueStateRuntime.js';
 import { installInstanceHandoffResponder } from '@shared/runtime/InstanceHandoff.js';
 import InstanceStandbyGate from '@app/instance/InstanceStandbyGate.jsx';
+import { queryResumableMobileMatch } from '@app/mobile/application/MobileMatchQueryService.js';
 
 registerStaticModule('app/App');
 
@@ -160,6 +162,9 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // DataSourceGate owns cloud restore on startup. Starting sync before that
+    // decision can race an empty/demo SQLite database against the cloud copy.
+    if (!dataSourceReady) return undefined;
     let cancelled = false;
     Promise.resolve(databaseConnection.ready)
       .then(() => import('@data/sync/supabase/SupabaseSyncBootstrap.js'))
@@ -172,7 +177,7 @@ function App() {
         }
       });
     return () => { cancelled = true; };
-  }, [databaseConnection]);
+  }, [dataSourceReady, databaseConnection]);
 
   useEffect(() => {
     let dispose = () => undefined;
@@ -322,7 +327,11 @@ function App() {
       void Promise.resolve(recoverAchievements()).then(() => recoverAchievements());
     };
     window.addEventListener('tapestry:sync-complete', onSyncComplete);
-    return () => window.removeEventListener('tapestry:sync-complete', onSyncComplete);
+    window.addEventListener('tapestry:reference-sync-complete', onSyncComplete);
+    return () => {
+      window.removeEventListener('tapestry:sync-complete', onSyncComplete);
+      window.removeEventListener('tapestry:reference-sync-complete', onSyncComplete);
+    };
   }, [invalidateDomains, recoverAchievements, recoverTaskCompletions]);
 
   const ensureDomainLoaded = useCallback(async (domains) => {
@@ -451,6 +460,21 @@ function App() {
     }, playerRewardEventRemovalDelay(gains.length));
   }, [playSound]);
 
+  useEffect(() => {
+    const onAchievementEarned = (event) => {
+      const keys = Array.isArray(event.detail?.keys) ? event.detail.keys : [];
+      emitRewardEvent(keys.map((key) => {
+        const achievement = getAchievementByKey(key);
+        return {
+          label: achievement?.label ? `Achievement · ${achievement.label}` : 'Achievement unlocked',
+          kind: 'achievement',
+        };
+      }), { source: 'notification', kind: 'achievement' });
+    };
+    window.addEventListener('tapestry:achievement-earned', onAchievementEarned);
+    return () => window.removeEventListener('tapestry:achievement-earned', onAchievementEarned);
+  }, [emitRewardEvent]);
+
   const notify = useCallback(async ({ title, message, kind = 'info', persist = true }) => {
     if (persist && currentPlayer?.UUID) {
       await databaseConnection.add(STORES.notification, {
@@ -501,6 +525,44 @@ function App() {
     setCurrentPlayer,
     setCurrentPlayerLoaded,
   });
+
+  // Match identity is shared application state, not a Lobby-local choice.
+  // Promote a newly synchronized pending/active Match on either surface and
+  // clear a remotely cancelled/forfeited Match without requiring navigation
+  // or a reload.
+  useEffect(() => {
+    if (!dataSourceReady || !currentPlayerLoaded || !currentPlayer?.UUID) return undefined;
+    let cancelled = false;
+    queryResumableMobileMatch(databaseConnection, { playerUUID: currentPlayer.UUID })
+      .then((resumable) => {
+        if (cancelled) return;
+        const currentIsResumable = ['pending', 'active'].includes(String(activeMatch?.status || ''));
+        if (resumable) {
+          const changed = !activeMatch
+            || String(activeMatch.UUID) !== String(resumable.UUID)
+            || String(activeMatch.updatedAt || activeMatch.syncUpdatedAt || '')
+              !== String(resumable.updatedAt || resumable.syncUpdatedAt || '')
+            || activeMatch.status !== resumable.status;
+          if (changed) setActiveMatch(resumable);
+          if (gameState !== GAME_STATE.match) setGameState(GAME_STATE.match);
+          return;
+        }
+        if (currentIsResumable) {
+          setActiveMatch(null);
+          if (gameState === GAME_STATE.match) setGameState(GAME_STATE.idle);
+        }
+      })
+      .catch((error) => console.warn('[Tapestry] Shared Match reconciliation will retry.', error));
+    return () => { cancelled = true; };
+  }, [
+    activeMatch,
+    currentPlayer?.UUID,
+    currentPlayerLoaded,
+    dataSourceReady,
+    databaseConnection,
+    domainRevisions.matches,
+    gameState,
+  ]);
 
   useInterval(() => setTimestamp(Date.now()), gameState === GAME_STATE.match ? null : MINUTE);
 

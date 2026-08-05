@@ -88,14 +88,14 @@ export async function createPairMatchCommand(databaseConnection, currentPlayer, 
     }),
     result: null,
   });
-  await saveMatchStateCommand(databaseConnection, match, {
+  const saved = await saveMatchStateCommand(databaseConnection, match, {
     commandType: 'createMatch',
     operationId: `create-match:${operationId}`,
     origin: 'mobile',
     label: 'pair-match-create',
   });
   await fireFirstMatchIfDue(databaseConnection, currentPlayer, commandTime.getTime()).catch(() => undefined);
-  return Object.freeze({ match, duplicate: false, insufficient: false, operationId });
+  return Object.freeze({ match: saved?.match || match, duplicate: false, insufficient: false, operationId });
 }
 
 export default createPairMatchCommand;

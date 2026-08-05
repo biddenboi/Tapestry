@@ -10,6 +10,8 @@ import {
 } from '@domain/reminders/ReminderCommands.js';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
 import { simpleMobileFeedback } from '@app/mobile/application/MobileFeedback.js';
+import { requestPromptReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
+import { parseCombinedInput } from '@shared/nlp/NLP.js';
 import { reminderPresetTime, resolveReminderSnooze } from './MobileReminderTime.js';
 
 function validDate(value, fallback = new Date()) {
@@ -122,10 +124,19 @@ export function MobileReminderComposer({ payload }) {
   const [date, setDate] = useState(localDate(initialAt));
   const [time, setTime] = useState(localTime(initialAt));
   const [showNote, setShowNote] = useState(Boolean(reminder.body));
+  const [dateExplicit, setDateExplicit] = useState(editing);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const remindAt = useMemo(() => fromLocal(date, time), [date, time]);
+  const parsed = useMemo(() => parseCombinedInput(title, { excludeDuration: true }), [title]);
+  const cleanTitle = String(parsed.name || title).trim();
+
+  useEffect(() => {
+    if (dateExplicit || !parsed.dueDate.iso) return;
+    setDate(localDate(parsed.dueDate.iso));
+    setTime(localTime(parsed.dueDate.iso));
+  }, [dateExplicit, parsed.dueDate.iso]);
 
   useEffect(() => registerDismissGuard(() => (
     !dirty || window.confirm('Discard the unsaved reminder changes?')
@@ -135,12 +146,13 @@ export function MobileReminderComposer({ payload }) {
     const next = reminderPresetTime(preset);
     setDate(localDate(next));
     setTime(localTime(next));
+    setDateExplicit(true);
     setDirty(true);
   };
 
   const save = async (event) => {
     event.preventDefault();
-    if (!title.trim() || !remindAt || saving) return;
+    if (!cleanTitle || !remindAt || saving) return;
     setSaving(true);
     setError('');
     try {
@@ -149,7 +161,7 @@ export function MobileReminderComposer({ payload }) {
         ...reminder,
         UUID: reminder.UUID || uuid(),
         parent: reminder.parent || currentPlayer.UUID,
-        title: title.trim(),
+        title: cleanTitle,
         body: body.trim(),
         remindAt,
         completedAt: reminder.completedAt || null,
@@ -160,7 +172,7 @@ export function MobileReminderComposer({ payload }) {
       };
       const result = await saveReminderCommand(databaseConnection, record, { origin: 'mobile' });
       invalidateDomains(DOMAIN_INVALIDATION.reminderWrite);
-      databaseConnection.syncRuntime?.scheduleSync?.('mobile-reminder-save');
+      void requestPromptReferenceSync(databaseConnection, 'mobile-reminder-save');
       await payload.onSaved?.(result.reminder);
       const scheduledLabel = validDate(remindAt).toLocaleString([], {
         weekday: 'short', hour: 'numeric', minute: '2-digit',
@@ -194,18 +206,18 @@ export function MobileReminderComposer({ payload }) {
 
   return (
     <form className="mobile-sheet mobile-sheet--editor" role="dialog" aria-modal="true" aria-labelledby="mobile-reminder-editor-title" onSubmit={save}>
-      <header><button type="button" onClick={() => closeSurface()}>Cancel</button><h2 id="mobile-reminder-editor-title">{editing ? 'Edit reminder' : 'New reminder'}</h2><button type="submit" className="primary" disabled={saving || !title.trim() || !remindAt}>{saving ? 'Saving…' : editing ? 'Save' : 'Create'}</button></header>
+      <header><button type="button" onClick={() => closeSurface()}>Cancel</button><h2 id="mobile-reminder-editor-title">{editing ? 'Edit reminder' : 'New reminder'}</h2><button type="submit" className="primary" disabled={saving || !cleanTitle || !remindAt}>{saving ? 'Saving…' : editing ? 'Save' : 'Create'}</button></header>
       <div className="mobile-sheet-scroll">
-        <label className="mobile-field mobile-field--hero"><span>Reminder title</span><input value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} autoFocus={!editing} data-autofocus={!editing ? 'true' : undefined} maxLength={120} /></label>
+        <label className="mobile-field mobile-field--hero"><span>Reminder</span><input value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} autoFocus={!editing} data-autofocus={!editing ? 'true' : undefined} maxLength={160} placeholder="Call Alex tomorrow at 9" /></label>
         <section className="mobile-preset-section"><h3>When</h3><div className="mobile-preset-grid"><button type="button" onClick={() => choosePreset('30m')}>In 30m</button><button type="button" onClick={() => choosePreset('1h')}>In 1h</button><button type="button" onClick={() => choosePreset('evening')}>This evening</button><button type="button" onClick={() => choosePreset('tomorrow')}>Tomorrow morning</button></div></section>
-        <div className="mobile-composer-chips mobile-composer-chips--two"><label><span>Date</span><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setDirty(true); }} /></label><label><span>Time</span><input type="time" value={time} onChange={(event) => { setTime(event.target.value); setDirty(true); }} /></label></div>
-        <p className="mobile-parser-confirmation">Scheduled for {remindAt ? validDate(remindAt).toLocaleString([], { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'an invalid time'}.</p>
+        <div className="mobile-composer-chips mobile-composer-chips--two"><label><span>Date</span><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setDateExplicit(true); setDirty(true); }} /></label><label><span>Time</span><input type="time" value={time} onChange={(event) => { setTime(event.target.value); setDateExplicit(true); setDirty(true); }} /></label></div>
+        <p className="mobile-parser-confirmation">{parsed.dueDate.iso ? `Understood “${cleanTitle}” · ` : ''}Scheduled for {remindAt ? validDate(remindAt).toLocaleString([], { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'an invalid time'}.</p>
         <button type="button" className="mobile-disclosure" aria-expanded={showNote} onClick={() => setShowNote((value) => !value)}>Add note <span>{showNote ? '−' : '+'}</span></button>
         {showNote && <label className="mobile-field"><span>Note</span><textarea value={body} onChange={(event) => { setBody(event.target.value); setDirty(true); }} rows={5} /></label>}
         {editing && <button type="button" className="mobile-editor-delete danger" onClick={remove} disabled={saving}>Delete reminder…</button>}
         {error && <div className="mobile-sheet-error" role="alert">{error}</div>}
       </div>
-      <footer><button type="submit" className="primary" disabled={saving || !title.trim() || !remindAt}>{saving ? 'Saving…' : editing ? 'Save reminder' : 'Create reminder'}</button></footer>
+      <footer><button type="submit" className="primary" disabled={saving || !cleanTitle || !remindAt}>{saving ? 'Saving…' : editing ? 'Save reminder' : 'Create reminder'}</button></footer>
     </form>
   );
 }

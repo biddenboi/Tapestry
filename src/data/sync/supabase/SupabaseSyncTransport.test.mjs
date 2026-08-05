@@ -126,6 +126,44 @@ test('mobile reference reads can request the lightweight record subset', async (
   ]);
 });
 
+test('complete reference restore advances through bounded server pages', async () => {
+  const calls = [];
+  const progress = [];
+  const client = {
+    rpc: async (name, parameters) => {
+      calls.push({ name, parameters });
+      if (calls.length === 1) {
+        return {
+          data: [
+            { recordType: 'match', recordId: 'm1' },
+            { recordType: 'task', recordId: 't1' },
+          ],
+          error: null,
+        };
+      }
+      return { data: [{ recordType: 'task', recordId: 't2' }], error: null };
+    },
+    channel() { return { on() { return this; }, subscribe() { return this; } }; },
+  };
+  const transport = new SupabaseSyncTransport({ client, ownerId: 'owner' });
+  const records = await transport.getMobileReferenceRecordsPaginated(null, {
+    pageSize: 2,
+    onProgress: (next) => progress.push(next),
+  });
+  assert.deepEqual(records.map((record) => record.recordId), ['m1', 't1', 't2']);
+  assert.deepEqual(calls.map(({ name }) => name), [
+    'get_mobile_reference_records_page',
+    'get_mobile_reference_records_page',
+  ]);
+  assert.equal(calls[0].parameters.p_after_record_type, null);
+  assert.equal(calls[1].parameters.p_after_record_type, 'task');
+  assert.equal(calls[1].parameters.p_after_record_id, 't1');
+  assert.deepEqual(progress, [
+    { stage: 'downloading', downloaded: 2, page: 1, batch: 2, done: false },
+    { stage: 'downloading', downloaded: 3, page: 2, batch: 1, done: true },
+  ]);
+});
+
 test('legacy working-set replacement uses durable merge without publication sessions', async () => {
   const calls = [];
   const client = {
@@ -283,4 +321,31 @@ test('a missing cloud checkpoint is an empty-account state, not a transport fail
   const result = await new SupabaseSyncTransport({ client, ownerId: 'owner' })
     .downloadDatabaseCheckpoint();
   assert.deepEqual(result, { found: false, reason: 'checkpoint-not-found' });
+});
+
+test('mobile reference deltas use a bounded monotonic cursor RPC', async () => {
+  const calls = [];
+  const client = {
+    rpc: async (name, parameters) => {
+      calls.push({ name, parameters });
+      if (name === 'get_mobile_reference_head') return { data: 42, error: null };
+      return {
+        data: [{ recordType: 'task', recordId: 't1', serverSequence: 42 }],
+        error: null,
+      };
+    },
+    channel() { return { on() { return this; }, subscribe() { return this; } }; },
+  };
+  const transport = new SupabaseSyncTransport({ client, ownerId: 'owner' });
+  const records = await transport.getMobileReferenceChanges({ after: 41, limit: 9999 });
+  const head = await transport.getMobileReferenceHead();
+  assert.equal(records[0].serverSequence, 42);
+  assert.equal(head, 42);
+  assert.deepEqual(calls, [
+    {
+      name: 'get_mobile_reference_changes',
+      parameters: { p_after_sequence: 41, p_limit: 500 },
+    },
+    { name: 'get_mobile_reference_head', parameters: undefined },
+  ]);
 });

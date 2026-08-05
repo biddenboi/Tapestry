@@ -225,6 +225,30 @@ export class SocialEncounterService {
       invalidatedDomains: ['encounters'],
     };
   }
+
+  async clearMemories({ viewerId, subjectId = null } = {}) {
+    const viewer = asId(viewerId);
+    const subject = asId(subjectId);
+    if (!viewer) throw new Error('Deleting encounter memories requires a viewer profile.');
+    const at = this.now().toISOString();
+    const filter = subject ? ' AND subject_player_id=?' : '';
+    const bind = subject ? [viewer, subject] : [viewer];
+    const result = await this.client.executeAtomic({
+      commandId: `social-memory-delete:${viewer}:${subject || 'all'}:${at}`,
+      label: 'delete-social-encounter-memories',
+      statements: [
+        { sql: `DELETE FROM social_event_receipts WHERE viewer_player_id=?${filter}`, bind, result: 'changes' },
+        { sql: `DELETE FROM social_encounters WHERE viewer_player_id=?${filter}`, bind, result: 'changes' },
+        ...bumpSourceVersionStatements(['encounters'], at),
+      ],
+    });
+    return Object.freeze({
+      deleted: result.statementResults.slice(0, 2).reduce((sum, row) => sum + Number(row?.changes || 0), 0),
+      viewerId: viewer,
+      subjectId: subject || null,
+      invalidatedDomains: ['encounters'],
+    });
+  }
 }
 
 export default SocialEncounterService;

@@ -1,6 +1,7 @@
 const RECOVERY_KEY = 'tapestry:dynamic-resource-recovery';
 const DEFAULT_COOLDOWN_MS = 15_000;
 const DYNAMIC_RESOURCE_FAILURE = /(?:unable to preload css|failed to fetch dynamically imported module|importing a module script failed|error loading dynamically imported module|chunkloaderror|loading css chunk)/i;
+export const DYNAMIC_RESOURCE_ERROR_EVENT = 'tapestry:dynamic-resource-error';
 
 function errorMessage(value) {
   if (typeof value === 'string') return value;
@@ -40,7 +41,17 @@ export function installDynamicResourceRecovery({
     } catch {
       // Reload recovery still works when session storage is unavailable.
     }
-    windowRef.location?.reload?.();
+    // Keep the live database, profile, navigation, and sync runtime mounted.
+    // A stale lazy chunk is an explicit error state, never authority to reload
+    // the whole application while a deployment is changing underneath it.
+    const ResourceEvent = windowRef.CustomEvent || globalThis.CustomEvent;
+    if (ResourceEvent && windowRef.dispatchEvent) {
+      windowRef.dispatchEvent(new ResourceEvent(DYNAMIC_RESOURCE_ERROR_EVENT, {
+        detail: { message: errorMessage(error), occurredAt: timestamp },
+      }));
+    }
+    windowRef.console?.error?.('[Tapestry] A screen resource could not load. The app remains open.', error);
+    recovering = false;
     return true;
   };
 

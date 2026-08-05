@@ -17,15 +17,15 @@ const terms = terminology.EVENT_TERMINOLOGY;
 
 test('Events navigation and canonical tracker labels are direct', () => {
   assert.equal(terms.navigation.label, 'Events');
-  assert.equal(terms.headings.habits, 'Habits');
+  assert.equal(terms.headings.habits, 'Events');
   assert.equal(terms.types.oneTime, 'One time');
   assert.equal(terms.types.quantity, 'Quantity');
   assert.equal(terms.types.duration, 'Duration');
-  assert.match(terms.navigation.title, /Habits, goals, and daily schedule/);
+  assert.match(terms.navigation.title, /Events, goals, and daily schedule/);
 });
 
-test('Habits is a single page and Goals opens from its header', () => {
-  assert.match(habitPage, /<h1>Habits<\/h1>/);
+test('Events is a single page and Goals opens from its header', () => {
+  assert.match(habitPage, /<h1>Events<\/h1>/);
   assert.match(habitPage, /onClick=\{onOpenGoals\}>Goals/);
   assert.match(events, /setMode\(\{ view: 'goals' \}\)/);
   assert.match(eventView, />Active Goals</);

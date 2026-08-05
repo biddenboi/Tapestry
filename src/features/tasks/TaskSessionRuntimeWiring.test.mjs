@@ -72,3 +72,17 @@ test('unfinished Match sessions recover the Match and reopen the expanded task s
   assert.match(provider, /loadTaskSessionMenu\(\)/);
   assert.match(provider, /NiceModal\.show\(TaskSessionMenu\)/);
 });
+
+test('synchronized sessions preflight mutual exclusion and open the canonical task menu', async () => {
+  const mobileShell = await read('../../app/mobile/MobileAppShell.jsx');
+  const migration = await read('../../../supabase/migrations/20260803050000_single_active_action_session.sql');
+  assert.match(provider, /action-session-start-preflight/);
+  assert.match(provider, /getActiveActionSession\(databaseConnection, parent\.UUID\)/);
+  assert.match(provider, /automaticSurfaceSessionRef/);
+  assert.match(provider, /synchronized task surface/);
+  assert.match(provider, /session\.sourceGameState === GAME_STATE\.match/);
+  assert.doesNotMatch(mobileShell, /ActiveStateController|mobile-active-controller|resume/i);
+  assert.match(migration, /mobile_reference_one_active_action_session/);
+  assert.match(migration, /sync_entity_one_active_action_session/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+});

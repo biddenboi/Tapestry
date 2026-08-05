@@ -57,7 +57,7 @@ export default function LifeContextBlock({
           </div>
         )}
       </header>
-      {loading ? (
+      {loading && !projection ? (
         <div className="profile-context-empty">Checking this viewer’s context policy…</div>
       ) : visibleCount === 0 ? (
         <div className="profile-life-context__presence-only">

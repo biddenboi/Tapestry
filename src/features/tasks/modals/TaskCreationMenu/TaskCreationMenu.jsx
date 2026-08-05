@@ -8,6 +8,10 @@ import { coerceAversion } from '@domain/tasks/Tasks.js';
 import { parseCombinedInput } from '@shared/nlp/NLP.js';
 import { formatTaskRecurrence, ruleWithAnchor } from '@domain/tasks/TaskRecurrence.js';
 import { isGoalActive, isGoalTaskCategory } from '@domain/contribution/Contribution.js';
+import {
+  DEFAULT_WORKSPACE_ID,
+  isPlanningRecordInWorkspace,
+} from '@domain/planning/WorkspacePlanningScope.js';
 import { deleteTaskCommand } from '@domain/tasks/TaskCommands.js';
 import { saveTaskDraftCommand } from '@domain/tasks/TaskDraftCommand.js';
 import MarkdownEditor from '@shared/markdown-editor/MarkdownEditor.jsx';
@@ -134,13 +138,13 @@ export default NiceModal.create(() => {
     databaseConnection.getAll(STORES.project)
       .then((rows) => setProjects(
         rows.filter((goal) => (
-          (!currentPlayer?.UUID || !goal.parent || String(goal.parent) === String(currentPlayer.UUID))
+          isPlanningRecordInWorkspace(goal, DEFAULT_WORKSPACE_ID)
           && isGoalActive(goal)
           && isGoalTaskCategory(goal)
         )).sort((a, b) => String(a.name).localeCompare(String(b.name))),
       ))
       .catch(() => {});
-  }, [currentPlayer?.UUID, databaseConnection]);
+  }, [databaseConnection]);
 
   const parsed = useMemo(
     () => parseCombinedInput(combinedText, {

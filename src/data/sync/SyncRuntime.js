@@ -8,6 +8,47 @@ import SyncOperationRepository from './SyncOperationRepository.js';
 import SyncStatusStore from './SyncStatusStore.js';
 import { SYNC_ORIGIN } from './SyncContracts.js';
 import DurableReferenceOutbox from './DurableReferenceOutbox.js';
+import { registerDeviceWithTimeout } from './DeviceRegistrationGate.js';
+
+const COMMIT_SYNC_DELAY_MS = Object.freeze({
+  live: 0,
+  prompt: 750,
+  background: 15_000,
+});
+const LIVE_COMMIT_REFERENCE_TYPES = new Set([
+  'active-profile-state',
+  'completed-task',
+  'action-session',
+  'match',
+  'match-score-event',
+]);
+const PROMPT_COMMIT_REFERENCE_TYPES = new Set([
+  'profile',
+  'task',
+  'task-completion-event',
+  'task-completion-receipt',
+  'reminder',
+  'goal',
+  'goal-area',
+  'goal-milestone',
+  'goal-update',
+  'goal-link',
+  'goal-participant',
+  'shop-catalog',
+  'inventory',
+  'transaction',
+  'event',
+  'custom-event',
+  'rhythm-definition',
+  'rhythm-opportunity',
+]);
+
+function commitSyncLane({ referenceTypes = [], commandQueued = false, label = '' } = {}) {
+  if (commandQueued || referenceTypes.some((type) => LIVE_COMMIT_REFERENCE_TYPES.has(type))) return 'live';
+  if (/match|action-session|task-session/i.test(String(label || ''))) return 'live';
+  if (referenceTypes.some((type) => PROMPT_COMMIT_REFERENCE_TYPES.has(type))) return 'prompt';
+  return 'background';
+}
 
 function responseResults(response) {
   if (Array.isArray(response)) return response;
@@ -26,6 +67,7 @@ export class SyncRuntime {
     // the native Window receiver and throw "Illegal invocation".
     setTimeoutFn = (callback, delay) => globalThis.setTimeout(callback, delay),
     clearTimeoutFn = (timer) => globalThis.clearTimeout(timer),
+    deviceRegistrationTimeoutMs = 10_000,
   } = {}) {
     if (!client?.query || !client?.executeAtomic) throw new Error('SyncRuntime requires a SQLite client.');
     this.client = client;
@@ -34,6 +76,7 @@ export class SyncRuntime {
     this.now = now;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
+    this.deviceRegistrationTimeoutMs = Math.max(1, Number(deviceRegistrationTimeoutMs) || 10_000);
     this.windowRef = windowRef;
     this.operations = new SyncOperationRepository(client, { now });
     this.referenceOutbox = new DurableReferenceOutbox(client, { now });
@@ -59,11 +102,17 @@ export class SyncRuntime {
     this.device = null;
     this.syncPromise = null;
     this.scheduledTimer = null;
+    this.scheduledDueAt = null;
     this.retryAttempt = 0;
     this.started = false;
     this.transportUnsubscribe = null;
+    this.deviceRegistrationPromise = null;
+    this.registeredDeviceKey = null;
+    this.syncRequested = false;
+    this.syncRequestedReason = null;
     this.afterSynchronize = null;
     this.checkpointDirty = false;
+    this.checkpointGeneration = 0;
     this.checkpointPublishingEnabled = false;
     this.lastCheckpointAt = 0;
     this.checkpointPromise = null;
@@ -81,23 +130,61 @@ export class SyncRuntime {
     return this.getStatus();
   }
 
-  async configure({ transport = this.transport, device = null } = {}) {
+  async configure({ transport = this.transport, device = null, schedule = true } = {}) {
     this.transportUnsubscribe?.();
     this.transportUnsubscribe = null;
     this.transport?.unsubscribe?.();
     this.transport = transport;
+    this.deviceRegistrationPromise = null;
+    this.registeredDeviceKey = null;
     if (device) this.device = await this.devices.register(device);
     else if (!this.device) this.device = await this.devices.getActive();
     if (this.transport && this.device) {
-      await this.transport.registerDevice?.(this.device);
       this.transportUnsubscribe = this.transport.subscribe?.(
-        () => this.scheduleSync('realtime-nudge'),
+        (nudge = {}) => {
+          // Realtime is only a wake-up signal. One coalesced cursor pull reads
+          // every reference change after the durable local checkpoint; the
+          // websocket payload is never treated as the source of truth.
+          this.scheduleSync(nudge?.source === 'mobile-reference'
+            ? 'realtime-reference-nudge'
+            : 'realtime-sync-log-nudge');
+        },
       ) || null;
     }
     this.statusStore.setTransportConfigured(Boolean(this.transport));
     await this.statusStore.refresh();
-    if (this.transport && this.device) this.scheduleSync('configured');
+    if (schedule && this.transport && this.device) this.scheduleSync('configured');
     return { device: this.device, status: this.getStatus() };
+  }
+
+  ensureDeviceRegistered() {
+    if (!this.transport?.registerDevice || !this.device) {
+      return Promise.resolve({ registered: false, reason: 'registration-not-required' });
+    }
+    const registrationKey = [
+      this.device.ownerId || '',
+      this.device.id || '',
+    ].map(String).join(':');
+    if (this.registeredDeviceKey === registrationKey) {
+      return Promise.resolve({ registered: true, reason: 'already-registered' });
+    }
+    if (this.deviceRegistrationPromise) return this.deviceRegistrationPromise;
+
+    this.deviceRegistrationPromise = registerDeviceWithTimeout({
+      register: ({ signal }) => this.transport.registerDevice(this.device, { signal }),
+      timeoutMs: this.deviceRegistrationTimeoutMs,
+      setTimeoutFn: this.setTimeoutFn,
+      clearTimeoutFn: this.clearTimeoutFn,
+    })
+      .then((result) => {
+        this.registeredDeviceKey = registrationKey;
+        return result;
+      })
+      .finally(() => {
+        this.deviceRegistrationPromise = null;
+      });
+
+    return this.deviceRegistrationPromise;
   }
 
 
@@ -105,12 +192,38 @@ export class SyncRuntime {
     return this.referenceOutbox.buildMutationStatements(operations, options);
   }
 
+  referenceTypesForOperations(operations = []) {
+    return this.referenceOutbox.recordTypesForMutations(operations);
+  }
+
   queueReferenceSeed(records = []) {
     return this.referenceOutbox.queueReferences(records);
   }
 
-  isReferenceMirrorSeeded() {
-    return this.referenceOutbox.isSeeded();
+  async queueActiveProfileState(activePlayerUUID, changedAt = this.now().toISOString()) {
+    const playerId = String(activePlayerUUID || '').trim();
+    if (!playerId || this.connection?.demoMode) {
+      return { queued: 0, reason: playerId ? 'demo-mode' : 'missing-active-profile' };
+    }
+    const updatedAt = new Date(changedAt || this.now()).toISOString();
+    const result = await this.referenceOutbox.queueReferences([{
+      recordType: 'active-profile-state',
+      recordId: 'active',
+      workspaceId: null,
+      playerId,
+      data: {
+        UUID: 'active',
+        activePlayerUUID: playerId,
+        changedAt: updatedAt,
+      },
+      updatedAt,
+    }]);
+    await this.statusStore.refresh();
+    return result;
+  }
+
+  isReferenceMirrorSeeded(schemaVersion = 0) {
+    return this.referenceOutbox.isSeeded({ schemaVersion });
   }
 
   markReferenceMirrorSeeded(details = {}) {
@@ -121,13 +234,13 @@ export class SyncRuntime {
     return this.referenceOutbox.reconcileRemote(records);
   }
 
-  async flushReferenceOutbox({ limit = 500 } = {}) {
+  async flushReferenceOutbox({ limit = 500, recordTypes = null } = {}) {
     if (!this.transport?.mergeMobileReferenceRecords) {
       return { uploaded: 0, reason: 'transport-unavailable' };
     }
     let uploaded = 0;
     while (true) {
-      const pending = await this.referenceOutbox.listPending({ limit });
+      const pending = await this.referenceOutbox.listPending({ limit, recordTypes });
       if (!pending.length) break;
       try {
         await this.transport.mergeMobileReferenceRecords(pending);
@@ -163,6 +276,7 @@ export class SyncRuntime {
     if (!force && nowMs - this.lastCheckpointAt < minimumIntervalMs) {
       return Promise.resolve({ uploaded: false, reason: 'checkpoint-deferred' });
     }
+    const checkpointGeneration = this.checkpointGeneration;
     this.checkpointPromise = (async () => {
       await this.connection.flushWrites?.();
       const adapter = this.connection.persistenceRuntime?.sqliteStorageAdapter;
@@ -179,7 +293,9 @@ export class SyncRuntime {
       });
       if (result?.uploaded) {
         this.lastCheckpointAt = this.now().getTime();
-        this.checkpointDirty = false;
+        // A write may land while snapshot export or upload is in flight. Only
+        // clear the dirty flag when the uploaded generation is still current.
+        this.checkpointDirty = this.checkpointGeneration !== checkpointGeneration;
       }
       return result;
     })().finally(() => {
@@ -238,29 +354,51 @@ export class SyncRuntime {
     return { ...this.getStatus(), referenceOutbox };
   }
 
-  databaseCommitted() {
+  databaseCommitted(details = {}) {
+    this.checkpointGeneration += 1;
     this.checkpointDirty = true;
-    if (this.transport) this.scheduleSync('sqlite-commit');
+    if (this.transport) {
+      const label = details?.command?.label || details?.statement?.sql || '';
+      const lane = commitSyncLane({ label });
+      this.scheduleSync(`sqlite-commit:${lane}`, { delayMs: COMMIT_SYNC_DELAY_MS[lane] });
+    }
   }
 
-  async operationCommitted() {
-    this.databaseCommitted();
+  async operationCommitted({ referenceTypes = [], commandQueued = false, label = '' } = {}) {
+    const lane = commitSyncLane({ referenceTypes, commandQueued, label });
+    if (this.transport) {
+      this.scheduleSync(`operation-commit:${lane}`, { delayMs: COMMIT_SYNC_DELAY_MS[lane] });
+    }
     await this.statusStore.refresh();
   }
 
   cancelScheduledSync() {
     if (this.scheduledTimer != null) this.clearTimeoutFn(this.scheduledTimer);
     this.scheduledTimer = null;
+    this.scheduledDueAt = null;
   }
 
-  scheduleSync(reason = 'scheduled') {
-    void reason;
-    if (!this.transport || this.scheduledTimer != null || this.syncPromise) return;
+  scheduleSync(reason = 'scheduled', { delayMs = 0 } = {}) {
+    if (!this.transport) return;
+    if (this.syncPromise) {
+      this.syncRequested = true;
+      this.syncRequestedReason = reason;
+      return;
+    }
     const delay = this.retryAttempt > 0
       ? Math.min(60_000, 1000 * (2 ** Math.min(6, this.retryAttempt - 1)))
-      : 0;
+      : Math.max(0, Number(delayMs) || 0);
+    const dueAt = this.now().getTime() + delay;
+    if (this.scheduledTimer != null) {
+      if (Number(this.scheduledDueAt) <= dueAt) return;
+      this.clearTimeoutFn(this.scheduledTimer);
+      this.scheduledTimer = null;
+      this.scheduledDueAt = null;
+    }
+    this.scheduledDueAt = dueAt;
     this.scheduledTimer = this.setTimeoutFn(() => {
       this.scheduledTimer = null;
+      this.scheduledDueAt = null;
       void this.synchronize({ reason }).catch(() => undefined);
     }, delay);
   }
@@ -342,9 +480,14 @@ export class SyncRuntime {
       this.statusStore.setActivity('syncing');
       await this.statusStore.refresh();
       try {
+        await this.ensureDeviceRegistered();
         const uploaded = await this._push(limit);
         const pulled = await this._pull(limit);
         const supplemental = await this.afterSynchronize?.({ reason }) || null;
+        // Remote profile, Match, completion, and contribution writes queue
+        // derived snapshots. Settle those projections before telling React
+        // that sync completed so Elo, Points, IGT, and graphs refresh together.
+        await this.connection?.flushSyncProjections?.();
         const retention = await this.operations.pruneAccepted({
           olderThan: new Date(this.now().getTime() - 30 * 24 * 60 * 60 * 1000),
           keepNewest: 250,
@@ -364,10 +507,15 @@ export class SyncRuntime {
         this.statusStore.setRuntimeError(error);
         throw error;
       } finally {
+        const followUpRequested = this.syncRequested;
+        const followUpReason = this.syncRequestedReason || 'coalesced-nudge';
+        this.syncRequested = false;
+        this.syncRequestedReason = null;
         this.statusStore.setActivity('idle');
         this.syncPromise = null;
         await this.statusStore.refresh();
         if (this.retryAttempt > 0) this.scheduleSync('retry');
+        else if (followUpRequested) this.scheduleSync(followUpReason);
       }
     })();
     return this.syncPromise;
@@ -379,6 +527,8 @@ export class SyncRuntime {
     this.transportUnsubscribe = null;
     this.transport?.unsubscribe?.();
     this.coordinator.stop();
+    this.syncRequested = false;
+    this.syncRequestedReason = null;
   }
 }
 

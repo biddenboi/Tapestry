@@ -5,7 +5,6 @@
 
 .mobile-app-shell {
   --mobile-nav-height: 68px;
-  --mobile-active-controller-height: 0px;
   /* Mobile surfaces consume stable aliases while every cosmetic theme owns the
      canonical desktop tokens. Keep the aliases inherited so sheets and lazy
      feature presentations change atomically with the selected theme. */
@@ -15,14 +14,27 @@
   position: fixed;
   z-index: 20;
   inset: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   background: var(--bg-primary, #0c101b);
   color: var(--text-primary, #e6eaf2);
 }
 
-.mobile-app-shell:has(.mobile-active-controller) { --mobile-active-controller-height: 52px; }
+/* Installed WebKit can report a dynamic viewport shorter than the fixed
+   containing block that includes the home-indicator area. The shell is sized
+   by its four insets above; keep every backing layer the same color so no
+   browser-bar-colored strip can leak through at the physical bottom edge. */
+html:has(.mobile-app-shell),
+body:has(.mobile-app-shell),
+#root:has(.mobile-app-shell) {
+  overflow: hidden;
+  background: var(--bg-void, #0c101b);
+}
+
 .mobile-app-content { min-width: 0; min-height: 0; overflow: hidden; }
 .mobile-tab-panel { width: 100%; height: 100%; min-width: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .mobile-tab-panel[hidden] { display: none !important; }
@@ -41,27 +53,31 @@
 .mobile-bottom-navigation button > span { font-size: .68rem; letter-spacing: .02em; }
 .mobile-bottom-navigation button.is-active { color: var(--color-task, #65d6c4); }
 .mobile-bottom-navigation button.is-active::before { position: absolute; top: -5px; width: 26px; height: 2px; background: currentColor; box-shadow: 0 0 9px currentColor; content: ''; }
-.mobile-app-shell[data-mobile-tab="goals"] .mobile-bottom-navigation button.is-active { color: var(--color-goal, #a78bfa); }
+.mobile-app-shell[data-mobile-tab="habits"] .mobile-bottom-navigation button.is-active { color: var(--color-event, #a78bfa); }
 .mobile-app-shell[data-mobile-tab="chronicle"] .mobile-bottom-navigation button.is-active { color: var(--color-feed, #38bdf8); }
 .mobile-app-shell[data-mobile-tab="shop"] .mobile-bottom-navigation button.is-active { color: var(--color-shop, #fbbf24); }
 .mobile-app-shell[data-mobile-tab="profile"] .mobile-bottom-navigation button.is-active { color: var(--color-profile, #879cff); }
 
-.mobile-active-controller { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 52px; padding: 7px max(12px, env(safe-area-inset-right)) 7px max(12px, env(safe-area-inset-left)); border-top: 1px solid var(--border-subtle); background: var(--bg-card); }
-.mobile-active-controller > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.mobile-active-controller strong, .mobile-active-controller span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mobile-active-controller strong { color: var(--text-bright); font-size: .75rem; }
-.mobile-active-controller span { color: var(--text-muted); font-size: .68rem; }
-
-.mobile-shell-fab { position: fixed; z-index: 35; right: max(18px, env(safe-area-inset-right)); bottom: calc(var(--mobile-nav-height) + var(--mobile-active-controller-height) + 16px + env(safe-area-inset-bottom)); display: grid; width: 54px; height: 54px; place-items: center; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--color-task, #65d6c4) 55%, transparent); background: var(--color-task, #65d6c4); color: #07110f; box-shadow: 0 12px 30px rgb(0 0 0 / 38%); }
+.mobile-shell-fab { position: fixed; z-index: 35; right: max(18px, env(safe-area-inset-right)); bottom: calc(var(--mobile-nav-height) + 16px + env(safe-area-inset-bottom)); display: grid; width: 54px; height: 54px; place-items: center; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--color-task, #65d6c4) 55%, transparent); background: var(--color-task, #65d6c4); color: #07110f; box-shadow: 0 12px 30px rgb(0 0 0 / 38%); }
 
 .mobile-feedback-layer { position: fixed; z-index: 75; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); left: max(12px, env(safe-area-inset-left)); display: grid; justify-items: center; gap: 7px; pointer-events: none; }
-.mobile-feedback-card { display: block; width: min(100%, 390px); min-height: 60px; padding: 10px 13px; border: 1px solid color-mix(in srgb, var(--color-task) 50%, var(--border-subtle)); background: color-mix(in srgb, var(--bg-card) 94%, transparent); color: var(--text-bright); box-shadow: 0 16px 40px rgb(0 0 0 / 42%); text-align: left; pointer-events: auto; animation: mobile-feedback-in 220ms ease-out both; }
+.mobile-feedback-card { display: block; position: relative; width: min(100%, 390px); min-height: 60px; overflow: visible; padding: 10px 13px; border: 1px solid color-mix(in srgb, var(--color-task) 50%, var(--border-subtle)); background: color-mix(in srgb, var(--bg-card) 94%, transparent); color: var(--text-bright); box-shadow: 0 16px 40px rgb(0 0 0 / 42%); text-align: left; pointer-events: auto; animation: mobile-feedback-in 460ms cubic-bezier(.16,1.25,.3,1) both; }
 .mobile-feedback-card__main { display: flex; align-items: center; gap: 10px; }
 .mobile-feedback-card__copy { display: grid; min-width: 0; gap: 3px; }
 .mobile-feedback-card__copy > span { color: var(--color-task); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; }
 .mobile-feedback-card__copy > div { display: flex; flex-wrap: wrap; gap: 8px; color: var(--color-task); font-size: .75rem; }
 .mobile-feedback-card.is-major { border-color: var(--color-warning, #fbbf24); }
-@keyframes mobile-feedback-in { from { opacity: 0; transform: translateY(-10px); } }
+.mobile-feedback-card.is-major { animation-name: mobile-feedback-major; box-shadow: 0 16px 46px rgb(0 0 0 / 48%), 0 0 26px color-mix(in srgb, var(--color-warning) 20%, transparent); }
+.mobile-feedback-burst { position: absolute; inset: 50% auto auto 50%; pointer-events: none; }
+.mobile-feedback-burst i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning, #fbbf24); box-shadow: 0 0 10px currentColor; animation: mobile-feedback-spark 900ms ease-out both; }
+.mobile-feedback-burst i:nth-child(1) { --x: -145px; --y: -35px; }
+.mobile-feedback-burst i:nth-child(2) { --x: -90px; --y: 48px; animation-delay: 60ms; }
+.mobile-feedback-burst i:nth-child(3) { --x: 130px; --y: -42px; animation-delay: 90ms; }
+.mobile-feedback-burst i:nth-child(4) { --x: 105px; --y: 44px; animation-delay: 140ms; }
+.mobile-feedback-burst i:nth-child(5) { --x: 8px; --y: 62px; animation-delay: 180ms; }
+@keyframes mobile-feedback-in { from { opacity: 0; transform: translateY(-16px) scale(.92); } 70% { transform: translateY(2px) scale(1.02); } }
+@keyframes mobile-feedback-major { 0% { opacity: 0; transform: translateY(-20px) scale(.76); } 65% { transform: translateY(3px) scale(1.04); } 100% { transform: none; } }
+@keyframes mobile-feedback-spark { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(var(--x), var(--y)) scale(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-app-shell *, .mobile-app-shell *::before, .mobile-app-shell *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

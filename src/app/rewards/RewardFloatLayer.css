@@ -10,7 +10,10 @@
     position: absolute;
     left: var(--reward-x);
     top: var(--reward-y);
-    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px 7px 8px;
     border: 1px solid color-mix(in srgb, var(--accent-bright) 42%, transparent);
     border-radius: 999px;
     background: color-mix(in srgb, var(--bg-void) 76%, transparent);
@@ -21,8 +24,16 @@
     letter-spacing: 0;
     white-space: nowrap;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-    animation: reward-float-away 4.05s cubic-bezier(0.2, 0.8, 0.2, 1) var(--reward-delay) both;
+    isolation: isolate;
+    animation: reward-float-away 4.05s cubic-bezier(0.16, 0.88, 0.22, 1) var(--reward-delay) both;
 }
+
+.reward-float > i { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: color-mix(in srgb, currentColor 13%, var(--bg-void)); font-style: normal; box-shadow: 0 0 16px color-mix(in srgb, currentColor 38%, transparent); animation: reward-glyph-pop 720ms cubic-bezier(.16,1.5,.4,1) var(--reward-delay) both; }
+.reward-float > strong { font: inherit; }
+.reward-float > b { position: absolute; z-index: -1; width: 4px; height: 4px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; animation: reward-spark 1.05s ease-out calc(var(--reward-delay) + 80ms) both; }
+.reward-float > b:nth-of-type(1) { --spark-x: -23px; --spark-y: -20px; left: 32%; top: 45%; }
+.reward-float > b:nth-of-type(2) { --spark-x: 25px; --spark-y: -15px; left: 62%; top: 42%; animation-delay: calc(var(--reward-delay) + 150ms); }
+.reward-float > b:nth-of-type(3) { --spark-x: 14px; --spark-y: 22px; left: 50%; top: 58%; animation-delay: calc(var(--reward-delay) + 220ms); }
 
 .reward-float--coins {
     color: var(--gold);
@@ -49,6 +60,13 @@
     border-color: color-mix(in srgb, var(--color-event) 45%, transparent);
 }
 
+.reward-float--achievement {
+    color: var(--gold);
+    border-color: color-mix(in srgb, var(--gold) 68%, var(--accent-bright));
+    background: color-mix(in srgb, var(--bg-void) 76%, var(--gold) 8%);
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
 .reward-float--event-penalty {
     color: var(--red);
     border-color: color-mix(in srgb, var(--red) 45%, transparent);
@@ -57,11 +75,12 @@
 @keyframes reward-float-away {
     0% {
         opacity: 0;
-        transform: translate(-50%, 12px) scale(0.92);
-        filter: blur(1px);
+        transform: translate(-50%, 18px) scale(0.72) rotate(-2deg);
+        filter: blur(2px);
     }
     16% {
         opacity: 1;
+        transform: translate(-50%, 0) scale(1.06) rotate(0);
         filter: blur(0);
     }
     70% {
@@ -72,4 +91,11 @@
         transform: translate(calc(-50% + var(--reward-drift-x, 0px)), calc(-1 * var(--reward-drift-y, 44px))) scale(1.04);
         filter: blur(1px);
     }
+}
+
+@keyframes reward-glyph-pop { 0% { opacity: 0; transform: rotate(-45deg) scale(.2); } 62% { opacity: 1; transform: rotate(8deg) scale(1.2); } 100% { transform: rotate(0) scale(1); } }
+@keyframes reward-spark { 0% { opacity: 0; transform: translate(0,0) scale(.2); } 24% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--spark-x), var(--spark-y)) scale(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-float, .reward-float > i, .reward-float > b { animation-duration: .01ms !important; }
 }

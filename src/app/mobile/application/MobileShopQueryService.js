@@ -27,6 +27,7 @@ export async function queryMobileShopState(databaseConnection, { playerUUID } = 
   return Object.freeze({
     catalog: Object.freeze([...(catalog || [])]),
     inventory: Object.freeze([...(inventory || [])]),
+    money: Math.max(0, Number(databaseConnection.getGlobalMoney?.() || 0)),
   });
 }
 

@@ -54,6 +54,7 @@ import {
   normalizeSyncContext,
   syncCursorStatement,
 } from '@data/sync/SyncContracts.js';
+import { referenceCaptureGuard } from '@data/sync/ReferenceCaptureGuard.js';
 registerStaticModule('data/DatabaseConnection');
 
 const loadMaterializedLeaderboardJobs = () => measureDynamicModule(
@@ -93,6 +94,7 @@ export class DatabaseConnectionHost {
   appState = createEmptyAppState();
   stores = createEmptyStoreMap();
   compactWritePromise = Promise.resolve();
+  materializedLeaderboardWritePromise = Promise.resolve(null);
   constructor(options = {}) {
     this.persistenceRuntime = new PersistenceRuntime(this, {
       ...options,
@@ -419,14 +421,20 @@ export class DatabaseConnectionHost {
       MATERIALIZED_LEADERBOARD_SOURCE_STORES.has(operation?.store)
     ));
     if (!committedOperations.length) return;
-    Promise.resolve()
+    const rebuild = Promise.resolve()
       .then(loadMaterializedLeaderboardJobs)
       .then(({ queueLeaderboardRebuildForOperations }) => (
         queueLeaderboardRebuildForOperations(this, committedOperations, reason)
-      ))
-      .catch((error) => {
+      ));
+    this.materializedLeaderboardWritePromise = rebuild.catch((error) => {
         console.warn('[DatabaseConnection] leaderboard snapshot rebuild failed:', error);
+        return null;
       });
+  }
+  async flushSyncProjections() {
+    await this.materializedLeaderboardWritePromise;
+    this.eloWorldCache.clear();
+    return { flushed: true };
   }
   async reconcileMissingMaterializedLeaderboards({
     force = false,
@@ -602,9 +610,12 @@ export class DatabaseConnectionHost {
       stagedOperations,
       { origin: syncContext.origin },
     );
+    const referenceTypes = this.syncRuntime.referenceTypesForOperations(stagedOperations);
+    const captureGuard = referenceCaptureGuard(syncContext.origin);
     const commit = await this.persistenceRuntime.sqliteStorageAdapter.documents.commitBatch({
       ...(operationId ? { commandId: String(operationId) } : {}),
       label,
+      beforeStatements: captureGuard.beforeStatements,
       operations: compactOperations,
       additionalStatements: [
         ...requestedStatements,
@@ -612,6 +623,7 @@ export class DatabaseConnectionHost {
         syncCursorStatement(syncContext.cursor),
         ...referenceOutboxStatements,
       ].filter(Boolean),
+      afterStatements: captureGuard.afterStatements,
     });
 
     // A stable operation ID may be retried after an acknowledgement is lost.
@@ -655,7 +667,11 @@ export class DatabaseConnectionHost {
       referenceQueued: referenceOutboxStatements.length,
     };
     if (syncContext.enqueueSync || referenceOutboxStatements.length) {
-      await this.syncRuntime.operationCommitted();
+      await this.syncRuntime.operationCommitted({
+        referenceTypes,
+        commandQueued: Boolean(syncContext.enqueueSync),
+        label,
+      });
     }
     return result;
   }

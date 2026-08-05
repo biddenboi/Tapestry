@@ -232,11 +232,13 @@ export class SqliteDocumentRepository {
 
   async commitBatch({
     operations = [],
+    beforeStatements = [],
     additionalStatements = [],
+    afterStatements = [],
     commandId = operationId('document-batch'),
     label = 'document-batch',
   } = {}, requestOptions) {
-    const statements = [];
+    const statements = (beforeStatements || []).filter(Boolean);
     for (const operation of operations) {
       if (operation?.type === 'put') {
         const prepared = await preparePut(operation.store, operation.record);
@@ -257,6 +259,9 @@ export class SqliteDocumentRepository {
       }
     }
     for (const statement of additionalStatements || []) {
+      if (statement) statements.push(statement);
+    }
+    for (const statement of afterStatements || []) {
       if (statement) statements.push(statement);
     }
     if (!statements.length) return { statementResults: [] };

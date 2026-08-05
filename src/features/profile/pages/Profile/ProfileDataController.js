@@ -3,6 +3,7 @@ import { getCurrentIGT } from '@domain/time/Time.js';
 import { buildProfileViewModel } from '@domain/profile/Profile.js';
 import { resolveProfileVisibility } from '@domain/social-world/ProfileVisibility.js';
 import {
+  projectContributionLeaderboardAtIGT,
   projectMatchLeaderboardAtIGT,
   readMaterializedLeaderboardSnapshotsSWR,
 } from '@domain/leaderboards/MaterializedLeaderboards.js';
@@ -57,6 +58,10 @@ export async function loadMaterializedProfileData({
   });
   const projectedRating = ratingProjection.participants
     .find((entry) => String(entry.UUID) === String(profileUUID)) || null;
+  const contributionProjection = projectContributionLeaderboardAtIGT(
+    leaderboardSnapshots.contribution,
+    { viewerIGT },
+  );
   const fallbackPlayer = livePlayer
     || (currentPlayer?.UUID === profileUUID ? currentPlayer : null);
   const resolved = summary || (fallbackPlayer ? {
@@ -98,6 +103,15 @@ export async function loadMaterializedProfileData({
   const resolvedPlayer = livePlayer
     ? { ...(resolved?.player || {}), ...livePlayer }
     : (resolved?.player || null);
+  const contributionTotalsByPlayer = contributionProjection.totalsByPlayer || {};
+  const contributionKey = Object.keys(contributionTotalsByPlayer)
+    .find((UUID) => String(UUID) === String(profileUUID));
+  const authoritativeContributionTotal = contributionKey == null
+    ? Number(resolved?.contributionTotal || 0)
+    : Math.max(0, Number(contributionTotalsByPlayer[contributionKey]) || 0);
+  const resolvedSummary = resolved
+    ? { ...resolved, contributionTotal: authoritativeContributionTotal }
+    : null;
   const currentIGT = Math.max(0, Number(viewerIGT) || 0);
   const relationship = viewerFriendships.find((entry) => {
     if (!entry.players?.includes(profileUUID) || !entry.players?.includes(currentPlayer?.UUID)) return false;
@@ -111,7 +125,7 @@ export async function loadMaterializedProfileData({
       .filter((UUID) => UUID !== profileUUID),
   );
   return {
-    summary: resolved,
+    summary: resolvedSummary,
     player: resolvedPlayer,
     players,
     history: resolved?.profileView?.timelineEntries || resolved?.recentTimelineEntries || [],

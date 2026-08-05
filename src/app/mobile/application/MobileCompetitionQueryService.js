@@ -1,5 +1,6 @@
 import { STORES } from '@domain/constants.js';
 import {
+  projectContributionLeaderboardAtIGT,
   projectMatchLeaderboardAtIGT,
   readMaterializedLeaderboardSnapshotsSWR,
 } from '@domain/leaderboards/MaterializedLeaderboards.js';
@@ -17,7 +18,7 @@ export async function queryMobileCompetition(databaseConnection, {
     force: true,
   });
   const [profiles, snapshots, notifications] = await Promise.all([
-    databaseConnection.getAllPlayers?.({ includeArchived: false, includeBanned: false })
+    databaseConnection.getAllPlayers?.({ includeArchived: true, includeBanned: false })
       || databaseConnection.getAll(STORES.player),
     readMaterializedLeaderboardSnapshotsSWR(databaseConnection),
     databaseConnection.getPlayerStore(STORES.notification, playerUUID),
@@ -26,11 +27,15 @@ export async function queryMobileCompetition(databaseConnection, {
     viewerIGT,
     playerUUID,
   });
+  const contributionProjection = projectContributionLeaderboardAtIGT(
+    snapshots.contribution,
+    { viewerIGT },
+  );
   return Object.freeze({
     ...buildMobileCompetitionPresentation({
       profiles,
       matchSnapshot: snapshots.match,
-      contributionSnapshot: snapshots.contribution,
+      contributionSnapshot: contributionProjection,
       matchProjection,
       currentPlayerUUID: playerUUID,
     }),
@@ -40,4 +45,3 @@ export async function queryMobileCompetition(databaseConnection, {
 }
 
 export default queryMobileCompetition;
-

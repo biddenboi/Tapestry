@@ -2,7 +2,7 @@ import { Icon } from '@shared/icons/Icon.jsx';
 
 const DESTINATIONS = Object.freeze([
   { id: 'tasks', label: 'Today', icon: 'tasks' },
-  { id: 'goals', label: 'Goals', icon: 'events' },
+  { id: 'habits', label: 'Events', icon: 'events' },
   { id: 'chronicle', label: 'Chronicle', icon: 'feed' },
   { id: 'shop', label: 'Shop', icon: 'shop' },
   { id: 'profile', label: 'More', icon: 'profile' },

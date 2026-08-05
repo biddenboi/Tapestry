@@ -42,7 +42,7 @@ export async function loadGoalArenaData(databaseConnection, currentPlayer) {
     };
   }
   const viewerIGT = getCurrentIGT(currentPlayer);
-  return databaseConnection.getRepository('goals').getOverview(
+  return databaseConnection.getRepository('goals').getWorkspaceOverview(
     currentPlayer.UUID,
     viewerIGT,
   );

@@ -318,6 +318,17 @@
   opacity: 0.72;
 }
 
+.profile-igt-total {
+  display: flex;
+  width: fit-content;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--text-bright);
+}
+
+.profile-igt-total strong { font: 700 14px/1 'JetBrains Mono', monospace; }
+.profile-igt-total span { color: var(--text-muted); font: 700 9px/1 'Rajdhani', sans-serif; letter-spacing: .16em; }
+
 .profile-rank-progress {
   display: flex;
   flex-direction: column;

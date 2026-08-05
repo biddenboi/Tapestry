@@ -38,7 +38,7 @@ const PROFILE_ELO_SPANS = [
 ];
 
 function HistoryItem({ item, onOpen, canPin, onTogglePin }) {
-  const iconMap = { task: 'TSK', journal: 'JNL', match: 'MAT', rank: 'ELO', event: 'HAB', contribution: 'GOAL', item_use: 'USE', money_log: '$', transaction: 'TXN' };
+  const iconMap = { task: 'TSK', journal: 'JNL', match: 'MAT', rank: 'ELO', event: 'EVT', contribution: 'GOAL', item_use: 'USE', money_log: '$', transaction: 'TXN' };
   const timestamp = item.completedAt || item.result?.concludedAt || item.sortAt || item.createdAt;
 
   const subtitle = item.type === 'task'
@@ -569,7 +569,7 @@ function ReplayPanel({ snapshot, replayIGT, maxIGT, loading, milestones, onChang
     })),
     ...(snapshot?.events || []).map((entry) => ({
       id: entry.UUID,
-      type: 'Habit',
+      type: 'Event',
       title: entry.name || entry.type || 'Event',
       meta: entry.type || 'Event',
       at: entry.createdAt,

@@ -1,4 +1,5 @@
 import getSupabaseClient, { getSupabaseConfiguration } from './SupabaseClient.js';
+import { isRetiredWorkingSetSyncError, visibleSyncError } from '../SyncErrorPolicy.js';
 
 export const PRIMARY_OWNER_EMAIL = 'yujinpetercho@gmail.com';
 export const BACKUP_OWNER_EMAIL = 'oatstakes@gmail.com';
@@ -38,12 +39,6 @@ function publicError(error) {
   });
 }
 
-function isLegacyWorkingSetSyncError(error) {
-  const message = String(error?.message || '').toLowerCase();
-  return message.includes('mobile working-set publish session')
-    || message.includes('working-set publish session is no longer active');
-}
-
 export class SupabaseAuthService {
   constructor({ client = getSupabaseClient(), configuration = getSupabaseConfiguration() } = {}) {
     this.client = client;
@@ -72,8 +67,30 @@ export class SupabaseAuthService {
   getSnapshot = () => this.snapshot;
 
   _set(patch) {
-    this.snapshot = Object.freeze({ ...this.snapshot, ...patch });
+    const next = { ...this.snapshot, ...patch };
+    // The retired replace-all publisher used the authentication error slot in
+    // older builds. Sanitize every state transition so a hot-reloaded or
+    // long-lived service instance cannot preserve that warning indefinitely.
+    next.error = visibleSyncError(next.error);
+    next.syncError = visibleSyncError(next.syncError);
+    if (next.syncStatus === 'error' && !next.syncError && next.session?.user) {
+      next.syncStatus = 'ready';
+    }
+    this.snapshot = Object.freeze(next);
     for (const listener of this.listeners) listener();
+  }
+
+  clearRetiredWorkingSetError() {
+    if (!isRetiredWorkingSetSyncError(this.snapshot.error)
+        && !isRetiredWorkingSetSyncError(this.snapshot.syncError)) {
+      return this.snapshot;
+    }
+    this._set({
+      error: null,
+      syncError: null,
+      syncStatus: this.snapshot.session?.user ? 'ready' : 'local-only',
+    });
+    return this.snapshot;
   }
 
   initialize() {
@@ -210,15 +227,16 @@ export class SupabaseAuthService {
   }
 
   setSyncState(syncStatus, error = null) {
-    const patch = {
-      syncStatus,
-      syncError: publicError(error),
-    };
-    // Older builds incorrectly stored transport failures in the authentication
-    // error field. Clear that one known legacy value during any state update so
-    // a connected runtime cannot keep displaying a dead publication-session error.
-    if (isLegacyWorkingSetSyncError(this.snapshot.error)) patch.error = null;
-    this._set(patch);
+    const syncError = visibleSyncError(publicError(error));
+    this._set({
+      syncStatus: syncStatus === 'error' && !syncError && this.snapshot.session?.user
+        ? 'ready'
+        : syncStatus,
+      syncError,
+      error: isRetiredWorkingSetSyncError(this.snapshot.error)
+        ? null
+        : this.snapshot.error,
+    });
   }
 }
 

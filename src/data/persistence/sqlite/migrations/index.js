@@ -42,6 +42,11 @@ import migration049 from './049_effect_cancellations.js';
 import migration050 from './050_workspace_planning_scope.js';
 import migration051 from './051_durable_reference_outbox.js';
 import migration052 from './052_durable_reference_capture.js';
+import migration053 from './053_remote_reference_capture_guard.js';
+import migration054 from './054_journal_comment_reference_capture.js';
+import migration055 from './055_habit_reference_capture.js';
+import migration056 from './056_mobile_ml_model_reference_capture.js';
+import migration057 from './057_demo_agent_reset.js';
 
 export const SQLITE_MIGRATIONS = Object.freeze([
   migration001,
@@ -88,6 +93,11 @@ export const SQLITE_MIGRATIONS = Object.freeze([
   migration050,
   migration051,
   migration052,
+  migration053,
+  migration054,
+  migration055,
+  migration056,
+  migration057,
 ]);
 
 export default SQLITE_MIGRATIONS;

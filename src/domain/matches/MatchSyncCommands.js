@@ -18,20 +18,32 @@ export async function saveMatchStateCommand(databaseConnection, match, {
   if (!MATCH_SYNC_TYPES.has(commandType)) {
     throw new TypeError(`Unsupported Match sync command: ${commandType}`);
   }
-  const timestamp = match.updatedAt || match.result?.concludedAt || new Date().toISOString();
+  const timestamp = commandType === 'completeMatch'
+    ? match.result?.concludedAt || match.updatedAt || new Date().toISOString()
+    : match.updatedAt || new Date().toISOString();
+  const synchronizedMatch = {
+    ...match,
+    updatedAt: timestamp,
+    syncUpdatedAt: timestamp,
+  };
+  const synchronizedPlayer = player?.UUID ? {
+    ...player,
+    updatedAt: timestamp,
+    syncUpdatedAt: timestamp,
+  } : null;
   const stableOperationId = operationId || `${commandType}:${match.UUID}:${timestamp}`;
   const payload = {
-    match,
-    ...(player?.UUID ? { player } : {}),
+    match: synchronizedMatch,
+    ...(synchronizedPlayer ? { player: synchronizedPlayer } : {}),
     ...(worldReceipt?.UUID ? { worldReceipt } : {}),
     ...(rewardProvenance?.UUID ? { rewardProvenance } : {}),
   };
-  return databaseConnection.commitAtomicMutation({
+  const commit = await databaseConnection.commitAtomicMutation({
     operationId: stableOperationId,
     label,
     puts: [
-      { store: STORES.match, record: match },
-      player?.UUID ? { store: STORES.player, record: player } : null,
+      { store: STORES.match, record: synchronizedMatch },
+      synchronizedPlayer ? { store: STORES.player, record: synchronizedPlayer } : null,
       worldReceipt?.UUID ? { store: STORES.worldConsequenceReceipt, record: worldReceipt } : null,
       rewardProvenance?.UUID ? { store: STORES.rewardProvenance, record: rewardProvenance } : null,
     ].filter(Boolean),
@@ -49,12 +61,14 @@ export async function saveMatchStateCommand(databaseConnection, match, {
       occurredAt: timestamp,
     }) || { origin, enqueueSync: false },
   });
+  return { ...(commit || {}), match: synchronizedMatch, player: synchronizedPlayer };
 }
 
 export async function patchMatchStateCommand(databaseConnection, match, patch, options = {}) {
-  const updated = { ...match, ...patch, updatedAt: options.at || new Date().toISOString() };
-  await saveMatchStateCommand(databaseConnection, updated, options);
-  return updated;
+  const updatedAt = options.at || new Date().toISOString();
+  const updated = { ...match, ...patch, updatedAt, syncUpdatedAt: updatedAt };
+  const saved = await saveMatchStateCommand(databaseConnection, updated, options);
+  return saved.match;
 }
 
 export default saveMatchStateCommand;

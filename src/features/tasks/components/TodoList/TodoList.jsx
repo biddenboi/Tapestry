@@ -18,6 +18,12 @@ import {
   formatPlanningMinutes,
 } from '@domain/planning/Planning.js';
 import {
+  DEFAULT_WORKSPACE_ID,
+  dedupePlanningRecords,
+  isPlanningRecordInWorkspace,
+  withWorkspacePlanningScope,
+} from '@domain/planning/WorkspacePlanningScope.js';
+import {
   annotateTodos,
   buildTodoHubViewModel,
   dateKey,
@@ -128,7 +134,8 @@ export default function TodoList({
       databaseConnection.getAll(STORES.todo),
       databaseConnection.getAll(STORES.project),
       player ? databaseConnection.getPlayerStore(STORES.task, player.UUID) : Promise.resolve([]),
-      player ? databaseConnection.getPlayerReminders(player.UUID) : Promise.resolve([]),
+      databaseConnection.getWorkspaceReminders?.(DEFAULT_WORKSPACE_ID)
+        || databaseConnection.getAll(STORES.reminder),
       player ? databaseConnection.get(STORES.appSetting, `goals.currentFocus:${player.UUID}`) : Promise.resolve(null),
     ]);
 
@@ -138,20 +145,20 @@ export default function TodoList({
     const normalizedTodos = sourceTodos
       .filter((todo) => todo && typeof todo === 'object')
       .map((todo) => normalizeTaskDraft(todo));
-    const seenUUIDs = new Map();
-    for (const task of normalizedTodos) seenUUIDs.set(task.UUID, task);
-    let dedupedTodos = [...seenUUIDs.values()]
-      .filter((todo) => !player?.UUID || !todo.parent || todo.parent === player.UUID);
+    let dedupedTodos = dedupePlanningRecords(normalizedTodos)
+      .filter((todo) => isPlanningRecordInWorkspace(todo, DEFAULT_WORKSPACE_ID))
+      .map((todo) => withWorkspacePlanningScope(todo, { workspaceId: DEFAULT_WORKSPACE_ID }));
     if (dedupedTodos.length === 0 && seedTodos.length > 0) {
       dedupedTodos = seedTodos;
     }
 
     const sortedProjects = projectArray
       .filter((goal) => (
-        (!player?.UUID || !goal.parent || String(goal.parent) === String(player.UUID))
+        isPlanningRecordInWorkspace(goal, DEFAULT_WORKSPACE_ID)
         && isGoalActive(goal)
         && isGoalTaskCategory(goal)
       ))
+      .map((goal) => withWorkspacePlanningScope(goal, { workspaceId: DEFAULT_WORKSPACE_ID }))
       .sort((a, b) => String(a.name).localeCompare(String(b.name)));
     const ctx = buildSlopeContext(completed);
     const slopeArray = getSlopes(dedupedTodos, ctx);

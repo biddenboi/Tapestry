@@ -8,7 +8,14 @@
 html, body, #root {
     overflow: hidden;
     height: 100%;
+    min-height: 100%;
     width: 100%;
+    margin: 0;
+    background: var(--bg-void, #0c101b);
+}
+
+@supports (height: 100dvh) {
+    html, body, #root { height: 100dvh; min-height: 100dvh; }
 }
 
 /* Consistent modal close targets. Several older surfaces define their own tiny

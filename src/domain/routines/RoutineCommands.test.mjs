@@ -5,6 +5,7 @@ import { createShadowTestContext } from '../../data/persistence/sqlite/shadowDom
 import {
   completeRoutineRun,
   completeRoutineStep,
+  dismissRoutineRun,
   getActiveRoutineRun,
   getRoutineStepReceipts,
   startRoutineRun,
@@ -58,6 +59,28 @@ test('routine runs resume the exact next step and each receipt is idempotent', a
       steps: ['Water', 'Review day'],
     });
     assert.equal(resumed.currentStepId, 'step-2');
+  } finally {
+    await close();
+  }
+});
+
+test('returning from a routine dismisses its active Ready to finish state', async () => {
+  const { close, databaseConnection } = await setup();
+  try {
+    const started = await startRoutineRun(databaseConnection, {
+      playerId: 'player-1', routineType: 'night', scheduledFor: '2026-08-02', steps: [],
+    });
+    const dismissed = await dismissRoutineRun(databaseConnection, started.id, {
+      at: '2026-08-03T03:55:00.000Z',
+    });
+    assert.equal(dismissed.status, 'skipped');
+    assert.equal(dismissed.completedAt, null);
+    assert.equal(await getActiveRoutineRun(databaseConnection, 'player-1'), null);
+    const reopened = await startRoutineRun(databaseConnection, {
+      playerId: 'player-1', routineType: 'night', scheduledFor: '2026-08-02', steps: [],
+      at: '2026-08-03T03:56:00.000Z',
+    });
+    assert.equal(reopened.status, 'active');
   } finally {
     await close();
   }

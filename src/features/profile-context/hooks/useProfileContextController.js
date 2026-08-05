@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 
 export function useProfileContextController({
@@ -17,10 +17,21 @@ export function useProfileContextController({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const requestIdRef = useRef(0);
+  const projectionRef = useRef(null);
+
+  useEffect(() => {
+    requestIdRef.current += 1;
+    projectionRef.current = null;
+    setProjection(null);
+    setOwnerState(null);
+    setError(null);
+  }, [ownerId, viewerId]);
 
   const load = useCallback(async () => {
     if (!enabled || !ownerId || !viewerId) return null;
-    setLoading(true);
+    const requestId = ++requestIdRef.current;
+    if (!projectionRef.current) setLoading(true);
     setError(null);
     try {
       await ensureDomainLoaded?.('profileContext');
@@ -37,14 +48,16 @@ export function useProfileContextController({
           ? databaseConnection.getProfileContextOwnerState({ ownerId, viewerId })
           : null,
       ]);
+      if (requestId !== requestIdRef.current) return null;
+      projectionRef.current = nextProjection;
       setProjection(nextProjection);
       setOwnerState(nextOwnerState);
       return { projection: nextProjection, ownerState: nextOwnerState };
     } catch (nextError) {
-      setError(nextError);
+      if (requestId === requestIdRef.current) setError(nextError);
       return null;
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [
     databaseConnection,
@@ -58,9 +71,8 @@ export function useProfileContextController({
   ]);
 
   useEffect(() => {
-    let active = true;
-    load().then((value) => { if (!active && value) return null; });
-    return () => { active = false; };
+    void load();
+    return () => { requestIdRef.current += 1; };
   }, [load]);
 
   const command = useCallback(async (method, payload) => {
@@ -136,4 +148,3 @@ export function useProfileContextController({
 }
 
 export default useProfileContextController;
-

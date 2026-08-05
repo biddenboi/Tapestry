@@ -97,12 +97,16 @@ export class SupabaseSyncTransport {
     this.mobileReferencePublishes = new Map();
   }
 
-  async registerDevice(device) {
-    const { data, error } = await this.client.rpc('register_sync_device', {
+  async registerDevice(device, { signal = null } = {}) {
+    let request = this.client.rpc('register_sync_device', {
       p_device_id: device.id,
       p_display_name: device.displayName,
       p_platform: device.platform,
     });
+    if (signal && typeof request?.abortSignal === 'function') {
+      request = request.abortSignal(signal);
+    }
+    const { data, error } = await request;
     throwIfError(error);
     return data;
   }
@@ -302,6 +306,28 @@ export class SupabaseSyncTransport {
     };
   }
 
+  async getMobileReferenceChanges({ after = 0, limit = 500 } = {}) {
+    const { data, error } = await this.client.rpc('get_mobile_reference_changes', {
+      p_after_sequence: Math.max(0, Number(after) || 0),
+      p_limit: Math.max(1, Math.min(500, Number(limit) || 500)),
+    });
+    throwIfError(error);
+    return Array.isArray(data) ? data : [];
+  }
+
+  async getMobileReferenceHead() {
+    const { data, error } = await this.client.rpc('get_mobile_reference_head');
+    throwIfError(error);
+    if (Array.isArray(data)) {
+      const first = data[0];
+      return Number(first?.serverSequence ?? first?.server_sequence ?? first ?? 0) || 0;
+    }
+    if (data && typeof data === 'object') {
+      return Number(data.serverSequence ?? data.server_sequence ?? data.head ?? 0) || 0;
+    }
+    return Number(data || 0) || 0;
+  }
+
   async getMobileReferenceRecords(recordTypes = null) {
     const filtered = Array.isArray(recordTypes) && recordTypes.length > 0;
     const { data, error } = await this.client.rpc(
@@ -310,6 +336,58 @@ export class SupabaseSyncTransport {
     );
     throwIfError(error);
     return Array.isArray(data) ? data : [];
+  }
+
+  async getMobileReferenceRecordsPaginated(recordTypes = null, {
+    pageSize = 500,
+    onProgress = null,
+  } = {}) {
+    const filtered = Array.isArray(recordTypes) && recordTypes.length > 0;
+    const types = filtered ? [...new Set(recordTypes.map(String))] : null;
+    const limit = Math.max(1, Math.min(500, Number(pageSize) || 500));
+    const records = [];
+    let afterRecordType = null;
+    let afterRecordId = null;
+    for (let page = 0; page < 1000; page += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const { data, error } = await this.client.rpc('get_mobile_reference_records_page', {
+        p_record_types: types,
+        p_after_record_type: afterRecordType,
+        p_after_record_id: afterRecordId,
+        p_limit: limit,
+      });
+      if (error) {
+        const missingFunction = ['PGRST202', '42883'].includes(String(error.code || ''))
+          || /could not find[^.]*get_mobile_reference_records_page|does not exist/i.test(
+            String(error.message || ''),
+          );
+        if (missingFunction && records.length === 0) return this.getMobileReferenceRecords(recordTypes);
+        throwIfError(error);
+      }
+      const batch = Array.isArray(data) ? data : [];
+      records.push(...batch);
+      onProgress?.({
+        stage: 'downloading',
+        downloaded: records.length,
+        page: page + 1,
+        batch: batch.length,
+        done: batch.length < limit,
+      });
+      if (batch.length < limit) return records;
+      const last = batch.at(-1);
+      const nextType = String(last?.recordType || '');
+      const nextId = String(last?.recordId || '');
+      if (!nextType || !nextId || (nextType === afterRecordType && nextId === afterRecordId)) {
+        const cursorError = new Error('The reference restore cursor did not advance.');
+        cursorError.code = 'reference-restore-cursor-stalled';
+        throw cursorError;
+      }
+      afterRecordType = nextType;
+      afterRecordId = nextId;
+    }
+    const pageLimitError = new Error('The reference restore exceeded its bounded page limit.');
+    pageLimitError.code = 'reference-restore-page-limit';
+    throw pageLimitError;
   }
 
   async publishMobileResources(resources = []) {
@@ -431,13 +509,16 @@ export class SupabaseSyncTransport {
         schema: 'public',
         table: 'sync_log',
         filter: `owner_id=eq.${this.ownerId}`,
-      }, () => onNudge())
+      }, (payload) => onNudge({ source: 'sync-log', payload }))
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'mobile_reference_records',
         filter: `owner_id=eq.${this.ownerId}`,
-      }, () => onNudge())
+      }, (payload) => onNudge({
+        source: 'mobile-reference',
+        recordType: payload?.new?.record_type || payload?.old?.record_type || null,
+      }))
       .subscribe();
     return () => this.unsubscribe();
   }

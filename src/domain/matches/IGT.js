@@ -119,6 +119,21 @@ function sortMatchesByIGT(matches) {
   });
 }
 
+function matchIncludesPlayer(match, playerUUID) {
+  const id = String(playerUUID || '');
+  if (!id) return false;
+  if (String(match?.parent || '') === id) return true;
+  if ((match?.participantUUIDs || []).some((UUID) => String(UUID) === id)) return true;
+  return getMatchTeams(match).flat()
+    .some((participant) => String(participant?.UUID || '') === id);
+}
+
+function participantSnapshotElo(match, playerUUID) {
+  const participant = getMatchTeams(match).flat()
+    .find((entry) => String(entry?.UUID || '') === String(playerUUID || ''));
+  return optionalFiniteNumber(participant?.elo);
+}
+
 /**
  * Build one complete Elo evidence stream, then place the authoritative current
  * player Elo at the latest point where it is knowable. This preserves recorded
@@ -132,18 +147,19 @@ export function buildPlayerEloTimeline(player, matches, {
   const evidence = sortMatchesByIGT(matches)
     .filter((match) => match?.status === 'complete' && isRatedMatch(match))
     .filter((match) => getReliableMatchCompletionIGT(match) != null)
-    .map((match) => ({ match, change: getMatchEloChange(match, playerUUID) }))
-    .filter((entry) => entry.change);
+    .filter((match) => matchIncludesPlayer(match, playerUUID))
+    .map((match) => ({ match, change: getMatchEloChange(match, playerUUID) }));
   const baseElo = getHistoricalBaseElo(player, matches);
   let runningElo = baseElo;
   const ratedResults = evidence.map(({ match, change }) => {
-    const storedOldElo = optionalFiniteNumber(change.oldElo);
-    const storedNewElo = optionalFiniteNumber(change.newElo);
+    const snapshotElo = participantSnapshotElo(match, playerUUID);
+    const storedOldElo = optionalFiniteNumber(change?.oldElo);
+    const storedNewElo = optionalFiniteNumber(change?.newElo);
     const oldElo = storedOldElo == null
-      ? runningElo
+      ? snapshotElo == null ? runningElo : Math.max(0, snapshotElo)
       : Math.max(0, storedOldElo);
     const newElo = storedNewElo == null
-      ? Math.max(0, oldElo + Number(change.change || 0))
+      ? Math.max(0, oldElo + Number(change?.change || 0))
       : Math.max(0, storedNewElo);
     runningElo = newElo;
     return {
@@ -153,6 +169,7 @@ export function buildPlayerEloTimeline(player, matches, {
       oldElo,
       newElo,
       change: newElo - oldElo,
+      inferredParticipation: !change,
     };
   });
   const lastResultIGT = ratedResults.length

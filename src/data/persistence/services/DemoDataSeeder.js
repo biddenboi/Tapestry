@@ -330,10 +330,11 @@ export class DemoDataSeeder {
       description: 'Local demo profile for UI inspection.',
       createdAt: playerCreatedAt,
       inGameTime: getCurrentIGT({ createdAt: playerCreatedAt }, now),
-      elo: 940,
-      igtBaseElo: 904,
-      tokens: 420,
-      minutesClearedToday: 35,
+      elo: 0,
+      igtBaseElo: 0,
+      hasVisibleRating: false,
+      tokens: 0,
+      minutesClearedToday: 0,
       wakeTime: '07:30',
       sleepTime: '23:30',
       workStartTime: '09:00',
@@ -360,14 +361,9 @@ export class DemoDataSeeder {
         ],
       },
       inboxNotificationsEnabled: true,
-      achievements: {
-        grinder_1: { earnedAt: iso(-4 * 24 * 60 * 60 * 1000) },
-        scorer_1: { earnedAt: iso(-3 * 24 * 60 * 60 * 1000) },
-        basket_1: { earnedAt: iso(-2 * 24 * 60 * 60 * 1000) },
-        signature_1: { earnedAt: iso(-24 * 60 * 60 * 1000) },
-      },
-      selectedAchievements: ['grinder_1', 'scorer_1', 'basket_1'],
-      selectedAchievementsV2: ['first_movement', 'wayfinder', 'balanced_pair'],
+      achievements: {},
+      selectedAchievements: [],
+      selectedAchievementsV2: [],
     };
 
     const baseIGT = player.inGameTime;
@@ -375,14 +371,14 @@ export class DemoDataSeeder {
 
     await this.add(STORES.player, player);
     this.setActivePlayerUUID(player.UUID);
-    this.setGlobalMoney(84.75);
+    this.setGlobalMoney(0);
 
     const demoProfiles = [
-      { UUID: 'demo-rival-rhea', username: 'Rhea', description: 'Accepted friend projected into the shared Dojo and its Tavern.', elo: 930, profilePicture: demoAvatar('R', '#a78bfa'), title: 'wayfinder', theme: 'minimalist_light' },
-      { UUID: 'demo-rival-mika', username: 'Mika', description: 'Accepted friend with a live Dojo room session and typed standing.', elo: 975, profilePicture: demoAvatar('M', '#34d399'), title: 'builder', theme: 'pixelated' },
-      { UUID: 'demo-rival-sol', username: 'Sol', description: 'Comparison profile with recent semantic activity for the inactive rail.', elo: 890, profilePicture: demoAvatar('S', '#fb7185'), title: 'momentum', theme: 'mature_beige' },
-      { UUID: 'demo-rival-iris', username: 'Iris', description: 'Comparison profile available for a factual Match Arena pulse.', elo: 1055, profilePicture: demoAvatar('I', '#f59e0b'), title: 'trailkeeper', theme: 'dreamcore' },
-      { UUID: 'demo-rival-nox', username: 'Nox', description: 'Horizon profile used to exercise bounded cast selection.', elo: 1105, profilePicture: demoAvatar('N', '#60a5fa'), title: 'vanguard', theme: 'gamification' },
+      { UUID: 'demo-rival-rhea', username: 'Rhea', description: 'Accepted friend projected into the shared Dojo and its Tavern.', elo: 0, profilePicture: demoAvatar('R', '#a78bfa'), title: 'wayfinder', theme: 'minimalist_light' },
+      { UUID: 'demo-rival-mika', username: 'Mika', description: 'Accepted friend with a live Dojo room session and typed standing.', elo: 0, profilePicture: demoAvatar('M', '#34d399'), title: 'builder', theme: 'pixelated' },
+      { UUID: 'demo-rival-sol', username: 'Sol', description: 'Comparison profile with recent semantic activity for the inactive rail.', elo: 0, profilePicture: demoAvatar('S', '#fb7185'), title: 'momentum', theme: 'mature_beige' },
+      { UUID: 'demo-rival-iris', username: 'Iris', description: 'Comparison profile available for a factual Match Arena pulse.', elo: 0, profilePicture: demoAvatar('I', '#f59e0b'), title: 'trailkeeper', theme: 'dreamcore' },
+      { UUID: 'demo-rival-nox', username: 'Nox', description: 'Horizon profile used to exercise bounded cast selection.', elo: 0, profilePicture: demoAvatar('N', '#60a5fa'), title: 'vanguard', theme: 'gamification' },
     ];
     for (const [index, profile] of demoProfiles.entries()) {
       const createdAt = midnightDaysAgo(6 - index);
@@ -391,6 +387,7 @@ export class DemoDataSeeder {
         createdAt,
         inGameTime: getCurrentIGT({ createdAt }, now),
         igtBaseElo: profile.elo,
+        hasVisibleRating: false,
         tokens: 140 + index * 65,
         minutesClearedToday: 15 + index * 10,
         wakeTime: '07:30',
@@ -457,7 +454,7 @@ export class DemoDataSeeder {
         UUID: 'demo-goal-wellbeing',
         parent: player.UUID,
         name: 'Sustainable Pace',
-        description: 'A Goal used to demonstrate recovery work and habit connections.',
+        description: 'A Goal used to demonstrate recovery work and Event connections.',
         finishCondition: 'Complete the four-week recovery experiment and choose a sustainable weekly cadence.',
         areaUUID: 'demo-area-health',
         progressType: 'milestones',
@@ -704,8 +701,8 @@ export class DemoDataSeeder {
       name: 'Reviewed semantic world hierarchy',
       estimatedDuration: 30,
       sessionDuration: 30 * 60 * 1000,
-      points: 180,
-      pointsBase: 180,
+      points: 0,
+      pointsBase: 0,
       createdAt: iso(-5 * 60 * 60 * 1000),
       completedAt: iso(-4.5 * 60 * 60 * 1000),
       inGameTimestamp: igt(-5 * 60 * 60 * 1000),
@@ -720,8 +717,8 @@ export class DemoDataSeeder {
       name: 'Finished UI smoke notes',
       estimatedDuration: 20,
       sessionDuration: 20 * 60 * 1000,
-      points: 120,
-      pointsBase: 120,
+      points: 0,
+      pointsBase: 0,
       createdAt: iso(-2 * 60 * 60 * 1000),
       completedAt: iso(-100 * 60 * 1000),
       inGameTimestamp: igt(-2 * 60 * 60 * 1000),
@@ -732,33 +729,33 @@ export class DemoDataSeeder {
       {
         UUID: 'demo-task-deep-work', parent: player.UUID, projectId: 'demo-goal-learning',
         name: 'Deep architecture review', estimatedDuration: 90, sessionDuration: 78 * 60 * 1000,
-        points: 430, pointsBase: 430, createdAt: iso(-28 * 60 * 60 * 1000), completedAt: iso(-26.7 * 60 * 60 * 1000),
+        points: 0, pointsBase: 0, createdAt: iso(-28 * 60 * 60 * 1000), completedAt: iso(-26.7 * 60 * 60 * 1000),
         inGameTimestamp: igt(-28 * 60 * 60 * 1000), completedInGameTimestamp: igt(-26.7 * 60 * 60 * 1000),
       },
       {
         UUID: 'demo-task-quick-win', parent: player.UUID, projectId: goal.UUID,
         name: 'Fix one high-contrast label', estimatedDuration: 5, sessionDuration: 7 * 60 * 1000,
-        points: 55, pointsBase: 55, createdAt: iso(-22 * 60 * 60 * 1000), completedAt: iso(-21.8 * 60 * 60 * 1000),
+        points: 0, pointsBase: 0, createdAt: iso(-22 * 60 * 60 * 1000), completedAt: iso(-21.8 * 60 * 60 * 1000),
         inGameTimestamp: igt(-22 * 60 * 60 * 1000), completedInGameTimestamp: igt(-21.8 * 60 * 60 * 1000),
       },
       {
         UUID: 'demo-task-dojo-1', parent: player.UUID, projectId: goal.UUID,
         name: 'Dojo navigation audit', estimatedDuration: 20, sessionDuration: 18 * 60 * 1000,
-        points: 145, pointsBase: 145, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
+        points: 0, pointsBase: 0, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
         createdAt: iso(-7 * 60 * 60 * 1000), completedAt: iso(-6.7 * 60 * 60 * 1000),
         inGameTimestamp: igt(-7 * 60 * 60 * 1000), completedInGameTimestamp: igt(-6.7 * 60 * 60 * 1000),
       },
       {
         UUID: 'demo-task-dojo-2', parent: player.UUID, projectId: 'demo-goal-learning',
         name: 'Dojo recommendation follow-through', estimatedDuration: 30, sessionDuration: 27 * 60 * 1000,
-        points: 220, pointsBase: 220, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
+        points: 0, pointsBase: 0, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
         createdAt: iso(-6.5 * 60 * 60 * 1000), completedAt: iso(-6.05 * 60 * 60 * 1000),
         inGameTimestamp: igt(-6.5 * 60 * 60 * 1000), completedInGameTimestamp: igt(-6.05 * 60 * 60 * 1000),
       },
       {
         UUID: 'demo-task-archive', parent: player.UUID, projectId: 'demo-goal-archive',
         name: 'Ship launch checklist', estimatedDuration: 45, sessionDuration: 42 * 60 * 1000,
-        points: 310, pointsBase: 310, createdAt: iso(-8 * 24 * 60 * 60 * 1000 - 42 * 60 * 1000), completedAt: iso(-8 * 24 * 60 * 60 * 1000),
+        points: 0, pointsBase: 0, createdAt: iso(-8 * 24 * 60 * 60 * 1000 - 42 * 60 * 1000), completedAt: iso(-8 * 24 * 60 * 60 * 1000),
         inGameTimestamp: igt(-8 * 24 * 60 * 60 * 1000 - 42 * 60 * 1000), completedInGameTimestamp: igt(-8 * 24 * 60 * 60 * 1000),
       },
     ];
@@ -784,8 +781,8 @@ export class DemoDataSeeder {
         name,
         estimatedDuration: 25,
         sessionDuration: 25 * 60 * 1000,
-        points,
-        pointsBase: points,
+        points: 0,
+        pointsBase: 0,
         createdAt: iso(startOffset),
         completedAt: iso(doneOffset),
         inGameTimestamp: igt(startOffset),
@@ -810,8 +807,8 @@ export class DemoDataSeeder {
         dojoSessionUUID,
         estimatedDuration: 25,
         sessionDuration: 25 * 60 * 1000,
-        points,
-        pointsBase: points,
+        points: 0,
+        pointsBase: 0,
         createdAt: iso(completedOffset - 25 * 60 * 1000),
         completedAt: iso(completedOffset),
         inGameTimestamp: igt(completedOffset - 25 * 60 * 1000),
@@ -828,8 +825,8 @@ export class DemoDataSeeder {
       description: 'A deliberately late typed import so Since You Last Saw has one factual new change.',
       estimatedDuration: 18,
       sessionDuration: 18 * MINUTE,
-      points: 135,
-      pointsBase: 135,
+      points: 0,
+      pointsBase: 0,
       createdAt: iso(-50 * MINUTE),
       completedAt: iso(-32 * MINUTE),
       inGameTimestamp: igt(10 * MINUTE),
@@ -847,8 +844,8 @@ export class DemoDataSeeder {
 
     const demoEvents = [
       { UUID: 'demo-habit-water', name: 'Hydration Check', description: 'Tap once after drinking water.', type: 'one_time', icon: '✓', accentColor: '#22d3ee' },
-      { UUID: 'demo-habit-stretch', name: 'Desk Stretch', description: 'Small recovery habit for long sessions.', type: 'one_time', icon: '✦', accentColor: '#84cc16' },
-      { UUID: 'demo-quantity-pages', name: 'Pages Read', description: 'Quantity habit for reading progress.', type: 'quantity', dailyTarget: 10, unit: 'pages', accentColor: '#facc15' },
+      { UUID: 'demo-habit-stretch', name: 'Desk Stretch', description: 'Small recovery Event for long sessions.', type: 'one_time', icon: '✦', accentColor: '#84cc16' },
+      { UUID: 'demo-quantity-pages', name: 'Pages Read', description: 'Quantity Event for reading progress.', type: 'quantity', dailyTarget: 10, unit: 'pages', accentColor: '#facc15' },
       { UUID: 'demo-duration-focus', name: 'Focused Practice', description: 'Run a timer while practicing a skill.', type: 'duration', dailyTarget: 25 * MINUTE, icon: '◷', accentColor: '#a78bfa' },
     ];
     for (const event of demoEvents) {
@@ -1234,12 +1231,9 @@ export class DemoDataSeeder {
     for (const transaction of demoTransactions) await this.add(STORES.transaction, transaction);
 
     const demoContributions = [
-      ['demo-contribution-1', player.UUID, goal.UUID, 'Refined the semantic world hierarchy', 64, -5 * 24 * 60 * 60 * 1000],
-      ['demo-contribution-2', player.UUID, 'demo-goal-learning', 'Documented the inference lifecycle', 71, -3 * 24 * 60 * 60 * 1000],
-      ['demo-contribution-3', player.UUID, 'demo-goal-wellbeing', 'Added a sustainable recovery block', 52, -24 * 60 * 60 * 1000],
-      ['demo-contribution-rhea', 'demo-rival-rhea', goal.UUID, 'Validated the first residency pass', 82, -4 * 24 * 60 * 60 * 1000],
-      ['demo-contribution-mika', 'demo-rival-mika', goal.UUID, 'Validated the Dojo room grouping', 96, -2 * 24 * 60 * 60 * 1000],
-      ['demo-contribution-sol', 'demo-rival-sol', 'demo-goal-learning', 'Reviewed long-horizon behavior', 45, -20 * 60 * 60 * 1000],
+      ['demo-contribution-1', player.UUID, goal.UUID, 'Refined the semantic world hierarchy', 0, -5 * 24 * 60 * 60 * 1000],
+      ['demo-contribution-2', player.UUID, 'demo-goal-learning', 'Documented the inference lifecycle', 0, -3 * 24 * 60 * 60 * 1000],
+      ['demo-contribution-3', player.UUID, 'demo-goal-wellbeing', 'Added a sustainable recovery block', 0, -24 * 60 * 60 * 1000],
     ];
     for (const [UUID, parent, goalUUID, summary, value, offset] of demoContributions) {
       const contributionGoal = goalUUID === goal.UUID
@@ -1310,14 +1304,9 @@ export class DemoDataSeeder {
           winner: 1, team1Total: 980, team2Total: 910, iWon: true, wasForfeited: false,
           concludedAt: iso(-4 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
           inGameTimestamp: igt(-4 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
-          eloChange: 18, oldElo: 904, newElo: 922,
+          eloChange: 0, oldElo: 0, newElo: 0,
           playerEloChanges: {
-            [player.UUID]: { oldElo: 904, newElo: 922, change: 18 },
-            'demo-rival-rhea': { oldElo: 915, newElo: 930, change: 15 },
-            'demo-rival-mika': { oldElo: 960, newElo: 975, change: 15 },
-            'demo-rival-sol': { oldElo: 902, newElo: 890, change: -12 },
-            'demo-rival-iris': { oldElo: 967, newElo: 955, change: -12 },
-            'demo-rival-nox': { oldElo: 922, newElo: 910, change: -12 },
+            [player.UUID]: { oldElo: 0, newElo: 0, change: 0 },
           },
         },
       },
@@ -1332,9 +1321,9 @@ export class DemoDataSeeder {
           winner: 2, team1Total: 420, team2Total: 447, iWon: false, wasForfeited: false,
           concludedAt: iso(-29.5 * 60 * 60 * 1000),
           inGameTimestamp: igt(-29.5 * 60 * 60 * 1000),
-          eloChange: -9, oldElo: 922, newElo: 913,
+          eloChange: 0, oldElo: 0, newElo: 0,
           playerEloChanges: {
-            [player.UUID]: { oldElo: 922, newElo: 913, change: -9 },
+            [player.UUID]: { oldElo: 0, newElo: 0, change: 0 },
           },
         },
       },
@@ -1349,9 +1338,9 @@ export class DemoDataSeeder {
           winner: 1, team1Total: 512, team2Total: 506, iWon: true, wasForfeited: false,
           concludedAt: iso(-8.5 * 60 * 60 * 1000),
           inGameTimestamp: igt(-8.5 * 60 * 60 * 1000),
-          eloChange: 27, oldElo: 913, newElo: 940,
+          eloChange: 0, oldElo: 0, newElo: 0,
           playerEloChanges: {
-            [player.UUID]: { oldElo: 913, newElo: 940, change: 27 },
+            [player.UUID]: { oldElo: 0, newElo: 0, change: 0 },
           },
         },
       },

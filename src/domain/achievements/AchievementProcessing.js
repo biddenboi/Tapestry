@@ -436,6 +436,14 @@ function emitAchievementRewards(keys, context = {}) {
   } catch (error) {
     console.warn('[AchievementProcessing] reward callback failed:', error);
   }
+  // Achievement processing also runs from background recovery and cloud-sync
+  // passes, where there may be no feature-level callback. Publish one canonical
+  // UI event so every newly issued award receives the same visible celebration.
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('tapestry:achievement-earned', {
+      detail: { keys: [...keys] },
+    }));
+  }
 }
 
 export async function processAchievementEvent(databaseConnection, eventOrId, context = {}) {

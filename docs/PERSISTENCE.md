@@ -1,77 +1,47 @@
 # Persistence
 
-Tapestry is local-first. The selected folder is the source of truth, and .tapestry/ inside that folder contains the canonical app save. Runtime memory is a loaded view of those files, not a second durable database.
+Tapestry is local-first and cloud-convergent. SQLite is the durable working copy on a device; Supabase is the cross-device convergence authority. Local storage is never a separate account database: mutations are staged locally, uploaded when possible, and reconciled with newer cloud data.
 
-## Canonical State
+## Desktop and mobile responsibilities
 
-Canonical records are written through the save-bundle format. Browser-managed storage is not canonical and should not contain app records. Acceptable browser caches are limited to the source-handle cache that helps the File System Access API reopen the selected folder after refresh and the last-known browser location cache used only to center the map before the next geolocation ping.
+Desktop stores the complete SQLite workspace and can run every feature offline. It keeps database state and unsynchronized changes separately: each local command commits its canonical rows and its operation/reference outbox rows atomically. A crash or restart cannot lose the fact that a committed change still needs upload.
 
-Key durable areas:
+Mobile stores a mobile-safe working set, not the desktop database checkpoint. An already-restored phone can continue using cached profiles, planning, sessions, competition, commerce, Chronicle, Event, achievement, and social records while offline. Clearing that site data removes the cache; a new or cleared phone must reconnect before it can reconstruct the working set. Resource bytes are fetched by reference and kept under a smaller mobile cache budget.
 
-- .tapestry/.system-data/: app state, economy state, save metadata, cross-profile state, and other system records.
-- .tapestry/.player-data/: player records and player-scoped structured data.
-- .tapestry/.shop/: shop catalog, inventory state, rewards, and item data.
-- .tapestry/.resources/: binary-like resources or base64-backed resource records referenced by app data.
-- .tapestry/journals/: individual journal Markdown files.
-- root zip snapshot: automatic open-time backup of .tapestry, named by datetime.
+Both surfaces always pull newer data from the cloud when connected. Conflict reconciliation compares per-record update evidence and protects newer pending local mutations from an older remote row. Deletes travel as durable tombstones so an offline delete cannot be resurrected by stale data.
 
-Derived statistics, projections, feed rankings, shop rankings, match estimates, and profile summaries should be reproducible from canonical records.
+## Synchronization lanes
 
-## Folder Access Lifecycle
+Synchronization moves changes, not database images.
 
-1. Desktop opens through DataSourceGate and asks for a folder if no valid source is available. A clean mobile device instead signs in to Private Sync and restores the bounded mobile working set from Supabase before replaying the operation log.
-2. DatabaseConnection loads or initializes .tapestry/.
-3. App state is held in memory for rendering and writes are flushed to files. Routine writes are lightly debounced, while major actions force a write.
-4. Periodic and visibility-change sync pulls external edits from disk when no local write is pending. Pending writes are flushed when the page hides or unloads.
-5. If the folder is missing or access is revoked, the app clears loaded state and returns to the folder picker.
+- Live (no debounce): active-profile boundaries, completed tasks, Action Sessions, Matches, and Match score events. Foreground clients also reconcile this narrow set every 1.5 seconds and react to realtime server nudges.
+- Prompt (750 ms): task editing, profiles, Goals and Goal structure, task-completion receipts, reminders, shop catalog, inventory, transactions, and Event definitions.
+- Background (15 seconds after a local commit, plus periodic/online/foreground retry): Journals, comments, Chronicle history, Event completions and logs, contribution/stat history, achievements, friendships, notifications, and other non-session state.
 
-A missing folder should not corrupt state. It should behave like Obsidian losing vault access: stop using stale data and ask the user to locate a valid folder.
+Network failure never rolls back the local command. Pending rows remain in SQLite, retry with bounded backoff, and upload after connectivity returns. Successful operation history is pruned only after acknowledgement; recent receipts remain for diagnostics and idempotency.
 
-## Journal Markdown Rules
+## Full desktop checkpoint
 
-Journals are real Markdown files under .tapestry/journals/. The body can be edited outside the app. Files are imported only when they contain the expected metadata required to identify them as app-owned journal entries. Markdown files without valid journal metadata are ignored.
+Desktop maintains the full persistent SQLite database locally and periodically uploads a verified SQLite checkpoint as a recovery backup. Checkpoints are deliberately outside the latency-sensitive sync transaction, are generated only after pending writes flush, and pass SQLite quick-check and foreign-key validation before upload.
 
-The durable journal metadata includes identity, parent profile, title, timestamps, in-game timestamp, tags, images/resource references, and hidden feed-state metadata. The visible Markdown body remains editable so Obsidian edits do not break the app.
+A clean desktop may restore the newest checkpoint, then apply newer reference and operation rows. A working desktop opens its local database immediately, including when offline. Checkpoint publication is gated until a clean-device restore decision finishes, preventing an empty device from overwriting a good backup.
 
-When a journal is saved in the app, the Markdown file and any related manifest/resource data should be written immediately.
+Mobile never uploads or downloads the full checkpoint. Its clean-device bootstrap pages through owner-scoped mobile reference rows and repairs the normalized projections needed by IGT, Elo, Points, contribution, Matches, and graphs.
 
-## Linked Folder Sync
+## Portable ML artifacts
 
-Linked-folder writes replace the managed save files directly. Major actions should flush immediately, including:
+Task Recommender v12 training remains a desktop responsibility. Only app-setting records with the `task-recommender-v12-` prefix are captured as `ml-model` references. Mobile downloads those portable model artifacts for local inference; unrelated settings, optimizer/training state, analytics, exports, and recovery artifacts are excluded.
 
-- saving or editing a journal;
-- completing a task session;
-- finishing a match;
-- buying or using a shop item;
-- changing profile settings, cosmetics, or inventory state;
-- accepting day-boundary events such as wake or sleep.
+## Import, export, and recovery
 
-Inbound sync should compare durable content and refresh app state only when disk changed. It must not pull from disk over a pending local write. If source access fails because the folder is gone, App.jsx returns to the folder picker.
+ZIP import/export remains a deliberate recovery path. Export crosses a durability barrier and includes a verified SQLite snapshot plus portable resource data. Import validates the snapshot before replacing live state, applies pending migrations, and restores the previous verified snapshot if promotion fails.
 
-## Snapshots
+The former linked-folder/Markdown format remains supported through migration and recovery tooling, but it is not a second live source of truth. Normal application writes target SQLite and the mutation outboxes.
 
-Every app open creates one root-level zip snapshot of .tapestry. The filename is based on the save datetime. Existing app-generated datetime zip snapshots are removed so there is only one automatic snapshot at a time.
+## Derived state
 
-Snapshots are safety copies, not a separate persistence layer. The app should continue to read and write the actual files under .tapestry during normal use.
+Leaderboard snapshots, profile summaries, Elo journeys, contribution totals, Dojo standings, feed ordering, and other projections are rebuildable from canonical rows. Remote application queues and flushes these projections before announcing synchronization completion so React observes consistent Elo, Points, IGT, contribution, and graph values together.
 
-## Import And Export
+## Platform transport boundary
 
-Zip import/export uses the save-bundle format. Import must validate durable state before replacing in-memory records. New optional files should have default values so version 1 bundles remain readable. Paths inside zips must be normalized and must not escape the bundle root.
-
-Resource references should remain relative and portable. Player image payloads should not be duplicated inside JSON when they are already represented as resources.
-
-## Economy And App State
-
-Global money lives in .system-data/economy.json. Cross-profile app state lives in .system-data/appState.json. Profile-owned state stays with the profile records unless it is explicitly global.
-
-The active profile is a device-local choice. Planning definitions are different: migration `050_workspace_planning_scope` creates the default workspace and membership rows, then adds `workspace_id` to projects, Todos, reminders, completed tasks, Goal areas, milestones, links, and outgoing sync operations. Definition tables also retain nullable `created_by_player_id`; legacy non-null player owners remain during the compatibility period. Deleting a profile reparents shared planning definitions to another live workspace profile, and deleting the last live owner is refused when shared planning still exists.
-
-Mobile reference records and sync-log entries carry `workspaceId` separately from `playerId`. Workspace planning definitions use the owner account plus workspace scope for visibility and do not use `playerId` as the remote visibility key. Profile-attributed completions, updates, rewards, inventory, and cosmetic state continue to carry `playerId`.
-
-Economy migration should normalize legacy values and reject invalid payloads before restore. Tests in src/data/db/economyState.test.mjs cover global money round-tripping and invalid restore behavior.
-
-## Source Handle Cache
-
-The source-handle cache stores the browser-managed handle and minimal metadata needed to request permission again. The last-known location cache stores only recent browser coordinates for map centering. Neither cache may store journal bodies, player data, economy values, resources, feed records, matches, or other app records.
-
-If the cached handle cannot be used, the user should see the folder picker instead of a broken loaded app.
+The web app uses HTTPS, Supabase realtime, service workers, and Web Push. Safari on iPhone does not expose Web Bluetooth, so a browser/PWA cannot implement direct Bluetooth database transfer. The synchronization contracts are transport-neutral enough for a future native iOS or desktop companion transport, but the production web app must not claim peer-to-peer Bluetooth support.

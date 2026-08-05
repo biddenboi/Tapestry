@@ -13,7 +13,7 @@ function emptyMessage(generationState) {
   return 'Preparing your first recommendation…';
 }
 
-export default function DojoRecommendationFeed({ controller }) {
+export default function DojoRecommendationFeed({ controller, compact = false }) {
   const {
     activeTask,
     feedScrollerRef,
@@ -34,17 +34,17 @@ export default function DojoRecommendationFeed({ controller }) {
   } = controller;
 
   return (
-    <div className="dojo-recommendation-surface">
+    <div className={`dojo-recommendation-surface${compact ? ' is-compact' : ''}`}>
       {inTask ? (
         <div className="dojo-current-task">
           <div className="dct-label">ACTIVE TASK</div>
           <div className="dct-name">{activeTask.name}</div>
-          {activeTask.reasonToSelect && <div className="dct-reason">{activeTask.reasonToSelect}</div>}
-          <div className="dct-hint">The room stays open while this task continues in the session dock.</div>
+          {!compact && activeTask.reasonToSelect && <div className="dct-reason">{activeTask.reasonToSelect}</div>}
+          {!compact && <div className="dct-hint">The room stays open while this task continues in the session dock.</div>}
         </div>
       ) : (
         <div className="dojo-feed">
-          <div className="dojo-feed-head">
+          {!compact && <div className="dojo-feed-head">
             <div>
               <span className="dojo-feed-kicker">GET NEXT</span>
               <strong>Algorithm recommendations</strong>
@@ -53,7 +53,7 @@ export default function DojoRecommendationFeed({ controller }) {
               <span>{recommendationFeed.length} generated</span>
               <strong>{modelStateLabel}</strong>
             </div>
-          </div>
+          </div>}
           <div
             className="dojo-feed-scroller"
             ref={feedScrollerRef}
@@ -93,18 +93,18 @@ export default function DojoRecommendationFeed({ controller }) {
                     </button>
                   </div>
                   <h2>{todo.name}</h2>
-                  <div className="dojo-feed-origin">{origin}</div>
-                  <div className="dojo-feed-meta">
+                  {!compact && <div className="dojo-feed-origin">{origin}</div>}
+                  {!compact && <div className="dojo-feed-meta">
                     <span>{suggested}m session</span>
                     <span>due {prettyPrintDate(todo.dueDate)}</span>
                     <span>{evidenceLabel}</span>
-                  </div>
-                  {reasons.length > 0 && (
+                  </div>}
+                  {!compact && reasons.length > 0 && (
                     <div className="dojo-feed-reasons">
                       {reasons.map((reason) => <span key={`${item.id}-${reason}`}>{reason}</span>)}
                     </div>
                   )}
-                  {todo.recommendation?.expectedWorkloadImpact && (
+                  {!compact && todo.recommendation?.expectedWorkloadImpact && (
                     <p className="dojo-feed-impact">{todo.recommendation.expectedWorkloadImpact}</p>
                   )}
                 </article>
@@ -113,7 +113,7 @@ export default function DojoRecommendationFeed({ controller }) {
             {recommendationFeed.length === 0 && (
               <div className="dojo-feed-empty">
                 <strong>{emptyMessage(generationState)}</strong>
-                {generationState === 'empty' && (
+                {!compact && generationState === 'empty' && (
                   <button className="primary" onClick={handleAddTask}>+ ADD A TASK</button>
                 )}
                 {generationState === 'error' && (
@@ -122,7 +122,7 @@ export default function DojoRecommendationFeed({ controller }) {
               </div>
             )}
           </div>
-          {recommendationFeed.length > 0 && (
+          {!compact && recommendationFeed.length > 0 && (
             <div className="dojo-feed-boundary" data-state={generationState} role="status">
               <span>{dojoBoundaryLabel(generationState)}</span>
             </div>
@@ -130,7 +130,7 @@ export default function DojoRecommendationFeed({ controller }) {
         </div>
       )}
 
-      {taskHistory.length > 0 && (
+      {!compact && taskHistory.length > 0 && (
         <div className="dojo-history">
           <div className="dojo-history-label">COMPLETED THIS SESSION</div>
           {taskHistory.map((task) => (

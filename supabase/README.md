@@ -22,9 +22,12 @@ private key, service-role key, and cron secret out of every client build.
 
 ## Web Push delivery
 
-`functions/push-due-notifications` scans synchronized reminder and routine-run
-entities, sends each due item once per subscription, records delivery receipts,
-and removes expired push subscriptions. Deploy the function without legacy JWT
+`functions/push-due-notifications` scans synchronized reminders, Match state,
+and due task recommendations. It sends each reminder or Match update once per
+subscription and can surface one task recommendation per UTC hour, records
+delivery receipts, and removes expired push subscriptions. Routine-resume
+notifications are intentionally excluded: completing or leaving End Day must
+never resurrect a resume bar or equivalent push. Deploy the function without legacy JWT
 verification because its scheduler endpoint authenticates with a separate,
 random `x-tapestry-cron-secret` header.
 
@@ -60,5 +63,5 @@ limit 5;
 ```
 
 Web Push remains an accelerator. The client independently computes due state
-from synchronized reminders and routine runs whenever it opens, so a missed or
-expired push can never hide due work.
+from synchronized reminders whenever it opens, so a missed or expired push can
+never hide due work.

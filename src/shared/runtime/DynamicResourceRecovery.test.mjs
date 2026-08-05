@@ -11,15 +11,21 @@ test('recognizes Vite CSS and dynamic import failures without matching ordinary 
   assert.equal(isDynamicResourceLoadError(new Error('Task validation failed')), false);
 });
 
-test('preload recovery prevents the stale error and reloads only once per installation', () => {
+test('preload recovery reports one explicit error without reloading the application', () => {
   const listeners = new Map();
   const stored = new Map();
   let reloads = 0;
   let prevented = 0;
+  const reported = [];
   const windowRef = {
     addEventListener: (name, handler) => listeners.set(name, handler),
     removeEventListener: (name) => listeners.delete(name),
     location: { reload: () => { reloads += 1; } },
+    CustomEvent: class CustomEvent {
+      constructor(type, init) { this.type = type; this.detail = init?.detail; }
+    },
+    dispatchEvent: (event) => reported.push(event),
+    console: { error: () => {} },
     sessionStorage: {
       getItem: (key) => stored.get(key) || null,
       setItem: (key, value) => stored.set(key, value),
@@ -34,8 +40,10 @@ test('preload recovery prevents the stale error and reloads only once per instal
   listeners.get('vite:preloadError')(event);
   listeners.get('vite:preloadError')(event);
 
-  assert.equal(reloads, 1);
+  assert.equal(reloads, 0);
   assert.equal(prevented, 2);
+  assert.equal(reported.length, 1);
+  assert.equal(reported[0].type, 'tapestry:dynamic-resource-error');
   uninstall();
   assert.equal(listeners.size, 0);
 });

@@ -86,13 +86,18 @@ test('sync transport errors never contaminate the authentication error field', a
 
   service.setSyncState('error', new Error('The mobile working-set publish session is no longer active.'));
   assert.equal(service.getSnapshot().error, null);
-  assert.equal(service.getSnapshot().syncStatus, 'error');
-  assert.equal(
-    service.getSnapshot().syncError?.message,
-    'The mobile working-set publish session is no longer active.',
-  );
+  assert.equal(service.getSnapshot().syncError, null);
+  assert.equal(service.getSnapshot().syncStatus, 'ready');
 
-  service.setSyncState('ready');
+  // Simulate a long-lived service instance created by an older hot-loaded build.
+  service.snapshot = Object.freeze({
+    ...service.getSnapshot(),
+    error: { code: 'legacy', message: 'The mobile working-set publish session is no longer active.' },
+    syncError: { code: 'legacy', message: 'The mobile working-set publish session is no longer active.' },
+    syncStatus: 'error',
+  });
+  service.clearRetiredWorkingSetError();
   assert.equal(service.getSnapshot().error, null);
   assert.equal(service.getSnapshot().syncError, null);
+  assert.equal(service.getSnapshot().syncStatus, 'ready');
 });

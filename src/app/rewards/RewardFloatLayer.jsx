@@ -1,5 +1,9 @@
 import '@app/rewards/RewardFloatLayer.css';
 
+const REWARD_GLYPHS = Object.freeze({
+  coins: '◇', contribution: '◔', points: '✦', post: '◈', event: '◆', achievement: '✪', 'event-penalty': '!', default: '✦',
+});
+
 export default function RewardFloatLayer({ gains = [] }) {
   if (!gains.length) return null;
   return (
@@ -16,7 +20,9 @@ export default function RewardFloatLayer({ gains = [] }) {
             '--reward-drift-y': `${gain.driftY || 44}px`,
           }}
         >
-          {gain.label}
+          <i aria-hidden="true">{REWARD_GLYPHS[gain.kind] || REWARD_GLYPHS.default}</i>
+          <strong>{gain.label}</strong>
+          <b aria-hidden="true" /><b aria-hidden="true" /><b aria-hidden="true" />
         </span>
       ))}
     </div>

@@ -17,12 +17,37 @@ function demoAvailable() {
     || new URLSearchParams(window.location.search).has('demo');
 }
 
+
+function isDemoOnlyWorkspace(players = []) {
+  return players.length > 0 && players.every((player) => (
+    String(player?.UUID || player?.id || '').startsWith('demo-')
+  ));
+}
+
+function restoreProgressText(progress) {
+  if (!progress || progress.stage === 'connecting') return 'Connecting to your private cloud…';
+  if (progress.stage === 'downloading') {
+    const records = Number(progress.downloaded || 0).toLocaleString();
+    const pages = Number(progress.page || 0);
+    return `Downloaded ${records} records${pages ? ` across ${pages} ${pages === 1 ? 'batch' : 'batches'}` : ''}…`;
+  }
+  if (progress.stage === 'applying') {
+    return `Applying ${Number(progress.total || progress.downloaded || 0).toLocaleString()} synchronized records…`;
+  }
+  if (progress.stage === 'synchronizing') return 'Checking for newer changes from your other devices…';
+  if (progress.stage === 'opening') {
+    return `Opening ${Number(progress.applied || 0).toLocaleString()} restored records…`;
+  }
+  return 'Preparing your private workspace…';
+}
+
 export default function MobileCloudBootstrapGate({ onReady }) {
   const { databaseConnection } = useAppContext();
   const snapshot = useSyncExternalStore(auth.subscribe, auth.getSnapshot, auth.getSnapshot);
   const [phase, setPhase] = useState('checking');
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
+  const [restoreProgress, setRestoreProgress] = useState(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [leaseBlocked, setLeaseBlocked] = useState(false);
   const [password, setPassword] = useState('');
@@ -34,6 +59,7 @@ export default function MobileCloudBootstrapGate({ onReady }) {
     const restore = (async () => {
       setPhase('downloading');
       setError('');
+      setRestoreProgress({ stage: 'connecting', downloaded: 0, page: 0 });
       try {
         await databaseConnection.ready;
         const [{ initializeSupabaseSync }, { restoreMobileBootstrapData }] = await Promise.all([
@@ -43,22 +69,40 @@ export default function MobileCloudBootstrapGate({ onReady }) {
         await initializeSupabaseSync(databaseConnection);
         const transport = databaseConnection.syncRuntime?.transport;
         if (!transport) throw new Error('Private sync could not connect on this device.');
-        const bootstrap = await restoreMobileBootstrapData(databaseConnection, transport);
-        const synchronization = await databaseConnection.syncRuntime.synchronize({
-          reason: 'mobile-clean-device-bootstrap',
+        const bootstrap = await restoreMobileBootstrapData(databaseConnection, transport, {
+          onProgress: setRestoreProgress,
+        });
+        setRestoreProgress({
+          stage: 'synchronizing',
+          downloaded: Number(bootstrap.downloaded || 0),
+          applied: Number(bootstrap.applied || 0),
         });
         const players = await databaseConnection.getAll('players');
         setSummary({
           downloaded: Number(bootstrap.downloaded || 0),
           applied: Number(bootstrap.applied || 0),
-          pulled: Number(synchronization?.pulled || 0),
+          pulled: 0,
+          syncPending: true,
         });
         if (!players.length) {
           setPhase('empty-cloud');
           return;
         }
         setPhase('ready');
+        setRestoreProgress({
+          stage: 'opening',
+          downloaded: Number(bootstrap.downloaded || 0),
+          applied: Number(bootstrap.applied || 0),
+        });
         onReady();
+        // The reference mirror above is already the complete current working
+        // set. Replay the operation log behind the usable shell so a slow or
+        // unavailable sync endpoint never strands startup on this gate.
+        void databaseConnection.syncRuntime.synchronize({
+          reason: 'mobile-clean-device-bootstrap',
+        }).catch((syncError) => {
+          console.warn('[Tapestry] Mobile bootstrap sync will retry in the background.', syncError);
+        });
       } catch (restoreError) {
         setPhase('error');
         setLeaseBlocked(isWriterLeaseError(restoreError));
@@ -78,11 +122,18 @@ export default function MobileCloudBootstrapGate({ onReady }) {
         await databaseConnection.ready;
         const players = await databaseConnection.getAll('players');
         if (cancelled) return;
-        if (players.length) {
+        if (players.length && !isDemoOnlyWorkspace(players)) {
           const { initializeSupabaseSync } = await import('@data/sync/supabase/SupabaseSyncBootstrap.js');
           await initializeSupabaseSync(databaseConnection);
           if (cancelled) return;
           onReady();
+          void databaseConnection.syncRuntime?.synchronize?.({
+            reason: 'mobile-resume-before-open',
+          }).catch((syncError) => {
+            // Existing local SQLite remains usable offline. The durable queue
+            // and runtime backoff retry without closing the application.
+            console.warn('[Tapestry] Mobile resume sync will retry in the background.', syncError);
+          });
           return;
         }
         await auth.initialize();
@@ -161,6 +212,7 @@ export default function MobileCloudBootstrapGate({ onReady }) {
     try {
       await auth.signOut();
       setSummary(null);
+      setRestoreProgress(null);
       setPhase('account');
     } catch (signOutError) {
       setError(signOutError?.message || 'This account could not be disconnected.');
@@ -292,6 +344,12 @@ export default function MobileCloudBootstrapGate({ onReady }) {
                 ? 'Open Tapestry on your desktop, connect Private Sync, and choose Publish mobile data. Then retry here.'
                 : 'Tapestry downloads the mobile-safe working set, then replays newer synchronized operations.'}
             </span>
+            {snapshot.status === 'signed-in' && !['error', 'empty-cloud'].includes(phase) && (
+              <div className="mobile-cloud-bootstrap__progress" role="status" aria-live="polite">
+                <span>{restoreProgressText(restoreProgress)}</span>
+                <div aria-hidden="true"><i /></div>
+              </div>
+            )}
           </div>
           {snapshot.notice && signedOut && <div className="mobile-cloud-bootstrap__notice">{snapshot.notice}</div>}
           {summary && phase === 'empty-cloud' && (

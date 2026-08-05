@@ -30,6 +30,7 @@ function FeedbackCard({ event, onDismiss, player, reducedMotion }) {
           )}
         </div>
       </div>
+      {event.significance !== 'routine' && <span className="mobile-feedback-burst" aria-hidden="true"><i /><i /><i /><i /><i /></span>}
     </button>
   );
 }

@@ -42,8 +42,42 @@ test('Match completion commits one canonical local transaction and one mobile sy
   assert.equal(contexts[0].commandType, 'completeMatch');
   assert.equal(contexts[0].entityType, 'match');
   assert.equal(contexts[0].entityId, 'match-1');
-  assert.equal(contexts[0].payload.match, match);
-  assert.equal(contexts[0].payload.player, player);
+  assert.deepEqual(contexts[0].payload.match, {
+    ...match,
+    updatedAt: '2026-08-02T12:00:00.000Z',
+    syncUpdatedAt: '2026-08-02T12:00:00.000Z',
+  });
+  assert.deepEqual(contexts[0].payload.player, {
+    ...player,
+    updatedAt: '2026-08-02T12:00:00.000Z',
+    syncUpdatedAt: '2026-08-02T12:00:00.000Z',
+  });
   assert.equal(contexts[0].payload.worldReceipt, worldReceipt);
   assert.equal(contexts[0].payload.rewardProvenance, rewardProvenance);
+});
+
+test('Match patches advance a stale durable sync clock', async () => {
+  let commit = null;
+  const databaseConnection = {
+    async commitAtomicMutation(input) {
+      commit = input;
+      return { duplicate: false };
+    },
+  };
+  const updated = await commands.patchMatchStateCommand(
+    databaseConnection,
+    {
+      UUID: 'match-stale',
+      parent: 'profile-1',
+      status: 'active',
+      updatedAt: '2026-08-02T10:00:00.000Z',
+      syncUpdatedAt: '2026-08-02T10:00:00.000Z',
+    },
+    { status: 'cancelled' },
+    { at: '2026-08-02T12:30:00.000Z', origin: 'mobile' },
+  );
+
+  assert.equal(updated.updatedAt, '2026-08-02T12:30:00.000Z');
+  assert.equal(updated.syncUpdatedAt, '2026-08-02T12:30:00.000Z');
+  assert.equal(commit.puts[0].record.syncUpdatedAt, '2026-08-02T12:30:00.000Z');
 });

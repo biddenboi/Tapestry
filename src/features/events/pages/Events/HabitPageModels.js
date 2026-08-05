@@ -115,7 +115,7 @@ export function buildHabitCardModel({ event, logs = [], todayKey = dateKeyFromDa
     id: String(event.UUID),
     event,
     type,
-    name: event.name || 'Untitled habit',
+    name: event.name || 'Untitled event',
     description: event.description || '',
     accentColor: event.accentColor || '#a78bfa',
     currentEraLogs,

@@ -138,6 +138,7 @@ export async function startRoutineRun(databaseConnection, {
   const runId = `routine:${owner}:${type}:${day}`;
   const existing = await getRoutineRun(databaseConnection, runId);
   if (existing?.status === ROUTINE_STATUS.completed) return existing;
+  if (existing?.status === ROUTINE_STATUS.active) return existing;
   const timestamp = iso(at);
   const normalizedSteps = normalizeSteps(steps);
   const run = {
@@ -153,7 +154,7 @@ export async function startRoutineRun(databaseConnection, {
     updatedAt: timestamp,
     version: Number(existing?.version || 0) + 1,
   };
-  const operationId = requestedOperationId || `routine-start:${runId}`;
+  const operationId = requestedOperationId || `routine-start:${runId}:${run.version}`;
   const sync = commandContext(databaseConnection, {
     origin,
     enqueueSync,
@@ -284,6 +285,59 @@ export async function completeRoutineRun(databaseConnection, runId, {
             SET status='completed',current_step_id=NULL,completed_at=?,updated_at=?,version=version+1
             WHERE id=? AND status<>'completed'`,
       bind: [timestamp, timestamp, runId],
+      result: 'changes',
+    }],
+    sync,
+  });
+  return getRoutineRun(databaseConnection, runId);
+}
+
+export async function dismissRoutineRun(databaseConnection, runId, {
+  at = new Date(),
+  origin = 'desktop',
+  enqueueSync = true,
+  operationId: requestedOperationId = null,
+} = {}) {
+  const current = await getRoutineRun(databaseConnection, runId);
+  if (!current || current.status !== ROUTINE_STATUS.active) return current;
+  const timestamp = iso(at);
+  const next = {
+    ...current,
+    status: ROUTINE_STATUS.skipped,
+    currentStepId: null,
+    completedAt: null,
+    updatedAt: timestamp,
+    version: current.version + 1,
+  };
+  const operationId = requestedOperationId
+    || `routine-dismiss:${runId}:${next.version}:${timestamp}`;
+  // The narrow server endpoint treats non-step routine commands as canonical
+  // run snapshots. Keep using its established completion envelope while the
+  // payload truthfully records this run as skipped, not completed.
+  const sync = commandContext(databaseConnection, {
+    origin,
+    enqueueSync,
+    operationId,
+    playerId: current.playerId,
+    commandType: 'completeRoutineRun',
+    entityType: 'routine-run',
+    entityId: runId,
+    // A restored reference mirror can legitimately be newer than the server's
+    // compact routine entity. Dismissal is an explicit latest-user action, so
+    // do not turn that harmless version skew into a permanent active banner.
+    baseVersion: null,
+    payload: { run: next },
+    occurredAt: timestamp,
+  });
+  await databaseConnection.commitAtomicMutation({
+    operationId,
+    label: 'routine-run-dismiss',
+    additionalStatements: [{
+      sql: `UPDATE routine_runs
+            SET status='skipped',current_step_id=NULL,completed_at=NULL,
+                updated_at=?,version=version+1
+            WHERE id=? AND status='active'`,
+      bind: [timestamp, runId],
       result: 'changes',
     }],
     sync,

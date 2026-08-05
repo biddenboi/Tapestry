@@ -37,3 +37,10 @@ test('profile identity preserves immutable snapshot time and explicit rank label
   assert.equal(identity.title, 'veteran');
   assert.equal(identity.snapshotAt, '2026-01-01T00:00:00.000Z');
 });
+
+test('profile identity tolerates the transient null between profile hydrations', () => {
+  const identity = buildProfileIdentity(null);
+  assert.equal(identity.profileId, null);
+  assert.equal(identity.username, 'Unknown profile');
+  assert.equal(identity.rankLabel, 'Unrated');
+});

@@ -24,7 +24,7 @@ export default function WebPushPanel({ databaseConnection }) {
         ? await enableWebPush(transport)
         : await disableWebPush(transport);
       setDetails(next);
-      setMessage(enable ? 'Reminder and routine push delivery is enabled.' : 'Push delivery is disabled on this device.');
+      setMessage(enable ? 'Reminders, Match updates, and task recommendations are enabled.' : 'Push delivery is disabled on this device.');
     } catch (error) {
       setMessage(error?.message || 'Push settings could not be changed.');
     } finally {
@@ -33,7 +33,11 @@ export default function WebPushPanel({ databaseConnection }) {
   };
 
   const enabled = Boolean(details?.subscription);
-  const status = !details?.supported
+  const status = !details
+    ? 'Checking support…'
+    : details.installRequired
+    ? 'Install the Home Screen app first'
+    : !details.supported
     ? 'Unavailable in this browser'
     : enabled ? 'Enabled on this device'
       : details?.permission === 'denied' ? 'Blocked in browser settings'
@@ -44,12 +48,12 @@ export default function WebPushPanel({ databaseConnection }) {
         <strong>Home Screen push</strong>
         <span>{status}</span>
         {details?.homeScreenRecommended && !enabled && (
-          <small>Add Tapestry to the iPhone Home Screen before enabling Web Push.</small>
+          <small>{details.installRequired ? 'In Safari, tap Share → Add to Home Screen, then open Tapestry from its icon.' : 'This installed iPhone app can receive notifications when closed.'}</small>
         )}
       </div>
       <button
         type="button"
-        disabled={busy || !details?.supported || (!enabled && !details?.configured)}
+        disabled={busy || !details?.supported || details?.installRequired || (!enabled && !details?.configured)}
         onClick={() => change(!enabled)}
         title={!enabled && !details?.configured ? 'Push delivery key is not provisioned in this build' : undefined}
       >

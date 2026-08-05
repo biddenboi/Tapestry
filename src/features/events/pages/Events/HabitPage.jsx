@@ -257,12 +257,12 @@ export function HabitPage({ model, onCreate, onOpenGoals, onEdit, onComplete, on
       <header className="habit-page-header">
         <div>
           <span className="habit-page-eyebrow">Daily practice</span>
-          <h1>Habits</h1>
+          <h1>Events</h1>
           <p>Track the small things directly, then let the history speak for itself.</p>
         </div>
         <div className="habit-page-actions">
           <button type="button" onClick={onOpenGoals}>Goals</button>
-          <button type="button" className="primary" onClick={onCreate}><Icon name="add" size={15} /> New habit</button>
+          <button type="button" className="primary" onClick={onCreate}><Icon name="add" size={15} /> New event</button>
         </div>
       </header>
       <main className="habit-page-scroll">
@@ -271,8 +271,8 @@ export function HabitPage({ model, onCreate, onOpenGoals, onEdit, onComplete, on
             <div className="habit-empty-state">
               <span>✦</span>
               <h2>Build your first rhythm</h2>
-              <p>Create a one-time, quantity, or duration habit. Its history will grow here one day at a time.</p>
-              <button type="button" className="primary" onClick={onCreate}>Create a habit</button>
+              <p>Create a one-time, quantity, or duration event. Its history will grow here one day at a time.</p>
+              <button type="button" className="primary" onClick={onCreate}>Create an event</button>
             </div>
           ) : (
             <>
@@ -395,13 +395,13 @@ export function HabitEditor({ tracker = null, logs = [], currentPlayer, onCancel
   };
 
   return (
-    <div className="habit-editor" role="dialog" aria-modal="true" aria-label={tracker ? `Edit ${tracker.name}` : 'Create habit'}>
+    <div className="habit-editor" role="dialog" aria-modal="true" aria-label={tracker ? `Edit ${tracker.name}` : 'Create event'}>
       <header className="habit-editor-header">
         <div>
-          <span>{tracker ? 'Edit habit' : 'New habit'}</span>
+          <span>{tracker ? 'Edit event' : 'New event'}</span>
           <h2>{tracker?.name || 'Create a daily rhythm'}</h2>
         </div>
-        <button type="button" onClick={onCancel} aria-label="Close habit editor">×</button>
+        <button type="button" onClick={onCancel} aria-label="Close event editor">×</button>
       </header>
       <div className="habit-editor-scroll">
         <fieldset className="habit-type-picker">
@@ -528,14 +528,14 @@ export function HabitEditor({ tracker = null, logs = [], currentPlayer, onCancel
       <footer className="habit-editor-footer">
         {tracker && (confirmingDelete ? (
           <span className="habit-delete-confirm">
-            <strong>Delete habit and its history?</strong>
+            <strong>Delete event and its history?</strong>
             <button type="button" className="danger" onClick={() => onDelete(tracker)}>Delete</button>
             <button type="button" onClick={() => setConfirmingDelete(false)}>Keep it</button>
           </span>
         ) : <button type="button" className="danger ghost" onClick={() => setConfirmingDelete(true)}>Delete</button>)}
         <span className="habit-editor-spacer" />
         <button type="button" onClick={onCancel}>Cancel</button>
-        <button type="button" className="primary" disabled={!valid} onClick={save}>{tracker ? 'Save changes' : 'Create habit'}</button>
+        <button type="button" className="primary" disabled={!valid} onClick={save}>{tracker ? 'Save changes' : 'Create event'}</button>
       </footer>
     </div>
   );

@@ -543,14 +543,17 @@ test('contribution rankings use a materialized deterministic snapshot', () => {
   const snapshot = leaderboards.buildContributionLeaderboardSnapshot({
     players: [player('a', 'Ada', 1000), player('b', 'Ben', 1000), player('c', 'Cara', 1000)],
     contributions: [
-      { UUID: 'c1', parent: 'a', value: 4 },
-      { UUID: 'c2', parent: 'b', value: 9 },
-      { UUID: 'c3', parent: 'a', value: 6 },
+      { UUID: 'c1', parent: 'a', value: 4, inGameTimestamp: 10 },
+      { UUID: 'c2', parent: 'b', value: 9, inGameTimestamp: 12 },
+      { UUID: 'c3', parent: 'a', value: 6, inGameTimestamp: 30 },
     ],
     generatedAt: '2026-01-03T00:00:00.000Z',
   });
   assert.deepEqual(snapshot.rankedUUIDs, ['a', 'b', 'c']);
   assert.deepEqual(snapshot.totalsByPlayer, { a: 10, b: 9 });
+  const historical = leaderboards.projectContributionLeaderboardAtIGT(snapshot, { viewerIGT: 20 });
+  assert.deepEqual(historical.totalsByPlayer, { a: 4, b: 9, c: 0 });
+  assert.deepEqual(historical.rankedUUIDs, ['b', 'a', 'c']);
 });
 
 class MemoryDb {

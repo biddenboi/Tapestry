@@ -1,7 +1,7 @@
 export const EVENT_TERMINOLOGY = Object.freeze({
   navigation: Object.freeze({
     label: 'Events',
-    title: 'Habits, goals, and daily schedule',
+    title: 'Events, goals, and daily schedule',
   }),
   types: Object.freeze({
     oneTime: 'One time',
@@ -11,7 +11,7 @@ export const EVENT_TERMINOLOGY = Object.freeze({
     tracker: 'Tracker',
   }),
   headings: Object.freeze({
-    habits: 'Habits',
+    habits: 'Events',
     goals: 'Goals',
     dailyTracking: 'Daily tracking',
     sharedProgress: 'Shared progress',
@@ -22,11 +22,11 @@ export const EVENT_TERMINOLOGY = Object.freeze({
     contributionHistory: 'Contribution History',
   }),
   descriptions: Object.freeze({
-    habits: 'Complete habits, log quantities, and track focused time.',
+    habits: 'Complete events, log quantities, and track focused time.',
     goals: 'Track contribution toward shared goals.',
   }),
   actions: Object.freeze({
-    createTracker: 'Create habit',
+    createTracker: 'Create event',
     createGoal: 'Create goal',
     openGoal: 'Open goal',
     completeGoal: 'Complete goal',
@@ -36,10 +36,10 @@ export const EVENT_TERMINOLOGY = Object.freeze({
     archivedGoal: 'ARCHIVED GOAL',
   }),
   empty: Object.freeze({
-    trackers: 'No habits yet.',
+    trackers: 'No events yet.',
     goals: 'No goals yet.',
     activity: 'No activity has been logged this week.',
-    effects: 'No active effects yet. Complete a habit or log a quantity to activate one.',
+    effects: 'No active effects yet. Complete an event or log a quantity to activate one.',
   }),
 });
 

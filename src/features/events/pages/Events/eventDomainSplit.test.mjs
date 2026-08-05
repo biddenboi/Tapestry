@@ -31,7 +31,8 @@ test('Goals stay lazy while the habit page is loaded directly', () => {
 
 test('Goals loading remains stable across clock ticks and has a retry state', () => {
   assert.match(eventsPage, /timestampRef\.current = timestamp/);
-  assert.match(repository, /getRepository\('goals'\)\.getOverview/);
+  assert.match(repository, /getRepository\('goals'\)\.getWorkspaceOverview/);
+  assert.doesNotMatch(repository, /getRepository\('goals'\)\.getOverview/);
   assert.doesNotMatch(eventsPage, /loadArenas[\s\S]*?\], \[.*timestamp/);
   assert.match(eventsPage, /Goals could not load\./);
   assert.match(eventsPage, /loadArenas\(\)\.catch/);

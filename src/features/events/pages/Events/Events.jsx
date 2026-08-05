@@ -38,8 +38,8 @@ import { useLocalSectionRoute } from '@shared/navigation/LocalSectionNav/LocalSe
 import '@features/events/pages/Events/Events.css';
 
 const EVENT_LOCAL_PAGES = Object.freeze([
-  { id: 'calendar', label: 'Calendar', icon: 'calendar', deepLinkKey: 'events-calendar', capability: 'events.calendar', description: 'See today’s Habit opportunities and this week’s completion pattern.' },
-  { id: 'rhythms', label: 'Habits & Rhythms', icon: 'rhythm', deepLinkKey: 'events-rhythms', description: 'Create repeatable practices, choose their cadence, and log progress.' },
+  { id: 'calendar', label: 'Calendar', icon: 'calendar', deepLinkKey: 'events-calendar', capability: 'events.calendar', description: 'See today’s Event opportunities and this week’s completion pattern.' },
+  { id: 'rhythms', label: 'Events & Rhythms', icon: 'rhythm', deepLinkKey: 'events-rhythms', description: 'Create repeatable Events, choose their cadence, and log progress.' },
   { id: 'boundaries', label: 'Day Boundaries', icon: 'sun', deepLinkKey: 'events-boundaries', capability: 'events.boundaries', description: 'Set a deliberate start and handoff for each day.' },
   { id: 'reviews', label: 'Review Schedule', icon: 'history', deepLinkKey: 'events-reviews', capability: 'events.reviews', description: 'See what needs reflection and start a focused Goal review.' },
   { id: 'goals', label: 'Goals', deepLinkKey: 'events-goals', capability: 'events.goals', description: 'Connect everyday work to finite outcomes and longer-term Areas.' },
@@ -97,14 +97,14 @@ function EventCalendarPage({ model, onEdit, onOpenRhythms }) {
             <p>See today’s opportunities and the rhythm taking shape across the week.</p>
           </div>
         </div>
-        <button type="button" onClick={onOpenRhythms}>Manage habits</button>
+        <button type="button" onClick={onOpenRhythms}>Manage Events</button>
       </header>
       <div className="event-calendar-grid">
         <article className="event-calendar-day event-calendar-day--today">
           <div className="event-local-card__heading">
             <div>
               <strong>Today</strong>
-              <p>Open a Habit to log it or adjust its rhythm.</p>
+              <p>Open an Event to log it or adjust its rhythm.</p>
             </div>
             <b>{model.active.length} open · {model.completed.length} done</b>
           </div>
@@ -125,8 +125,8 @@ function EventCalendarPage({ model, onEdit, onOpenRhythms }) {
           ))}
           {!model.cards.length && (
             <div className="event-local-empty">
-              <strong>No Habits are scheduled today.</strong>
-              <button type="button" onClick={onOpenRhythms}>Create or schedule a Habit</button>
+              <strong>No Events are scheduled today.</strong>
+              <button type="button" onClick={onOpenRhythms}>Create or schedule an Event</button>
             </div>
           )}
         </article>
@@ -134,7 +134,7 @@ function EventCalendarPage({ model, onEdit, onOpenRhythms }) {
           <div className="event-local-card__heading">
             <div>
               <strong>This week</strong>
-              <p>Each number is the count of Habits logged on that day.</p>
+              <p>Each number is the count of Events logged on that day.</p>
             </div>
           </div>
           <div className="event-calendar-week__days" aria-label="Seven day activity">
@@ -480,7 +480,7 @@ export default function Events() {
     () => completeOneTimeHabit(databaseConnection, currentPlayer, card.event),
     true,
     (result) => [
-      { label: 'Habit complete', kind: 'event' },
+      { label: 'Event complete', kind: 'event' },
       result.contribution ? { amount: result.contribution.value, unit: 'contribution', kind: 'contribution' } : null,
     ].filter(Boolean),
   );

@@ -48,13 +48,22 @@ export class ProfileLifecycleService {
 
   getActivePlayerChangedAt() { return this.appState.activePlayerChangedAt || null; }
 
-  setActivePlayerUUID(uuid, { changedAt = new Date().toISOString() } = {}) {
+  setActivePlayerUUID(uuid, {
+    changedAt = new Date().toISOString(),
+    enqueueSync = true,
+  } = {}) {
+    const normalizedChangedAt = changedAt || new Date().toISOString();
     this.appState = {
       ...this.appState,
       activePlayerUUID: uuid || null,
-      activePlayerChangedAt: changedAt || new Date().toISOString(),
+      activePlayerChangedAt: normalizedChangedAt,
     };
     this._queueAppStateWrite();
+    if (enqueueSync && uuid && this.syncRuntime?.queueActiveProfileState) {
+      this.compactWritePromise = this.compactWritePromise.then(() => (
+        this.syncRuntime.queueActiveProfileState(uuid, normalizedChangedAt)
+      ));
+    }
   }
 
   async _getCurrentPlayerRecord() {

@@ -1,4 +1,4 @@
-const REFERENCE_CAPTURE_TARGETS = Object.freeze([
+export const REFERENCE_CAPTURE_TARGETS = Object.freeze([
   ['profile', 'players', 'document_players'],
   ['goal', 'projects', 'document_projects'],
   ['goal-area', 'goalAreas', 'document_goal_areas'],

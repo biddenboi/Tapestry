@@ -51,19 +51,52 @@ function reminderCandidate(entity: EntityRow, now: number): Candidate | null {
   };
 }
 
-function routineCandidate(entity: EntityRow): Candidate | null {
-  const run = (entity.data?.run || entity.data) as Record<string, unknown>;
-  if (!['active', 'paused'].includes(String(run.status || ''))) return null;
-  const routineType = String(run.routineType || 'day');
+function matchCandidate(entity: EntityRow, now: number): Candidate | null {
+  const match = (entity.data?.match || entity.data) as Record<string, unknown>;
+  const status = String(match.status || '');
+  if (!['pending', 'active'].includes(status)) return null;
+  const changedAt = dateValue(entity.updated_at) ?? dateValue(match.updatedAt);
+  if (changedAt == null || now - changedAt > 20 * 60_000) return null;
+  const phase = String(match.phase || (status === 'active' ? 'work' : 'ready'));
+  const score = match.scores && typeof match.scores === 'object'
+    ? Object.values(match.scores as Record<string, unknown>).map(Number).filter(Number.isFinite).reduce((sum, value) => sum + value, 0)
+    : null;
   return {
     ownerId: entity.owner_id,
-    dueKey: `routine:${entity.entity_id}:${String(run.startedAt || entity.updated_at)}`,
-    title: routineType === 'night' ? 'Night routine ready' : 'Morning routine ready',
-    body: 'Continue your routine in Tapestry.',
-    url: `/?mobile=1&open=routine:${encodeURIComponent(entity.entity_id)}`,
-    entityType: 'routine-run',
+    dueKey: `match:${entity.entity_id}:${entity.updated_at}`,
+    title: status === 'active' ? 'Match updated' : 'Match ready check',
+    body: score == null ? `Shared Match phase: ${phase}.` : `${score.toLocaleString()} total points · ${phase}.`,
+    url: `/?mobile=1&open=match:${encodeURIComponent(entity.entity_id)}`,
+    entityType: 'match',
     entityId: entity.entity_id,
   };
+}
+
+function taskRecommendationCandidates(entities: EntityRow[], now: number): Candidate[] {
+  const hourKey = new Date(now).toISOString().slice(0, 13);
+  const byOwner = new Map<string, Array<{ entity: EntityRow; task: Record<string, unknown>; dueAt: number }>>();
+  for (const entity of entities.filter(({ entity_type }) => entity_type === 'task')) {
+    const task = (entity.data?.task || entity.data) as Record<string, unknown>;
+    if (task.completedAt || task.archivedAt || task.deletedAt) continue;
+    const dueAt = dateValue(task.dueDate) ?? dateValue(task.dueAt);
+    if (dueAt == null || dueAt > now + 60 * 60_000) continue;
+    const rows = byOwner.get(entity.owner_id) || [];
+    rows.push({ entity, task, dueAt });
+    byOwner.set(entity.owner_id, rows);
+  }
+  return [...byOwner.entries()].map(([ownerId, rows]) => {
+    rows.sort((left, right) => left.dueAt - right.dueAt);
+    const { entity, task, dueAt } = rows[0];
+    return {
+      ownerId,
+      dueKey: `task-recommendation:${ownerId}:${hourKey}`,
+      title: dueAt < now ? 'A task needs attention' : 'Task recommendation',
+      body: String(task.name || task.title || 'Open Tapestry for the next task.'),
+      url: `/?mobile=1&open=task:${encodeURIComponent(entity.entity_id)}`,
+      entityType: 'task',
+      entityId: entity.entity_id,
+    };
+  });
 }
 
 async function endpointHash(endpoint: string) {
@@ -90,16 +123,22 @@ export default {
       supabase.from('web_push_subscriptions').select('owner_id,endpoint,p256dh,auth_secret'),
       supabase.from('sync_entities')
         .select('owner_id,entity_type,entity_id,data,updated_at')
-        .in('entity_type', ['reminder', 'routine-run'])
+        .in('entity_type', ['reminder', 'match', 'task'])
         .is('deleted_at', null),
     ]);
     if (subscriptionsError || entitiesError) {
       return Response.json({ error: subscriptionsError?.message || entitiesError?.message }, { status: 500 });
     }
     const now = Date.now();
-    const candidates = (entities as EntityRow[]).map((entity) => (
-      entity.entity_type === 'reminder' ? reminderCandidate(entity, now) : routineCandidate(entity)
-    )).filter((candidate): candidate is Candidate => Boolean(candidate));
+    const entityRows = entities as EntityRow[];
+    const candidates = [
+      ...entityRows.map((entity) => {
+        if (entity.entity_type === 'reminder') return reminderCandidate(entity, now);
+        if (entity.entity_type === 'match') return matchCandidate(entity, now);
+        return null;
+      }).filter((candidate): candidate is Candidate => Boolean(candidate)),
+      ...taskRecommendationCandidates(entityRows, now),
+    ];
     let delivered = 0;
     let skipped = 0;
     let failed = 0;
@@ -128,7 +167,7 @@ export default {
             entityId: candidate.entityId,
             badgeCount: candidates.filter(({ ownerId }) => ownerId === candidate.ownerId).length,
             tag: candidate.dueKey,
-          }), { TTL: 3600, urgency: 'normal' });
+          }), { TTL: candidate.entityType === 'match' ? 300 : 3600, urgency: candidate.entityType === 'match' ? 'high' : 'normal' });
           await supabase.from('web_push_delivery_receipts').insert({
             owner_id: subscription.owner_id,
             endpoint_hash: hash,

@@ -165,8 +165,8 @@ export class PersistenceRuntime {
       client: this.sqliteStorageAdapter.client,
       connection: facade,
     });
-    this.sqliteStorageAdapter.setCommitListener?.(() => {
-      this.syncRuntime.databaseCommitted();
+    this.sqliteStorageAdapter.setCommitListener?.((details) => {
+      this.syncRuntime.databaseCommitted(details);
     });
     this.syncRuntime.registerCommand('recordRewardProvenance', (entry) => ({
       label: 'remote-reward-provenance',

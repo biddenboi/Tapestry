@@ -5,6 +5,7 @@ import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import {
   GAME_STATE,
   MATCH_STATUS,
+  STORES,
   THEME_ACCENT_COLORS,
 } from '@domain/constants.js';
 import { loadTaskCreationMenu, showTaskPreviewMenu } from '@features/tasks/loaders.js';
@@ -38,6 +39,7 @@ import { cosmeticPresentationStyle } from '@domain/cosmetics/CosmeticCatalog.js'
 import { useLocalSectionRoute } from '@shared/navigation/LocalSectionNav/LocalSectionRouteState.js';
 import { useTaskSession } from '@features/tasks/context/TaskSessionProvider.jsx';
 import { patchMatchStateCommand } from '@domain/matches/MatchSyncCommands.js';
+import { requestLiveReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
 import '@features/matches/components/MatchArena/MatchArena.css';
 
 const MATCH_PAGES = Object.freeze([
@@ -691,6 +693,31 @@ export default function MatchArena() {
   }, [activeMatch?.UUID]);
 
   useEffect(() => {
+    if (!activeMatch?.UUID) return undefined;
+    let cancelled = false;
+    databaseConnection.get(STORES.match, activeMatch.UUID)
+      .then((canonical) => {
+        if (
+          cancelled
+          || !canonical
+          || (
+            String(canonical.updatedAt || canonical.result?.concludedAt || '')
+            === String(activeMatch.updatedAt || activeMatch.result?.concludedAt || '')
+            && canonical.status === activeMatch.status
+          )
+        ) return;
+        if (canonical.status === 'cancelled') {
+          setActiveMatch(null);
+          setGameState(GAME_STATE.idle);
+          return;
+        }
+        setActiveMatch(canonical);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [activeMatch, databaseConnection, domainRevisions.matches, setActiveMatch, setGameState]);
+
+  useEffect(() => {
     matchEventsRef.current = matchEvents;
   }, [matchEvents]);
 
@@ -862,6 +889,9 @@ export default function MatchArena() {
           console.warn('[MatchArena] post-match jobs could not be queued:', error);
       });
       invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
+      await requestLiveReferenceSync(databaseConnection, 'desktop-match-complete').catch((syncError) => {
+        console.warn('[MatchArena] completed result will retry in the background.', syncError);
+      });
     } catch (error) {
       console.error('[MatchArena] match conclusion failed:', error);
       notify?.({
@@ -966,6 +996,9 @@ export default function MatchArena() {
     });
     setActiveMatch(updated);
     invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
+    await requestLiveReferenceSync(databaseConnection, 'desktop-match-state').catch((syncError) => {
+      console.warn('[MatchArena] shared state will retry in the background.', syncError);
+    });
     return updated;
   };
 
@@ -1008,6 +1041,9 @@ export default function MatchArena() {
         status: 'cancelled',
         phase: 'cancelled',
       }, { origin: 'desktop' });
+      await requestLiveReferenceSync(databaseConnection, 'desktop-match-cancelled').catch((syncError) => {
+        console.warn('[MatchArena] queue cancellation will retry in the background.', syncError);
+      });
       setActiveMatch(null);
       setGameState(GAME_STATE.idle);
       invalidateDomains(DOMAIN_INVALIDATION.matchWrite);

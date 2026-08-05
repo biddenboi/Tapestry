@@ -30,6 +30,19 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
   const { default: DatabaseConnection } = await server.ssrLoadModule('/data/DatabaseConnection.js');
   const { buildTaverns } = await server.ssrLoadModule('/domain/social-world/TavernProjection.js');
   const { selectLobbyActivityPulses } = await server.ssrLoadModule('/domain/social-world/LobbyPresencePulses.js');
+  const { recoverPendingTaskCompletionProcessing } = await server.ssrLoadModule(
+    '/features/tasks/domain/TaskCompletionProcessors.js',
+  );
+  const { recoverPendingAchievementEvents } = await server.ssrLoadModule(
+    '/domain/achievements/AchievementProcessing.js',
+  );
+  const { queryMobileCompetition } = await server.ssrLoadModule(
+    '/app/mobile/application/MobileCompetitionQueryService.js',
+  );
+  const {
+    applyMobileReferenceRecords,
+    collectMobileReferenceRecords,
+  } = await server.ssrLoadModule('/data/sync/MobileReferenceSync.js');
   const databaseConnection = new DatabaseConnection({ sqliteStorageAdapter });
 
   t.after(async () => {
@@ -39,8 +52,12 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
 
   const seeded = await databaseConnection.loadDemoData();
   await new Promise((resolve) => setTimeout(resolve, 50));
+  await recoverPendingTaskCompletionProcessing(databaseConnection);
+  await recoverPendingAchievementEvents(databaseConnection);
   assert.equal(seeded.typedDemo.status, 'seeded');
-  assert.equal(seeded.typedDemo.castSize, 2);
+  // Every seeded demo profile starts at zero Elo, Contribution, and Points.
+  // The typed world may still select one equal-baseline near peer.
+  assert.equal(seeded.typedDemo.castSize, 1);
   assert.equal('residentDemo' in seeded, false);
   const themeInventory = (await databaseConnection.getAll('inventory'))
     .filter((item) => item.parent === 'demo-player' && item.type === 'cosmetic_theme');
@@ -82,7 +99,7 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
     viewerId: 'demo-player',
     viewerIGT: seeded.typedDemo.viewerIGT,
   });
-  assert.equal(scene.members.length, 5);
+  assert.equal(scene.members.length, 4);
   assert.deepEqual(scene.locations.find((location) => location.id === 'dojo').occupants, [
     'demo-rival-mika',
     'demo-rival-rhea',
@@ -101,7 +118,7 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
     ],
     viewerIGT: seeded.typedDemo.viewerIGT,
   });
-  assert.deepEqual(roomFacts.map((fact) => fact.sessionPoints), [390, 450]);
+  assert.deepEqual(roomFacts.map((fact) => fact.sessionPoints), [0, 0]);
 
   const standings = await databaseConnection.getDojoStandings({
     playerId: 'demo-player',
@@ -109,8 +126,8 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
     topLimit: 10,
     aroundRadius: 2,
   });
-  assert.equal(standings.current.points, 365);
-  assert.equal(standings.top.length >= 4, true);
+  assert.equal(standings.current.points, 0);
+  assert.equal(standings.top.length >= 1, true);
   assert.equal(standings.updating, false);
 
   const rheaCard = await databaseConnection.getSocialWorldProfileCard({
@@ -123,4 +140,64 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
   assert.equal(rheaCard.thread, null);
   assert.deepEqual(rheaCard.next, []);
   assert.equal(rheaCard.new.count, 0);
+
+  // Reproduce an older clean-device bootstrap: canonical documents exist but
+  // normalized profile/IGT/Match projections were never built. A reference
+  // reconciliation must repair them before recovery processors run.
+  const cloudRecords = await collectMobileReferenceRecords(databaseConnection, {
+    bootstrap: true,
+    includeActiveProfile: true,
+  });
+  const expectedDemoPlayer = await databaseConnection.get('players', 'demo-player');
+  await sqliteStorageAdapter.executeAtomic({
+    commandId: 'simulate-pre-projection-mobile-bootstrap',
+    label: 'simulate-pre-projection-mobile-bootstrap',
+    statements: [
+      // This is test-only corruption setup. Production correctly prevents
+      // deleting the last live profile while planning rows still reference it.
+      { sql: 'DROP TRIGGER preserve_workspace_planning_before_player_delete', result: 'changes' },
+      { sql: 'DELETE FROM players', result: 'changes' },
+      { sql: 'DELETE FROM shadow_import_runs', result: 'changes' },
+      {
+        sql: "DELETE FROM sync_reference_meta WHERE key='mobile-reference-projections-v1'",
+        result: 'changes',
+      },
+    ],
+  });
+  assert.equal(await sqliteStorageAdapter.query({
+    sql: 'SELECT COUNT(*) FROM players',
+    result: 'value',
+  }), 0);
+
+  const repaired = await applyMobileReferenceRecords(databaseConnection, cloudRecords, {
+    forceActiveProfile: true,
+  });
+  assert.equal(repaired.projectionRepair.reconciled, true);
+  assert.equal(repaired.projectionRepair.full, true);
+  const repairedPlayer = await sqliteStorageAdapter.query({
+    sql: "SELECT elo,in_game_time AS inGameTime FROM players WHERE id='demo-player'",
+    result: 'one',
+  });
+  assert.deepEqual(repairedPlayer, { elo: 0, inGameTime: expectedDemoPlayer.inGameTime });
+  assert.equal(Number(await sqliteStorageAdapter.query({
+    sql: 'SELECT COUNT(*) FROM tasks',
+    result: 'value',
+  })) > 0, true);
+  assert.equal(Number(await sqliteStorageAdapter.query({
+    sql: 'SELECT COUNT(*) FROM matches',
+    result: 'value',
+  })) > 0, true);
+  await databaseConnection.reconcileMissingMaterializedLeaderboards({
+    reason: 'mobile-projection-repair-test',
+    force: true,
+  });
+  const mobileCompetition = await queryMobileCompetition(databaseConnection, {
+    playerUUID: 'demo-player',
+    viewerIGT: seeded.typedDemo.viewerIGT,
+  });
+  assert.equal(mobileCompetition.metrics.elo, repairedPlayer.elo);
+  assert.deepEqual(mobileCompetition.metrics, { elo: 0, points: 0, contribution: 0 });
+  assert.equal(mobileCompetition.eloHistory.length >= 2, true);
+  await recoverPendingTaskCompletionProcessing(databaseConnection);
+  await recoverPendingAchievementEvents(databaseConnection);
 });

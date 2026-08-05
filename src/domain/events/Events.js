@@ -305,7 +305,7 @@ export async function completeOneTimeHabit(db, player, customEvent) {
     entityUUID: customEvent.UUID,
     source: 'habit',
     sourceUUID: newLog.UUID,
-    summary: customEvent.name || 'Habit check-in',
+    summary: customEvent.name || 'Event check-in',
     createdAt: newLog.loggedAt,
     inGameTimestamp: newLog.inGameTimestamp,
   });

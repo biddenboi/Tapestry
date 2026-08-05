@@ -1,21 +1,61 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { registerTapestryServiceWorker } from './PwaRuntime.js';
 
-test('the installable shell has offline navigation fallback and stable icons', async () => {
-  const [manifestText, worker, html] = await Promise.all([
-    readFile(new URL('../../../public/manifest.webmanifest', import.meta.url), 'utf8'),
-    readFile(new URL('../../../public/service-worker.js', import.meta.url), 'utf8'),
-    readFile(new URL('../../../index.html', import.meta.url), 'utf8'),
-  ]);
-  const manifest = JSON.parse(manifestText);
-  assert.equal(manifest.display, 'standalone');
-  assert.equal(manifest.id, '/tapestry');
-  assert.deepEqual(manifest.icons.map(({ sizes }) => sizes), ['192x192', '512x512']);
-  assert.match(worker, /request\.mode === 'navigate'/);
-  assert.match(worker, /shellFallback/);
-  assert.match(worker, /tapestry-icon-192\.png/);
-  assert.match(worker, /tapestry-icon-512\.png/);
-  assert.match(html, /rel="manifest"/);
-  assert.match(html, /apple-mobile-web-app-capable/);
+test('development detaches service workers without reloading or registering', async () => {
+  let unregisters = 0;
+  let registrations = 0;
+  let reloads = 0;
+  const deleted = [];
+  const windowRef = {
+    location: {
+      protocol: 'http:',
+      hostname: 'localhost',
+      reload() { reloads += 1; },
+    },
+    navigator: {
+      serviceWorker: {
+        controller: {},
+        async getRegistrations() {
+          return [{ async unregister() { unregisters += 1; } }];
+        },
+        async register() { registrations += 1; },
+      },
+    },
+    caches: {
+      async keys() { return ['tapestry-shell-v1', 'unrelated-cache']; },
+      async delete(key) { deleted.push(key); return true; },
+    },
+  };
+
+  await registerTapestryServiceWorker({ windowRef, production: false });
+
+  assert.equal(unregisters, 1);
+  assert.equal(registrations, 0);
+  assert.equal(reloads, 0);
+  assert.deepEqual(deleted, ['tapestry-shell-v1']);
+});
+
+test('production registers the worker without auto-reloading the open app', async () => {
+  let registrations = 0;
+  let reloads = 0;
+  const windowRef = {
+    location: {
+      protocol: 'https:',
+      hostname: 'tapestry.example',
+      reload() { reloads += 1; },
+    },
+    document: { readyState: 'complete' },
+    navigator: {
+      serviceWorker: {
+        controller: {},
+        async register() { registrations += 1; return { scope: './' }; },
+      },
+    },
+  };
+
+  await registerTapestryServiceWorker({ windowRef, production: true });
+
+  assert.equal(registrations, 1);
+  assert.equal(reloads, 0);
 });

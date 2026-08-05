@@ -22,6 +22,10 @@ test('Profiles open from materialized summaries before detailed domains', () => 
   assert.match(controller, /summary \|\| \(fallbackPlayer \?/);
   assert.match(controller, /projectedPlayersByUUID/);
   assert.match(controller, /hasVisibleRating: projected\.hasVisibleRating/);
+  assert.match(controller, /projectContributionLeaderboardAtIGT/);
+  assert.match(controller, /contributionProjection\.totalsByPlayer/);
+  assert.match(controller, /summary: resolvedSummary/);
+  assert.doesNotMatch(profile, /resolvedProfileUUID, viewerIGTBucket\]\);/);
   assert.match(controller, /ensureDomainLoaded\('profileTimeline'\)/);
   assert.match(controller, /ensureDomainLoaded\('profileMatches'\)/);
   assert.match(controller, /ensureDomainLoaded\('profileSocial'\)/);
@@ -32,7 +36,8 @@ test('Profiles open from materialized summaries before detailed domains', () => 
 test('local profile read failures are distinct from genuinely missing profiles', () => {
   assert.match(profile, /setProfileLoadError\(true\)/);
   assert.match(profile, /Profile unavailable\./);
-  assert.match(profile, /Profile not found\./);
+  assert.match(profile, /Public profile unavailable\./);
+  assert.doesNotMatch(profile, /Loading profile summary/i);
 });
 
 test('rule-based narrative and replay code stay outside the initial Profile bundle', () => {

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { useAppContext } from '@app/hooks/useAppContext.js';
 import { STORES } from '@domain/constants.js';
-import { getIgtDayNumber } from '@domain/events/Events.js';
+import { readDayPenalty, reportDayPenalty } from '@domain/profile/DayPenalty.js';
 
 /**
  * BanModal — the reprimand tool, now with a graduated penalty system.
@@ -26,28 +26,6 @@ import { getIgtDayNumber } from '@domain/events/Events.js';
    Centered at 5 with the mass clustering at 5–6 and a thinning tail
    toward lower values, so a ban occasionally triggers surprisingly
    early. Fresh sample per IGT day; stable within the day. */
-const STRIKE_THRESHOLD_PMF = [
-  [1, 0.04],
-  [2, 0.07],
-  [3, 0.10],
-  [4, 0.14],
-  [5, 0.20],
-  [6, 0.22],
-  [7, 0.15],
-  [8, 0.08],
-];
-
-function sampleStrikeThreshold() {
-  const u = Math.random();
-  let cum = 0;
-  for (const [value, p] of STRIKE_THRESHOLD_PMF) {
-    cum += p;
-    if (u < cum) return value;
-  }
-  // Floating-point safety net — return the last value if we somehow walk off the end.
-  return STRIKE_THRESHOLD_PMF[STRIKE_THRESHOLD_PMF.length - 1][0];
-}
-
 export default NiceModal.create(({ forceFinal = false }) => {
   const { databaseConnection, currentPlayer, refreshApp } = useAppContext();
   const modal = useModal();
@@ -67,29 +45,19 @@ export default NiceModal.create(({ forceFinal = false }) => {
   const username   = currentPlayer?.username || '';
   const playerUUID = currentPlayer?.UUID || null;
 
-  const currentIgtDay = useMemo(
-    () => (currentPlayer ? getIgtDayNumber(currentPlayer) : 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentPlayer?.UUID],
-  );
-
   // Load current strikes + per-day sampled threshold on phase 0 open.
   useEffect(() => {
     if (phase !== 0 || !playerUUID) return;
     let cancelled = false;
     const load = async () => {
-      let vio = databaseConnection.getViolations(playerUUID, currentIgtDay);
-      if (!Number.isInteger(vio.threshold) || vio.threshold <= 0) {
-        vio = { ...vio, threshold: sampleStrikeThreshold() };
-        databaseConnection.setViolations(playerUUID, vio);
-      }
+      const vio = readDayPenalty(databaseConnection, currentPlayer);
       if (cancelled) return;
       setStrikes(vio.strikes);
       setThreshold(vio.threshold);
     };
     load();
     return () => { cancelled = true; };
-  }, [databaseConnection, phase, playerUUID, currentIgtDay]);
+  }, [currentPlayer, databaseConnection, phase, playerUUID]);
 
   // Phase 2: pull record counts
   useEffect(() => {
@@ -151,23 +119,11 @@ export default NiceModal.create(({ forceFinal = false }) => {
 
   const handleReportPenalty = async () => {
     if (!playerUUID) return;
-    let vio = databaseConnection.getViolations(playerUUID, currentIgtDay);
-    if (!Number.isInteger(vio.threshold) || vio.threshold <= 0) {
-      vio = { ...vio, threshold: sampleStrikeThreshold() };
-    }
-    const newStrikes = vio.strikes + 1;
-    // Preserve the sampled threshold across the write so it stays stable
-    // for the rest of the IGT day — it should NOT re-roll on every report.
-    databaseConnection.setViolations(playerUUID, {
-      strikes:   newStrikes,
-      igtDay:    currentIgtDay,
-      threshold: vio.threshold,
-    });
-    setStrikes(newStrikes);
+    const next = reportDayPenalty(databaseConnection, currentPlayer);
+    setStrikes(next.strikes);
     setReported(true);
 
-    if (newStrikes >= vio.threshold) {
-      databaseConnection.setBanPending(playerUUID);
+    if (next.limitReached) {
       setTimeout(() => setPhase(2), 520);
     }
   };
@@ -262,7 +218,7 @@ export default NiceModal.create(({ forceFinal = false }) => {
               <span className="ban-consequence-label">What happens at the limit</span>
               <p>
                 Once the penalty limit is reached, this profile's identity, cosmetics,
-                match history, and progress will be removed. Tasks, Goals, Habits,
+                match history, and progress will be removed. Tasks, Goals, Events,
                 reminders, and journal content remain household data.
               </p>
             </div>
@@ -313,7 +269,7 @@ export default NiceModal.create(({ forceFinal = false }) => {
 
             <p className="ban-prose">
               Profile-bound progress and match data will be deleted. Journal entries will
-              become unlinked; household tasks, Goals, Habits, and reminders are retained.
+              become unlinked; household tasks, Goals, Events, and reminders are retained.
             </p>
 
             {counts && (
@@ -327,7 +283,7 @@ export default NiceModal.create(({ forceFinal = false }) => {
                     ['Task progress', counts.tasks],
                     ['Journals unlinked', counts.journals],
                     ['Comments',      counts.comments],
-                    ['Habit progress', counts.events],
+                    ['Event progress', counts.events],
                     ['Todos retained', counts.todos],
                     ['Goals retained', counts.projects],
                     ['Matches',       counts.matches],

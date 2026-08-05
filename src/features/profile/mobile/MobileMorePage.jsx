@@ -5,7 +5,7 @@ import { useAppContext } from '@app/hooks/useAppContext.js';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { GAME_STATE } from '@domain/constants.js';
 import { createPairMatchCommand } from '@domain/matches/MatchmakingCommand.js';
-import { getCurrentIGT } from '@domain/time/Time.js';
+import { formatInGameTime, getCurrentIGT } from '@domain/time/Time.js';
 import { loadEndDayConfirm } from '@features/events/loaders.js';
 import MobileSettingsPage from '@features/settings/mobile/MobileSettingsPage.jsx';
 import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
@@ -15,6 +15,7 @@ import MobileArenaPage from '@features/matches/mobile/MobileArenaPage.jsx';
 import { queryMobileCompetition } from '@app/mobile/application/MobileCompetitionQueryService.js';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
 import { queryResumableMobileMatch } from '@app/mobile/application/MobileMatchQueryService.js';
+import { requestLiveReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
 
 const RANKING_TYPES = Object.freeze([
   { id: 'elo', label: 'Match Elo' },
@@ -39,7 +40,7 @@ export default function MobileMorePage() {
     profiles: [],
     rankings: { elo: [], points: [], contribution: [] },
     neighborhoods: { elo: [], points: [], contribution: [] },
-    metrics: { points: 0, contribution: 0, elo: 0 },
+    metrics: { points: 0, contribution: 0, elo: null },
     eloHistory: [],
     unreadNotifications: 0,
   }));
@@ -72,10 +73,13 @@ export default function MobileMorePage() {
   const metrics = useMemo(() => ({
     ...competition.metrics,
     coins: Math.floor(Number(currentPlayer?.tokens || 0)),
-  }), [competition.metrics, currentPlayer?.tokens]);
+    igt: formatInGameTime(getCurrentIGT(currentPlayer)),
+  }), [competition.metrics, currentPlayer]);
 
   const ranking = RANKING_TYPES[rankingIndex];
-  const visibleRanking = ranking.id === 'history' ? [] : competition.neighborhoods[ranking.id] || [];
+  const visibleRanking = ranking.id === 'history'
+    ? []
+    : (competition.neighborhoods[ranking.id] || []).filter((entry) => entry?.profile?.UUID);
 
   const enterDojo = () => {
     setError('');
@@ -85,6 +89,10 @@ export default function MobileMorePage() {
 
   const enterMatch = async () => {
     if (matchmaking) return;
+    if (!currentPlayer?.UUID) {
+      setError('Your synced player profile is still being restored.');
+      return;
+    }
     if (activeMatch && ['pending', 'active'].includes(activeMatch.status)) {
       setGameState(GAME_STATE.match);
       setView('runtime');
@@ -114,7 +122,7 @@ export default function MobileMorePage() {
       setActiveMatch(result.match);
       setGameState(GAME_STATE.match);
       invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
-      databaseConnection.syncRuntime?.scheduleSync?.('mobile-match-created');
+      void requestLiveReferenceSync(databaseConnection, 'mobile-match-created').catch(() => undefined);
       setView('runtime');
     } catch (matchError) {
       setError(matchError?.message || 'The Match could not start.');
@@ -144,14 +152,14 @@ export default function MobileMorePage() {
           <button type="button" className="mobile-avatar-button" aria-label="Current player summary" onClick={() => openSurface('player-sheet', { currentPlayer, profiles: competition.profiles, metrics })}><ProfileIdentity player={currentPlayer} compact avatarOnly avatarSize={38} /></button>
         </div>
       </header>
-      <button type="button" className="mobile-current-player" aria-label="View current player" onClick={() => openSurface('player-sheet', { currentPlayer, profiles: competition.profiles, metrics })}><ProfileIdentity player={currentPlayer} rank="full" avatarSize={58} /><span>View player summary</span></button>
-      <div className="mobile-competition-actions"><button type="button" className="primary" onClick={enterDojo}><Icon name="timer" size={20} /><strong>Dojo</strong></button><button type="button" className="primary" onClick={enterMatch} disabled={matchmaking}><Icon name="trophy" size={20} /><strong>{matchmaking ? 'Finding…' : activeMatch && ['pending', 'active'].includes(activeMatch.status) ? 'Resume Match' : 'Match'}</strong></button></div>
+      <div className="mobile-competition-actions"><button type="button" className="primary" onClick={enterDojo} disabled={!currentPlayer?.UUID}><Icon name="timer" size={20} /><strong>Dojo</strong></button><button type="button" className="primary" onClick={enterMatch} disabled={matchmaking || !currentPlayer?.UUID}><Icon name="trophy" size={20} /><strong>{matchmaking ? 'Finding…' : activeMatch && ['pending', 'active'].includes(activeMatch.status) ? 'Resume Match' : 'Match'}</strong></button></div>
       {error && <div className="mobile-page-error" role="alert">{error}</div>}
       <section className="mobile-neighborhood">
         <header><button type="button" aria-label="Previous ranking" onClick={() => cycleRanking(-1)}>‹</button><h2>{ranking.label}</h2><button type="button" aria-label="Next ranking" onClick={() => cycleRanking(1)}>›</button></header>
-        {ranking.id === 'history' ? <EloChart data={competition.eloHistory} viewerIGT={getCurrentIGT(currentPlayer)} timeBasis="igt" spans={[["week", "Week"], ["month", "Month"], ["all", "All"]]} seriesLabel={currentPlayer?.username || 'You'} className="mobile-elo-chart" /> : <div className="mobile-neighborhood-rows">{visibleRanking.map(({ profile, value, rank }) => <div key={profile.UUID} className={String(profile.UUID) === String(currentPlayer.UUID) ? 'is-current' : ''}><b>{rank}</b><ProfileIdentity player={profile} compact avatarOnly avatarSize={34} /><span>{profile.username || profile.name}</span><strong>{value}</strong></div>)}</div>}
+        {ranking.id === 'history' ? <EloChart data={competition.eloHistory} viewerIGT={getCurrentIGT(currentPlayer)} timeBasis="igt" spans={[["week", "Week"], ["month", "Month"], ["all", "All"]]} seriesLabel={currentPlayer?.username || 'You'} className="mobile-elo-chart" /> : <div className="mobile-neighborhood-rows">{visibleRanking.map(({ profile, value, rank }) => <div key={profile.UUID} className={String(profile.UUID) === String(currentPlayer?.UUID) ? 'is-current' : ''}><b>{rank}</b><ProfileIdentity player={profile} compact avatarOnly avatarSize={34} /><span>{profile.username || profile.name}</span><strong>{value}</strong></div>)}</div>}
       </section>
       <button type="button" className="mobile-end-day" onClick={endDay}>End day <span>Save the handoff and rest Tapestry</span></button>
+      <button type="button" className="mobile-day-penalty-link" onClick={() => openSurface('day-penalty')}>Day penalties <span>Report deliberate rule violations</span></button>
     </section>
   );
 }

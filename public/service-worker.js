@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'tapestry-shell-v7';
-const ASSET_CACHE = 'tapestry-assets-v7';
+const SHELL_CACHE = 'tapestry-shell-v9';
+const ASSET_CACHE = 'tapestry-assets-v9';
 const SHELL_URLS = [
   './',
   './index.html',
@@ -79,9 +79,9 @@ self.addEventListener('push', (event) => {
   const payload = pushPayload(event);
   const count = Math.max(0, Number(payload.badgeCount || 0));
   const options = {
-    body: payload.body || 'A reminder or routine is ready in Tapestry.',
-    icon: './tapestry-icon.svg',
-    badge: './tapestry-icon.svg',
+    body: payload.body || 'An update is ready in Tapestry.',
+    icon: './tapestry-icon-192.png',
+    badge: './tapestry-icon-192.png',
     tag: payload.tag || 'tapestry-due-state',
     renotify: false,
     data: {

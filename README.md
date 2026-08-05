@@ -1,12 +1,13 @@
 # Tapestry
 
-Tapestry is a local-first life-sim and productivity game. It tracks tasks, journal entries, matches, events, rewards, profiles, reminders, and social-style feed activity as game state tied to a linked folder. The app is intentionally shaped like an Obsidian-style workspace: the selected folder is the source of truth, records are written to files, and browser storage is limited to non-canonical convenience caches such as the browser-managed folder handle and the last-known map location.
+Tapestry is a local-first life-sim and productivity game. It tracks tasks, journal entries, matches, events, rewards, profiles, reminders, and social activity in a durable SQLite workspace. The cloud is the cross-device convergence authority; device-local storage is the offline working copy and mutation outbox, never an independent fork of the account.
 
 ## Tech Stack
 
 - React 19 with Vite
 - Electron packaging for desktop builds
-- Browser File System Access API for linked-folder persistence
+- SQLite WASM with a persistent desktop backup and a bounded mobile working set
+- Supabase operation/reference synchronization and Cloudflare Pages hosting
 - JSZip for save snapshots and import/export bundles
 - Leaflet with OpenStreetMap tiles for the map-first shell
 - Node test runner for domain and persistence regression tests
@@ -63,11 +64,11 @@ The app now uses feature-owned modules and path aliases:
 
 Feature code should prefer app context for data access. Domain code should stay browser-neutral where possible. Data code should expose narrowly named utilities instead of leaking save internals into screens.
 
-## Data Folder Model
+## Data Model
 
-The selected folder contains the canonical save under .tapestry/. Journals are stored as individual Markdown files under journals/, while app state, player records, resources, shop state, economy state, and derived save metadata live in structured files managed by the save bundle format. Files that do not match the expected journal metadata are ignored so the folder can also be opened and edited in Obsidian without breaking the app.
+Desktop keeps the complete SQLite workspace locally so every feature works offline. Local changes are committed atomically and recorded separately in durable operation/reference outboxes; reconnecting uploads only those changes, then downloads newer cloud changes. Periodic verified SQLite checkpoints are desktop recovery backups, not the normal synchronization payload.
 
-On app open, Tapestry writes a root-level zip snapshot named by date and time and removes older app-generated snapshots. Major actions such as saving a journal, finishing a match, buying or using an item, and completing sessions force changes to the linked folder; routine writes are lightly debounced and flushed when the page hides or unloads.
+Mobile restores only the mobile-safe working set and referenced resources. It can continue an already-cached session offline, but a cleared/new phone needs the cloud to reconstruct that cache. Match and task-session coordination synchronize immediately, ordinary planning, Event-definition, and commerce edits use a short buffer, and journal, Event-completion, stat, and comment changes use the background lane. Desktop-trained Task Recommender v12 model artifacts are the only app-settings records distributed to mobile.
 
 ## Common Workflows
 

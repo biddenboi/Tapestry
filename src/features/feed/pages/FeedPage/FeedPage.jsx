@@ -104,6 +104,7 @@ export default function FeedPage({ mobileRestricted = false }) {
   const [storyTitle, setStoryTitle] = useState('');
   const [storyComposerRequested, setStoryComposerRequested] = useState(false);
   const storyTitleRef = useRef(null);
+  const loadedViewRef = useRef('');
 
   const viewerIGT = useMemo(
     () => getCurrentIGT(currentPlayer),
@@ -112,7 +113,10 @@ export default function FeedPage({ mobileRestricted = false }) {
 
   const loadRecent = useCallback(async ({ append = false } = {}) => {
     if (!currentPlayer?.UUID) return;
-    append ? setLoadingOlder(true) : setLoading(true);
+    const viewKey = `${currentPlayer.UUID}:${mode}`;
+    const firstLoadForView = loadedViewRef.current !== viewKey;
+    if (append) setLoadingOlder(true);
+    else if (firstLoadForView) setLoading(true);
     try {
       const [page, allPlayers, feedState, allStories] = await Promise.all([
         services.query.recent({
@@ -126,7 +130,16 @@ export default function FeedPage({ mobileRestricted = false }) {
         services.social.getFeedViewState(currentPlayer.UUID),
         databaseConnection.getAll(STORES.chronicleStory),
       ]);
-      const nextRaw = append ? [...rawEntries, ...page.rawEntries] : page.rawEntries;
+      const nextRaw = append
+        ? [...rawEntries, ...page.rawEntries]
+        : firstLoadForView
+          ? page.rawEntries
+          : [
+              ...page.rawEntries,
+              ...rawEntries.slice(PAGE_SIZE).filter((entry) => (
+                !page.rawEntries.some((fresh) => String(fresh.UUID) === String(entry.UUID))
+              )),
+            ];
       setRawEntries(nextRaw);
       setItems(bundleChronicleMoments(nextRaw));
       setProfiles(Object.fromEntries(allPlayers.map((player) => [player.UUID, player])));
@@ -135,6 +148,7 @@ export default function FeedPage({ mobileRestricted = false }) {
       )));
       setHasMore(page.hasMore);
       setCursor(page.nextCursor);
+      loadedViewRef.current = viewKey;
       if (!append) {
         setPriorSeen(feedState || null);
         if (page.rawEntries[0]) {
@@ -150,6 +164,7 @@ export default function FeedPage({ mobileRestricted = false }) {
     currentPlayer,
     cursor,
     databaseConnection,
+    mode,
     rawEntries,
     services.query,
     services.social,
@@ -158,7 +173,8 @@ export default function FeedPage({ mobileRestricted = false }) {
   useEffect(() => {
     if (!canLoad) return;
     if (mode === 'global' && currentPlayer?.UUID) {
-      setLoading(true);
+      const viewKey = `${currentPlayer.UUID}:global`;
+      if (loadedViewRef.current !== viewKey) setLoading(true);
       Promise.all([
         services.query.global({ viewerUUID: currentPlayer.UUID, viewerIGT, limit: PAGE_SIZE }),
         databaseConnection.getPlayersAtIGT(viewerIGT),
@@ -168,6 +184,7 @@ export default function FeedPage({ mobileRestricted = false }) {
         setProfiles(Object.fromEntries(allPlayers.map((player) => [player.UUID, player])));
         setHasMore(page.hasMore);
         setCursor(page.nextCursor);
+        loadedViewRef.current = viewKey;
       }).catch((error) => console.warn('[GlobalFeed] load failed:', error))
         .finally(() => setLoading(false));
       return;
@@ -186,12 +203,16 @@ export default function FeedPage({ mobileRestricted = false }) {
 
   useEffect(() => {
     if (mode !== 'wander' || !currentPlayer?.UUID) return;
-    setLoading(true);
+    const viewKey = `${currentPlayer.UUID}:wander`;
+    if (loadedViewRef.current !== viewKey) setLoading(true);
     services.query.wander({
       viewerUUID: currentPlayer.UUID,
       viewerIGT,
       limit: 5,
-    }).then(setWanderEntries).finally(() => setLoading(false));
+    }).then((nextEntries) => {
+      setWanderEntries(nextEntries);
+      loadedViewRef.current = viewKey;
+    }).finally(() => setLoading(false));
   }, [currentPlayer?.UUID, mode, services.query, viewerIGT]);
 
   useEffect(() => {

@@ -14,7 +14,7 @@
   "dependencies": {
     "@ebay/nice-modal-react": "^1.2.13",
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
-    "@supabase/supabase-js": "^2.111.0",
+    "@supabase/supabase-js": "^2.112.0",
     "chrono-node": "^2.9.0",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",

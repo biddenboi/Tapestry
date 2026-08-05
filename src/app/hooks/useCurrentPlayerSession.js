@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import NiceModal from '@ebay/nice-modal-react';
 import { markStartup } from '@shared/performance/startupPerf.js';
 import { loadBanModal } from '@features/profile/loaders.js';
+import { convergeSharedRitualSettings } from '@domain/events/SharedRitualSettings.js';
 
 const showPendingBan = async () => {
   const BanModal = await loadBanModal();
@@ -28,7 +29,8 @@ export function useCurrentPlayerSession({
     let cancelled = false;
     const load = async () => {
       markStartup('current-player-load-start');
-      const player = await databaseConnection.getCurrentPlayer();
+      let player = await databaseConnection.getCurrentPlayer();
+      player = await convergeSharedRitualSettings(databaseConnection, player);
       if (cancelled) return;
       setCurrentPlayer(player || null);
       setCurrentPlayerLoaded(true);

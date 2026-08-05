@@ -11,7 +11,7 @@ test('mobile shell exposes exactly five product destinations with persistent tab
   ]);
   const destinations = [
     ['tasks', 'Today'],
-    ['goals', 'Goals'],
+    ['habits', 'Events'],
     ['chronicle', 'Chronicle'],
     ['shop', 'Shop'],
     ['profile', 'More'],
@@ -21,7 +21,7 @@ test('mobile shell exposes exactly five product destinations with persistent tab
   }
   assert.equal((navigation.match(/id: '/g) || []).length, 5);
   assert.match(shell, /MobileChroniclePage = lazy/);
-  assert.match(shell, /MobileGoalsPage = lazy/);
+  assert.match(shell, /MobileHabitsPage = lazy/);
   assert.match(shell, /MobileMorePage = lazy/);
   assert.match(shell, /MobileShopPage = lazy/);
   assert.match(shell, /panels\.map/);
@@ -43,7 +43,7 @@ test('mobile task and reminder editors are dedicated presentations over canonica
   assert.match(today, /queryMobileWorkspaceAgenda/);
   assert.match(today, /nearestApplicableReminder/);
   assert.match(today, /openSurface\('task-actions'/);
-  assert.match(today, /openSurface\('task-composer'/);
+  assert.match(today, /openSurface\('create-menu'/);
   assert.match(today, /completeTodoNow/);
   assert.match(today, /origin: 'mobile'/);
   assert.doesNotMatch(today, /Search tasks and reminders|showTaskCreationMenu|showTaskPreviewMenu|Choose Date/);
@@ -55,7 +55,11 @@ test('mobile task and reminder editors are dedicated presentations over canonica
   assert.match(reminderSheets, /saveReminderCommand/);
   assert.match(reminderSheets, /transitionReminderCommand/);
   assert.match(desktopTaskEditor, /saveTaskDraftCommand/);
-  assert.doesNotMatch(taskSheets, /TaskCreationMenu|NiceModal/);
+  assert.doesNotMatch(taskSheets, /TaskCreationMenu/);
+  assert.match(taskSheets, /loadTaskSessionMenu/);
+  assert.match(taskSheets, /NiceModal\.show\(TaskSessionMenu\)/);
+  assert.match(taskSheets, /isPlanningRecordInWorkspace\(goal, DEFAULT_WORKSPACE_ID\)/);
+  assert.match(desktopTaskEditor, /isPlanningRecordInWorkspace\(goal, DEFAULT_WORKSPACE_ID\)/);
 });
 
 test('mobile correctness uses workspace planning, boundary-only profile selection, and shared identity', async () => {
@@ -84,8 +88,10 @@ test('mobile correctness uses workspace planning, boundary-only profile selectio
   assert.match(identityModel, /activeCosmetics/);
 });
 
-test('mobile Goals and Chronicle use dedicated mobile information architecture', async () => {
-  const [goals, goalPresentation, goalUpdate, chronicle, chronicleSheets, chronicleDraft] = await Promise.all([
+test('mobile Events, Goals, and Chronicle use dedicated mobile information architecture', async () => {
+  const [habits, habitPage, goals, goalPresentation, goalUpdate, chronicle, chronicleSheets, chronicleDraft] = await Promise.all([
+    read('../../features/events/mobile/MobileHabitsPage.jsx'),
+    read('../../features/events/pages/Events/HabitPage.jsx'),
     read('../../features/goals/mobile/MobileGoalsPage.jsx'),
     read('../../features/goals/mobile/MobileGoalPresentation.js'),
     read('../../features/goals/mobile/MobileGoalUpdateSheet.jsx'),
@@ -93,6 +99,13 @@ test('mobile Goals and Chronicle use dedicated mobile information architecture',
     read('../../features/chronicle/mobile/MobileChronicleSheets.jsx'),
     read('../../features/chronicle/mobile/MobileChronicleDraft.js'),
   ]);
+  assert.match(habits, /buildHabitPageModel/);
+  assert.match(habits, /<HabitPage/);
+  assert.match(habits, /<HabitEditor/);
+  assert.match(habits, /loadTrackerOverview/);
+  assert.match(habits, /onBackToHabits/);
+  assert.match(habitPage, /onOpenGoals/);
+  assert.match(goals, /← Events/);
   assert.match(goals, /selectMobileGoalCards/);
   assert.match(goalPresentation, /overview\?\.activeGoals/);
   assert.match(goals, /healthStatus === 'blocked'/);
@@ -110,6 +123,8 @@ test('mobile Goals and Chronicle use dedicated mobile information architecture',
   assert.match(chronicleDraft, /mobile-quick-capture/);
   assert.match(chronicleSheets, /pagehide/);
   assert.match(chronicleSheets, /persistDraft/);
+  assert.match(chronicleSheets, /Add a comment/);
+  assert.match(chronicleSheets, /STORES\.journalComment/);
 });
 
 test('mobile Shop and More retain gameplay without desktop administration', async () => {
@@ -122,23 +137,30 @@ test('mobile Shop and More retain gameplay without desktop administration', asyn
     read('../../features/matches/mobile/MobileArenaPage.jsx'),
   ]);
   assert.match(shop, /\['browse', 'inventory', 'cart'\]/);
+  assert.doesNotMatch(shop, /Contribution Road|getContributionRoadProgress|claimAchievementPackNode|mode === 'road'/);
   assert.match(shop, /isConsumableInventoryItem/);
   assert.match(shop, /commitShopPurchase/);
+  assert.match(shop, /money/);
+  assert.match(shop, /\$\{/);
   assert.match(shop, /activateShopItemCommand/);
   assert.match(shop, /owned \? 'Owned'/);
   assert.match(more, /Notifications/);
   assert.match(more, /Current player summary/);
+  assert.doesNotMatch(more, /View player summary/);
   assert.match(more, /createPairMatchCommand/);
   assert.match(more, /Dojo/);
   assert.match(more, /Elo history/);
   assert.match(moreSheets, /mobile-player-sheet-stats/);
-  assert.match(moreSheets, /Profiles can only be changed during Start Day or End Day/);
+  assert.doesNotMatch(moreSheets, /Profiles can only be changed during Start Day or End Day/);
+  assert.doesNotMatch(moreSheets, /mobile-player-sheet-profiles/);
   assert.doesNotMatch(moreSheets, /onSwitch|Switching…/);
   assert.doesNotMatch(more, /See All|Find Players|public profile search/i);
   assert.match(settings, /\{ id: 'data', label: 'Data & Backup'/);
+  assert.match(settings, /\{ id: 'notifications', label: 'Notifications'/);
   assert.match(settings, /\{ id: 'accessibility', label: 'Accessibility'/);
   assert.match(settings, /\{ id: 'privacy', label: 'Privacy'/);
-  assert.equal((settings.match(/\{ id: '/g) || []).length, 3);
+  assert.equal((settings.match(/\{ id: '/g) || []).length, 4);
+  assert.match(settings, /<WebPushPanel/);
   assert.doesNotMatch(settings, /AppearanceStudio|Appearance|theme selector/i);
   assert.doesNotMatch(settings, /SyncAccountPanel|RecoveryPanel/);
   assert.doesNotMatch(settings, /features\/settings\/pages\/Settings/);
@@ -152,7 +174,7 @@ test('mobile Shop and More retain gameplay without desktop administration', asyn
 });
 
 test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe', async () => {
-  const [shellCss, foundation, today, sheets, features, viewport, overlays, arena] = await Promise.all([
+  const [shellCss, foundation, today, sheets, features, viewport, overlays, arena, dojo] = await Promise.all([
     read('./MobileAppShell.css'),
     read('./styles/MobileFoundation.css'),
     read('./styles/MobileToday.css'),
@@ -161,6 +183,7 @@ test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe'
     read('./useVisualViewport.js'),
     read('./MobileOverlayHost.jsx'),
     read('../../features/matches/mobile/MobileArenaPage.jsx'),
+    read('../../features/matches/mobile/MobileDojoRuntime.jsx'),
   ]);
   for (const stylesheet of ['MobileFoundation.css', 'MobileToday.css', 'MobileSheets.css', 'MobileFeatures.css']) {
     assert.match(shellCss, new RegExp(stylesheet));
@@ -183,7 +206,9 @@ test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe'
   assert.match(overlays, /tabIndex=\{-1\} aria-hidden="true"/);
   assert.match(overlays, /stage\.querySelectorAll/);
   assert.match(arena, /panel\.scrollTop = 0/);
-  assert.match(features, /mobile-dojo-recommendations/);
+  assert.match(features, /mobile-dojo-feed-shell/);
+  assert.match(dojo, /DojoRecommendationFeed/);
+  assert.match(dojo, /PracticeDojo\.css/);
   assert.match(features, /mobile-match-scoreboard/);
 });
 
@@ -209,6 +234,9 @@ test('a clean mobile device uses password-authenticated cloud bootstrap instead 
   assert.match(gate, /restoreMobileBootstrapData/);
   assert.match(gate, /Use another account/);
   assert.match(gate, /mobile-clean-device-bootstrap/);
+  assert.match(gate, /onProgress: setRestoreProgress/);
+  assert.match(gate, /Downloaded.*records/);
+  assert.match(gate, /role="status" aria-live="polite"/);
   assert.match(gate, /Recovery ZIP/);
   assert.doesNotMatch(gate, /Start new|Restore folder/);
   for (const recordType of [
@@ -225,7 +253,9 @@ test('a clean mobile device uses password-authenticated cloud bootstrap instead 
     /STORES\.(?:resource|derivedCache|analyticsEvent|recommenderEvent)/,
   );
   assert.match(bootstrap, /publishReferencedMobileResources/);
-  assert.match(bootstrap, /\['profile', 'shop-catalog'\]/);
+  assert.match(bootstrap, /\['profile', STORES\.player\]/);
+  assert.match(bootstrap, /\['shop-catalog', STORES\.shop\]/);
+  assert.match(bootstrap, /\['journal', STORES\.journal\]/);
   assert.match(bootstrap, /workspaceId/);
   assert.match(bootstrap, /WORKSPACE_DEFINITION_TYPES\.has\(recordType\) \? null/);
 });

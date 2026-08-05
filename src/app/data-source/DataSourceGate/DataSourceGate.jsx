@@ -16,11 +16,43 @@ import { continueInThisInstance, isWriterLeaseError } from '@shared/runtime/Inst
 import '@app/data-source/DataSourceGate/DataSourceGate.css';
 
 const auth = getSupabaseAuthService();
+const CLOUD_CHECKPOINT_WAIT_MS = 8_000;
+
+async function downloadCheckpointWithoutBlocking(transport) {
+  const ephemeralReferenceProof = import.meta.env.DEV
+    && typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('ephemeral') === '1';
+  if (ephemeralReferenceProof) {
+    return { found: false, reason: 'ephemeral-reference-proof' };
+  }
+  let timer = null;
+  try {
+    return await Promise.race([
+      transport.downloadDatabaseCheckpoint?.()
+        || Promise.resolve({ found: false, reason: 'checkpoint-unavailable' }),
+      new Promise((resolve) => {
+        timer = window.setTimeout(() => resolve({
+          found: false,
+          reason: 'checkpoint-download-pending',
+        }), CLOUD_CHECKPOINT_WAIT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer != null) window.clearTimeout(timer);
+  }
+}
 
 function demoAvailable() {
   if (typeof window === 'undefined') return false;
   return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
     || new URLSearchParams(window.location.search).has('demo');
+}
+
+
+function isDemoOnlyWorkspace(players = []) {
+  return players.length > 0 && players.every((player) => (
+    String(player?.UUID || player?.id || '').startsWith('demo-')
+  ));
 }
 
 export default function DataSourceGate({ onReady }) {
@@ -36,12 +68,16 @@ export default function DataSourceGate({ onReady }) {
   const folderUploadRef = useRef(null);
   const restorePromiseRef = useRef(null);
 
-  const finishOpening = useCallback(async () => {
-    await databaseConnection.reconcileMissingMaterializedLeaderboards({
-      reason: 'cloud-first-startup-cache-reconciliation',
-    });
+  const finishOpening = useCallback(() => {
     markStartup('data-source-ready');
     onReady();
+    // Derived leaderboards can repair behind the already-usable local shell.
+    // They must never hold the entire desktop app behind a blocking gate.
+    void databaseConnection.reconcileMissingMaterializedLeaderboards({
+      reason: 'cloud-first-startup-cache-reconciliation',
+    }).catch((reconcileError) => {
+      console.warn('[Tapestry] Leaderboard reconciliation will retry on demand.', reconcileError);
+    });
   }, [databaseConnection, onReady]);
 
   const restoreFromCloud = useCallback(async () => {
@@ -67,19 +103,20 @@ export default function DataSourceGate({ onReady }) {
         const transport = runtime?.transport;
         if (!transport) throw new Error('Private Sync could not connect to the cloud.');
 
-        const checkpoint = await transport.downloadDatabaseCheckpoint?.();
+        // A large or unavailable checkpoint must not strand startup on the
+        // cloud interstitial. Fall back to the bounded paginated reference
+        // mirror; the normal local-database path above remains immediate.
+        const checkpoint = await downloadCheckpointWithoutBlocking(transport);
         let restored = null;
-        let bootstrap = null;
         if (checkpoint?.found) {
           restored = await databaseConnection.restoreCloudCheckpoint(checkpoint.bytes, {
             manifest: checkpoint.manifest,
           });
-        } else {
-          // Older accounts may not have a full checkpoint yet. The bounded
-          // reference mirror plus operation log remains a migration fallback,
-          // never the normal desktop-open path after the first checkpoint.
-          bootstrap = await restoreMobileBootstrapData(databaseConnection, transport);
         }
+        // Reference rows are the current command-level state and may be newer
+        // than the periodic full checkpoint. Always reconcile them after the
+        // checkpoint decision so a task deletion or Goal edit is not lost.
+        const bootstrap = await restoreMobileBootstrapData(databaseConnection, transport);
 
         const players = await databaseConnection.getAll('players');
         if (!players.length) {
@@ -89,20 +126,24 @@ export default function DataSourceGate({ onReady }) {
         }
 
         runtime.setCheckpointPublishingEnabled(true);
-        const synchronization = await runtime.synchronize({
-          reason: checkpoint?.found
-            ? 'desktop-cloud-checkpoint-restored'
-            : 'desktop-reference-bootstrap-restored',
-        });
         setSummary({
           checkpointCreatedAt: checkpoint?.manifest?.createdAt || null,
           checkpointBytes: Number(checkpoint?.bytes?.byteLength || 0),
           referenceRecords: Number(bootstrap?.applied || 0),
-          uploaded: Number(synchronization?.uploaded || 0),
-          pulled: Number(synchronization?.pulled || 0),
+          syncPending: true,
         });
         setPhase('ready');
-        await finishOpening();
+        finishOpening();
+        // The restored local SQLite workspace is ready now. Replay newer
+        // operations in the background; a slow registration or unavailable
+        // network must not keep the desktop gate mounted.
+        void runtime.synchronize({
+          reason: checkpoint?.found
+            ? 'desktop-cloud-checkpoint-restored'
+            : 'desktop-reference-bootstrap-restored',
+        }).catch((syncError) => {
+          console.warn('[Tapestry] Desktop bootstrap sync will retry in the background.', syncError);
+        });
       } catch (restoreError) {
         setPhase('error');
         setLeaseBlocked(isWriterLeaseError(restoreError));
@@ -124,13 +165,14 @@ export default function DataSourceGate({ onReady }) {
         await databaseConnection.ready;
         const players = await databaseConnection.getAll('players');
         if (cancelled) return;
+        const demoOnlyWorkspace = isDemoOnlyWorkspace(players);
         const runtime = databaseConnection.syncRuntime;
         const cleanCloudRestorePending = Boolean(
           players.length
           && runtime?.transport
           && !runtime.checkpointPublishingEnabled,
         );
-        if (players.length && !cleanCloudRestorePending) {
+        if (players.length && !demoOnlyWorkspace && !cleanCloudRestorePending) {
           runtime?.setCheckpointPublishingEnabled(true);
           await finishOpening();
           return;
@@ -202,7 +244,13 @@ export default function DataSourceGate({ onReady }) {
     try {
       await databaseConnection.saveUpload(file);
       databaseConnection.syncRuntime?.setCheckpointPublishingEnabled(true);
-      await databaseConnection.syncRuntime?.synchronize({ reason: 'recovery-zip-restored' });
+      try {
+        await databaseConnection.syncRuntime?.synchronize({ reason: 'recovery-zip-restored' });
+      } catch (syncError) {
+        // A valid restored ZIP remains usable offline; the queue retries in
+        // the background without re-entering this data-source gate.
+        console.warn('[Tapestry] Recovery ZIP sync will retry in the background.', syncError);
+      }
       await finishOpening();
     } catch (uploadError) {
       setError(uploadError?.message || 'Unable to restore the Tapestry save.');

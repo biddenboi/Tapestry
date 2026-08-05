@@ -294,7 +294,7 @@ export async function completeMatchPrimary({
       })
     : null;
 
-  await saveMatchStateCommand(databaseConnection, recordedMatch, {
+  const saved = await saveMatchStateCommand(databaseConnection, recordedMatch, {
     commandType: 'completeMatch',
     operationId: `complete-match:${recordedMatch.UUID}`,
     player: rewardedPlayer,
@@ -305,8 +305,8 @@ export async function completeMatchPrimary({
   });
 
   return {
-    match: recordedMatch,
-    player: rewardedPlayer,
+    match: saved?.match || recordedMatch,
+    player: saved?.player || rewardedPlayer,
     result: recordedResult,
     immediateReward,
     worldReceipt,

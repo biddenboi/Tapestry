@@ -192,6 +192,11 @@ export function getSinceLastSaw(query) {
   ));
 }
 
+export function clearSocialEncounterMemories(command) {
+  return this.socialEncounters?.clearMemories(command)
+    || Promise.resolve({ deleted: 0, invalidatedDomains: [] });
+}
+
 function reconcileAuthoritativeFriendship(connection, {
   type,
   friendship = null,
@@ -504,6 +509,7 @@ export const databaseConnectionFeatureMethods = {
   materializeDojoStandings,
   recordSocialEncounter,
   getSinceLastSaw,
+  clearSocialEncounterMemories,
   requestSocialFriendship,
   acceptSocialFriendship,
   closeSocialFriendship,

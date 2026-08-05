@@ -87,9 +87,17 @@ export class ImportExportService {
       const sync = await runtime.synchronize({ reason: 'pre-export-durability-barrier' });
       await this.flushWrites();
       const checkpoint = await runtime.publishCloudCheckpoint?.({ force: true, reason: 'pre-export' });
+      if (!checkpoint?.uploaded) {
+        const checkpointError = new Error(
+          `The current SQLite checkpoint was not confirmed by cloud storage (${checkpoint?.reason || 'unknown reason'}).`,
+        );
+        checkpointError.code = 'pre-export-cloud-checkpoint-unconfirmed';
+        throw checkpointError;
+      }
       return {
         ...durability,
-        cloudSynchronized: Boolean(sync?.synchronized),
+        cloudSynchronized: Boolean(sync?.synchronized && checkpoint.uploaded),
+        cloudCheckpointConfirmed: true,
         uploadedOperations: Number(sync?.uploaded || 0),
         pulledOperations: Number(sync?.pulled || 0),
         checkpoint: checkpoint || null,

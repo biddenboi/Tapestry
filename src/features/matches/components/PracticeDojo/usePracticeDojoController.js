@@ -980,7 +980,10 @@ export default function usePracticeDojoController({ presentTask = null } = {}) {
     };
 
     const handleExitDojo = async () => {
-        if (activeTask.createdAt) return;
+        if (activeTask.createdAt) {
+            setGameState(GAME_STATE.idle);
+            return;
+        }
         // Earlier cards are already terminal. The tail is the one staged
         // decision even when the user has reverse-scrolled before exiting.
         const item = feedItemsRef.current.at(-1);

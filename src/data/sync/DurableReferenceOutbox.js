@@ -131,6 +131,12 @@ export class DurableReferenceOutbox {
     return statements;
   }
 
+  recordTypesForMutations(operations = []) {
+    return [...new Set((operations || [])
+      .map((operation) => RECORD_TYPE_BY_STORE.get(operation?.store))
+      .filter(Boolean))];
+  }
+
   async queueReferences(records = []) {
     const now = iso(this.now());
     const statements = [];
@@ -164,13 +170,20 @@ export class DurableReferenceOutbox {
     return { queued };
   }
 
-  async isSeeded() {
+  async isSeeded({ schemaVersion = 0 } = {}) {
     const row = await this.client.query({
       sql: 'SELECT value_json AS valueJson FROM sync_reference_meta WHERE key=?',
       bind: [META_SEEDED_KEY],
       result: 'one',
     });
-    return Boolean(row);
+    if (!row) return false;
+    if (!schemaVersion) return true;
+    try {
+      const details = JSON.parse(String(row.valueJson || '{}'));
+      return Number(details.schemaVersion || 0) >= Number(schemaVersion);
+    } catch {
+      return false;
+    }
   }
 
   async markSeeded(details = {}) {
@@ -184,16 +197,23 @@ export class DurableReferenceOutbox {
     });
   }
 
-  async listPending({ limit = 500 } = {}) {
+  async listPending({ limit = 500, recordTypes = null } = {}) {
+    const types = Array.isArray(recordTypes)
+      ? [...new Set(recordTypes.map(String).filter(Boolean))]
+      : [];
+    const typeFilter = types.length
+      ? ` AND record_type IN (${types.map(() => '?').join(',')})`
+      : '';
     const rows = await this.client.query({
       sql: `SELECT record_type AS recordType,record_id AS recordId,store_name AS storeName,
                    player_id AS playerId,workspace_id AS workspaceId,payload_json AS payloadJson,
                    deleted,updated_at AS updatedAt,attempt_count AS attemptCount
             FROM sync_reference_outbox
             WHERE status='pending'
+            ${typeFilter}
             ORDER BY updated_at,record_type,record_id
             LIMIT ?`,
-      bind: [Math.max(1, Math.min(1000, Number(limit) || 500))],
+      bind: [...types, Math.max(1, Math.min(1000, Number(limit) || 500))],
       result: 'all',
     });
     return rows.map(rowToReference);

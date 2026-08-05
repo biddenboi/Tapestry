@@ -126,4 +126,16 @@ test('exact receipts distinguish new, unchanged, updated, late-imported, and fut
     result: 'value',
   }), receiptsBeforeFriendship);
   assert.equal((await encounters.getSinceLastSaw({ viewerId: 'viewer', subjectId: 'subject', viewerIGT })).count, 0);
+
+  const deleted = await encounters.clearMemories({ viewerId: 'viewer', subjectId: 'subject' });
+  assert.equal(deleted.deleted > 0, true);
+  assert.equal(await context.client.query({
+    sql: "SELECT COUNT(*) FROM social_event_receipts WHERE viewer_player_id='viewer' AND subject_player_id='subject'",
+    result: 'value',
+  }), 0);
+  assert.equal(await context.client.query({
+    sql: "SELECT COUNT(*) FROM social_encounters WHERE viewer_player_id='viewer' AND subject_player_id='subject'",
+    result: 'value',
+  }), 0);
+  assert.equal((await encounters.getSinceLastSaw({ viewerId: 'viewer', subjectId: 'subject', viewerIGT })).count > 0, true);
 });

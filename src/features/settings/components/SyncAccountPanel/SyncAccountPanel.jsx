@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { isRetiredWorkingSetSyncError } from '@data/sync/SyncErrorPolicy.js';
 import getSupabaseAuthService, {
   BACKUP_OWNER_EMAIL,
   PRIMARY_OWNER_EMAIL,
@@ -6,36 +7,23 @@ import getSupabaseAuthService, {
 
 const service = getSupabaseAuthService();
 
-const SYNC_LABEL = Object.freeze({
-  'local-only': 'Local only',
-  connecting: 'Connecting private sync…',
-  ready: 'Private sync connected',
-  error: 'Private sync needs attention',
-});
 
-const EMPTY_RUNTIME_SYNC = Object.freeze({
-  status: 'local-only',
-  transportConfigured: false,
-});
 
-export default function SyncAccountPanel({ databaseConnection = null }) {
+export default function SyncAccountPanel() {
   const snapshot = useSyncExternalStore(
     service.subscribe,
     service.getSnapshot,
     service.getSnapshot,
-  );
-  const runtimeStore = databaseConnection?.syncRuntime?.statusStore;
-  const runtimeSnapshot = useSyncExternalStore(
-    runtimeStore?.subscribe || (() => () => undefined),
-    runtimeStore?.getSnapshot || (() => EMPTY_RUNTIME_SYNC),
-    runtimeStore?.getSnapshot || (() => EMPTY_RUNTIME_SYNC),
   );
   const [requestError, setRequestError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
 
   useEffect(() => {
-    void service.initialize().catch((error) => setRequestError(error?.message || 'Unable to inspect sign-in.'));
+    service.clearRetiredWorkingSetError?.();
+    void service.initialize()
+      .then(() => service.clearRetiredWorkingSetError?.())
+      .catch((error) => setRequestError(error?.message || 'Unable to inspect sign-in.'));
   }, []);
 
   const requestLink = async (email) => {
@@ -92,13 +80,9 @@ export default function SyncAccountPanel({ databaseConnection = null }) {
     }
   };
 
-  const effectiveSyncStatus = snapshot.user && runtimeSnapshot.transportConfigured
-    ? runtimeSnapshot.status === 'error'
-      ? 'error'
-      : runtimeSnapshot.status === 'syncing'
-        ? 'connecting'
-        : 'ready'
-    : snapshot.syncStatus;
+  const authenticationError = isRetiredWorkingSetSyncError(snapshot.error)
+    ? null
+    : snapshot.error;
 
   if (!snapshot.configured) {
     return (
@@ -118,12 +102,12 @@ export default function SyncAccountPanel({ databaseConnection = null }) {
         {snapshot.user ? (
           <>
             <span>{snapshot.user.email}</span>
-            <small>{SYNC_LABEL[effectiveSyncStatus] || SYNC_LABEL['local-only']}</small>
+            <small>Private account connected</small>
           </>
         ) : (
           <>
             <span>Sign in directly with the private-sync password. Email is recovery-only.</span>
-            <small>{SYNC_LABEL[effectiveSyncStatus] || SYNC_LABEL['local-only']}</small>
+            <small>Local only</small>
           </>
         )}
       </div>
@@ -194,12 +178,12 @@ export default function SyncAccountPanel({ databaseConnection = null }) {
           </>
         )}
       </div>
-      {(snapshot.notice || snapshot.error?.message || requestError) && (
-        <span className={snapshot.error || requestError
+      {(snapshot.notice || authenticationError?.message || requestError) && (
+        <span className={authenticationError || requestError
           ? 'settings-sync-account__message settings-sync-account__message--error'
           : 'settings-sync-account__message'}
         >
-          {requestError || snapshot.error?.message || snapshot.notice}
+          {requestError || authenticationError?.message || snapshot.notice}
         </span>
       )}
     </div>

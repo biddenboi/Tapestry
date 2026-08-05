@@ -43,7 +43,7 @@ export const PROFILE_TIMELINE_FILTERS = [
   { id: 'journal', label: 'Posts' },
   { id: 'match', label: 'Matches' },
   { id: 'rank', label: 'Rank' },
-  { id: 'event', label: 'Habits' },
+  { id: 'event', label: 'Events' },
   { id: 'contribution', label: 'Goals' },
   { id: 'item', label: 'Items' },
   { id: 'economy', label: 'Economy' },

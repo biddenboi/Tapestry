@@ -20,6 +20,21 @@ test('every mobile-safe canonical document table has durable put and delete capt
   assert.match(sql, /document_chronicle_entry_revisions/);
 });
 
+test('remote reference application is guarded inside the same SQLite transaction', async () => {
+  const [{ REMOTE_REFERENCE_CAPTURE_GUARD_SQL: sql, migration053 }, host, documents] = await Promise.all([
+    import('../persistence/sqlite/migrations/053_remote_reference_capture_guard.js'),
+    read('../persistence/DatabaseConnectionHost.js'),
+    read('../persistence/sqlite/SqliteDocumentRepository.js'),
+  ]);
+  assert.equal(await calculateMigrationChecksum(migration053), migration053.checksum);
+  assert.match(sql, /sync_reference_capture_state/);
+  assert.match(sql, /WHEN COALESCE\(\(SELECT enabled/);
+  assert.match(host, /beforeStatements: captureGuard\.beforeStatements/);
+  assert.match(host, /afterStatements: captureGuard\.afterStatements/);
+  assert.match(documents, /beforeStatements = \[\]/);
+  assert.match(documents, /afterStatements = \[\]/);
+});
+
 test('SQLite writes mark the full cloud checkpoint dirty below feature code', async () => {
   const [adapter, runtime, persistence] = await Promise.all([
     read('../persistence/sqlite/SqliteStorageAdapter.js'),
@@ -28,8 +43,9 @@ test('SQLite writes mark the full cloud checkpoint dirty below feature code', as
   ]);
   assert.match(adapter, /setCommitListener/);
   assert.match(adapter, /changedRows/);
-  assert.match(runtime, /databaseCommitted\(\)/);
+  assert.match(runtime, /databaseCommitted\(details = \{\}\)/);
   assert.match(runtime, /checkpointDirty = true/);
+  assert.match(runtime, /COMMIT_SYNC_DELAY_MS/);
   assert.match(persistence, /setCommitListener/);
 });
 
@@ -40,6 +56,9 @@ test('clean desktop startup restores cloud SQLite before enabling publication', 
     read('./supabase/SupabaseSyncTransport.js'),
   ]);
   assert.match(gate, /downloadDatabaseCheckpoint/);
+  assert.match(gate, /downloadCheckpointWithoutBlocking/);
+  assert.match(gate, /checkpoint-download-pending/);
+  assert.match(gate, /restoreMobileBootstrapData/);
   assert.match(gate, /restoreCloudCheckpoint/);
   assert.match(gate, /setCheckpointPublishingEnabled\(true\)/);
   assert.match(bootstrap, /clean-device-restore-pending/);

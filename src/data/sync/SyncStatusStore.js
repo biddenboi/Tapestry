@@ -1,3 +1,5 @@
+import { visibleSyncError } from './SyncErrorPolicy.js';
+
 export const SYNC_STATUS = Object.freeze({
   localOnly: 'local-only',
   pending: 'pending',
@@ -91,9 +93,12 @@ export class SyncStatusStore {
       pending: Number(diagnostics.counts?.pending || 0) + referencePending,
       referencePending,
     };
+    const runtimeError = visibleSyncError(this.runtimeError);
+    const operationError = visibleSyncError(diagnostics.latestError);
+    const referenceError = visibleSyncError(referenceDiagnostics?.latestError);
     let status = SYNC_STATUS.localOnly;
     if (conflicts.length || counts.conflict > 0) status = SYNC_STATUS.conflict;
-    else if (counts.rejected > 0 || diagnostics.latestError || referenceDiagnostics?.latestError || this.runtimeError) status = SYNC_STATUS.error;
+    else if (counts.rejected > 0 || operationError || referenceError || runtimeError) status = SYNC_STATUS.error;
     else if (this.activity === 'syncing' || counts.uploading > 0) status = SYNC_STATUS.syncing;
     else if (counts.pending > 0) status = SYNC_STATUS.pending;
     else if (this.transportConfigured) status = SYNC_STATUS.synced;
@@ -104,7 +109,7 @@ export class SyncStatusStore {
       openConflictCount: conflicts.length,
       cursors: Object.freeze(cursors),
       oldestPending: diagnostics.oldestPending,
-      latestError: this.runtimeError || diagnostics.latestError || referenceDiagnostics?.latestError || null,
+      latestError: runtimeError || operationError || referenceError || null,
       transportConfigured: this.transportConfigured,
       refreshedAt: new Date().toISOString(),
       lastSynchronizedAt: this.lastSynchronizedAt,

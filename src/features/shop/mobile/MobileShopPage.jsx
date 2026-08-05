@@ -22,6 +22,7 @@ import getSupabaseAuthService from '@data/sync/supabase/SupabaseAuthService.js';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
 import { simpleMobileFeedback } from '@app/mobile/application/MobileFeedback.js';
 import { queryMobileShopState } from '@app/mobile/application/MobileShopQueryService.js';
+import { requestPromptReferenceSync } from '@data/sync/ReferenceSyncLanes.js';
 
 const authService = getSupabaseAuthService();
 const MODES = Object.freeze(['browse', 'inventory', 'cart']);
@@ -57,6 +58,7 @@ export default function MobileShopPage() {
   const [category, setCategory] = useState('All');
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [money, setMoney] = useState(0);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -80,6 +82,7 @@ export default function MobileShopPage() {
       });
       setCatalog(sortShopCatalog(state.catalog));
       setInventory(state.inventory);
+      setMoney(state.money);
     } catch (loadError) {
       setError(loadError?.message || 'The Shop could not be loaded.');
     } finally {
@@ -96,7 +99,7 @@ export default function MobileShopPage() {
   const cartCount = cart.reduce((sum, entry) => sum + entry.qty, 0);
   const tokenTotal = cart.filter(({ item }) => item.currencyType !== 'dollars').reduce((sum, entry) => sum + getShopItemCost(entry.item) * entry.qty, 0);
   const dollarTotal = cart.filter(({ item }) => item.currencyType === 'dollars').reduce((sum, entry) => sum + getShopItemCost(entry.item) * entry.qty, 0);
-  const canAfford = Number(currentPlayer?.tokens || 0) >= tokenTotal && Number(currentPlayer?.money || 0) >= dollarTotal;
+  const canAfford = Number(currentPlayer?.tokens || 0) >= tokenTotal && money >= dollarTotal;
 
   const cartQuantity = (item) => cart.find((entry) => itemsMatch(entry.item, item))?.qty || 0;
   const canAdd = (item) => purchaseOnline && canPurchaseShopItem(item, findInventoryForShopItem(inventory, item), new Date(), cartQuantity(item));
@@ -130,6 +133,7 @@ export default function MobileShopPage() {
         requireOnlineAuthority: auth.configured,
       });
       updateCurrentPlayer(result.player);
+      setMoney(Math.max(0, Number(result.globalMoneyAfter || 0)));
       setInventory(result.playerInventory);
       if (result.catalogRecords?.length) {
         const replacements = new Map(result.catalogRecords.map((item) => [item.UUID, item]));
@@ -138,7 +142,7 @@ export default function MobileShopPage() {
       setCart([]);
       setMode('inventory');
       invalidateDomains(DOMAIN_INVALIDATION.shopPurchaseCommit);
-      databaseConnection.syncRuntime?.scheduleSync?.('mobile-commerce-purchase');
+      void requestPromptReferenceSync(databaseConnection, 'mobile-commerce-purchase');
       presentFeedback(simpleMobileFeedback('item-purchased', `Purchased ${result.itemCount} item${result.itemCount === 1 ? '' : 's'}`, {
         significance: 'meaningful',
         deltas: [{ key: 'coins', value: -Number(result.tokenCost || 0), label: 'Coins' }],
@@ -161,6 +165,7 @@ export default function MobileShopPage() {
         const canonical = await reconcileShopAuthority(databaseConnection, currentPlayer.UUID);
         if (canonical) {
           updateCurrentPlayer(canonical.player);
+          setMoney(Math.max(0, Number(canonical.globalMoneyAfter || 0)));
           setInventory(canonical.inventoryRecords);
           setCatalog(sortShopCatalog(canonical.catalogRecords));
         }
@@ -195,14 +200,14 @@ export default function MobileShopPage() {
 
   return (
     <section className="mobile-page mobile-shop-page">
-      <header className="mobile-page-header"><div><span>Rewards</span><h1>Shop</h1></div><strong className="mobile-wallet">◇ {Math.floor(Number(currentPlayer?.tokens || 0))}</strong></header>
+      <header className="mobile-page-header"><div><span>Rewards</span><h1>Shop</h1></div><div className="mobile-wallet" aria-label="Wallet"><strong>$ {money.toFixed(2)}</strong><strong>◇ {Math.floor(Number(currentPlayer?.tokens || 0))}</strong></div></header>
       <div className="mobile-mode-control" role="tablist" aria-label="Shop mode">{MODES.map((id) => <button key={id} type="button" role="tab" aria-selected={mode === id} className={mode === id ? 'is-active' : ''} onClick={() => setMode(id)}>{id[0].toUpperCase() + id.slice(1)}{id === 'cart' && cartCount > 0 ? ` ${cartCount}` : ''}</button>)}</div>
       {mode === 'browse' && <>
         <div className="mobile-category-rail" aria-label="Shop categories"><button type="button" className={category === 'All' ? 'is-active' : ''} onClick={() => setCategory('All')}>All</button>{SHOP_CATEGORIES.map((name) => <button key={name} type="button" className={category === name ? 'is-active' : ''} onClick={() => setCategory(name)}>{name}</button>)}</div>
         <main className="mobile-shop-list">{filteredCatalog.map((item) => {
           const owned = Boolean(findInventoryForShopItem(inventory, item) && isCosmeticItem(item));
           const available = canAdd(item);
-          return <article key={item.UUID} className="mobile-shop-row"><button type="button" className="mobile-shop-row__body" onClick={() => openSurface('shop-detail', { item, owned, canAdd: available, onAdd: add })}><span aria-hidden="true">{String(item.name || 'I').charAt(0).toUpperCase()}</span><div><strong>{item.name}</strong><small>{itemUnit(item)} · {item.category || 'Reward'}</small></div></button><div className="mobile-shop-row__action"><b>{owned ? 'Owned' : costLabel(item)}</b><button type="button" aria-label={`Add ${item.name} to cart`} disabled={!available} onClick={() => add(item)}>{owned ? '✓' : '+'}</button></div></article>;
+          return <article key={item.UUID} className="mobile-shop-row"><button type="button" className="mobile-shop-row__body" onClick={() => openSurface('shop-detail', { item, owned, canAdd: available, onAdd: add, onEquipped: load })}><span aria-hidden="true">{String(item.name || 'I').charAt(0).toUpperCase()}</span><div><strong>{item.name}</strong><small>{itemUnit(item)} · {item.category || 'Reward'}</small></div></button><div className="mobile-shop-row__action"><b>{owned ? 'Owned' : costLabel(item)}</b><button type="button" aria-label={`Add ${item.name} to cart`} disabled={!available} onClick={() => add(item)}>{owned ? '✓' : '+'}</button></div></article>;
         })}{!loading && !filteredCatalog.length && <div className="mobile-compact-empty">No items in this category.</div>}</main>
       </>}
       {mode === 'inventory' && <main className="mobile-inventory-list">{consumables.map((item) => {

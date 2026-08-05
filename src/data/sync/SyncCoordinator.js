@@ -17,13 +17,10 @@ export class SyncCoordinator {
     this.onOnline = () => this.requestSync('connectivity-returned');
     this.onVisibility = () => {
       const state = this.windowRef?.document?.visibilityState;
+      // Local commits already schedule synchronization immediately. Returning
+      // to a visible tab is a useful reconciliation nudge; hiding or swapping
+      // tabs must not start another full sync/checkpoint transaction.
       if (state === 'visible') this.requestSync('foreground');
-      else if (state === 'hidden') {
-        void this.runtime.synchronize({ reason: 'background-durability-flush' }).catch(() => undefined);
-      }
-    };
-    this.onPageHide = () => {
-      void this.runtime.synchronize({ reason: 'pagehide-durability-flush' }).catch(() => undefined);
     };
   }
 
@@ -32,7 +29,6 @@ export class SyncCoordinator {
     this.started = true;
     this.windowRef?.addEventListener?.('online', this.onOnline);
     this.windowRef?.document?.addEventListener?.('visibilitychange', this.onVisibility);
-    this.windowRef?.addEventListener?.('pagehide', this.onPageHide);
     if (this.intervalMs > 0) {
       this.intervalTimer = this.setIntervalFn(() => {
         if (!this.windowRef?.document || this.windowRef.document.visibilityState === 'visible') {
@@ -48,7 +44,6 @@ export class SyncCoordinator {
     this.started = false;
     this.windowRef?.removeEventListener?.('online', this.onOnline);
     this.windowRef?.document?.removeEventListener?.('visibilitychange', this.onVisibility);
-    this.windowRef?.removeEventListener?.('pagehide', this.onPageHide);
     if (this.intervalTimer != null) this.clearIntervalFn(this.intervalTimer);
     this.intervalTimer = null;
     this.runtime.cancelScheduledSync?.();

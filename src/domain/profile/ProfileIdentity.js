@@ -19,45 +19,46 @@ function cleanId(value) {
  * participate in this model.
  */
 export function buildProfileIdentity(player = {}, { rank = null, snapshotAt = null } = {}) {
-  const activeCosmetics = player.activeCosmetics || {};
-  const profileId = cleanId(player.profileId ?? player.UUID ?? player.id);
-  const elo = Math.max(0, Number(rank?.elo ?? player.elo) || 0);
+  const source = player && typeof player === 'object' ? player : {};
+  const activeCosmetics = source.activeCosmetics || {};
+  const profileId = cleanId(source.profileId ?? source.UUID ?? source.id);
+  const elo = Math.max(0, Number(rank?.elo ?? source.elo) || 0);
   const explicitRank = rank !== null && rank !== undefined;
   const rankPresentation = getPlayerRankPresentation({
-    ...player,
+    ...source,
     elo,
-    hasVisibleRating: explicitRank || player.hasVisibleRating === true,
+    hasVisibleRating: explicitRank || source.hasVisibleRating === true,
   });
-  const suppliedRankGroup = firstDefined(rank?.group, player.rankGroup);
+  const suppliedRankGroup = firstDefined(rank?.group, source.rankGroup);
   const rankGroup = suppliedRankGroup
     ? getRankGroupPresentation(suppliedRankGroup).group
     : getRank(elo).group;
   const suppliedRankLabel = typeof rank === 'string'
     ? rank
-    : rank?.label || player.rankLabel || null;
+    : rank?.label || source.rankLabel || null;
 
   return Object.freeze({
     profileId,
-    username: String(player.username || player.name || 'Unknown profile'),
-    profilePicture: firstDefined(player.profilePicture, player.avatar),
-    title: firstDefined(player.title, player.activeTitle, activeCosmetics.title),
+    username: String(source.username || source.name || 'Unknown profile'),
+    profilePicture: firstDefined(source.profilePicture, source.avatar),
+    title: firstDefined(source.title, source.activeTitle, activeCosmetics.title),
     frame: firstDefined(
       activeCosmetics.avatarFrame,
-      player.frame,
-      player.profileFrame,
-      player.cardFrame,
+      source.frame,
+      source.profileFrame,
+      source.cardFrame,
       activeCosmetics.profileFrame,
       activeCosmetics.cardFrame,
       activeCosmetics.frame,
     ),
-    theme: firstDefined(player.theme, player.playerTheme, activeCosmetics.profileTheme, activeCosmetics.appTheme, activeCosmetics.theme, 'minimalist'),
+    theme: firstDefined(source.theme, source.playerTheme, activeCosmetics.profileTheme, activeCosmetics.appTheme, activeCosmetics.theme, 'minimalist'),
     elo,
     hasVisibleRating: rankPresentation.hasVisibleRating,
     rankGroup,
     rankLabel: rankPresentation.hasVisibleRating
       ? String(suppliedRankLabel || rankPresentation.rankLabel)
       : 'Unrated',
-    snapshotAt: snapshotAt || player.snapshotAt || null,
+    snapshotAt: snapshotAt || source.snapshotAt || null,
   });
 }
 

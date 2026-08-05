@@ -240,7 +240,8 @@ export class ChronicleQueryService {
         authorUUID: entry.parent,
         viewerIGT,
       })
-    )).map((entry) => safeForViewer(entry, viewerUUID));
+    )).map((entry) => safeForViewer(entry, viewerUUID))
+      .sort(compareChronicleFeedItems);
     const pool = [...eligible];
     const selected = [];
     while (pool.length && selected.length < Math.max(1, Math.min(5, limit))) {

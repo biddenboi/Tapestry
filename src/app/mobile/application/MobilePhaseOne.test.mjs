@@ -74,6 +74,7 @@ test('mobile Shop keeps catalog definitions shared while inventory follows the a
     'profile-b': [{ UUID: 'owned-b', parent: 'profile-b' }],
   };
   const databaseConnection = {
+    getGlobalMoney() { return 84.75; },
     getRepository(name) {
       if (name === 'shop') return {
         async getCatalog() {
@@ -98,6 +99,8 @@ test('mobile Shop keeps catalog definitions shared while inventory follows the a
   assert.deepEqual(profileB.catalog.map(({ UUID }) => UUID), ['shop-b', 'shop-a']);
   assert.deepEqual(profileA.inventory.map(({ UUID }) => UUID), ['owned-a']);
   assert.deepEqual(profileB.inventory.map(({ UUID }) => UUID), ['owned-b']);
+  assert.equal(profileA.money, 84.75);
+  assert.equal(profileB.money, 84.75);
 });
 
 function profileSwitchDatabase({ activeSession = null } = {}) {
