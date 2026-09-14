@@ -66,10 +66,10 @@ test('clean desktop startup restores cloud SQLite before enabling publication', 
   assert.match(transport, /database-checkpoints\/latest\.json/);
 });
 
-test('downloads cross a cloud durability barrier before ZIP construction', async () => {
+test('local backups flush SQLite without making extra cloud checkpoints', async () => {
   const source = await read('../persistence/services/ImportExportService.js');
-  assert.match(source, /pre-export-durability-barrier/);
-  assert.match(source, /publishCloudCheckpoint\?\.\(\{ force: true/);
-  assert.match(source, /did not create a potentially stale download/);
+  assert.match(source, /await this.flushWrites\(\)/);
+  assert.doesNotMatch(source, /publishCloudCheckpoint/);
+  assert.match(source, /local-device-including-pending-changes/);
   assert.match(source, /zip\.file\('tapestry\.sqlite'/);
 });

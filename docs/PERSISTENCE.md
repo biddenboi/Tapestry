@@ -45,3 +45,45 @@ Leaderboard snapshots, profile summaries, Elo journeys, contribution totals, Doj
 ## Platform transport boundary
 
 The web app uses HTTPS, Supabase realtime, service workers, and Web Push. Safari on iPhone does not expose Web Bluetooth, so a browser/PWA cannot implement direct Bluetooth database transfer. The synchronization contracts are transport-neutral enough for a future native iOS or desktop companion transport, but the production web app must not claim peer-to-peer Bluetooth support.
+# Sync and settings repair (September 2026)
+
+Storage maintenance uses verified SQLite `VACUUM` to reclaim unused pages,
+including offline. It does not clear records, pending outboxes, accepted receipts,
+conflicts, history, or backup files. The storage panel reports reclaimable space
+and savings from content-addressed image reuse. The production build stamps the
+service worker with a deterministic build ID so activation retires obsolete
+app-code caches instead of accumulating hashed assets in one permanent cache.
+Only known shell/asset caches are retired; other caches are untouched. Concurrent
+scheduled/manual encrypted backups share one in-flight export.
+
+Sync-only SQLite acknowledgements, cursor advances, retries, and device metadata
+do not schedule another sync or dirty the recovery checkpoint. Remote reference
+application also avoids echo uploads. Local edits retain the existing live,
+750 ms prompt, and 15 second background priorities, with reconnect catch-up and
+exponential retry. Reference writers share one queue; acknowledgements match
+the exact sent payload as well as its timestamp before removing outbox entries.
+
+Reference requests time out after 60 seconds and leave unsuccessful edits in
+the durable outbox. Upload batches are bounded by both count and encoded bytes:
+up to 500 records / 2 MiB normally, or 50 records / 256 KiB when the browser
+reports a slow connection or data-saving mode. One oversized record travels
+alone. Browsers without network hints use the normal bounded policy.
+
+Settings merge only edited fields into the latest profile. Related profile
+read-modify-write operations are serialized, unchanged ritual settings skip
+writes, and general settings cannot be submitted by a nested account form.
+Policy controls update immediately and report persistence failures. Expensive
+recommender state loads only on the Advanced page.
+
+Download backup creates one verified local package, including pending edits.
+Concurrent download requests share the same build. This action does not force
+a separate cloud checkpoint, and works offline. Existing backup files are
+retained. Scheduled desktop recovery and cloud checkpoints remain separate
+recovery mechanisms.
+
+Deploy `20260914010000_reference_cursor_correctness.sql` with the client. It
+retains records and cursors, returns `record_updated_at` in deltas, ignores
+receipt-only updates when allocating versions, and serializes cursor allocation
+per owner. `supabase/tests/reference_cursor_correctness.sql` exercises the
+contract on an isolated PostgreSQL fixture; the Node suite covers concurrent
+uploads, same-millisecond acknowledgements, retries, and overlapping settings.

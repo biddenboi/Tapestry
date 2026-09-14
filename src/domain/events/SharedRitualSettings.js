@@ -1,5 +1,6 @@
 import { STORES } from '../constants.js';
 import { normalizeRitualChecklist } from './Events.js';
+import { queueProfileWrite } from '../profile/ProfileWriteQueue.js';
 
 function sameChecklist(left, right) {
   const a = normalizeRitualChecklist(left);
@@ -16,43 +17,53 @@ export function profileRitualDefaults(player = {}) {
   });
 }
 
-export async function saveSharedRitualSettings(databaseConnection, activePlayer, {
+export function saveSharedRitualSettings(databaseConnection, activePlayer, options = {}) {
+  return queueProfileWrite(databaseConnection, () => saveSharedRitualSettingsInternal(databaseConnection, activePlayer, options));
+}
+
+async function saveSharedRitualSettingsInternal(databaseConnection, activePlayer, {
   activePatch = {},
-  wakeChecklist = activePatch.wakeChecklist ?? activePlayer?.wakeChecklist,
-  sleepChecklist = activePatch.sleepChecklist ?? activePlayer?.sleepChecklist,
+  wakeChecklist = activePatch.wakeChecklist,
+  sleepChecklist = activePatch.sleepChecklist,
   at = new Date(),
 } = {}) {
   if (!databaseConnection?.commitAtomicMutation || !activePlayer?.UUID) {
     throw new TypeError('Shared ritual settings require an active profile and database connection.');
   }
   const players = await databaseConnection.getAll(STORES.player);
-  const wake = normalizeRitualChecklist(wakeChecklist);
-  const sleep = normalizeRitualChecklist(sleepChecklist);
+  const latest = players.find((player) => String(player.UUID) === String(activePlayer.UUID)) || activePlayer;
+  const wake = normalizeRitualChecklist(wakeChecklist ?? latest.wakeChecklist);
+  const sleep = normalizeRitualChecklist(sleepChecklist ?? latest.sleepChecklist);
   const updatedAt = new Date(at).toISOString();
+  const changed = [];
   const records = players.map((player) => {
     const isActive = String(player.UUID) === String(activePlayer.UUID);
-    return {
+    const next = {
       ...player,
       ...(isActive ? activePatch : {}),
       wakeChecklist: wake,
       sleepChecklist: sleep,
-      updatedAt,
-      syncUpdatedAt: updatedAt,
     };
+    if (Object.keys(next).every((key) => JSON.stringify(next[key]) === JSON.stringify(player[key]))) return player;
+    const record = { ...next, updatedAt, syncUpdatedAt: updatedAt };
+    changed.push(record);
+    return record;
   });
   if (!records.some((record) => String(record.UUID) === String(activePlayer.UUID))) {
-    records.push({
+    const record = {
       ...activePlayer,
       ...activePatch,
       wakeChecklist: wake,
       sleepChecklist: sleep,
       updatedAt,
       syncUpdatedAt: updatedAt,
-    });
+    };
+    records.push(record);
+    changed.push(record);
   }
-  await databaseConnection.commitAtomicMutation({
+  if (changed.length) await databaseConnection.commitAtomicMutation({
     label: 'shared-ritual-settings',
-    puts: records.map((record) => ({ store: STORES.player, record })),
+    puts: changed.map((record) => ({ store: STORES.player, record })),
   });
   return records.find((record) => String(record.UUID) === String(activePlayer.UUID));
 }

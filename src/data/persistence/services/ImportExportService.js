@@ -39,6 +39,8 @@ export class ImportExportService {
   constructor(facade) {
     if (!facade) throw new Error('ImportExportService requires a database facade.');
     this.facade = facade;
+    this.exportPromise = null;
+    this.encryptedBackupPromise = null;
     return facadeBackedService(this, facade);
   }
 
@@ -48,7 +50,15 @@ export class ImportExportService {
   restoreCloudCheckpoint(...args) { return this._restoreCloudCheckpoint(...args); }
   createCompactBackup() { return this._getSaveAsZipInternal({ kind: 'backup' }); }
 
-  async createEncryptedDesktopBackup() {
+  createEncryptedDesktopBackup() {
+    if (this.encryptedBackupPromise) return this.encryptedBackupPromise;
+    this.encryptedBackupPromise = this._createEncryptedDesktopBackup().finally(() => {
+      this.encryptedBackupPromise = null;
+    });
+    return this.encryptedBackupPromise;
+  }
+
+  async _createEncryptedDesktopBackup() {
     const bridge = typeof window === 'undefined' ? null : window.tapestryDesktopBackups;
     if (!bridge?.write) throw new Error('Encrypted scheduled backups are available in the desktop app.');
     const durability = await this._prepareDurableExport();
@@ -75,50 +85,27 @@ export class ImportExportService {
     await this.ready;
     await this.ensureFullyLoaded();
     await this.compactWritePromise;
+    await this.flushWrites();
     const runtime = this.syncRuntime;
-    const durability = {
+    return {
       localSqliteFlushed: true,
       cloudConfigured: Boolean(runtime?.transport),
       cloudSynchronized: false,
+      lastSynchronizedAt: runtime?.getStatus?.().lastSynchronizedAt || null,
+      scope: 'local-device-including-pending-changes',
       preparedAt: new Date().toISOString(),
     };
-    if (!runtime?.transport) return durability;
-    try {
-      const sync = await runtime.synchronize({ reason: 'pre-export-durability-barrier' });
-      await this.flushWrites();
-      const checkpoint = await runtime.publishCloudCheckpoint?.({ force: true, reason: 'pre-export' });
-      if (!checkpoint?.uploaded) {
-        const checkpointError = new Error(
-          `The current SQLite checkpoint was not confirmed by cloud storage (${checkpoint?.reason || 'unknown reason'}).`,
-        );
-        checkpointError.code = 'pre-export-cloud-checkpoint-unconfirmed';
-        throw checkpointError;
-      }
-      return {
-        ...durability,
-        cloudSynchronized: Boolean(sync?.synchronized && checkpoint.uploaded),
-        cloudCheckpointConfirmed: true,
-        uploadedOperations: Number(sync?.uploaded || 0),
-        pulledOperations: Number(sync?.pulled || 0),
-        checkpoint: checkpoint || null,
-      };
-    } catch (error) {
-      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      if (!offline) {
-        const next = new Error(`Cloud synchronization failed, so Tapestry did not create a potentially stale download: ${error.message || error}`);
-        next.code = 'pre-export-cloud-sync-failed';
-        next.cause = error;
-        throw next;
-      }
-      return {
-        ...durability,
-        offline: true,
-        cloudError: String(error?.message || error || 'offline').slice(0, 500),
-      };
-    }
   }
 
-  async _getSaveAsZipInternal(options = {}) {
+  _getSaveAsZipInternal(options = {}) {
+    if (this.exportPromise) return this.exportPromise;
+    this.exportPromise = this._buildAndDownloadSave(options).finally(() => {
+      this.exportPromise = null;
+    });
+    return this.exportPromise;
+  }
+
+  async _buildAndDownloadSave(options = {}) {
     const durability = await this._prepareDurableExport();
     const kind = options.kind === 'backup' ? 'backup' : 'save';
     const { blob, manifest } = await this._buildCompactPackage({ kind, durability });

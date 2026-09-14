@@ -267,8 +267,8 @@ export class DurableReferenceOutbox {
   async settle(records = []) {
     const statements = (records || []).map((entry) => ({
       sql: `DELETE FROM sync_reference_outbox
-            WHERE record_type=? AND record_id=? AND updated_at=?`,
-      bind: [entry.recordType, entry.recordId, entry.updatedAt],
+            WHERE record_type=? AND record_id=? AND updated_at=? AND payload_json=? AND deleted=?`,
+      bind: [entry.recordType, entry.recordId, entry.updatedAt, serialize(entry.data), entry.deleted ? 1 : 0],
       result: 'changes',
     }));
     if (!statements.length) return { settled: 0 };

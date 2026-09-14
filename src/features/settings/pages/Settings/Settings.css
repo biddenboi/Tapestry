@@ -1377,3 +1377,16 @@
   .theme-studio-actions { grid-template-columns:1fr 1fr; }
   .theme-studio-actions div { grid-column:1 / -1; }
 }
+
+.settings-recovery-details {
+  margin-block: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+}
+.settings-recovery-details > summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-weight: 600;
+}
+.settings-recovery-details[open] > summary { margin-bottom: 12px; }

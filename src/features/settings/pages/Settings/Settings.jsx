@@ -98,6 +98,10 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
   } = useAppContext();
   const [player, setPlayer]       = useState(null);
   const [saved, setSaved]         = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const policyWriteVersion = useRef(0);
+  const dirtyFormFields = useRef(new Set());
   const [soundEnabled, setSoundEnabled] = useState(() => areSoundEffectsEnabled());
   const [inventory, setInventory] = useState([]);
   const [form, setForm]           = useState({
@@ -148,10 +152,13 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     : mobileRestricted ? 'data' : 'general';
 
   useEffect(() => {
+    let cancelled = false;
+    formDirtyRef.current = false;
+    dirtyFormFields.current.clear();
     const load = async () => {
       if (Date.now() - lastCosmeticWriteRef.current < 1500) return;
       const p = await databaseConnection.getCurrentPlayer();
-      if (!p) return;
+      if (!p || cancelled) return;
       setPlayer(p);
       // Only re-seed the form if the user hasn't started editing it.
       if (!formDirtyRef.current) {
@@ -164,14 +171,15 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
         });
       }
       const inv = await databaseConnection.getPlayerStore(STORES.inventory, p.UUID);
-      setInventory(inv);
+      if (!cancelled) setInventory(inv);
     };
-    load();
+    void load().catch((error) => { if (!cancelled) setSaveError(error.message); });
+    return () => { cancelled = true; };
   }, [databaseConnection, playerUUID]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!playerUUID) return () => { cancelled = true; };
+    if (!playerUUID || presentedPageId !== 'advanced') return () => { cancelled = true; };
     Promise.all([
       getTaskRecommenderV12Settings(databaseConnection, playerUUID),
       readTaskRecommendationV12Checkpoint(databaseConnection, playerUUID),
@@ -185,10 +193,12 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
       setRecommenderMessage(error?.message || 'Could not load the v12 checkpoint.');
     });
     return () => { cancelled = true; };
-  }, [databaseConnection, playerUUID]);
+  }, [databaseConnection, playerUUID, presentedPageId]);
 
   const updateForm = (patch) => {
     formDirtyRef.current = true;
+    for (const key of Object.keys(patch)) dirtyFormFields.current.add(key);
+    setSaved(false);
     setForm((f) => ({ ...f, ...patch }));
   };
 
@@ -200,28 +210,37 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
 
   const handleInboxNotificationsToggle = async (enabled) => {
     if (!player) return;
-    const updated = { ...player, inboxNotificationsEnabled: enabled };
-    setPlayer(await commitCurrentProfile(updated));
+    await savePlayerPolicy({ inboxNotificationsEnabled: enabled });
   };
 
   const savePlayerPolicy = async (patch) => {
     if (!player) return;
-    const updated = { ...player, ...patch };
-    setPlayer(await commitCurrentProfile(updated));
+    const version = ++policyWriteVersion.current;
+    const update = (latest) => ({ ...latest, ...(typeof patch === 'function' ? patch(latest) : patch) });
+    setSaveError('');
+    setPlayer(update);
+    try {
+      const committed = await commitCurrentProfile(update);
+      if (version === policyWriteVersion.current) setPlayer(committed);
+    } catch (error) {
+      const persisted = await databaseConnection.getCurrentPlayer().catch(() => null);
+      if (version === policyWriteVersion.current && persisted) setPlayer(persisted);
+      setSaveError(error?.message || 'Settings could not be saved.');
+    }
   };
 
-  const updateNotificationPolicy = async (patch) => savePlayerPolicy({
+  const updateNotificationPolicy = async (patch) => savePlayerPolicy((latest) => ({
     notificationPolicy: {
       maximumPerDay: 2,
       maximumRepeatPerAction: 1,
-      ...(player?.notificationPolicy || {}),
+      ...(latest?.notificationPolicy || {}),
       ...patch,
       categories: {
-        ...(player?.notificationPolicy?.categories || {}),
+        ...(latest?.notificationPolicy?.categories || {}),
         ...(patch.categories || {}),
       },
     },
-  });
+  }));
 
   const deleteEncounterMemories = async () => {
     if (!player?.UUID || memoryBusy || !window.confirm('Delete every “since last saw” encounter memory for this profile? Underlying tasks, posts, Matches, and profiles are not deleted.')) return;
@@ -253,7 +272,9 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
       applyPreviewTheme(persistedThemeRef.current);
     }
     try {
-      const committed = await commitCurrentProfile(updated);
+      const committed = await commitCurrentProfile((latest) => ({
+        ...latest, activeCosmetics: { ...(latest.activeCosmetics || {}), [key]: value },
+      }));
       if ((key === 'appTheme' || key === 'theme') && typeof document !== 'undefined') {
         document.documentElement.setAttribute('data-theme-commit-player', updated.UUID);
         document.documentElement.setAttribute('data-theme-commit-id', persistedThemeRef.current);
@@ -312,25 +333,31 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!player) return;
-    const updated = {
-      ...player,
-      username:    form.username    || player.username,
-      wakeTime:    form.wakeTime,
-      sleepTime:   form.sleepTime,
-      wakeChecklist: normalizeRitualChecklist(form.wakeChecklist),
-      sleepChecklist: normalizeRitualChecklist(form.sleepChecklist),
-    };
-    delete updated.description;
-    setPlayer(await saveSharedRitualSettings(databaseConnection, player, {
-      activePatch: updated,
-      wakeChecklist: updated.wakeChecklist,
-      sleepChecklist: updated.sleepChecklist,
-    }));
-    formDirtyRef.current = false;
-    refreshApp();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (!player || saving) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const values = {
+        username:    form.username    || player.username,
+        wakeTime:    form.wakeTime,
+        sleepTime:   form.sleepTime,
+        wakeChecklist: normalizeRitualChecklist(form.wakeChecklist),
+        sleepChecklist: normalizeRitualChecklist(form.sleepChecklist),
+      };
+      const updated = Object.fromEntries(Object.entries(values).filter(([key]) => dirtyFormFields.current.has(key)));
+      setPlayer(await saveSharedRitualSettings(databaseConnection, player, {
+        activePatch: updated,
+        wakeChecklist: updated.wakeChecklist,
+        sleepChecklist: updated.sleepChecklist,
+      }));
+      formDirtyRef.current = false;
+      dirtyFormFields.current.clear();
+      refreshApp();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      setSaveError(error?.message || 'Settings could not be saved. Your edits are still here.');
+    } finally { setSaving(false); }
   };
 
   const runFolderAction = async (action) => {
@@ -462,14 +489,14 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     const loadouts = [...(player.identityLoadouts || [null, null])];
     loadouts[index] = normalizeCosmeticEquipment(player.activeCosmetics, { profileLayout: player.profilePersonalization?.skin });
     const updated = { ...player, identityLoadouts: loadouts.slice(0, 2) };
-    setPlayer(await commitCurrentProfile(updated));
+    setPlayer(await commitCurrentProfile((latest) => ({ ...latest, identityLoadouts: updated.identityLoadouts })));
   };
 
   const applyIdentityLoadout = async (index) => {
     const loadout = player?.identityLoadouts?.[index];
     if (!player || !loadout) return;
     const updated = { ...player, activeCosmetics: normalizeCosmeticEquipment(loadout) };
-    setPlayer(await commitCurrentProfile(updated));
+    setPlayer(await commitCurrentProfile((latest) => ({ ...latest, activeCosmetics: updated.activeCosmetics })));
     applyThemeToElement(document.documentElement, updated.activeCosmetics.appTheme);
   };
 
@@ -515,17 +542,19 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
         </div>
       </div>}
 
-      <form className="settings-form" onSubmit={handleSave}>
+      <div className="settings-form">
+        <form id="general-settings-form" onSubmit={handleSave} />
+        {saveError && <div role="alert" className="settings-sync-error">{saveError}</div>}
         {/* Profile */}
         <SettingsSection page="general" activePage={presentedPageId} icon={<Icon name="profile" size={16} />} title="Profile">
           <SettingsRow label="Username">
-            <input value={form.username} onChange={(e) => updateForm({ username: e.target.value })} placeholder={player?.username || 'Username'} className="settings-input" />
+            <input form="general-settings-form" disabled={saving} value={form.username} onChange={(e) => updateForm({ username: e.target.value })} placeholder={player?.username || 'Username'} className="settings-input" />
           </SettingsRow>
           <SettingsRow label="Wake Time">
-            <input type="time" value={form.wakeTime} onChange={(e) => updateForm({ wakeTime: e.target.value })} className="settings-input settings-input--time" />
+            <input form="general-settings-form" disabled={saving} type="time" value={form.wakeTime} onChange={(e) => updateForm({ wakeTime: e.target.value })} className="settings-input settings-input--time" />
           </SettingsRow>
           <SettingsRow label="Bed Time" hint="Optional timing context; never a penalty gate">
-            <input type="time" value={form.sleepTime} onChange={(e) => updateForm({ sleepTime: e.target.value })} className="settings-input settings-input--time" />
+            <input form="general-settings-form" disabled={saving} type="time" value={form.sleepTime} onChange={(e) => updateForm({ sleepTime: e.target.value })} className="settings-input settings-input--time" />
           </SettingsRow>
           <SettingsRow
             label="Wake Checklist"
@@ -533,6 +562,7 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
             className="settings-row--checklist"
           >
             <textarea
+              form="general-settings-form" disabled={saving}
               value={form.wakeChecklist}
               onChange={(e) => updateForm({ wakeChecklist: e.target.value })}
               placeholder={'Drink water\nOpen the curtains\nReview today\'s plan'}
@@ -546,6 +576,7 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
             className="settings-row--checklist"
           >
             <textarea
+              form="general-settings-form" disabled={saving}
               value={form.sleepChecklist}
               onChange={(e) => updateForm({ sleepChecklist: e.target.value })}
               placeholder={'Clear the desk\nPrepare tomorrow\nPut devices away'}
@@ -554,7 +585,7 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
             />
           </SettingsRow>
           <div className="settings-save-row">
-            <button type="submit" className="primary settings-save-btn">{saved ? '✓ SAVED' : 'SAVE CHANGES'}</button>
+            <button type="submit" form="general-settings-form" disabled={saving} className="primary settings-save-btn">{saving ? 'SAVING…' : saved ? '✓ SAVED' : 'SAVE CHANGES'}</button>
           </div>
         </SettingsSection>
 
@@ -785,10 +816,23 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
 
         {/* Data */}
         <SettingsSection page="data" activePage={presentedPageId} icon={<Icon name="journal" size={16} />} title="Data & Backup">
-          <SyncAccountPanel databaseConnection={databaseConnection} />
           <SyncStatusPanel databaseConnection={databaseConnection} />
-          <OfflineStoragePanel databaseConnection={databaseConnection} />
-          {!mobileRestricted && <RecoveryPanel databaseConnection={databaseConnection} onRestored={refreshApp} />}
+          <details className="settings-recovery-details"><summary>Account and sign-in</summary><SyncAccountPanel databaseConnection={databaseConnection} /></details>
+          {!mobileRestricted && <SettingsRow
+            label="Download backup"
+            hint="One verified copy of this device, including pending changes. Works offline; does not upload another cloud backup."
+          >
+            <button
+              type="button"
+              disabled={folderBusy}
+              onClick={() => runFolderAction(() => databaseConnection.createCompactBackup())}
+            >
+              Create backup
+            </button>
+          </SettingsRow>}
+          <details className="settings-recovery-details"><summary>Offline storage</summary><OfflineStoragePanel databaseConnection={databaseConnection} /></details>
+          {!mobileRestricted && <details className="settings-recovery-details"><summary>Advanced recovery and diagnostics</summary>
+            <RecoveryPanel databaseConnection={databaseConnection} onRestored={refreshApp} />
           {!mobileRestricted && <div className="settings-verification">
             <div className="settings-verification__status">
               <strong>{verification
@@ -819,21 +863,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
           </SettingsRow>
           {!mobileRestricted && folderMessage && <div className="settings-sync-status">{folderMessage}</div>}
           {!mobileRestricted && folderError && <div className="settings-sync-error">{folderError}</div>}
-          {!mobileRestricted && <SettingsRow label="Download Save" hint="Creates one compact verified package with SQLite, the current model, and referenced images">
-            <button type="button" disabled={folderBusy} onClick={() => runFolderAction(() => databaseConnection.getSaveAsZip())}>Download</button>
-          </SettingsRow>}
-          {!mobileRestricted && <SettingsRow
-            label="Create Backup"
-            hint="Downloads an explicit verified backup of the current canonical data"
-          >
-            <button
-              type="button"
-              disabled={folderBusy}
-              onClick={() => runFolderAction(() => databaseConnection.createCompactBackup())}
-            >
-              Create backup
-            </button>
-          </SettingsRow>}
           {!mobileRestricted && <SettingsRow label="Pre-migration backup">
             <button
               type="button"
@@ -879,8 +908,9 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
               <label htmlFor="save-folder-upload" className="settings-file-label">CHOOSE FOLDER</label>
             </div>
           </SettingsRow>}
+          </details>}
         </SettingsSection>
-      </form>
+      </div>
 
     </div>
   );

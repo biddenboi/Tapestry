@@ -19,6 +19,7 @@ import DataSourceGate from '@app/data-source/DataSourceGate/DataSourceGate.jsx';
 import MobileAppShell from '@app/mobile/MobileAppShell.jsx';
 import { useMobileCompanion } from '@app/mobile/useMobileCompanion.js';
 import { AppContext } from '@app/context/AppContext.js';
+import { queueProfileWrite } from '@domain/profile/ProfileWriteQueue.js';
 import {
   DATA_DOMAINS,
   DOMAIN_INVALIDATION,
@@ -490,10 +491,8 @@ function App() {
     }
   }, [currentPlayer, databaseConnection, refreshApp]);
 
-  const commitCurrentProfile = useCallback(async (nextPlayerOrUpdater) => {
-    const previous = currentPlayer?.UUID
-      ? currentPlayer
-      : await databaseConnection.getCurrentPlayer();
+  const commitCurrentProfile = useCallback((nextPlayerOrUpdater) => queueProfileWrite(databaseConnection, async () => {
+    const previous = await databaseConnection.getCurrentPlayer();
     if (!previous?.UUID) throw new Error('No current profile is available.');
     const next = typeof nextPlayerOrUpdater === 'function'
       ? nextPlayerOrUpdater(previous)
@@ -501,6 +500,7 @@ function App() {
     if (!next || String(next.UUID || '') !== String(previous.UUID)) {
       throw new Error('A current-profile update must preserve the active profile identity.');
     }
+    if (JSON.stringify(next) === JSON.stringify(previous)) return previous;
     try {
       await databaseConnection.add(STORES.player, next);
     } catch (error) {
@@ -512,10 +512,11 @@ function App() {
       });
       throw error;
     }
-    updateCurrentPlayer(next);
+    const committed = await databaseConnection.getCurrentPlayer();
+    updateCurrentPlayer(committed);
     invalidateDomains(DOMAIN_INVALIDATION.profileWrite);
-    return next;
-  }, [currentPlayer, databaseConnection, invalidateDomains, notify, updateCurrentPlayer]);
+    return committed;
+  }), [databaseConnection, invalidateDomains, notify, updateCurrentPlayer]);
 
   useCurrentPlayerSession({
     databaseConnection,

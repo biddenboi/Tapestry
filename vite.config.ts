@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { rmSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { stampServiceWorker } from './scripts/stamp-service-worker.mjs'
 
 const alias = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 
@@ -14,6 +15,7 @@ export default defineConfig({
         // The worker imports the package-owned hashed Wasm asset. Keep the
         // old public fallback out of production so iOS downloads one copy.
         rmSync(alias('./dist/sqlite3.wasm'), { force: true })
+        stampServiceWorker(alias('./dist'))
       },
     },
   ],

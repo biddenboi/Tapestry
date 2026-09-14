@@ -442,7 +442,7 @@ export async function collectMobileReferenceRecords(databaseConnection, {
   const recordTypes = bootstrap ? MOBILE_BOOTSTRAP_RECORD_TYPES : MOBILE_REFERENCE_RECORD_TYPES;
   for (const [recordType, store] of recordTypes) {
     // eslint-disable-next-line no-await-in-loop
-    const entries = await databaseConnection.getAll(store).catch(() => []);
+    const entries = await databaseConnection.getAll(store);
     for (const entry of entries) {
       if (!entry?.UUID) continue;
       if (recordType === MOBILE_ML_MODEL_RECORD_TYPE && !isMobileMlModelRecord(entry)) continue;
@@ -575,7 +575,7 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
       : scopedIncomingData;
     if (!localByStore.has(store)) {
       // eslint-disable-next-line no-await-in-loop
-      const local = await databaseConnection.getAll(store).catch(() => []);
+      const local = await databaseConnection.getAll(store);
       localByStore.set(store, new Map(local.filter((record) => record?.UUID).map((record) => [record.UUID, record])));
     }
     const current = localByStore.get(store).get(incomingData.UUID);
@@ -618,7 +618,7 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     for (const [, store] of MOBILE_BOOTSTRAP_RECORD_TYPES) {
       if (idsByStore.has(store) && localByStore.has(store)) continue;
       // eslint-disable-next-line no-await-in-loop
-      const local = await databaseConnection.getAll(store).catch(() => []);
+      const local = await databaseConnection.getAll(store);
       localByStore.set(store, new Map(local.filter((record) => record?.UUID).map((record) => [record.UUID, record])));
     }
     for (const [recordType, store] of MOBILE_BOOTSTRAP_RECORD_TYPES) {

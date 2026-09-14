@@ -565,3 +565,46 @@ test('conflict acknowledgements preserve both payloads in the conflict inbox', a
   assert.equal(conflict.serverVersion, 2);
   assert.equal(runtime.getStatus().status, 'conflict');
 });
+
+test('sync bookkeeping does not schedule another pass or dirty the checkpoint', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  const { default: SqliteStorageAdapter } = await import('../persistence/sqlite/SqliteStorageAdapter.js');
+  const adapter = new SqliteStorageAdapter({ client });
+  const scheduled = [];
+  const runtime = new SyncRuntime({ client, transport: {}, windowRef: null,
+    setTimeoutFn: (_callback, delay) => { scheduled.push(delay); return 1; }, clearTimeoutFn() {} });
+  adapter.setCommitListener((details) => runtime.databaseCommitted(details));
+  await runtime.cursors.advance('owner', 1);
+  await runtime.referenceOutbox.markSeeded({ schemaVersion: 1 });
+  assert.equal(runtime.checkpointDirty, false);
+  assert.deepEqual(scheduled, []);
+  await adapter.documents.put('todos', { UUID: 'real-edit', name: 'Keep this edit' });
+  assert.equal(runtime.checkpointDirty, true);
+  assert.equal(scheduled.length, 1);
+});
+
+test('acknowledging an upload never clears a different edit with the same timestamp', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  const runtime = new SyncRuntime({ client, windowRef: null });
+  const record = { recordType: 'task', recordId: 'same-ms', updatedAt: FIXED.toISOString(), data: { UUID: 'same-ms', name: 'First' } };
+  await runtime.referenceOutbox.queueReferences([record]);
+  const sent = await runtime.referenceOutbox.listPending();
+  await runtime.referenceOutbox.queueReferences([{ ...record, data: { ...record.data, name: 'Second' } }]);
+  assert.equal((await runtime.referenceOutbox.settle(sent)).settled, 0);
+  assert.equal((await runtime.referenceOutbox.listPending())[0].data.name, 'Second');
+});
+
+test('concurrent sync lanes upload each pending reference only once', async (t) => {
+  const { client } = await createContext();
+  t.after(() => client.close());
+  let calls = 0;
+  const runtime = new SyncRuntime({ client, windowRef: null, transport: {
+    async mergeMobileReferenceRecords() { calls += 1; await new Promise((resolve) => setTimeout(resolve, 10)); }
+  } });
+  await runtime.referenceOutbox.queueReferences([{ recordType: 'task', recordId: 'one', updatedAt: FIXED.toISOString(), data: { UUID: 'one' } }]);
+  await Promise.all([runtime.flushReferenceOutbox(), runtime.flushReferenceOutbox({ recordTypes: ['task'] })]);
+  assert.equal(calls, 1);
+  assert.equal((await runtime.referenceOutbox.listPending()).length, 0);
+});

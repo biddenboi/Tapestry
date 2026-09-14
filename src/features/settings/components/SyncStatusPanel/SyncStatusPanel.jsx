@@ -1,10 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
 const STATUS_COPY = Object.freeze({
-  'local-only': 'This device is using local SQLite. Sign in above to connect private cross-device sync.',
+  'local-only': 'Your changes are saved on this device. Open Account and sign-in to connect your other devices.',
   pending: 'Local changes are safe and waiting to upload.',
-  syncing: 'Sending local operations and checking for newer records.',
-  synced: 'All queued operations have been acknowledged.',
+  syncing: 'Saving changes online and checking for updates from your other devices.',
+  synced: 'Your queued changes are saved online.',
   conflict: 'One or more records need a conflict decision. Both versions are preserved.',
   error: 'Sync needs attention. Local changes remain saved on this device.',
 });

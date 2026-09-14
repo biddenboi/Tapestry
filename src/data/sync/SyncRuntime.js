@@ -116,6 +116,7 @@ export class SyncRuntime {
     this.checkpointPublishingEnabled = false;
     this.lastCheckpointAt = 0;
     this.checkpointPromise = null;
+    this.referenceFlushTail = Promise.resolve();
     this.statusStore.setTransportConfigured(Boolean(transport));
   }
 
@@ -147,7 +148,7 @@ export class SyncRuntime {
           // websocket payload is never treated as the source of truth.
           this.scheduleSync(nudge?.source === 'mobile-reference'
             ? 'realtime-reference-nudge'
-            : 'realtime-sync-log-nudge');
+            : 'realtime-sync-log-nudge', { delayMs: 200 });
         },
       ) || null;
     }
@@ -234,7 +235,15 @@ export class SyncRuntime {
     return this.referenceOutbox.reconcileRemote(records);
   }
 
-  async flushReferenceOutbox({ limit = 500, recordTypes = null } = {}) {
+  flushReferenceOutbox(options = {}) {
+    // Full sync and latency-sensitive lanes share the same outbox writer.
+    const run = () => this._flushReferenceOutbox(options);
+    const request = this.referenceFlushTail.then(run, run);
+    this.referenceFlushTail = request.catch(() => undefined);
+    return request;
+  }
+
+  async _flushReferenceOutbox({ limit = 500, recordTypes = null } = {}) {
     if (!this.transport?.mergeMobileReferenceRecords) {
       return { uploaded: 0, reason: 'transport-unavailable' };
     }
@@ -355,9 +364,15 @@ export class SyncRuntime {
   }
 
   databaseCommitted(details = {}) {
+    const statements = details.command?.statements || (details.statement ? [details.statement] : []);
+    // Acknowledgements, retries, registration, and cursor advances are sync
+    // bookkeeping. Treating them as user edits creates an endless sync loop.
+    if (statements.length && statements.every(({ sql = '' }) => (
+      /^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM)\s+["`]?sync_/i.test(sql)
+    ))) return;
     this.checkpointGeneration += 1;
     this.checkpointDirty = true;
-    if (this.transport) {
+    if (this.transport && !statements.some(({ sql = '' }) => /UPDATE\s+sync_reference_capture_state\s+SET\s+enabled\s*=\s*0/i.test(sql))) {
       const label = details?.command?.label || details?.statement?.sql || '';
       const lane = commitSyncLane({ label });
       this.scheduleSync(`sqlite-commit:${lane}`, { delayMs: COMMIT_SYNC_DELAY_MS[lane] });
@@ -379,7 +394,7 @@ export class SyncRuntime {
   }
 
   scheduleSync(reason = 'scheduled', { delayMs = 0 } = {}) {
-    if (!this.transport) return;
+    if (!this.transport || this.windowRef?.navigator?.onLine === false) return;
     if (this.syncPromise) {
       this.syncRequested = true;
       this.syncRequestedReason = reason;
@@ -527,6 +542,7 @@ export class SyncRuntime {
     this.transportUnsubscribe = null;
     this.transport?.unsubscribe?.();
     this.coordinator.stop();
+    this.cancelScheduledSync();
     this.syncRequested = false;
     this.syncRequestedReason = null;
   }

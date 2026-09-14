@@ -64,7 +64,7 @@ test('Appearance Studio keeps app and profile themes independent with owned-only
   assert.match(profile, /data-theme=\{isSelf \? undefined : profileTheme\}/);
   assert.doesNotMatch(cosmeticWriter, /refreshApp/);
   assert.doesNotMatch(cosmeticWriter, /invalidateDomains/);
-  assert.match(cosmeticWriter, /commitCurrentProfile\(updated\)/);
+  assert.match(cosmeticWriter, /commitCurrentProfile\(\(latest\) =>/);
   assert.match(appearanceStudio, /disabled=\{!owned\}/);
   assert.match(appearanceStudio, /onEquip\?\.\(slot, definition\.id\)/);
   assert.match(appearanceStudio, /App, profile, identity, social, and competition surfaces equip independently/);

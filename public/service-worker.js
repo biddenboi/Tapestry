@@ -1,5 +1,6 @@
-const SHELL_CACHE = 'tapestry-shell-v9';
-const ASSET_CACHE = 'tapestry-assets-v9';
+const BUILD_ID = '__TAPESTRY_BUILD_ID__';
+const SHELL_CACHE = `tapestry-shell-v10-${BUILD_ID}`;
+const ASSET_CACHE = `tapestry-assets-v10-${BUILD_ID}`;
 const SHELL_URLS = [
   './',
   './index.html',
@@ -21,7 +22,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys
-        .filter((key) => key.startsWith('tapestry-') && ![SHELL_CACHE, ASSET_CACHE].includes(key))
+        .filter((key) => /^tapestry-(?:shell|assets)-v/.test(key) && ![SHELL_CACHE, ASSET_CACHE].includes(key))
         .map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );

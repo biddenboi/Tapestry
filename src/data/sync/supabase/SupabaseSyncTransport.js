@@ -88,13 +88,28 @@ function pushRpcName(operation) {
 }
 
 export class SupabaseSyncTransport {
-  constructor({ client, ownerId } = {}) {
+  constructor({ client, ownerId, requestTimeoutMs = 60_000,
+    networkInformation = globalThis.navigator?.connection } = {}) {
     if (!client?.rpc || !client?.channel) throw new Error('Supabase sync transport requires a client.');
     this.client = client;
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.networkInformation = networkInformation;
     this.ownerId = String(ownerId || '');
     this.channel = null;
     this.mobileReferencePublishTail = Promise.resolve();
     this.mobileReferencePublishes = new Map();
+  }
+
+  async rpc(name, parameters) {
+    const controller = new AbortController();
+    const timer = globalThis.setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    try {
+      let request = this.client.rpc(name, parameters);
+      if (typeof request?.abortSignal === 'function') request = request.abortSignal(controller.signal);
+      return await request;
+    } finally {
+      globalThis.clearTimeout(timer);
+    }
   }
 
   async registerDevice(device, { signal = null } = {}) {
@@ -112,7 +127,7 @@ export class SupabaseSyncTransport {
   }
 
   async prepareShopAuthority({ player, catalog = [], inventory = [], globalMoney = 0 } = {}) {
-    const { data, error } = await this.client.rpc('prepare_shop_authority', {
+    const { data, error } = await this.rpc('prepare_shop_authority', {
       p_player: player,
       p_catalog: catalog,
       p_inventory: inventory,
@@ -123,7 +138,7 @@ export class SupabaseSyncTransport {
   }
 
   async purchaseShopItems({ operationId, deviceId, playerId, cart, occurredAt } = {}) {
-    const { data, error } = await this.client.rpc('purchase_shop_items', {
+    const { data, error } = await this.rpc('purchase_shop_items', {
       p_operation_id: operationId,
       p_device_id: deviceId,
       p_player_id: playerId,
@@ -135,7 +150,7 @@ export class SupabaseSyncTransport {
   }
 
   async activateShopItem({ operationId, deviceId, playerId, inventoryId } = {}) {
-    const { data, error } = await this.client.rpc('activate_shop_item', {
+    const { data, error } = await this.rpc('activate_shop_item', {
       p_operation_id: operationId,
       p_device_id: deviceId,
       p_player_id: playerId,
@@ -146,7 +161,7 @@ export class SupabaseSyncTransport {
   }
 
   async cancelShopEffect({ operationId, deviceId, playerId, intervalId } = {}) {
-    const { data, error } = await this.client.rpc('cancel_shop_effect', {
+    const { data, error } = await this.rpc('cancel_shop_effect', {
       p_operation_id: operationId,
       p_device_id: deviceId,
       p_player_id: playerId,
@@ -157,7 +172,7 @@ export class SupabaseSyncTransport {
   }
 
   async getShopAuthority(playerId) {
-    const { data, error } = await this.client.rpc('get_shop_authority', {
+    const { data, error } = await this.rpc('get_shop_authority', {
       p_player_id: playerId,
     });
     throwIfError(error);
@@ -165,7 +180,7 @@ export class SupabaseSyncTransport {
   }
 
   async registerWebPushSubscription(subscription = {}) {
-    const { data, error } = await this.client.rpc('register_web_push_subscription', {
+    const { data, error } = await this.rpc('register_web_push_subscription', {
       p_endpoint: subscription.endpoint,
       p_p256dh: subscription.keys?.p256dh,
       p_auth: subscription.keys?.auth,
@@ -176,7 +191,7 @@ export class SupabaseSyncTransport {
   }
 
   async unregisterWebPushSubscription(endpoint) {
-    const { data, error } = await this.client.rpc('unregister_web_push_subscription', {
+    const { data, error } = await this.rpc('unregister_web_push_subscription', {
       p_endpoint: endpoint,
     });
     throwIfError(error);
@@ -184,23 +199,36 @@ export class SupabaseSyncTransport {
   }
 
   async getServerIntegrity() {
-    const { data, error } = await this.client.rpc('get_tapestry_server_integrity');
+    const { data, error } = await this.rpc('get_tapestry_server_integrity');
     throwIfError(error);
     return data;
   }
 
   async exportServerSnapshot() {
-    const { data, error } = await this.client.rpc('export_tapestry_server_snapshot');
+    const { data, error } = await this.rpc('export_tapestry_server_snapshot');
     throwIfError(error);
     return data;
   }
 
   async mergeMobileReferenceRecords(records = []) {
     let merged = 0;
-    for (let index = 0; index < records.length; index += 500) {
+    const constrained = this.networkInformation?.saveData
+      || ['slow-2g', '2g', '3g'].includes(this.networkInformation?.effectiveType);
+    const maxRecords = constrained ? 50 : 500;
+    const maxBytes = constrained ? 256 * 1024 : 2 * 1024 * 1024;
+    const encoder = new TextEncoder();
+    for (let index = 0; index < records.length;) {
+      const batch = [];
+      let bytes = 2;
+      while (index < records.length && batch.length < maxRecords) {
+        const recordBytes = encoder.encode(JSON.stringify(records[index])).byteLength + 1;
+        if (batch.length && bytes + recordBytes > maxBytes) break;
+        batch.push(records[index++]);
+        bytes += recordBytes;
+      }
       // eslint-disable-next-line no-await-in-loop
-      const { data, error } = await this.client.rpc('merge_mobile_reference_records', {
-        p_records: records.slice(index, index + 500),
+      const { data, error } = await this.rpc('merge_mobile_reference_records', {
+        p_records: batch,
       });
       throwIfError(error);
       merged += Number(data?.merged || 0);
@@ -307,7 +335,7 @@ export class SupabaseSyncTransport {
   }
 
   async getMobileReferenceChanges({ after = 0, limit = 500 } = {}) {
-    const { data, error } = await this.client.rpc('get_mobile_reference_changes', {
+    const { data, error } = await this.rpc('get_mobile_reference_changes', {
       p_after_sequence: Math.max(0, Number(after) || 0),
       p_limit: Math.max(1, Math.min(500, Number(limit) || 500)),
     });
@@ -316,7 +344,7 @@ export class SupabaseSyncTransport {
   }
 
   async getMobileReferenceHead() {
-    const { data, error } = await this.client.rpc('get_mobile_reference_head');
+    const { data, error } = await this.rpc('get_mobile_reference_head');
     throwIfError(error);
     if (Array.isArray(data)) {
       const first = data[0];
@@ -330,7 +358,7 @@ export class SupabaseSyncTransport {
 
   async getMobileReferenceRecords(recordTypes = null) {
     const filtered = Array.isArray(recordTypes) && recordTypes.length > 0;
-    const { data, error } = await this.client.rpc(
+    const { data, error } = await this.rpc(
       filtered ? 'get_mobile_reference_records_by_type' : 'get_mobile_reference_records',
       filtered ? { p_record_types: [...new Set(recordTypes.map(String))] } : undefined,
     );
@@ -350,7 +378,7 @@ export class SupabaseSyncTransport {
     let afterRecordId = null;
     for (let page = 0; page < 1000; page += 1) {
       // eslint-disable-next-line no-await-in-loop
-      const { data, error } = await this.client.rpc('get_mobile_reference_records_page', {
+      const { data, error } = await this.rpc('get_mobile_reference_records_page', {
         p_record_types: types,
         p_after_record_type: afterRecordType,
         p_after_record_id: afterRecordId,
@@ -481,7 +509,7 @@ export class SupabaseSyncTransport {
       // Consecutive segments preserve the device sequence even when commands
       // are handled by separate narrow server RPCs.
       // eslint-disable-next-line no-await-in-loop
-      const { data, error } = await this.client.rpc(rpcName, {
+      const { data, error } = await this.rpc(rpcName, {
         p_operations: segment.map(operationInput),
       });
       throwIfError(error);
@@ -491,7 +519,7 @@ export class SupabaseSyncTransport {
   }
 
   async pull({ after = 0, limit = 100 } = {}) {
-    const { data, error } = await this.client.rpc('pull_sync_log', {
+    const { data, error } = await this.rpc('pull_sync_log', {
       p_after: Math.max(0, Number(after) || 0),
       p_limit: Math.max(1, Math.min(500, Number(limit) || 100)),
     });

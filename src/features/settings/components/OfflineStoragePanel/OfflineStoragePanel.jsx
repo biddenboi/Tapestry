@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { STORES } from '@domain/constants.js';
+import { compactLocalDatabase } from '@data/persistence/LocalStorageMaintenance.js';
 
 function sizeLabel(bytes) {
   const value = Number(bytes);
@@ -19,8 +19,9 @@ async function cacheUsage() {
     // eslint-disable-next-line no-await-in-loop
     const responses = await cache.matchAll();
     for (const response of responses) {
-      const header = Number(response.headers.get('content-length'));
-      if (Number.isFinite(header) && header >= 0) bytes += header;
+      const rawLength = response.headers.get('content-length');
+      const header = Number(rawLength);
+      if (rawLength !== null && Number.isFinite(header) && header >= 0) bytes += header;
       else {
         // Cache entries are local; this does not make a network request.
         // eslint-disable-next-line no-await-in-loop
@@ -31,23 +32,26 @@ async function cacheUsage() {
   return { bytes, names };
 }
 
-function currentVersionedCaches(names = []) {
-  const current = new Set();
-  for (const prefix of ['tapestry-shell-v', 'tapestry-assets-v']) {
-    const latest = names
-      .filter((name) => name.startsWith(prefix))
-      .sort((left, right) => Number(right.slice(prefix.length)) - Number(left.slice(prefix.length)))[0];
-    if (latest) current.add(latest);
-  }
-  return current;
+async function localFileUsage(storage) {
+  if (!storage?.getDirectory) return null;
+  let bytes = 0;
+  const visit = async (directory) => {
+    for await (const handle of directory.values()) {
+      if (handle.kind === 'directory') await visit(handle);
+      else bytes += (await handle.getFile()).size;
+    }
+  };
+  await visit(await storage.getDirectory());
+  return bytes;
 }
 
 async function inspectStorage(databaseConnection) {
   const storage = typeof navigator !== 'undefined' ? navigator.storage : null;
-  const [persisted, estimate, cache] = await Promise.all([
+  const [persisted, estimate, cache, localFiles] = await Promise.all([
     storage?.persisted?.().catch(() => false) || false,
     storage?.estimate?.().catch(() => ({})) || {},
     cacheUsage().catch(() => ({ bytes: null, names: [] })),
+    localFileUsage(storage).catch(() => null),
   ]);
   const client = databaseConnection?.syncRuntime?.client;
   const sqlite = client?.query ? await client.query({
@@ -61,7 +65,10 @@ async function inspectStorage(databaseConnection) {
       (SELECT COUNT(*) FROM document_tasks) AS completedTasks,
       (SELECT COUNT(*) FROM document_journals) AS chronicleRecords,
       (SELECT COUNT(*) FROM document_resources) AS resources,
-      (SELECT COUNT(*) FROM sync_operations WHERE status IN ('pending','uploading')) AS pendingOperations`,
+      ((SELECT COUNT(*) FROM sync_operations WHERE status IN ('pending','uploading'))
+        + (SELECT COUNT(*) FROM sync_reference_outbox WHERE status='pending')) AS pendingOperations,
+      (SELECT COALESCE(SUM(p.byte_size),0) FROM document_resource_payload_refs r
+        JOIN document_resource_payloads p ON p.content_hash=r.content_hash) AS referencedImageBytes`,
     result: 'one',
   }).catch(() => null) : null;
   return {
@@ -71,6 +78,7 @@ async function inspectStorage(databaseConnection) {
     quota: estimate.quota ?? null,
     usageDetails: estimate.usageDetails || {},
     cache,
+    localFiles,
     sqlite: sqlite ? {
       ...sqlite,
       bytes: Number(sqlite.pageCount || 0) * Number(sqlite.pageSize || 0),
@@ -103,39 +111,15 @@ export default function OfflineStoragePanel({ databaseConnection }) {
   };
 
   const compact = async () => {
-    const runtime = databaseConnection?.syncRuntime;
-    if (!runtime?.transport || busy) return;
+    if (busy) return;
     setBusy(true);
-    setMessage('Synchronizing before compacting…');
+    setMessage('Reclaiming unused database space…');
     try {
-      const synchronized = await runtime.synchronize({ reason: 'compact-local-storage' });
-      if (!synchronized?.synchronized) throw new Error('A successful private sync is required before compacting.');
-      const syncStatus = await runtime.getDiagnostics();
-      if (Number(syncStatus.counts?.pending || 0) + Number(syncStatus.counts?.uploading || 0) > 0) {
-        throw new Error('Pending operations must be acknowledged before compacting.');
-      }
-      await databaseConnection.flushWrites?.();
-      await databaseConnection.clear(STORES.derivedCache);
-      const client = runtime.client;
-      await client.query({
-        sql: `DELETE FROM sync_operations
-              WHERE status='accepted' AND accepted_at IS NOT NULL
-                AND accepted_at < datetime('now','-30 days')`,
-        result: 'changes',
-      });
-      if (typeof caches !== 'undefined') {
-        const names = await caches.keys();
-        const currentCaches = currentVersionedCaches(names);
-        await Promise.all(names
-          .filter((name) => name.startsWith('tapestry-') && !currentCaches.has(name))
-          .map((name) => caches.delete(name)));
-      }
-      await client.query({ sql: 'PRAGMA optimize', result: 'none' });
-      await client.query({ sql: 'VACUUM', result: 'none' });
+      const result = await compactLocalDatabase(databaseConnection);
       await refresh();
-      setMessage('Local storage compacted after a successful sync. Canonical history and evidence were retained.');
+      setMessage(`Reclaimed ${sizeLabel(result.reclaimedBytes)}. All records, pending edits, and recovery history were retained.`);
     } catch (error) {
-      setMessage(error?.message || 'Local storage could not be compacted. No canonical data was removed.');
+      setMessage(error?.message || 'Local storage could not be compacted.');
     } finally {
       setBusy(false);
     }
@@ -143,17 +127,18 @@ export default function OfflineStoragePanel({ databaseConnection }) {
 
   const sqlite = details.sqlite;
   const pending = Number(sqlite?.pendingOperations || 0);
-  const canCompact = Boolean(databaseConnection?.syncRuntime?.transport);
+  const canCompact = Boolean(databaseConnection?.syncRuntime?.client);
   return (
     <div className="settings-offline-storage">
       <div><strong>Offline storage</strong><span>{details.persisted ? 'Persistent storage granted' : 'Standard browser storage'}</span></div>
       <div className="settings-offline-storage__metrics">
         <span>Total origin<strong>{sizeLabel(details.usage)}</strong></span>
+        <span>Local files<strong>{sizeLabel(details.localFiles)}</strong></span>
         <span>SQLite pages<strong>{sizeLabel(sqlite?.bytes)}</strong></span>
-        <span>SQLite free<strong>{sizeLabel(sqlite?.freeBytes)}</strong></span>
+        <span>Reclaimable space<strong>{sizeLabel(sqlite?.freeBytes)}</strong></span>
         <span>Images<strong>{sizeLabel(sqlite?.resourceBytes)}</strong></span>
         <span>Service worker<strong>{sizeLabel(details.cache?.bytes)}</strong></span>
-        <span>Browser quota<strong>{sizeLabel(details.quota)}</strong></span>
+        <span>Saved by image reuse<strong>{sizeLabel(Math.max(0, Number(sqlite?.referencedImageBytes || 0) - Number(sqlite?.resourceBytes || 0)))}</strong></span>
       </div>
       {sqlite && (
         <div className="settings-offline-storage__counts">
@@ -163,13 +148,14 @@ export default function OfflineStoragePanel({ databaseConnection }) {
         </div>
       )}
       <span className="settings-offline-storage__message">
-        iPhone origin usage includes WebKit container, OPFS, and browser-cache overhead. It is not the same as the size of your Tapestry records.
+        Total storage includes browser overhead and offline app files. Identical images share one stored copy. Compacting reclaims unused space without deleting your data and works offline.
       </span>
       <div className="settings-offline-storage__actions">
+        <button type="button" disabled={busy} onClick={() => { void refresh().catch((error) => setMessage(error.message)); }}>Refresh usage</button>
         <button type="button" disabled={busy || details.persisted || !details.supported} onClick={requestPersistence}>{details.persisted ? 'Protected' : busy ? 'Working…' : 'Keep data offline'}</button>
         <button type="button" disabled={busy || !canCompact} onClick={compact}>{busy ? 'Working…' : 'Compact local storage'}</button>
       </div>
-      {!canCompact && <span className="settings-offline-storage__message">Compact becomes available after private sync is connected.</span>}
+      {!canCompact && <span className="settings-offline-storage__message">Compacting becomes available when local storage is ready.</span>}
       {message && <span className="settings-offline-storage__message">{message}</span>}
     </div>
   );

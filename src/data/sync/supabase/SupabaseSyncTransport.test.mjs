@@ -349,3 +349,33 @@ test('mobile reference deltas use a bounded monotonic cursor RPC', async () => {
     { name: 'get_mobile_reference_head', parameters: undefined },
   ]);
 });
+
+test('a stalled RPC is aborted and can be retried without leaving an active request', async () => {
+  let aborted = false;
+  const client = {
+    channel() {},
+    rpc() { return { abortSignal(signal) {
+      return new Promise((_resolve, reject) => signal.addEventListener('abort', () => {
+        aborted = true;
+        reject(new Error('Request timed out'));
+      }, { once: true }));
+    } }; }
+  };
+  const transport = new SupabaseSyncTransport({ client, ownerId: 'owner', requestTimeoutMs: 10 });
+  await assert.rejects(transport.getMobileReferenceChanges(), /timed out/);
+  assert.equal(aborted, true);
+});
+
+test('slow networks bound upload count and bytes without dropping or reordering records', async () => {
+  const batches = [];
+  const client = { channel() {}, async rpc(_name, { p_records }) {
+    batches.push(p_records);
+    return { data: { merged: p_records.length }, error: null };
+  } };
+  const records = Array.from({ length: 121 }, (_, i) => ({ recordId: String(i), data: { text: 'x'.repeat(8000) } }));
+  const transport = new SupabaseSyncTransport({ client, networkInformation: { effectiveType: '3g' } });
+  assert.equal((await transport.mergeMobileReferenceRecords(records)).merged, records.length);
+  assert.deepEqual(batches.flat(), records);
+  assert.ok(batches.every((batch) => batch.length <= 50));
+  assert.ok(batches.every((batch) => Buffer.byteLength(JSON.stringify(batch)) <= 256 * 1024));
+});
