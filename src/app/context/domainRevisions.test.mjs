@@ -15,7 +15,6 @@ const {
 test('all supported data domains have an independent revision slot', () => {
   assert.deepEqual(DATA_DOMAINS, [
     'tasks',
-    'recommender',
     'matches',
     'leaderboards',
     'social',
@@ -46,9 +45,9 @@ test('all supported data domains have an independent revision slot', () => {
 
 test('targeted invalidation increments only named domains', () => {
   const initial = createDomainRevisions();
-  const next = bumpDomainRevisions(initial, [DATA_DOMAIN.tasks, DATA_DOMAIN.recommender]);
+  const next = bumpDomainRevisions(initial, [DATA_DOMAIN.tasks, DATA_DOMAIN.matches]);
   assert.equal(next.tasks, 1);
-  assert.equal(next.recommender, 1);
+  assert.equal(next.matches, 1);
   assert.equal(next.shop, 0);
   assert.equal(next.feed, 0);
   assert.equal(next.socialWorld, 0);
@@ -64,10 +63,9 @@ test('purchases do not invalidate Feed', () => {
   assert.ok(!DOMAIN_INVALIDATION.shopPurchaseCommit.includes(DATA_DOMAIN.feed));
 });
 
-test('social updates do not invalidate Dojo scoring domains', () => {
+test('social updates do not invalidate task or Match scoring domains', () => {
   for (const scoringDomain of [
     DATA_DOMAIN.tasks,
-    DATA_DOMAIN.recommender,
     DATA_DOMAIN.matches,
     DATA_DOMAIN.leaderboards,
     DATA_DOMAIN.profiles,
@@ -88,7 +86,6 @@ test('required cross-domain policies have no consumer-domain overlap', () => {
     [DOMAIN_INVALIDATION.shopPurchaseCommit, [DATA_DOMAIN.feed, DATA_DOMAIN.journals, DATA_DOMAIN.social]],
     [DOMAIN_INVALIDATION.socialWrite, [
       DATA_DOMAIN.tasks,
-      DATA_DOMAIN.recommender,
       DATA_DOMAIN.matches,
       DATA_DOMAIN.leaderboards,
       DATA_DOMAIN.profiles,

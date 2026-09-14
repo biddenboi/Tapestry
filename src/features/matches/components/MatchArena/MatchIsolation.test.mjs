@@ -49,7 +49,3 @@ test('the result is published before secondary post-match jobs are queued', () =
     assert.doesNotMatch(source, new RegExp(formerCriticalWork));
   }
 });
-
-test('match recommendations retain their immutable observation session', () => {
-  assert.match(source, /observationSessionUUID:\s*activeMatch\.UUID/);
-});

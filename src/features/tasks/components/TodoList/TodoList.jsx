@@ -41,7 +41,6 @@ import { completeTodoNow } from '@features/tasks/domain/completeTodoNow.js';
 import { isGoalActive, isGoalTaskCategory } from '@domain/contribution/Contribution.js';
 import { useLocalSectionRoute } from '@shared/navigation/LocalSectionNav/LocalSectionRouteState.js';
 import TasksShell, { TASK_LOCAL_PAGES } from '@features/tasks/pages/TasksShell/TasksShell.jsx';
-import TaskNowPage from '@features/tasks/pages/TaskNowPage/TaskNowPage.jsx';
 import TaskHistoryPage from '@features/tasks/pages/TaskHistoryPage/TaskHistoryPage.jsx';
 
 import {
@@ -57,23 +56,6 @@ import {
 } from '@features/tasks/components/TodoList/TodoListView.jsx';
 
 const EMPTY_SEED_TODOS = Object.freeze([]);
-
-function selectNowTask(todos = []) {
-  const task = [...todos].sort((left, right) => (
-    Number(right.weight || 0) - Number(left.weight || 0)
-    || Number(left.estimatedDuration || 0) - Number(right.estimatedDuration || 0)
-    || String(left.UUID).localeCompare(String(right.UUID))
-  ))[0];
-  if (!task) return null;
-  return {
-    ...task,
-    reasonToSelect: task.isNextActionForGoal
-      ? 'This is the next action for your current Goal.'
-      : task.isInCurrentFocusGoal
-        ? 'This supports your current Goal focus.'
-        : 'This is the highest-priority available task.',
-  };
-}
 
 export default function TodoList({
   style,
@@ -100,7 +82,6 @@ export default function TodoList({
   const [reminders, setReminders] = useState([]);
   const [projects, setProjects] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
-  const [nextTodo, setNextTodo] = useState(null);
   const [slopeContext, setSlopeContext] = useState(null);
 
   const {
@@ -112,7 +93,7 @@ export default function TodoList({
     profileUUID: currentPlayer?.UUID,
     databaseConnection,
     routeIntent: routeIntent?.panel === 'tasks' ? routeIntent : null,
-    defaultPageId: fromQueue ? 'queue' : 'now',
+    defaultPageId: 'queue',
     onIntentConsumed: consumeRouteIntent,
     onPageChange: reportLocalSubpage,
   });
@@ -183,18 +164,12 @@ export default function TodoList({
         ? Math.ceil((new Date(projectMap.get(String(t.projectId)).targetDate).getTime() - Date.now()) / 86400000)
         : null,
     }));
-    const recommendableTodos = withWeight.filter((todo) => (
-      !todo.projectId
-      || !['paused', 'completed', 'archived'].includes(todo.goalLifecycleStatus)
-    ));
-
     setProjects(sortedProjects);
     setCompletedTasks(completed);
     setSlopeContext(ctx);
     setTodos(withWeight);
     setReminders(reminderArray.filter((reminder) => !reminder.completedAt && !reminder.dismissedAt));
 
-    setNextTodo(selectNowTask(recommendableTodos));
   }, [databaseConnection, currentPlayer, fromQueue, seedTodos]);
 
   useEffect(() => { reload(); }, [
@@ -359,11 +334,6 @@ export default function TodoList({
         showTaskCreationMenu();
       }
     });
-  };
-
-  const openNextRecommendation = async () => {
-    if (!nextTodo) return;
-    await openTaskFlow(nextTodo, { skipQueueRemove: true, forcePreview: true });
   };
 
   const startTask = async (todo) => {
@@ -653,25 +623,6 @@ export default function TodoList({
   const renderHubTab = () => {
     if (activeHubTab === 'history') return <TaskHistoryPage tasks={completedTasks} />;
     if (activeHubTab === 'planning') return renderUpcoming();
-    if (activeHubTab === 'now') {
-      return (
-        <TaskNowPage
-          recommendation={nextTodo}
-          onStart={startTask}
-          onInspect={selectTask}
-        >
-          <TodoistTaskList
-            tasks={nextTodo ? displayTasks.filter((task) => task.UUID === nextTodo.UUID) : displayTasks.slice(0, 1)}
-            selectedId={null}
-            completingId={completingId}
-            onSelect={selectTask}
-            onStart={startTask}
-            onComplete={completeTask}
-            onDragStart={onDragStart}
-          />
-        </TaskNowPage>
-      );
-    }
     return renderToday();
   };
 
@@ -737,14 +688,6 @@ export default function TodoList({
         }}
         actions={(
           <div className="todo-header-actions">
-            <button
-              type="button"
-              className={nextTodo ? 'primary' : ''}
-              onClick={openNextRecommendation}
-              disabled={!nextTodo}
-            >
-              Get next
-            </button>
             <button type="button" onClick={() => openReminderEditor()}>Add reminder</button>
             <button type="button" className="primary" onClick={() => openTaskCreationPopup()}>Add task</button>
           </div>

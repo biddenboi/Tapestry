@@ -2,10 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildCompactManifest,
-  buildCompactModelArtifacts,
   collectDeduplicatedImages,
   findCompactPackageManifest,
-  stableJson,
   verifyCompactEntries,
 } from './CompactPortablePackage.js';
 import JSZip from 'jszip';
@@ -19,21 +17,6 @@ test('compact packages deduplicate repeated images by content hash', async () =>
   ]);
   assert.equal(images.length, 1);
   assert.match(images[0].path, /^images\/[a-f0-9]+\.png$/);
-});
-
-test('compact model binary does not duplicate identical target weights', () => {
-  const model = { layers: [{ weights: [0.25, -0.5, 1.5] }], posterior: { updateCount: 3 } };
-  const artifacts = buildCompactModelArtifacts([{
-    UUID: 'task-recommender-v12-checkpoint:player-a',
-    value: {
-      model,
-      targetModel: structuredClone(model),
-      manifest: { updatedAt: '2026-07-16T00:00:00.000Z' },
-    },
-  }]);
-  assert.equal(new TextDecoder().decode(artifacts.bytes.slice(0, 4)), 'TPM1');
-  assert.equal(artifacts.metadata.numericValueCount, 3);
-  assert.deepEqual(artifacts.metadata.checkpoint.targetModel, { $ref: 'model' });
 });
 
 test('compact saves remain restorable when Finder wraps them in a top-level folder', async () => {
@@ -57,10 +40,6 @@ test('compact saves remain restorable when Finder wraps them in a top-level fold
 
 test('compact verification returns the checked image bytes needed to repair resource payloads', async () => {
   const database = Uint8Array.from([83, 81, 76]);
-  const model = {
-    bytes: Uint8Array.from([1, 2, 3, 4]),
-    metadata: { format: 'test-model', version: 1 },
-  };
   const image = {
     path: 'images/avatar.jpg',
     mimeType: 'image/jpeg',
@@ -68,13 +47,10 @@ test('compact verification returns the checked image bytes needed to repair reso
   };
   const manifest = await buildCompactManifest({
     snapshot: { byteArray: database, migrations: [] },
-    model,
     images: [image],
   });
   const files = new Map([
     [manifest.database.path, database],
-    [manifest.model.binaryPath, model.bytes],
-    [manifest.model.metadataPath, new TextEncoder().encode(stableJson(model.metadata))],
     [image.path, image.bytes],
   ]);
 

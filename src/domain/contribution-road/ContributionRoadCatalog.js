@@ -27,7 +27,6 @@ export const ROAD_STAT_DEFINITIONS = Object.freeze([
   { id: 'tasks-completed', branch: 'forge', label: 'Tasks completed', thresholds: [25, 100, 250, 500, 1000] },
   { id: 'focus-minutes', branch: 'forge', label: 'Verified focus minutes', thresholds: [300, 1500, 5000, 10000] },
   { id: 'rhythm-completions', branch: 'forge', label: 'Rhythm opportunities completed', thresholds: [25, 100, 500, 1000] },
-  { id: 'dojo-advances', branch: 'forge', label: 'Dojo recommendations advanced', thresholds: [50, 250, 1000, 2500, 5000] },
   { id: 'substantive-entries', branch: 'chronicle', label: 'Substantive Entries', thresholds: [10, 50, 100, 250] },
   { id: 'story-additions', branch: 'chronicle', label: 'Story additions', thresholds: [10, 30, 100, 250] },
   { id: 'retrospective-actions', branch: 'chronicle', label: 'Retrospective actions', thresholds: [5, 25, 100] },
@@ -46,7 +45,7 @@ export const OPENING_TRAIL_STEPS = Object.freeze([
   { id: 'entry', step: 7, label: 'Leave a record', milestone: 'Publish the first substantive Entry', reveals: ['feed.stories', 'feed.essays', 'story.create'] },
   { id: 'resurface', step: 8, label: 'Look again', milestone: 'Meaningfully view five Feed items or complete a retrospective action', reveals: ['feed.wander', 'chronicle.resurface'] },
   { id: 'profiles', step: 9, label: 'Cross an era', milestone: 'Create a second profile or share locally between profiles', reveals: ['feed.global', 'fellows.basic'] },
-  { id: 'competition', step: 10, label: 'Enter the wider field', milestone: 'Complete a Match or advance three visible Dojo recommendations', reveals: ['dojo.history', 'matches.history', 'standings', 'fellows.full', 'trends.elo'] },
+  { id: 'competition', step: 10, label: 'Enter the wider field', milestone: 'Complete a Match', reveals: ['matches.history', 'standings', 'fellows.full', 'trends.elo'] },
 ]);
 
 const CAPSTONE_COPY = Object.freeze({
@@ -103,7 +102,7 @@ const CHAPTER_GATES = Object.freeze({
   },
   workshop: {
     compass: { kind: 'stat', stat: 'milestones-completed', value: 20 },
-    forge: { kind: 'any', gates: [{ kind: 'stat', stat: 'tasks-completed', value: 100 }, { kind: 'stat', stat: 'dojo-advances', value: 250 }] },
+    forge: { kind: 'any', gates: [{ kind: 'stat', stat: 'tasks-completed', value: 100 }, { kind: 'stat', stat: 'focus-minutes', value: 1500 }] },
     chronicle: { kind: 'any', gates: [{ kind: 'stat', stat: 'story-additions', value: 30 }, { kind: 'stat', stat: 'retrospective-actions', value: 25 }] },
     fellowship: { kind: 'stat', stat: 'matches-completed', value: 25 },
   },
@@ -117,7 +116,6 @@ const CHAPTER_GATES = Object.freeze({
           kind: 'any',
           gates: [
             { kind: 'stat', stat: 'tasks-completed', value: 100 },
-            { kind: 'stat', stat: 'dojo-advances', value: 1000 },
           ],
         },
       ],
@@ -133,7 +131,7 @@ const CHAPTER_GATES = Object.freeze({
   },
   perspective: {
     compass: { kind: 'stat', stat: 'milestones-completed', value: 50 },
-    forge: { kind: 'stat', stat: 'dojo-advances', value: 2500 },
+    forge: { kind: 'stat', stat: 'focus-minutes', value: 10000 },
     chronicle: { kind: 'stat', stat: 'substantive-entries', value: 100 },
     fellowship: { kind: 'stat', stat: 'pair-matches', value: 100 },
   },
@@ -145,7 +143,7 @@ const CHAPTER_GATES = Object.freeze({
   },
   legacy: {
     compass: { kind: 'stat', stat: 'goals-completed', value: 25 },
-    forge: { kind: 'stat', stat: 'dojo-advances', value: 5000 },
+    forge: { kind: 'stat', stat: 'tasks-completed', value: 1000 },
     chronicle: { kind: 'stat', stat: 'story-additions', value: 250 },
     fellowship: { kind: 'stat', stat: 'matches-completed', value: 500 },
   },

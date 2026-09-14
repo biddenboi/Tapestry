@@ -15,14 +15,6 @@ export const SOCIAL_WORLD_SCENE_LAYOUT = Object.freeze({
     y: 21,
     tone: 'task',
   }),
-  dojo: Object.freeze({
-    label: 'Dojo',
-    shortLabel: 'Train',
-    description: 'Practice and build momentum',
-    x: 68,
-    y: 25,
-    tone: 'dojo',
-  }),
   'match-arena': Object.freeze({
     label: 'Match Arena',
     shortLabel: 'Compete',

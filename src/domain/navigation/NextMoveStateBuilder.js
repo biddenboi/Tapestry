@@ -1,5 +1,4 @@
 import { STORES } from '../constants.js';
-import { buildTaskRecommenderRecommendation } from '../tasks/TaskRecommender.js';
 import { taskPriorityClass } from './NextMovePolicyV1.js';
 import { materialStateKey } from './NextMoveInvalidation.js';
 import {
@@ -65,7 +64,6 @@ export async function buildNextMoveState({
   decisionPoint = 'drawer-open',
   activeTaskSession = null,
   activePairMatch = null,
-  activeDojoSession = null,
   currentLocationContext = null,
   now = new Date(),
   impossibleSuggestionCount = 0,
@@ -146,34 +144,16 @@ export async function buildNextMoveState({
     .filter(Boolean)
     .sort((a, b) => a.priorityClass - b.priorityClass)[0] || null;
 
-  let recommendation = null;
   const executableSetKey = executableTasks
     .map((task) => materialStateKey('task', task))
     .sort()
     .join('|');
-  const recommendationSeed = [
-    'next-move-v1',
-    playerUUID,
-    executableSetKey || 'no-executable-task',
-    Number.isFinite(availableWindowSeconds)
-      ? `window:${Math.floor(availableWindowSeconds / 60)}m`
-      : 'window:open',
-  ].join(':');
-  if (executableTasks.length) {
-    recommendation = await buildTaskRecommenderRecommendation({
-      databaseConnection,
-      currentPlayer,
-      todos: executableTasks,
-      source: 'next-move',
-      decisionSeed: recommendationSeed,
-      now,
-      targetMinutes: Number.isFinite(availableWindowSeconds)
-        ? Math.max(5, Math.floor(availableWindowSeconds / 60))
-        : null,
-    }).catch(() => null);
-  }
-  const selectedTask = recommendation?.task || executableTasks
-    .sort((a, b) => taskPriorityClass(a, now) - taskPriorityClass(b, now))[0] || null;
+  const selectedTask = [...executableTasks]
+    .sort((a, b) => (
+      taskPriorityClass(a, now) - taskPriorityClass(b, now)
+      || Number(a.estimatedDuration || Infinity) - Number(b.estimatedDuration || Infinity)
+      || String(a.UUID || '').localeCompare(String(b.UUID || ''))
+    ))[0] || null;
   const selectedReceipt = selectedTask
     ? receiptByTask.get(String(selectedTask.UUID))
     : null;
@@ -184,14 +164,10 @@ export async function buildNextMoveState({
     title: selectedReceipt && isTaskPlanReceiptValid(selectedReceipt, selectedTask)
       ? selectedReceipt.nextAction
       : selectedTask.nextAction || selectedTask.name || 'Begin the next task',
-    context: recommendation
-      ? `${recommendation.primaryReason}. ${recommendation.expectedWorkloadImpact}.`
-      : 'This is the strongest executable action in the current window.',
+    context: 'This is the highest-priority executable action in the current window.',
     routeLabel: `Tasks → ${selectedTask.name || 'Untitled task'} → begin`,
     primaryAction: { type: 'begin-task', label: 'Begin' },
     priorityClass: taskPriorityClass(selectedTask, now),
-    suggestedMinutes: recommendation?.suggestedMinutes || null,
-    recommendation,
     sourceEntityRefs: [{ type: 'task', UUID: selectedTask.UUID }],
     invalidationKeys: [
       materialStateKey('task', selectedTask),
@@ -257,7 +233,6 @@ export async function buildNextMoveState({
     decisionPoint,
     generatedAt: new Date(nowMs).toISOString(),
     activePairMatch,
-    activeDojoSession,
     activeTaskSession,
     imminentCommitment: commitment ? {
       UUID: commitment.item.UUID,

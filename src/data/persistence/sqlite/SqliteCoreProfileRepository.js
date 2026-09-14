@@ -263,8 +263,6 @@ export class SqliteCoreProfileRepository {
       achievementEventsAnonymized: ['achievement_events', 'player_id'],
       achievementStatesDeleted: ['achievement_states', 'player_id'],
       achievementReceiptsAnonymized: ['achievement_receipts', 'player_id'],
-      recommendationEventsDeleted: ['recommendation_events', 'player_id'],
-      modelSettingsDeleted: ['model_settings', 'player_id'],
       analyticsEventsDeleted: ['analytics_events', 'player_id'],
     };
     const counts = {};
@@ -368,8 +366,6 @@ export class SqliteCoreProfileRepository {
         { sql: 'UPDATE achievement_events SET player_id=NULL WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'UPDATE achievement_receipts SET player_id=NULL WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'DELETE FROM achievement_states WHERE player_id=?', bind: [playerId], result: 'changes' },
-        { sql: 'DELETE FROM recommendation_events WHERE player_id=?', bind: [playerId], result: 'changes' },
-        { sql: 'DELETE FROM model_settings WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'DELETE FROM analytics_events WHERE player_id=?', bind: [playerId], result: 'changes' },
         {
           sql: `UPDATE players SET username='Deleted User', profile_picture=NULL,

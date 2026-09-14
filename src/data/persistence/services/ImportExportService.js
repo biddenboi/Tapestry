@@ -3,7 +3,6 @@ import { measureDynamicModule } from '@shared/performance/startupPerf.js';
 import {
   COMPACT_PACKAGE_FORMAT,
   buildCompactManifest,
-  buildCompactModelArtifacts,
   collectDeduplicatedImages,
   findCompactPackageManifest,
   stableJson,
@@ -138,15 +137,11 @@ export class ImportExportService {
 
     const storeSnapshot = this._snapshotAllStores();
     const allRecords = storeSnapshot.flatMap(([, records]) => records);
-    const appSettings = storeSnapshot.find(([store]) => store === STORES.appSetting)?.[1] || [];
-    const model = buildCompactModelArtifacts(appSettings);
     const images = await collectDeduplicatedImages([allRecords, this._serializeAppState()]);
-    const manifest = await buildCompactManifest({ snapshot, model, images, kind, durability });
+    const manifest = await buildCompactManifest({ snapshot, images, kind, durability });
     const { default: JSZip } = await loadJSZip();
     const zip = new JSZip();
     zip.file('tapestry.sqlite', snapshot.byteArray);
-    zip.file('model/model.bin', model.bytes);
-    zip.file('model/metadata.json', stableJson(model.metadata));
     for (const image of images) zip.file(image.path, image.bytes);
     zip.file('manifest.json', stableJson(manifest));
     const blob = await zip.generateAsync({
@@ -424,9 +419,7 @@ export class ImportExportService {
       achievementEvents: records(STORES.achievementEvent),
       achievementStates: records(STORES.achievementState),
       achievementReceipts: records(STORES.achievementReceipt),
-      taskRecommendations: records(STORES.recommenderEvent),
       analyticsEvents: records(STORES.analyticsEvent),
-      modelSettings: legacy.modelSettings,
       derivedCaches: records(STORES.derivedCache),
       profileSummaries: records(STORES.profileSummary),
     });

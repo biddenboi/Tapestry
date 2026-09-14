@@ -18,15 +18,9 @@ const candidate = (title, priorityClass = 3) => ({
 const scenarios = [
   ['Pair Match outranks every other phase', {
     activePairMatch: candidate('Pair'),
-    activeDojoSession: candidate('Dojo'),
     activeTaskSession: candidate('Task'),
     executableWork: candidate('Work'),
   }, NEXT_MOVE_RESULT.active, 'Pair'],
-  ['Dojo outranks an active task', {
-    activeDojoSession: candidate('Dojo'),
-    activeTaskSession: candidate('Task'),
-    executableWork: candidate('Work'),
-  }, NEXT_MOVE_RESULT.active, 'Dojo'],
   ['active task outranks a commitment', {
     activeTaskSession: candidate('Task'),
     imminentCommitment: candidate('Meeting'),
@@ -143,9 +137,9 @@ test('active Pair Match decision exposes the governing reason code', () => {
   assert.ok(result.reasonCodes.includes(NEXT_MOVE_REASON.activePairMatch));
 });
 
-test('execution exposes V12 selection without a fabricated utility score', () => {
+test('execution exposes a task choice without a fabricated utility score', () => {
   const result = chooseNextMove({ ...base, executableWork: candidate('Work') });
-  assert.ok(result.reasonCodes.includes(NEXT_MOVE_REASON.v12Selected));
+  assert.ok(result.reasonCodes.includes(NEXT_MOVE_REASON.taskExecutable));
   assert.equal('score' in result, false);
   assert.equal('utility' in result, false);
 });

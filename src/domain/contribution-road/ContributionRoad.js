@@ -12,11 +12,6 @@ import {
 
 const chapterCommitQueues = new WeakMap();
 const ROAD_STATS_PROJECTION_VERSION = 2;
-const DOJO_ADVANCE_REASONS = new Set([
-  'dojo-scroll-skip',
-  'dojo-fast-scroll-skip',
-  'dojo-next-request',
-]);
 
 function sameProfile(record, profileId) {
   const owner = record?.parent ?? record?.playerUUID ?? record?.playerId ?? record?.profileId ?? record?.authorUUID ?? record?.ownerUUID;
@@ -46,30 +41,6 @@ function positiveNumber(value) {
 
 function textLength(record) {
   return String(record?.entry ?? record?.body ?? record?.content ?? record?.text ?? '').trim().length;
-}
-
-function dojoAdvanceCount(events, profileId) {
-  const decisions = new Map();
-  for (const event of events || []) {
-    if (!sameProfile(event, profileId) || !event?.decisionUUID) continue;
-    const id = String(event.decisionUUID);
-    if (!decisions.has(id)) decisions.set(id, { presented: false, visible: false, left: false });
-    const decision = decisions.get(id);
-    const type = String(event.type || '');
-    if (type === 'recommendation_presented') {
-      decision.presented = true;
-      decision.visible ||= positiveNumber(event.payload?.visibleMs) > 0;
-    }
-    if (type === 'recommendation_visibility_accumulated') {
-      decision.visible ||= positiveNumber(event.payload?.visibleMs) > 0;
-    }
-    if (type === 'recommendation_skipped') {
-      decision.left ||= DOJO_ADVANCE_REASONS.has(String(event.payload?.reason || event.reason || ''));
-    }
-  }
-  return [...decisions.values()].filter((decision) => (
-    decision.presented && decision.visible && decision.left
-  )).length;
 }
 
 function matchIncludesProfile(match, profileId) {
@@ -133,7 +104,6 @@ export function deriveRoadStats(records = {}, profileId) {
     'tasks-completed': uniqueCount(tasks.filter(isComplete), (task) => task.sourceTaskUUID || task.todoUUID || task.UUID),
     'focus-minutes': Math.floor(Math.max(focusFromTasks, focusFromSessions)),
     'rhythm-completions': uniqueCount(rhythmOpportunities.filter(isComplete), (record) => record.sourceOpportunityUUID || record.UUID),
-    'dojo-advances': dojoAdvanceCount(records.taskRecommendations || [], profileId),
     'substantive-entries': uniqueCount(substantiveJournals, (journal) => journal.UUID),
     'story-additions': uniqueCount(storyEntries, (entry) => `${entry.storyUUID || entry.parent}:${entry.journalUUID || entry.entryUUID || entry.UUID}`),
     'retrospective-actions': uniqueCount([
@@ -437,7 +407,6 @@ export async function rebuildRoadStats(databaseConnection, profileId, { onProgre
     chronicleStoryEntries: STORES.chronicleStoryEntry,
     chronicleReactions: STORES.chronicleReaction,
     matches: STORES.match,
-    taskRecommendations: STORES.recommenderEvent,
   };
   const entries = [];
   const storeEntries = Object.entries(stores);
@@ -713,7 +682,7 @@ function openingMilestones(records, stats, profileId) {
     stats['substantive-entries'] >= 1 || journals.some((journal) => textLength(journal) >= 80),
     uniqueCount(feedViews, (view) => view.journalUUID || view.entryUUID || view.UUID) >= 5 || stats['retrospective-actions'] >= 1,
     players.filter((player) => !player.bannedAt).length >= 2 || localShares.length > 0,
-    stats['matches-completed'] >= 1 || stats['dojo-advances'] >= 3,
+    stats['matches-completed'] >= 1,
   ];
 }
 

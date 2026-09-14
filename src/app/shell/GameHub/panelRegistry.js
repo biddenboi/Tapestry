@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { measureDynamicModule } from '@shared/performance/startupPerf.js';
-import { loadMatchArena, loadPracticeDojo } from '@features/matches/loaders.js';
+import { loadMatchArena } from '@features/matches/loaders.js';
 import { loadShop } from '@features/shop/loaders.js';
 import { loadContributionPass } from '@features/contribution-pass/loaders.js';
 import { loadInventory } from '@features/inventory/loaders.js';
@@ -27,7 +27,6 @@ export const loadSettings = measuredImport('settings', () =>
 
 export const Lobby = lazyFeature(loadLobby);
 export const MatchArena = lazyFeature(loadMatchArena);
-export const PracticeDojo = lazyFeature(loadPracticeDojo);
 export const TodoList = lazyFeature(loadTodoList);
 export const Shop = lazyFeature(loadShop);
 export const ContributionPass = lazyFeature(loadContributionPass);
@@ -42,7 +41,6 @@ export const Settings = lazyFeature(loadSettings);
 export const GAME_HUB_DYNAMIC_BOUNDARIES = Object.freeze({
   lobby: '@features/lobby/components/Lobby/Lobby.jsx',
   match: '@features/matches/components/MatchArena/MatchArena.jsx',
-  dojo: '@features/matches/components/PracticeDojo/PracticeDojo.jsx',
   tasks: '@features/tasks/components/TodoList/TodoList.jsx',
   shop: '@features/shop/pages/Shop/Shop.jsx',
   inventory: '@features/inventory/pages/Inventory/Inventory.jsx',

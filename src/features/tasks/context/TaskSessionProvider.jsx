@@ -52,15 +52,13 @@ const TaskSessionContext = createContext(null);
 
 function sourceForSession(gameState, task = {}) {
   if (gameState === GAME_STATE.match) return 'match';
-  if (gameState === GAME_STATE.dojo) return 'shared';
-  if (['arrival', 'handoff', 'planned', 'urgent', 'goal', 'recommended', 'reentry']
+  if (['arrival', 'handoff', 'planned', 'urgent', 'goal', 'queue', 'reentry']
     .includes(task.continuitySource)) return 'arrival';
-  if (task.taskRecommendationEventId || task.recommendation) return 'recommender';
   if (task.continuitySource === 'notification') return 'notification';
   return 'manual';
 }
 
-function localSessionFromRecord(record, task, sourceGameState, sourceDojoSessionUUID) {
+function localSessionFromRecord(record, task, sourceGameState) {
   const startedAtMs = new Date(record.startedAt).getTime();
   const pausedAtMs = record.pausedAt ? new Date(record.pausedAt).getTime() : null;
   return {
@@ -75,7 +73,7 @@ function localSessionFromRecord(record, task, sourceGameState, sourceDojoSession
     pausedTotalMs: Math.max(0, Number(record.pausedDurationMs) || 0),
     submittingAction: null,
     sourceGameState,
-    sourceDojoSessionUUID,
+    sourceDojoSessionUUID: null,
     matchUUID: record.matchUUID || null,
     restoredFromContinuity: task.restoredFromContinuity === true,
     matchRewardContract: record.matchRewardContract || task.matchRewardContract || null,
@@ -83,7 +81,7 @@ function localSessionFromRecord(record, task, sourceGameState, sourceDojoSession
     matchScoreEventUUID: record.matchScoreEventUUID || null,
     matchScoreBreakdown: record.matchScoreBreakdown || null,
     recordUpdatedAt: record.updatedAt || record.startedAt || null,
-    canMinimize: sourceGameState !== GAME_STATE.dojo && !sourceDojoSessionUUID,
+    canMinimize: true,
     settlementError: null,
   };
 }
@@ -98,7 +96,6 @@ function activeTaskFromRecord(record, todo = null) {
     sessionRequestedAt: record.startedAt,
     sessionDuration: record.committedMs || 0,
     actionSessionUUID: record.UUID,
-    dojoSessionUUID: record.dojoSessionUUID || null,
     continuitySource: record.source,
     restoredFromContinuity: true,
   };
@@ -118,7 +115,6 @@ export function TaskSessionProvider({ children }) {
     activeMatch: [activeMatch, setActiveMatch],
     activeTask: [activeTask, setActiveTask],
     replacePanel,
-    dojoSessionUUID,
   } = useAppContext();
   const controller = useMemo(() => new TaskSessionController({ completeTask }), []);
   const [session, setSession] = useState(null);
@@ -198,13 +194,9 @@ export function TaskSessionProvider({ children }) {
     }
     if (sessionRef.current?.sessionId === activeSessionKey) return undefined;
     let cancelled = false;
-    const restoredDojoSessionUUID = activeTask.restoredFromContinuity
-      ? activeTask.dojoSessionUUID || null
-      : null;
-    const requestedSourceGameState = restoredDojoSessionUUID ? GAME_STATE.dojo : gameState;
-    const requestedDojoSessionUUID = requestedSourceGameState === GAME_STATE.dojo
-      ? restoredDojoSessionUUID || dojoSessionUUID
-      : null;
+    const requestedSourceGameState = gameState === GAME_STATE.match
+      ? GAME_STATE.match
+      : GAME_STATE.idle;
     const hydrate = async () => {
       const parent = currentPlayer?.UUID ? currentPlayer : await databaseConnection.getCurrentPlayer();
       if (!parent?.UUID) return;
@@ -228,7 +220,7 @@ export function TaskSessionProvider({ children }) {
             playerUUID: parent.UUID,
             task: activeTask,
             matchUUID: requestedSourceGameState === GAME_STATE.match ? activeMatch?.UUID || null : null,
-            dojoSessionUUID: requestedDojoSessionUUID,
+            dojoSessionUUID: null,
             source: sourceForSession(requestedSourceGameState, activeTask),
             startedAt: taskSessionRequestedAt(activeTask),
           });
@@ -242,17 +234,11 @@ export function TaskSessionProvider({ children }) {
       }
       const durableSourceGameState = record.matchUUID || record.source === 'match'
         ? GAME_STATE.match
-        : record.dojoSessionUUID || record.source === 'shared'
-          ? GAME_STATE.dojo
-          : requestedSourceGameState;
-      const durableDojoSessionUUID = durableSourceGameState === GAME_STATE.dojo
-        ? record.dojoSessionUUID || requestedDojoSessionUUID
-        : null;
+        : requestedSourceGameState;
       replaceSession(localSessionFromRecord(
         record,
         activeTask,
         durableSourceGameState,
-        durableDojoSessionUUID,
       ));
       setNowMs(Date.now());
       void requestLiveReferenceSync(databaseConnection, 'action-session-started');
@@ -268,7 +254,6 @@ export function TaskSessionProvider({ children }) {
     activeTask,
     currentPlayer,
     databaseConnection,
-    dojoSessionUUID,
     gameState,
     replaceSession,
     setActiveTask,

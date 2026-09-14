@@ -53,7 +53,6 @@ export default function MobileTasksPage() {
   const [reminders, setReminders] = useState([]);
   const [goals, setGoals] = useState([]);
   const [busyId, setBusyId] = useState(null);
-  const [nextBusy, setNextBusy] = useState(false);
   const [error, setError] = useState('');
   const touchStartRef = useRef(null);
 
@@ -111,29 +110,6 @@ export default function MobileTasksPage() {
     onChanged: reload,
   });
 
-  const getNext = async () => {
-    if (nextBusy || !tasks.length) return;
-    setNextBusy(true);
-    setError('');
-    try {
-      const { launchRecommendedTask } = await import('@domain/tasks/TaskRecommender.js');
-      const result = await launchRecommendedTask(databaseConnection, currentPlayer, { todos: tasks, source: 'tasks' });
-      if (!result?.task) {
-        setError('No eligible next task is available right now.');
-        return;
-      }
-      openSurface('system-direction', {
-        task: result.task,
-        reason: result.recommendation?.reasonChips?.join(' · ') || result.recommendation?.primaryReason || result.task.reasonToSelect,
-        onChooseAnother: getNext,
-      });
-    } catch (nextError) {
-      setError(nextError?.message || 'Get Next could not choose a task.');
-    } finally {
-      setNextBusy(false);
-    }
-  };
-
   const completeTask = async (task) => {
     if (busyId) return;
     setBusyId(task.UUID);
@@ -184,9 +160,7 @@ export default function MobileTasksPage() {
         <button type="button" className="mobile-date-title" onClick={() => openSurface('date-picker', { selectedDate, onSelect: selectDate })}>
           <span>Daily agenda</span><h1>{selectedDateTitle(selectedDate, today)}</h1>
         </button>
-        {selectedDate === today
-          ? <button type="button" disabled={nextBusy || !tasks.length} onClick={getNext}>{nextBusy ? 'Choosing…' : 'Get Next'}</button>
-          : <button type="button" onClick={() => selectDate(today)}>Today</button>}
+        {selectedDate !== today && <button type="button" onClick={() => selectDate(today)}>Today</button>}
       </header>
       <nav
         className="mobile-date-rail"

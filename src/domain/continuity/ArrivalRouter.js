@@ -9,7 +9,7 @@ export const ARRIVAL_PRIORITY = Object.freeze({
   planned: 500,
   urgent: 400,
   goal: 300,
-  recommended: 200,
+  queue: 200,
   unstructured: 0,
 });
 
@@ -24,7 +24,7 @@ export function selectArrivalState(context = {}) {
     ...(context.actionPlans || []),
     context.urgentDeadline,
     context.goalNextAction,
-    context.recommenderCandidate,
+    context.queueCandidate,
   ].filter(possible);
   if (!candidates.length) return Object.freeze({ type: 'unstructured' });
   return Object.freeze([...candidates].sort((left, right) => (
@@ -144,10 +144,10 @@ export async function buildArrivalState(databaseConnection, player, {
   const ranked = openTodos
     .map((todo) => ({ todo, score: getDisplaySlope(todo, slopeContext) }))
     .sort((left, right) => right.score - left.score);
-  const recommenderCandidate = ranked[0]
-    ? taskCandidate('recommended', ranked[0].todo, {
+  const queueCandidate = ranked[0]
+    ? taskCandidate('queue', ranked[0].todo, {
         utility: ranked[0].score,
-        recommendationSource: 'continuity-rule-v1',
+        selectionSource: 'continuity-rule-v1',
         reasonCodes: [
           ranked[0].todo.dueDate ? 'deadline-pressure' : 'current-queue-priority',
           ranked[0].todo.projectId ? 'supports-active-goal' : 'standalone-action',
@@ -165,7 +165,7 @@ export async function buildArrivalState(databaseConnection, player, {
     actionPlans: duePlans,
     urgentDeadline,
     goalNextAction,
-    recommenderCandidate,
+    queueCandidate,
   });
   if (!reentry.extendedAbsence || selected.type === 'resume') return selected;
   return Object.freeze({

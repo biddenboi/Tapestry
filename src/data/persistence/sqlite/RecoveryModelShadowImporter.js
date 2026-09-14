@@ -25,16 +25,14 @@ export class RecoveryModelShadowImporter {
     achievementEvents = [],
     achievementStates = [],
     achievementReceipts = [],
-    taskRecommendations = [],
     analyticsEvents = [],
-    modelSettings = [],
     derivedCaches = [],
     profileSummaries = [],
     runId = null,
   } = {}) {
     const source = {
-      achievementEvents, achievementStates, achievementReceipts, taskRecommendations,
-      analyticsEvents, modelSettings, derivedCaches, profileSummaries,
+      achievementEvents, achievementStates, achievementReceipts,
+      analyticsEvents, derivedCaches, profileSummaries,
     };
     const sourceFingerprint = await fingerprintShadowSource(source);
     const prior = await this.client.query({
@@ -50,16 +48,13 @@ export class RecoveryModelShadowImporter {
       achievementEvents: deterministicRows(achievementEvents, { kind: 'achievement-event' }),
       achievementStates: deterministicRows(achievementStates, { kind: 'achievement-state' }),
       achievementReceipts: deterministicRows(achievementReceipts, { kind: 'achievement-receipt' }),
-      taskRecommendations: deterministicRows(taskRecommendations, { kind: 'recommendation-event' }),
       analyticsEvents: deterministicRows(analyticsEvents, { kind: 'analytics-event' }),
-      modelSettings: deterministicRows(modelSettings, { kind: 'model-setting' }),
       derivedCaches: deterministicRows(derivedCaches, { kind: 'derived-cache' }),
     };
     for (const input of Object.values(inputs)) diagnostics.push(...input.conflicts, ...input.rejected);
     if (profileSummaries.length) diagnostics.push({ kind: 'profile-summary', reason: 'replaced-by-sql-view', count: profileSummaries.length });
 
     const playerIds = new Set((await this.client.query({ sql: 'SELECT id FROM players ORDER BY id', result: 'all' })).map((row) => String(row.id)));
-    const taskIds = new Set((await this.client.query({ sql: 'SELECT id FROM tasks ORDER BY id', result: 'all' })).map((row) => String(row.id)));
     const statements = [];
     const importedEventIds = new Set();
     let eventCount = 0;
@@ -147,45 +142,6 @@ export class RecoveryModelShadowImporter {
       receiptCount += 1;
     }
 
-    let recommendationCount = 0;
-    for (const record of inputs.taskRecommendations.selected) {
-      const id = String(record.UUID);
-      const playerId = textOrNull(record.parent) || textOrNull(record.playerUUID);
-      const decisionId = textOrNull(record.decisionUUID);
-      const eventType = textOrNull(record.type);
-      const eventKey = textOrNull(record.eventKey);
-      if (!playerId || !playerIds.has(playerId) || !decisionId || !eventType || !eventKey) {
-        diagnostics.push({ kind: 'recommendation-event', recordId: id, reason: 'invalid-protocol-record' });
-        continue;
-      }
-      let taskId = textOrNull(record.taskUUID);
-      if (taskId && !taskIds.has(taskId)) {
-        diagnostics.push({ kind: 'recommendation-event', recordId: id, reason: 'unknown-task', taskId });
-        taskId = null;
-      }
-      statements.push({
-        sql: `INSERT INTO recommendation_events(
-                id,player_id,decision_id,protocol_family,protocol_schema_version,record_type,event_type,event_key,
-                idempotency_key,sequence,source,task_id,origin,occurred_at,recorded_at,payload_json
-              ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-              ON CONFLICT(id) DO UPDATE SET
-                player_id=excluded.player_id,decision_id=excluded.decision_id,protocol_family=excluded.protocol_family,
-                protocol_schema_version=excluded.protocol_schema_version,record_type=excluded.record_type,
-                event_type=excluded.event_type,event_key=excluded.event_key,sequence=excluded.sequence,
-                source=excluded.source,task_id=excluded.task_id,origin=excluded.origin,
-                occurred_at=excluded.occurred_at,recorded_at=excluded.recorded_at,payload_json=excluded.payload_json`,
-        bind: [id, playerId, decisionId, String(record.protocolFamily || 'task-recommender'),
-          Math.max(1, Math.trunc(Number(record.protocolSchemaVersion) || 1)), String(record.recordType || 'event'),
-          eventType, eventKey, String(record.idempotencyKey || `${decisionId}:${eventKey}`),
-          Number.isFinite(Number(record.sequence)) ? Math.max(1, Math.trunc(Number(record.sequence))) : null,
-          textOrNull(record.source), taskId, String(record.origin || 'user'),
-          textOrNull(record.occurredAt) || textOrNull(record.createdAt) || timestamp,
-          textOrNull(record.recordedAt) || textOrNull(record.createdAt) || timestamp,
-          boundedJson(asObject(record.payload), 524288, {})], result: 'changes',
-      });
-      recommendationCount += 1;
-    }
-
     let analyticsCount = 0;
     for (const record of inputs.analyticsEvents.selected) {
       const id = String(record.UUID);
@@ -210,34 +166,6 @@ export class RecoveryModelShadowImporter {
           textOrNull(record.createdAt) || timestamp], result: 'changes',
       });
       analyticsCount += 1;
-    }
-
-    let modelSettingCount = 0;
-    for (const record of inputs.modelSettings.selected) {
-      const id = String(record.UUID);
-      const playerId = textOrNull(record.parent);
-      if (playerId && !playerIds.has(playerId)) {
-        diagnostics.push({ kind: 'model-setting', recordId: id, reason: 'unknown-player', playerId });
-        continue;
-      }
-      const settingKey = textOrNull(record.settingKey ?? record.key);
-      if (!settingKey) {
-        diagnostics.push({ kind: 'model-setting', recordId: id, reason: 'missing-setting-key' });
-        continue;
-      }
-      statements.push({
-        sql: `INSERT INTO model_settings(
-                id,player_id,setting_key,schema_version,value_json,source_version,created_at,updated_at
-              ) VALUES(?,?,?,?,?,?,?,?)
-              ON CONFLICT(player_id,setting_key) DO UPDATE SET
-                id=excluded.id,schema_version=excluded.schema_version,value_json=excluded.value_json,
-                source_version=excluded.source_version,updated_at=excluded.updated_at`,
-        bind: [id, playerId, settingKey, Math.max(1, Math.trunc(Number(record.schemaVersion) || 1)),
-          boundedJson(record.value ?? record.payload ?? {}, 1048576, {}),
-          Math.max(0, Math.trunc(Number(record.sourceVersion) || 0)),
-          textOrNull(record.createdAt) || timestamp, textOrNull(record.updatedAt) || timestamp], result: 'changes',
-      });
-      modelSettingCount += 1;
     }
 
     let derivedCacheCount = 0;
@@ -270,9 +198,7 @@ export class RecoveryModelShadowImporter {
       achievementEvents: eventCount,
       achievementStates: stateCount,
       achievementReceipts: receiptCount,
-      recommendationEvents: recommendationCount,
       analyticsEvents: analyticsCount,
-      modelSettings: modelSettingCount,
       derivedCaches: derivedCacheCount,
       profileSummariesReplacedByView: profileSummaries.length,
       diagnostics: diagnostics.length,

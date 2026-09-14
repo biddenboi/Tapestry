@@ -6,7 +6,7 @@ import TaskSessionExpanded from '@features/tasks/components/TaskSessionExpanded/
 import { useTaskSession } from '@features/tasks/context/TaskSessionProvider.jsx';
 
 // NiceModal remains the launch/navigation boundary used by task preview,
-// Match, and Dojo. Runtime ownership lives above it in TaskSessionProvider so
+// Match. Runtime ownership lives above it in TaskSessionProvider so
 // switching this surface between expanded and docked never remounts a clock.
 export default NiceModal.create(() => {
   const modal = useModal();

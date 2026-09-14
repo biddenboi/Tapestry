@@ -8,7 +8,6 @@ test('every current-scene consumer applies the synchronous live-viewer projectio
   const consumers = [
     read('./components/SocialWorldShell/SocialWorldRuntime.jsx'),
     read('../lobby/components/Lobby/Lobby.jsx'),
-    read('../matches/components/PracticeDojo/useDojoRoomController.js'),
   ];
 
   for (const source of consumers) {

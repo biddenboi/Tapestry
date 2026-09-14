@@ -148,7 +148,7 @@ test('mobile Shop and More retain gameplay without desktop administration', asyn
   assert.match(more, /Current player summary/);
   assert.doesNotMatch(more, /View player summary/);
   assert.match(more, /createPairMatchCommand/);
-  assert.match(more, /Dojo/);
+  assert.doesNotMatch(more, /Dojo/);
   assert.match(more, /Elo history/);
   assert.match(moreSheets, /mobile-player-sheet-stats/);
   assert.doesNotMatch(moreSheets, /Profiles can only be changed during Start Day or End Day/);
@@ -167,14 +167,13 @@ test('mobile Shop and More retain gameplay without desktop administration', asyn
   assert.match(settings, /role="alert"/);
   assert.match(dataSettings, /describeMobileSyncState/);
   assert.match(dataSettings, /createCompactBackup/);
-  assert.match(arena, /MobileDojoRuntime/);
   assert.match(arena, /MobileMatchRuntime/);
   assert.doesNotMatch(arena, /components\/PracticeDojo\/PracticeDojo|components\/MatchArena\/MatchArena/);
   assert.doesNotMatch(arena, /Arena landing|GameHub|Lobby/);
 });
 
 test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe', async () => {
-  const [shellCss, foundation, today, sheets, features, viewport, overlays, arena, dojo] = await Promise.all([
+  const [shellCss, foundation, today, sheets, features, viewport, overlays, arena] = await Promise.all([
     read('./MobileAppShell.css'),
     read('./styles/MobileFoundation.css'),
     read('./styles/MobileToday.css'),
@@ -183,7 +182,6 @@ test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe'
     read('./useVisualViewport.js'),
     read('./MobileOverlayHost.jsx'),
     read('../../features/matches/mobile/MobileArenaPage.jsx'),
-    read('../../features/matches/mobile/MobileDojoRuntime.jsx'),
   ]);
   for (const stylesheet of ['MobileFoundation.css', 'MobileToday.css', 'MobileSheets.css', 'MobileFeatures.css']) {
     assert.match(shellCss, new RegExp(stylesheet));
@@ -206,9 +204,7 @@ test('mobile scaffold is split by responsibility, focus-safe, and keyboard-safe'
   assert.match(overlays, /tabIndex=\{-1\} aria-hidden="true"/);
   assert.match(overlays, /stage\.querySelectorAll/);
   assert.match(arena, /panel\.scrollTop = 0/);
-  assert.match(features, /mobile-dojo-feed-shell/);
-  assert.match(dojo, /DojoRecommendationFeed/);
-  assert.match(dojo, /PracticeDojo\.css/);
+  assert.doesNotMatch(arena, /Dojo/);
   assert.match(features, /mobile-match-scoreboard/);
 });
 

@@ -3,7 +3,6 @@ import LocalSectionNav from '@shared/navigation/LocalSectionNav/LocalSectionNav.
 import useOpeningTrail from '@features/opening-trail/useOpeningTrail.js';
 
 export const TASK_LOCAL_PAGES = Object.freeze([
-  { id: 'now', label: 'Now', icon: 'play', deepLinkKey: 'tasks-now', requiredDomains: ['tasks'], description: 'Choose one clear current move and begin a focused session.' },
   { id: 'queue', label: 'Queue', icon: 'list', deepLinkKey: 'tasks-queue', requiredDomains: ['tasks'], capability: 'tasks.queue', description: 'Order the work that is ready without crowding the current move.' },
   { id: 'all', label: 'All Tasks', icon: 'checklist', deepLinkKey: 'tasks-all', requiredDomains: ['tasks'], capability: 'tasks.all', description: 'Search and manage the complete task collection.' },
   { id: 'planning', label: 'Planning', icon: 'calendar', deepLinkKey: 'tasks-planning', requiredDomains: ['tasks', 'reminders'], capability: 'tasks.planning', description: 'Shape reminders, timing, and future work before it becomes current.' },

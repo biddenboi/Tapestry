@@ -29,7 +29,6 @@ import {
   Inventory,
   Lobby,
   MatchArena,
-  PracticeDojo,
   Profile,
   Shop,
   Settings,
@@ -326,7 +325,7 @@ export default function GameHub() {
       const decision = await decideNotification(databaseConnection, currentPlayer, candidate, {
         activeSession: !!activeTask?.createdAt,
         activeMatch: gameState === GAME_STATE.match,
-        activeDojo: gameState === GAME_STATE.dojo,
+        activeDojo: false,
       });
       return decision.decision === 'deliver' ? { ...reminder, interventionDecision: decision } : null;
     }));
@@ -453,15 +452,6 @@ export default function GameHub() {
         <div className="hub-focus-overlay" data-traversal-surface="match">
           <DomainHydrationBoundary domains={domainsForPanel('match')} fallback={<PanelLoading />}>
             <MatchArena />
-          </DomainHydrationBoundary>
-        </div>
-      );
-    }
-    if (gameState === GAME_STATE.dojo) {
-      return (
-        <div className="hub-focus-overlay" data-traversal-surface="dojo">
-          <DomainHydrationBoundary domains={domainsForPanel('dojo')} fallback={<PanelLoading />}>
-            <PracticeDojo />
           </DomainHydrationBoundary>
         </div>
       );

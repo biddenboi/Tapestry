@@ -249,7 +249,7 @@ export default function MobileCloudBootstrapGate({ onReady }) {
 
   const signedOut = snapshot.status === 'signed-out' || snapshot.status === 'checking';
   const downloading = phase === 'checking' || phase === 'downloading' || phase === 'zip';
-  const title = leaseBlocked ? 'Tapestry is open elsewhere'
+  const title = leaseBlocked ? 'Local storage is still busy'
     : phase === 'empty-cloud' ? 'Desktop data needed'
     : phase === 'error' ? 'Mobile restore needs attention'
       : snapshot.status === 'signed-in' ? 'Restoring Tapestry' : 'Connect your Tapestry';
@@ -280,7 +280,7 @@ export default function MobileCloudBootstrapGate({ onReady }) {
             />
             {leaseBlocked ? (
               <button type="button" className="primary" disabled={authBusy} onClick={continueHere}>
-                {authBusy ? 'Requesting control…' : 'Continue here'}
+                {authBusy ? 'Checking storage…' : 'Retry storage'}
               </button>
             ) : signedOut && !downloading && (
               <>
@@ -339,7 +339,7 @@ export default function MobileCloudBootstrapGate({ onReady }) {
               : downloading ? 'Preparing your private workspace…' : 'No manual save transfer required'}</strong>
             <span>
               {leaseBlocked
-                ? 'Continue Here asks the active Safari or Home Screen copy to flush, synchronize, and enter standby. Tapestry never resets the database to solve a lock.'
+                ? 'Retry Storage checks briefly for a live Safari or Home Screen copy, requests a safe handoff when one exists, then reopens this copy.'
                 : phase === 'empty-cloud'
                 ? 'Open Tapestry on your desktop, connect Private Sync, and choose Publish mobile data. Then retry here.'
                 : 'Tapestry downloads the mobile-safe working set, then replays newer synchronized operations.'}

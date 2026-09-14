@@ -15,7 +15,6 @@ export const PANEL_DOMAIN_REQUIREMENTS = Object.freeze({
   settings: Object.freeze([D.inventory, D.profiles]),
   pass: Object.freeze([D.tasks, D.inventory, D.profiles]),
   match: Object.freeze([D.matches, D.tasks, D.profiles, D.dailyLifecycle]),
-  dojo: Object.freeze([D.dojoSource, D.recommender, D.socialWorld, D.social]),
   reminders: Object.freeze([D.reminders]),
   nextMove: Object.freeze([D.nextMove]),
 });

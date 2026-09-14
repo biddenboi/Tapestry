@@ -10,7 +10,7 @@ import {
   shouldClosePresence,
 } from './SemanticLocationPolicy.js';
 
-test('semantic location precedence keeps nested work inside Match and Dojo', () => {
+test('semantic location precedence keeps nested work inside Match and retires stale Dojo state', () => {
   const scenarios = [
     {
       name: 'match wins over dojo, task, planning, shop, and the idle world',
@@ -22,9 +22,9 @@ test('semantic location precedence keeps nested work inside Match and Dojo', () 
       expected: SEMANTIC_LOCATION.matchArena,
     },
     {
-      name: 'dojo wins over a task',
+      name: 'retired dojo state falls back to Commons',
       input: { gameState: 'dojo', activeTask: { createdAt: 'now' } },
-      expected: SEMANTIC_LOCATION.dojo,
+      expected: SEMANTIC_LOCATION.commons,
     },
     {
       name: 'task session wins over planning',

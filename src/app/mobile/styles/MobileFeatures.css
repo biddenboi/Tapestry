@@ -161,38 +161,6 @@
 .mobile-runtime-active-card > span { color: var(--color-profile); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; }
 .mobile-runtime-active-card h2 { margin: 6px 0; font-size: 1rem; }
 .mobile-runtime-active-card p { margin: 0; color: var(--text-muted); font-size: .75rem; line-height: 1.45; }
-.mobile-dojo-runtime { height: 100%; min-height: 0; grid-template-rows: auto minmax(0, 1fr); gap: 8px; overflow: hidden; }
-.mobile-dojo-feed-shell { height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
-.mobile-dojo-feed-shell .dojo-recommendation-surface { width: 100%; max-width: 100%; height: 100%; min-width: 0; min-height: 0; gap: 8px; overflow: hidden; }
-.mobile-dojo-feed-shell .dojo-feed { width: 100%; max-width: 100%; height: 100%; min-width: 0; min-height: 0; grid-template-rows: minmax(0, 1fr); gap: 0; overflow: hidden; }
-.mobile-dojo-feed-shell .dojo-feed-head { display: grid; width: 100%; max-width: 100%; min-width: 0; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); align-items: center; gap: 10px; margin: 0; padding: 0 2px 8px; }
-.mobile-dojo-feed-shell .dojo-feed-head > div { min-width: 0; }
-.mobile-dojo-feed-shell .dojo-feed-head strong { font-size: 16px; line-height: 1.05; overflow-wrap: anywhere; }
-.mobile-dojo-feed-shell .dojo-feed-status { width: auto; min-width: 0; max-width: 100%; justify-items: end; overflow: hidden; text-align: right; }
-.mobile-dojo-feed-shell .dojo-feed-status span,
-.mobile-dojo-feed-shell .dojo-feed-status strong { max-width: 100%; letter-spacing: .08em; line-height: 1.15; overflow-wrap: anywhere; }
-.mobile-dojo-feed-shell .dojo-feed-scroller { width: 100%; max-width: 100%; height: 100%; min-width: 0; min-height: 0; margin: 0; padding: 2px 3px 6px; gap: 8px; overflow-x: hidden; overscroll-behavior: contain; }
-.mobile-dojo-feed-shell .dojo-feed-card, .mobile-dojo-feed-shell .dojo-feed-loading, .mobile-dojo-feed-shell .dojo-feed-empty { box-sizing: border-box; flex: 0 0 calc(100% - 4px); width: 100%; max-width: 100%; height: calc(100% - 4px); min-height: calc(100% - 4px); max-height: calc(100% - 4px); gap: 7px; padding: 14px; animation: none; }
-.mobile-dojo-feed-shell .dojo-feed-card::after { inset: 10px; }
-.mobile-dojo-feed-shell .dojo-feed-card-top { inset: 14px 14px auto; }
-.mobile-dojo-feed-shell .dojo-feed-rank span { width: 38px; height: 38px; }
-.mobile-dojo-feed-shell .dojo-feed-play { width: 46px; height: 46px; min-height: 46px; }
-.mobile-dojo-feed-shell .dojo-feed-card h2 { margin-top: 60px; font-size: clamp(25px, 9vw, 36px); line-height: .98; overflow-wrap: anywhere; }
-.mobile-dojo-feed-shell .dojo-feed-meta { font-size: 9px; }
-.mobile-dojo-feed-shell .dojo-feed-reasons span { font-size: 9px; }
-.mobile-dojo-feed-shell .dojo-feed-boundary { width: 100%; max-width: 100%; min-width: 0; margin: 0; }
-.mobile-dojo-feed-shell .dojo-history { max-height: 120px; overflow-y: auto; }
-@media (max-height: 720px) {
-  .mobile-dojo-runtime { gap: 8px; }
-  .mobile-dojo-runtime .mobile-runtime-stats span { padding: 7px 10px; }
-  .mobile-dojo-runtime .mobile-runtime-stats strong { font-size: 1rem; }
-  .mobile-dojo-feed-shell .dojo-feed-head { padding-bottom: 5px; }
-  .mobile-dojo-feed-shell .dojo-feed-head > div > strong { font-size: 15px; }
-  .mobile-dojo-feed-shell .dojo-feed-card h2 { margin-top: 56px; font-size: clamp(23px, 8.5vw, 33px); }
-  .mobile-dojo-feed-shell .dojo-feed-impact { display: none; }
-  .mobile-dojo-feed-shell .dojo-history { display: none; }
-  .mobile-dojo-runtime .mobile-runtime-actions > button { min-height: 42px; }
-}
 .mobile-runtime-empty { display: grid; min-height: 150px; place-items: center; gap: 10px; padding: 18px; border: 1px dashed var(--border-subtle); color: var(--text-muted); text-align: center; }
 .mobile-runtime-history { display: grid; gap: 5px; }
 .mobile-runtime-history h2 { margin: 0 0 3px; font-size: .82rem; }

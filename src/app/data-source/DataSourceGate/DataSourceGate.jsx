@@ -309,12 +309,12 @@ export default function DataSourceGate({ onReady }) {
 
   const signedOut = ['signed-out', 'checking'].includes(snapshot.status);
   const downloading = phase === 'checking' || phase === 'downloading';
-  const title = leaseBlocked ? 'Tapestry is open elsewhere'
+  const title = leaseBlocked ? 'Local storage is still busy'
     : phase === 'empty-cloud' ? 'No cloud workspace found'
       : phase === 'error' ? 'Cloud restore needs attention'
         : snapshot.status === 'signed-in' ? 'Opening Tapestry from cloud' : 'Connect your Tapestry';
   const subtitle = leaseBlocked
-    ? 'Continue here to safely hand local storage over from the other browser window.'
+    ? 'Retry here. If another live Tapestry window owns storage, it will be asked to release it first.'
     : signedOut
       ? 'Sign in to restore the latest private SQLite checkpoint automatically.'
       : 'The cloud database is restored first, then newer operations are replayed.';
@@ -355,7 +355,7 @@ export default function DataSourceGate({ onReady }) {
             />
             {leaseBlocked ? (
               <button type="button" className="primary" disabled={busy} onClick={continueHere}>
-                {busy ? 'Requesting control…' : 'Continue here'}
+                {busy ? 'Checking storage…' : 'Retry storage'}
               </button>
             ) : (
               <>
@@ -423,7 +423,7 @@ export default function DataSourceGate({ onReady }) {
               ? 'Your local database remains intact'
               : downloading ? 'Restoring the latest verified SQLite checkpoint…' : 'No manual file transfer required'}</strong>
             <span>{leaseBlocked
-              ? 'Continue Here asks the active copy to flush pending writes, synchronize, and release the writer lock.'
+              ? 'Retry Storage checks briefly for a live owner, requests a safe handoff when one exists, then reopens this copy.'
               : 'Normal startup uses the private cloud checkpoint. ZIP and folder import remain recovery tools only.'}</span>
           </div>
           {summary?.checkpointCreatedAt && (

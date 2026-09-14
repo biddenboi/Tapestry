@@ -90,7 +90,6 @@ async function run() {
   const friendRequestNotificationId = `browser-friend-request-${unique}`;
   const friendAcceptedNotificationId = `browser-friend-accepted-${unique}`;
   const achievementEventId = `browser-achievement-${unique}`;
-  const recommendationEventId = `browser-recommendation-${unique}`;
   const analyticsEventId = `browser-analytics-${unique}`;
   const derivedCacheKey = `browser-profile-cache-${unique}`;
   const timestamp = new Date().toISOString();
@@ -427,22 +426,6 @@ async function run() {
     earnedKeys: ['wrong'],
     completedAt: timestamp,
   });
-  await shadow.recoveryModel.appendRecommendationEvent({
-    UUID: recommendationEventId,
-    parent: playerId,
-    protocolFamily: 'task-recommender-v12',
-    protocolSchemaVersion: 1,
-    recordType: 'event',
-    type: 'decision_created',
-    decisionUUID: `browser-decision-${unique}`,
-    eventKey: 'created',
-    idempotencyKey: `browser-decision-${unique}:created`,
-    sequence: 1,
-    taskUUID: secondTaskId,
-    occurredAt: timestamp,
-    recordedAt: timestamp,
-    payload: { source: 'browser-verification' },
-  });
   await shadow.recoveryModel.recordAnalyticsEvent({
     UUID: analyticsEventId,
     parent: playerId,
@@ -487,7 +470,7 @@ async function run() {
   report.checks.commerceTransactions = true;
   report.checks.socialRelationshipsAndNotifications = true;
   report.checks.achievementRecovery = true;
-  report.checks.modelAnalyticsAndDerivedViews = true;
+  report.checks.analyticsAndDerivedViews = true;
   report.checks.shadowDomainMigrations = true;
   report.shadowDomainProbe = {
     migrations: migrationRows.map((row) => row.migrationId),
@@ -505,7 +488,6 @@ async function run() {
     purchaseBatchId,
     friendshipId,
     achievementEventId,
-    recommendationEventId,
     analyticsEventId,
   };
 
@@ -632,7 +614,6 @@ async function run() {
   'Commerce state did not survive persistent worker restart.', persistedPurchase);
   const persistedFriendship = await reopenedShadow.social.getFriendship(friendshipId);
   const persistedAchievement = await reopenedShadow.recoveryModel.getAchievementReceipt(achievementEventId);
-  const persistedRecommendations = await reopenedShadow.recoveryModel.listRecommendationEvents({ playerId });
   const persistedAnalytics = await reopenedShadow.recoveryModel.listAnalyticsEvents(playerId, { eventName: 'browser_verification_opened' });
   const persistedSummary = await reopenedShadow.recoveryModel.getProfileSummary(playerId);
   const persistedStaleCache = await reopenedShadow.recoveryModel.getDerivedCache(derivedCacheKey, { includeStale: true });
@@ -641,12 +622,11 @@ async function run() {
   'Social relationship state did not survive persistent worker restart.', persistedFriendship);
   assert(persistedAchievement?.status === 'completed'
     && persistedAchievement.earnedKeys.includes('browser_probe')
-    && persistedRecommendations.some((row) => row.UUID === recommendationEventId)
     && persistedAnalytics.some((row) => row.UUID === analyticsEventId)
     && persistedSummary?.acceptedFriends === 1
     && persistedStaleCache?.stale === true,
-  'Achievement/model/analytics/derived state did not survive persistent worker restart.', {
-    persistedAchievement, persistedRecommendations, persistedAnalytics, persistedSummary, persistedStaleCache,
+  'Achievement/analytics/derived state did not survive persistent worker restart.', {
+    persistedAchievement, persistedAnalytics, persistedSummary, persistedStaleCache,
   });
   report.checks.persistenceAndCleanShutdown = true;
 

@@ -59,7 +59,7 @@ export default function MobileMorePage() {
 
   useEffect(() => { void load(); }, [load, domainRevisions.profiles, domainRevisions.tasks, domainRevisions.matches, domainRevisions.leaderboards, domainRevisions.social]);
   useEffect(() => {
-    if ([GAME_STATE.dojo, GAME_STATE.match].includes(gameState)) setView('runtime');
+    if (gameState === GAME_STATE.match) setView('runtime');
   }, [gameState]);
   useEffect(() => {
     if (gameState !== GAME_STATE.match || activeMatch || !currentPlayer?.UUID) return;
@@ -80,12 +80,6 @@ export default function MobileMorePage() {
   const visibleRanking = ranking.id === 'history'
     ? []
     : (competition.neighborhoods[ranking.id] || []).filter((entry) => entry?.profile?.UUID);
-
-  const enterDojo = () => {
-    setError('');
-    setGameState(GAME_STATE.dojo);
-    setView('runtime');
-  };
 
   const enterMatch = async () => {
     if (matchmaking) return;
@@ -131,7 +125,7 @@ export default function MobileMorePage() {
     }
   };
 
-  if (view === 'runtime' && [GAME_STATE.dojo, GAME_STATE.match].includes(gameState)) {
+  if (view === 'runtime' && gameState === GAME_STATE.match) {
     return <MobileArenaPage onBack={() => setView('root')} />;
   }
   if (view === 'settings') return <MobileSettingsPage onBack={() => setView('root')} />;
@@ -152,7 +146,7 @@ export default function MobileMorePage() {
           <button type="button" className="mobile-avatar-button" aria-label="Current player summary" onClick={() => openSurface('player-sheet', { currentPlayer, profiles: competition.profiles, metrics })}><ProfileIdentity player={currentPlayer} compact avatarOnly avatarSize={38} /></button>
         </div>
       </header>
-      <div className="mobile-competition-actions"><button type="button" className="primary" onClick={enterDojo} disabled={!currentPlayer?.UUID}><Icon name="timer" size={20} /><strong>Dojo</strong></button><button type="button" className="primary" onClick={enterMatch} disabled={matchmaking || !currentPlayer?.UUID}><Icon name="trophy" size={20} /><strong>{matchmaking ? 'Finding…' : activeMatch && ['pending', 'active'].includes(activeMatch.status) ? 'Resume Match' : 'Match'}</strong></button></div>
+      <div className="mobile-competition-actions"><button type="button" className="primary" onClick={enterMatch} disabled={matchmaking || !currentPlayer?.UUID}><Icon name="trophy" size={20} /><strong>{matchmaking ? 'Finding…' : activeMatch && ['pending', 'active'].includes(activeMatch.status) ? 'Resume Match' : 'Match'}</strong></button></div>
       {error && <div className="mobile-page-error" role="alert">{error}</div>}
       <section className="mobile-neighborhood">
         <header><button type="button" aria-label="Previous ranking" onClick={() => cycleRanking(-1)}>‹</button><h2>{ranking.label}</h2><button type="button" aria-label="Next ranking" onClick={() => cycleRanking(1)}>›</button></header>

@@ -48,7 +48,7 @@ test('mixed gates compose achievements, stages, stats, contribution, nodes, and 
   const context = {
     achievements: new Set(['focused_work']),
     achievementStages: { focused_work: 2 },
-    stats: { 'tasks-completed': 100, 'dojo-advances': 50 },
+    stats: { 'tasks-completed': 100, 'matches-completed': 50 },
     balances: { lifetimeContribution: 900 },
     unlockedNodes: new Set(['bearing:forge']),
     chapterChoices: new Map([['bearing', {}]]),
@@ -65,14 +65,14 @@ test('mixed gates compose achievements, stages, stats, contribution, nodes, and 
         kind: 'any',
         gates: [
           { kind: 'stat', stat: 'tasks-completed', value: 100 },
-          { kind: 'stat', stat: 'dojo-advances', value: 1000 },
+          { kind: 'stat', stat: 'matches-completed', value: 1000 },
         ],
       },
       {
         kind: 'min', count: 2,
         gates: [
           { kind: 'stat', stat: 'tasks-completed', value: 100 },
-          { kind: 'stat', stat: 'dojo-advances', value: 50 },
+          { kind: 'stat', stat: 'matches-completed', value: 50 },
           { kind: 'stat', stat: 'matches-completed', value: 1 },
         ],
       },
@@ -103,26 +103,6 @@ test('100 completed matches satisfy the stat without inventing an unrelated achi
   assert.equal(stats['matches-completed'], 100);
   assert.equal(stats['pair-matches'], 0);
   assert.equal(Object.hasOwn(stats, 'achievement'), false);
-});
-
-test('Dojo advances count distinct recommendations only after presentation, visible dwell, and durable leave', () => {
-  const events = [];
-  for (let index = 0; index < 1000; index += 1) {
-    const decisionUUID = `decision-${index}`;
-    events.push(
-      { UUID: `${decisionUUID}:present`, parent: 'p1', decisionUUID, type: 'recommendation_presented', payload: {} },
-      { UUID: `${decisionUUID}:visible`, parent: 'p1', decisionUUID, type: 'recommendation_visibility_accumulated', payload: { visibleMs: 350 } },
-      { UUID: `${decisionUUID}:leave`, parent: 'p1', decisionUUID, type: 'recommendation_skipped', payload: { reason: index % 2 ? 'dojo-next-request' : 'dojo-scroll-skip' } },
-      { UUID: `${decisionUUID}:duplicate`, parent: 'p1', decisionUUID, type: 'recommendation_skipped', payload: { reason: 'dojo-scroll-skip' } },
-    );
-  }
-  events.push(
-    { UUID: 'invisible:present', parent: 'p1', decisionUUID: 'invisible', type: 'recommendation_presented', payload: {} },
-    { UUID: 'invisible:leave', parent: 'p1', decisionUUID: 'invisible', type: 'recommendation_skipped', payload: { reason: 'dojo-next-request' } },
-    { UUID: 'retry:present', parent: 'p1', decisionUUID: 'retry', type: 'recommendation_presented', payload: { visibleMs: 100 } },
-    { UUID: 'retry:leave', parent: 'p1', decisionUUID: 'retry', type: 'recommendation_skipped', payload: { reason: 'retry' } },
-  );
-  assert.equal(deriveRoadStats({ taskRecommendations: events }, 'p1')['dojo-advances'], 1000);
 });
 
 class MemoryRoadDatabase {

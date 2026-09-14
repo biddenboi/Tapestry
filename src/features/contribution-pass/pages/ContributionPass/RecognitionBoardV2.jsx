@@ -16,7 +16,7 @@ const BRANCH_Y = Object.freeze({ compass: 340, forge: 470, chronicle: 600, fello
 const NODE_RADIUS = Object.freeze({ capstone: 56, stat: 31, achievement: 35, 'interface-reveal': 26, capability: 34, 'classic-reward': 30, 'chapter-seal': 54, secret: 30 });
 const STAT_SYMBOLS = Object.freeze({
   'goal-reviews': '↻', 'milestones-completed': '⚑', 'goals-completed': '◎',
-  'tasks-completed': '✓', 'focus-minutes': '◷', 'rhythm-completions': '≈', 'dojo-advances': '»',
+  'tasks-completed': '✓', 'focus-minutes': '◷', 'rhythm-completions': '≈',
   'substantive-entries': '¶', 'story-additions': '＋', 'retrospective-actions': '↶',
   'matches-completed': '⚔', 'pair-matches': 'Ⅱ', 'shared-work-responses': '↔',
 });

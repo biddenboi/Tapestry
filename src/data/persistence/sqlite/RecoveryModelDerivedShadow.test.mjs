@@ -98,23 +98,9 @@ test('Batch 22 achievement command side effects roll back together on interrupti
   assert.equal((await context.shadow.recoveryModel.listPendingAchievementEvents()).length, 1);
 });
 
-test('Batch 22 recommendation/model events and analytics are typed, ordered, deduplicated, and replayable', async (t) => {
+test('Batch 22 analytics are typed, deduplicated, and replayable', async (t) => {
   const context = await setup();
   t.after(context.close);
-  const events = [
-    { UUID: 'rec-2', parent: 'p1', protocolFamily: 'task-recommender-v12', protocolSchemaVersion: 1, recordType: 'event', type: 'recommendation_presented', decisionUUID: 'decision-1', eventKey: 'presented', idempotencyKey: 'decision-1:presented', sequence: 2, taskUUID: 'task-1', occurredAt: new Date(fixed.getTime()+1000).toISOString(), recordedAt: new Date(fixed.getTime()+1000).toISOString(), payload: { visibleMs: 500 } },
-    { UUID: 'rec-1', parent: 'p1', protocolFamily: 'task-recommender-v12', protocolSchemaVersion: 1, recordType: 'event', type: 'decision_created', decisionUUID: 'decision-1', eventKey: 'created', idempotencyKey: 'decision-1:created', sequence: 1, taskUUID: 'task-1', occurredAt: fixed.toISOString(), recordedAt: fixed.toISOString(), payload: { proposedDurationSeconds: 900 } },
-  ];
-  for (const event of events) await context.shadow.recoveryModel.appendRecommendationEvent(event);
-  assert.deepEqual((await context.shadow.recoveryModel.listRecommendationEvents({ decisionId: 'decision-1' })).map((row) => row.UUID), ['rec-1','rec-2']);
-  assert.equal((await context.shadow.recoveryModel.appendRecommendationEvent(events[0])).duplicate, true);
-
-  await context.shadow.recoveryModel.setModelSetting({
-    id: 'model-setting-1', playerId: 'p1', settingKey: 'task-recommender-v12:policy',
-    schemaVersion: 2, value: { weights: [1,2,3] }, sourceVersion: 4, operationId: 'model-setting-op-1',
-  });
-  assert.deepEqual((await context.shadow.recoveryModel.getModelSetting({ playerId: 'p1', settingKey: 'task-recommender-v12:policy' })).value, { weights: [1,2,3] });
-
   const analytics = { UUID: 'analytics-1', parent: 'p1', eventName: 'feed_post_opened', surface: 'feed', targetType: 'journal', targetUUID: 'journal-1', metadata: { source: 'feed' }, createdAt: fixed.toISOString() };
   assert.equal((await context.shadow.recoveryModel.recordAnalyticsEvent(analytics, { dedupeWindowMs: 1000 })).duplicate, false);
   assert.equal((await context.shadow.recoveryModel.recordAnalyticsEvent({ ...analytics, UUID: 'analytics-2', createdAt: new Date(fixed.getTime()+500).toISOString() }, { dedupeWindowMs: 1000 })).duplicate, true);
@@ -162,16 +148,14 @@ test('Batch 22 importer is deterministic, quarantines malformed records, and nev
     achievementEvents: [achievementEvent('import-event')],
     achievementStates: [{ UUID: 'achievement-state:p1', parent: 'p1', counterVersion: 1, counters: { completedTasks: 1 }, appliedEvents: { 'import-event': fixed.toISOString() }, eventAwards: {}, needsReconciliation: false, createdAt: fixed.toISOString(), updatedAt: fixed.toISOString() }],
     achievementReceipts: [{ UUID: 'achievement-receipt:import-event', parent: 'p1', eventUUID: 'import-event', processorVersion: 1, status: 'completed', earnedKeys: [], removedKeys: [], issuedKeys: [], createdAt: fixed.toISOString(), completedAt: fixed.toISOString(), updatedAt: fixed.toISOString() }],
-    taskRecommendations: [{ UUID: 'import-rec', parent: 'p1', protocolFamily: 'task-recommender-v12', protocolSchemaVersion: 1, recordType: 'event', type: 'decision_created', decisionUUID: 'import-decision', eventKey: 'created', idempotencyKey: 'import-decision:created', sequence: 1, taskUUID: 'task-1', occurredAt: fixed.toISOString(), recordedAt: fixed.toISOString(), payload: {} }],
     analyticsEvents: [{ UUID: 'import-analytics', parent: 'p1', eventName: 'opened', surface: 'app', createdAt: fixed.toISOString() }],
-    modelSettings: [{ UUID: 'import-model', parent: 'p1', settingKey: 'model', value: { a: 1 }, createdAt: fixed.toISOString(), updatedAt: fixed.toISOString() }],
     derivedCaches: [{ UUID: 'legacy-cache', kind: 'profile-summary', payload: { copied: true } }],
     profileSummaries: [{ UUID: 'p1', player: { UUID: 'p1', username: 'stale copy' } }],
   };
   const imported = await context.shadow.importers.recoveryModel.import(fixture);
   assert.deepEqual(imported.counts, {
     achievementEvents: 1, achievementStates: 1, achievementReceipts: 1,
-    recommendationEvents: 1, analyticsEvents: 1, modelSettings: 1,
+    analyticsEvents: 1,
     derivedCaches: 1, profileSummariesReplacedByView: 1, diagnostics: 2,
   });
   assert.ok(imported.diagnostics.some((row) => row.reason === 'replaced-by-sql-view'));
@@ -181,19 +165,14 @@ test('Batch 22 importer is deterministic, quarantines malformed records, and nev
   assert.deepEqual(await context.client.query({ sql: 'PRAGMA foreign_key_check', result: 'all' }), []);
 });
 
-test('Batch 22 profile wipe deletes personal model/analytics state while retaining anonymized recovery facts', async (t) => {
+test('Batch 22 profile wipe deletes personal analytics while retaining anonymized recovery facts', async (t) => {
   const context = await setup();
   t.after(context.close);
   await context.shadow.recoveryModel.recordAchievementEvent(achievementEvent('wipe-event'));
   await context.shadow.recoveryModel.completeAchievementEvent({
     eventId: 'wipe-event', playerId: 'p1', operationId: 'wipe-process', state: completedState('wipe-event'), completedAt: fixed,
   });
-  await context.shadow.recoveryModel.appendRecommendationEvent({
-    UUID: 'wipe-rec', parent: 'p1', decisionUUID: 'wipe-decision', type: 'decision_created', eventKey: 'created',
-    protocolFamily: 'task-recommender-v12', protocolSchemaVersion: 1, recordType: 'event', occurredAt: fixed.toISOString(), recordedAt: fixed.toISOString(), payload: {},
-  });
   await context.shadow.recoveryModel.recordAnalyticsEvent({ UUID: 'wipe-analytics', parent: 'p1', eventName: 'opened', surface: 'app', createdAt: fixed.toISOString() });
-  await context.shadow.recoveryModel.setModelSetting({ id: 'wipe-model', playerId: 'p1', settingKey: 'model', value: {}, operationId: 'wipe-model-op' });
 
   const wiped = await context.shadow.coreProfiles.wipeProfile('p1', { operationId: 'wipe-recovery-model-p1', now: fixed });
   assert.equal(wiped.counts.achievementEventsAnonymized, 1);
@@ -201,8 +180,6 @@ test('Batch 22 profile wipe deletes personal model/analytics state while retaini
   assert.equal(await context.client.query({ sql: "SELECT player_id FROM achievement_events WHERE id='wipe-event'", result: 'value' }), null);
   assert.equal(await context.client.query({ sql: "SELECT player_id FROM achievement_receipts WHERE event_id='wipe-event'", result: 'value' }), null);
   assert.equal(await context.client.query({ sql: "SELECT COUNT(*) FROM achievement_states WHERE player_id='p1'", result: 'value' }), 0);
-  assert.equal(await context.client.query({ sql: "SELECT COUNT(*) FROM recommendation_events WHERE player_id='p1'", result: 'value' }), 0);
   assert.equal(await context.client.query({ sql: "SELECT COUNT(*) FROM analytics_events WHERE player_id='p1'", result: 'value' }), 0);
-  assert.equal(await context.client.query({ sql: "SELECT COUNT(*) FROM model_settings WHERE player_id='p1'", result: 'value' }), 0);
   assert.deepEqual(await context.client.query({ sql: 'PRAGMA foreign_key_check', result: 'all' }), []);
 });

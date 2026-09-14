@@ -15,7 +15,6 @@ const {
 test('lazy hydration exposes the requested typed domains', () => {
   for (const domain of [
     'tasks',
-    'recommender',
     'matches',
     'leaderboards',
     'social',
@@ -93,7 +92,7 @@ test('high-value domains own only their persistence stores', () => {
   assert.ok(!DOMAIN_STORE_KEYS.shop.includes('journals'));
   assert.ok(!DOMAIN_STORE_KEYS.social.includes('matches'));
   assert.ok(DOMAIN_STORE_KEYS.events.includes('appSettings'));
-  assert.ok(DOMAIN_STORE_KEYS.recommender.includes('appSettings'));
+  assert.equal(DOMAIN_STORE_KEYS.recommender, undefined);
   assert.deepEqual(DOMAIN_STORE_KEYS.leaderboards, ['derivedCaches']);
 });
 

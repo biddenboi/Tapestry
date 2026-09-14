@@ -102,20 +102,6 @@ test('time-sensitive records use targeted reference lanes without publishing the
   assert.match(app, /setGameState\(GAME_STATE\.match\)/);
 });
 
-test('desktop-trained ML artifacts are the only app settings admitted to mobile sync', async () => {
-  const [sync, sqliteCapture, serverMigration] = await Promise.all([
-    read('./MobileReferenceSync.js'),
-    read('../persistence/sqlite/migrations/056_mobile_ml_model_reference_capture.js'),
-    read('../../../supabase/migrations/20260803060000_mobile_ml_model_convergence.sql'),
-  ]);
-  assert.match(sync, /MOBILE_ML_MODEL_RECORD_TYPE = 'ml-model'/);
-  assert.match(sync, /MOBILE_ML_MODEL_UUID_PREFIX = 'task-recommender-v12-'/);
-  assert.match(sync, /recordType !== MOBILE_ML_MODEL_RECORD_TYPE/);
-  assert.match(sqliteCapture, /NEW\.uuid LIKE '\$\{UUID_PREFIX\}%'/);
-  assert.match(sqliteCapture, /sync_reference_capture_state/);
-  assert.match(serverMigration, /'ml-model'/);
-});
-
 test('clean-device restore pages through the server primary-key index', async () => {
   const [transport, sync, migration] = await Promise.all([
     read('./supabase/SupabaseSyncTransport.js'),

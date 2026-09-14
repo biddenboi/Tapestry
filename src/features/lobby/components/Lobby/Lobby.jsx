@@ -841,23 +841,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
               />
             </article>
 
-            <article className="lobby-action-card lobby-action-card--dojo">
-              <button
-                type="button"
-                className="lobby-action-card__main"
-                onClick={() => setGameState(GAME_STATE.dojo)}
-              >
-                <span className="lobby-action-icon"><Icon name="tasks" size={24} /></span>
-                <strong>Enter dojo</strong>
-                <span className="lobby-action-cta">Start training</span>
-              </button>
-              <PresencePulseStack
-                members={activityPulses.dojo}
-                label="Players active in Dojo"
-                surface="lobby-dojo"
-                onInspectProfile={inspectOccupant}
-              />
-            </article>
           </div>
 
           <LobbyReminderCapsules

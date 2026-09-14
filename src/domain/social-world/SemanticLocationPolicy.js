@@ -38,7 +38,7 @@ export function resolveSemanticLocation({
   activePanel,
 } = {}) {
   if (gameState === 'match') return SEMANTIC_LOCATION.matchArena;
-  if (gameState === 'dojo') return SEMANTIC_LOCATION.dojo;
+  if (gameState === 'dojo') return SEMANTIC_LOCATION.commons;
   if (activeTask?.createdAt) return SEMANTIC_LOCATION.taskSession;
   if (activePanel === 'tasks' || activePanel === 'queue') return SEMANTIC_LOCATION.planning;
   if (activePanel === 'shop') return SEMANTIC_LOCATION.marketplace;

@@ -60,7 +60,7 @@ export async function switchMobileProfile({
   }
 
   const pinnedSession = await activePinnedSession(databaseConnection, currentId);
-  if (pinnedSession || [GAME_STATE.match, GAME_STATE.dojo].includes(gameState)) {
+  if (pinnedSession || gameState === GAME_STATE.match) {
     throw switchError(
       'mobile-profile-switch-session-active',
       'Finish or leave the active work session before switching profiles.',

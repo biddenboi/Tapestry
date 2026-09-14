@@ -251,13 +251,13 @@ export class ProfileLifecycleService {
     for (const store of universalStores) await reparentStore(store);
     await safeDelete(STORES.goalParticipant, (entry) => entry.playerUUID === playerUUID || entry.parent === playerUUID);
 
-    // Delete only profile-bound progress, economy, social, and model data.
+    // Delete only profile-bound progress, economy, and social data.
     const parentScoped = [
       STORES.event, STORES.transaction,
       STORES.inventory, STORES.notification,
       STORES.eventLog, STORES.eventBuff, STORES.contribution,
       STORES.resource,
-      STORES.recommenderEvent, STORES.analyticsEvent,
+      STORES.analyticsEvent,
       STORES.taskCompletionEvent, STORES.taskCompletionReceipt,
       STORES.actionSession, STORES.handoff,
       STORES.interventionDecision, STORES.rewardProvenance,
@@ -284,9 +284,8 @@ export class ProfileLifecycleService {
     // profile progress and must be removed.
     await safeDelete(STORES.match, (match) => matchReferencesProfile(match, playerUUID));
 
-    // Recommender checkpoints, policy weights, experiments, and per-profile
-    // preferences live in appSettings. Global household settings have no
-    // profile parent and remain untouched.
+    // Per-profile settings are personal data. Global household settings have
+    // no profile parent and remain untouched.
     await safeDelete(STORES.appSetting, (setting) => String(setting?.parent || '') === String(playerUUID));
 
     await safeDelete(STORES.friendship,  (f) => Array.isArray(f?.players) && f.players.includes(playerUUID));
@@ -379,7 +378,7 @@ export class ProfileLifecycleService {
       STORES.inventory, STORES.match, STORES.notification,
       STORES.eventLog, STORES.eventBuff, STORES.contribution,
       STORES.resource,
-      STORES.recommenderEvent, STORES.analyticsEvent,
+      STORES.analyticsEvent,
       STORES.taskCompletionEvent, STORES.taskCompletionReceipt,
       STORES.profileContextItem, STORES.profileContextRecipient,
       STORES.profileContextSuggestion, STORES.profileContextPreference,

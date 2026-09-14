@@ -100,68 +100,13 @@ export async function collectDeduplicatedImages(records = []) {
   return [...images.values()].sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function packModelValue(value, numbers) {
-  if (Array.isArray(value) && value.length && value.every((entry) => Number.isFinite(entry))) {
-    const offset = numbers.length;
-    numbers.push(...value.map(Number));
-    return { $f64: [offset, value.length] };
-  }
-  if (Array.isArray(value)) return value.map((entry) => packModelValue(entry, numbers));
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value)
-      .filter(([key]) => !['trainingBuffer', 'replayBuffer', 'temporaryBatch'].includes(key))
-      .map(([key, entry]) => [key, packModelValue(entry, numbers)]));
-  }
-  return value;
-}
-
-export function buildCompactModelArtifacts(appSettings = []) {
-  const checkpoint = [...appSettings]
-    .filter((record) => /recommender.*checkpoint|checkpoint.*recommender/i.test(String(record?.UUID || '')))
-    .sort((left, right) => String(right?.value?.manifest?.updatedAt || '').localeCompare(
-      String(left?.value?.manifest?.updatedAt || ''),
-    ))[0] || null;
-  const numbers = [];
-  let checkpointMetadata = null;
-  if (checkpoint) {
-    const value = checkpoint.value || {};
-    const sameTarget = value.model != null
-      && value.targetModel != null
-      && stableJson(value.model) === stableJson(value.targetModel);
-    checkpointMetadata = {
-      UUID: checkpoint.UUID,
-      manifest: value.manifest || null,
-      model: packModelValue(value.model || null, numbers),
-      targetModel: sameTarget
-        ? { $ref: 'model' }
-        : packModelValue(value.targetModel || null, numbers),
-    };
-  }
-  const bytes = new Uint8Array(8 + numbers.length * 8);
-  bytes.set(encoder.encode('TPM1'), 0);
-  new DataView(bytes.buffer).setUint32(4, numbers.length, true);
-  numbers.forEach((number, index) => new DataView(bytes.buffer).setFloat64(8 + index * 8, number, true));
-  return {
-    bytes,
-    metadata: {
-      format: 'tapestry-model-f64',
-      version: 1,
-      numericEncoding: 'float64-le',
-      numericValueCount: numbers.length,
-      checkpoint: checkpointMetadata,
-    },
-  };
-}
-
 export async function buildCompactManifest({
   snapshot,
-  model,
   images,
   createdAt = new Date().toISOString(),
   kind = 'save',
   durability = null,
 }) {
-  const modelMetadataBytes = encoder.encode(stableJson(model.metadata));
   return {
     format: COMPACT_PACKAGE_FORMAT,
     version: COMPACT_PACKAGE_VERSION,
@@ -172,14 +117,6 @@ export async function buildCompactManifest({
       byteLength: snapshot.byteArray.byteLength,
       sha256: await sha256Bytes(snapshot.byteArray),
       migrations: snapshot.migrations,
-    },
-    model: {
-      binaryPath: 'model/model.bin',
-      binaryByteLength: model.bytes.byteLength,
-      binarySha256: await sha256Bytes(model.bytes),
-      metadataPath: 'model/metadata.json',
-      metadataByteLength: modelMetadataBytes.byteLength,
-      metadataSha256: await sha256Bytes(modelMetadataBytes),
     },
     ...(durability ? { durability } : {}),
     images: await Promise.all(images.map(async (image) => ({
@@ -203,16 +140,20 @@ export async function verifyCompactEntries({ manifest, readBytes, verifySnapshot
     return bytes;
   };
   const database = await verifyFile(manifest.database);
-  await verifyFile({
-    path: manifest.model.binaryPath,
-    byteLength: manifest.model.binaryByteLength,
-    sha256: manifest.model.binarySha256,
-  });
-  await verifyFile({
-    path: manifest.model.metadataPath,
-    byteLength: manifest.model.metadataByteLength,
-    sha256: manifest.model.metadataSha256,
-  });
+  // Version-one backups may contain a retired model sidecar. Verify it when
+  // present for backward compatibility, but new backups never create one.
+  if (manifest.model) {
+    await verifyFile({
+      path: manifest.model.binaryPath,
+      byteLength: manifest.model.binaryByteLength,
+      sha256: manifest.model.binarySha256,
+    });
+    await verifyFile({
+      path: manifest.model.metadataPath,
+      byteLength: manifest.model.metadataByteLength,
+      sha256: manifest.model.metadataSha256,
+    });
+  }
   const images = [];
   for (const image of manifest.images || []) {
     images.push({

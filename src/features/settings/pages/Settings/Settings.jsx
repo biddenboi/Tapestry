@@ -19,17 +19,6 @@ import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
 import AppearanceStudio from '@features/settings/components/AppearanceStudio/AppearanceStudio.jsx';
 import { DEFAULT_COSMETIC_EQUIPMENT, normalizeCosmeticEquipment } from '@domain/cosmetics/CosmeticCatalog.js';
 import { areSoundEffectsEnabled, setSoundEffectsEnabled } from '@shared/audio/AppSounds.js';
-import {
-  exportTaskRecommendationV12Bundle,
-  importTaskRecommendationV12Bundle,
-  importTaskRecommendationV12Checkpoint,
-  readTaskRecommendationV12Checkpoint,
-  trainTaskRecommendationV12,
-} from '@domain/tasks/TaskRecommendationV12.js';
-import {
-  getTaskRecommenderV12Settings,
-  saveTaskRecommenderV12Settings,
-} from '@domain/tasks/TaskRecommenderV12Settings.js';
 import LocalSectionNav from '@shared/navigation/LocalSectionNav/LocalSectionNav.jsx';
 import { useLocalSectionRoute } from '@shared/navigation/LocalSectionNav/LocalSectionRouteState.js';
 import SyncStatusPanel from '@features/settings/components/SyncStatusPanel/SyncStatusPanel.jsx';
@@ -114,10 +103,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
   const [folderBusy, setFolderBusy] = useState(false);
   const [folderError, setFolderError] = useState('');
   const [folderMessage, setFolderMessage] = useState('');
-  const [recommenderSettings, setRecommenderSettings] = useState(null);
-  const [recommenderCheckpoint, setRecommenderCheckpoint] = useState(null);
-  const [recommenderBusy, setRecommenderBusy] = useState(false);
-  const [recommenderMessage, setRecommenderMessage] = useState('');
   const [verification, setVerification] = useState(null);
   const [verificationBusy, setVerificationBusy] = useState(false);
   const [interfaceRevealBusy, setInterfaceRevealBusy] = useState(false);
@@ -176,24 +161,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     void load().catch((error) => { if (!cancelled) setSaveError(error.message); });
     return () => { cancelled = true; };
   }, [databaseConnection, playerUUID]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!playerUUID || presentedPageId !== 'advanced') return () => { cancelled = true; };
-    Promise.all([
-      getTaskRecommenderV12Settings(databaseConnection, playerUUID),
-      readTaskRecommendationV12Checkpoint(databaseConnection, playerUUID),
-    ]).then(([settings, checkpoint]) => {
-      if (cancelled) return;
-      setRecommenderSettings(settings);
-      setRecommenderCheckpoint(checkpoint);
-    }).catch((error) => {
-      if (cancelled) return;
-      console.warn('[Settings] v12 recommender load failed:', error);
-      setRecommenderMessage(error?.message || 'Could not load the v12 checkpoint.');
-    });
-    return () => { cancelled = true; };
-  }, [databaseConnection, playerUUID, presentedPageId]);
 
   const updateForm = (patch) => {
     formDirtyRef.current = true;
@@ -379,44 +346,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     }
   };
 
-  const updateRecommenderSettings = async (patch) => {
-    if (!player?.UUID) return;
-    const next = await saveTaskRecommenderV12Settings(databaseConnection, player.UUID, {
-      ...(recommenderSettings || {}),
-      ...patch,
-    });
-    setRecommenderSettings(next);
-    setRecommenderMessage('v12 settings saved.');
-    setTimeout(() => setRecommenderMessage(''), 2200);
-  };
-
-  const handleTrainRecommender = async () => {
-    if (!player?.UUID || recommenderBusy) return;
-    setRecommenderBusy(true);
-    setRecommenderMessage('');
-    try {
-      const result = await trainTaskRecommendationV12(databaseConnection, {
-        requestId: uuid(),
-        playerUUID: player.UUID,
-        options: { force: true },
-      });
-      const checkpoint = await readTaskRecommendationV12Checkpoint(databaseConnection, player.UUID);
-      setRecommenderCheckpoint(checkpoint);
-      setRecommenderMessage(result?.status === 'candidate-ready'
-        ? 'A new v12 candidate is ready for controlled evaluation.'
-        : result?.status === 'deferred-insufficient-evidence'
-          ? 'Training is waiting for enough resolved recommendations.'
-          : result?.status === 'deferred-energy-sensitive-scheduling'
-            ? 'Training is waiting for energy and thermal conditions to improve.'
-          : 'v12 training completed.');
-    } catch (error) {
-      console.warn('[Settings] v12 recommender training failed:', error);
-      setRecommenderMessage(error?.message || 'v12 training failed.');
-    } finally {
-      setRecommenderBusy(false);
-    }
-  };
-
   const downloadJson = (payload, filename) => {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -425,52 +354,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadRecommenderCheckpoint = async () => {
-    if (!player?.UUID) return;
-    const payload = await readTaskRecommendationV12Checkpoint(databaseConnection, player.UUID);
-    downloadJson(payload, `task-recommender-v12-checkpoint-${new Date().toISOString().slice(0, 10)}.json`);
-  };
-
-  const handleUploadRecommenderCheckpoint = async (file) => {
-    if (!file || !player?.UUID) return;
-    const checkpoint = await importTaskRecommendationV12Checkpoint(
-      databaseConnection,
-      player.UUID,
-      await file.text(),
-    );
-    setRecommenderCheckpoint(checkpoint);
-    setRecommenderMessage('v12 checkpoint imported.');
-    refreshApp();
-  };
-
-  const handleDownloadRecommenderBundle = async () => {
-    if (!player?.UUID) return;
-    const payload = await exportTaskRecommendationV12Bundle(databaseConnection, player.UUID);
-    downloadJson(payload, `task-recommender-v12-bundle-${new Date().toISOString().slice(0, 10)}.json`);
-  };
-
-  const handleUploadRecommenderBundle = async (file) => {
-    if (!file || !player?.UUID || recommenderBusy) return;
-    setRecommenderBusy(true);
-    setRecommenderMessage('');
-    try {
-      const imported = await importTaskRecommendationV12Bundle(
-        databaseConnection,
-        player.UUID,
-        await file.text(),
-      );
-      const checkpoint = await readTaskRecommendationV12Checkpoint(databaseConnection, player.UUID);
-      setRecommenderCheckpoint(checkpoint);
-      setRecommenderMessage(`Imported ${Number(imported.protocolEventsImported || 0).toLocaleString()} v12 events.`);
-      refreshApp();
-    } catch (error) {
-      console.warn('[Settings] v12 recommender bundle import failed:', error);
-      setRecommenderMessage(error?.message || 'v12 bundle import failed.');
-    } finally {
-      setRecommenderBusy(false);
-    }
   };
 
   const rankPresentation = getPlayerRankPresentation(player, { glowSize: 20 });
@@ -735,83 +618,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
             onSaveLoadout={saveIdentityLoadout}
             onApplyLoadout={applyIdentityLoadout}
           />
-        </SettingsSection>
-
-        <SettingsSection page="advanced" activePage={presentedPageId} icon={<Icon name="tasks" size={16} />} title="Task Recommender v12">
-          <SettingsRow
-            label="Continuous Training"
-            hint="Updates the active v12 checkpoint from recommendation outcomes"
-          >
-            <label className="settings-toggle">
-              <input
-                type="checkbox"
-                checked={recommenderSettings?.continuousTraining !== false}
-                onChange={(event) => updateRecommenderSettings({ continuousTraining: event.target.checked })}
-              />
-              <span>{recommenderSettings?.continuousTraining !== false ? 'On' : 'Off'}</span>
-            </label>
-          </SettingsRow>
-          <SettingsRow
-            label="Checkpoint Status"
-            hint={recommenderCheckpoint?.checkpoint?.manifest?.updatedAt
-              ? `Updated ${new Date(recommenderCheckpoint.checkpoint.manifest.updatedAt).toLocaleString()}`
-              : 'Using a v12 cold-start checkpoint'}
-          >
-            <div className="settings-folder-actions">
-              <button type="button" disabled={recommenderBusy || !player?.UUID} onClick={handleTrainRecommender}>
-                {recommenderBusy ? 'Training...' : 'Train now'}
-              </button>
-              <span className="settings-row-hint">
-                {Number(recommenderCheckpoint?.checkpoint?.model?.posterior?.updateCount || 0).toLocaleString()} updates
-              </span>
-            </div>
-          </SettingsRow>
-          <SettingsRow label="Download Checkpoint" hint="Exports the active v12 model checkpoint">
-            <button type="button" disabled={!player?.UUID} onClick={handleDownloadRecommenderCheckpoint}>Download</button>
-          </SettingsRow>
-          <SettingsRow label="Import Checkpoint" hint="Atomically replaces the active v12 checkpoint and keeps recovery evidence">
-            <div className="settings-upload-row">
-              <input
-                type="file"
-                accept=".json,application/json"
-                id="recommender-checkpoint-upload"
-                className="settings-file-input"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  await handleUploadRecommenderCheckpoint(file);
-                  e.target.value = '';
-                }}
-              />
-              <label htmlFor="recommender-checkpoint-upload" className="settings-file-label">CHOOSE FILE</label>
-            </div>
-          </SettingsRow>
-          <SettingsRow
-            label="v12 Bundle"
-            hint="Exports or imports the checkpoint and authoritative recommendation outcomes together"
-          >
-            <div className="settings-upload-row">
-              <button type="button" disabled={!player?.UUID} onClick={handleDownloadRecommenderBundle}>
-                Download
-              </button>
-              <input
-                type="file"
-                accept=".json,application/json"
-                id="recommender-bundle-upload"
-                className="settings-file-input"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  await handleUploadRecommenderBundle(file);
-                  e.target.value = '';
-                }}
-              />
-              <label htmlFor="recommender-bundle-upload" className="settings-file-label">
-                IMPORT
-              </label>
-            </div>
-          </SettingsRow>
-          {recommenderMessage && <div className="settings-sync-status">{recommenderMessage}</div>}
         </SettingsSection>
 
         {/* Data */}

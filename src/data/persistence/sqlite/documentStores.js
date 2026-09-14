@@ -35,6 +35,7 @@ export const SQLITE_DOCUMENT_TABLES = Object.freeze({
   achievementEvents: 'document_achievement_events',
   achievementStates: 'document_achievement_states',
   achievementReceipts: 'document_achievement_receipts',
+  // Historical storage name retained for migration replay; runtime access is retired.
   taskRecommendations: 'document_task_recommendations',
   analyticsEvents: 'document_analytics_events',
   journals: 'document_journals',

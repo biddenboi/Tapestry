@@ -51,7 +51,6 @@ export default function EdgeNextMoveHost() {
     activeTask: [, setActiveTask],
     activeMatch: [activeMatch],
     gameState: [gameState],
-    dojoSessionUUID,
     openRoute,
     setWorldRoute,
   } = useAppContext();
@@ -147,15 +146,6 @@ export default function EdgeNextMoveHost() {
               invalidationKeys: [`match:${activeMatch.UUID}:${activeMatch.status}:${activeMatch.phase}`],
             }
           : null,
-        activeDojoSession: gameState === GAME_STATE.dojo && dojoSessionUUID
-          ? {
-              UUID: dojoSessionUUID,
-              title: 'Dojo session in progress',
-              context: 'The active Dojo surface owns the current move.',
-              worldLocationId: 'dojo',
-              invalidationKeys: [`dojo:${dojoSessionUUID}`],
-            }
-          : null,
       });
       stateRef.current = state;
       const next = chooseNextMove(state);
@@ -180,7 +170,6 @@ export default function EdgeNextMoveHost() {
     currentPlayerLoaded,
     databaseConnection,
     decisionRepository,
-    dojoSessionUUID,
     ensureDomainLoaded,
     gameState,
     playerUUID,

@@ -49,14 +49,6 @@ export function chooseNextMove(state = {}) {
       reasonCodes: [NEXT_MOVE_REASON.activePairMatch],
     });
   }
-  if (state.activeDojoSession) {
-    return decision(state, NEXT_MOVE_RESULT.active, state.activeDojoSession, {
-      phase: 'continue',
-      title: 'Dojo session in progress',
-      destination: route('lobby', state.activeDojoSession),
-      reasonCodes: [NEXT_MOVE_REASON.activeDojo],
-    });
-  }
   if (state.activeTaskSession) {
     return decision(state, NEXT_MOVE_RESULT.active, state.activeTaskSession, {
       phase: 'continue',
@@ -110,7 +102,6 @@ export function chooseNextMove(state = {}) {
       }),
       reasonCodes: [
         NEXT_MOVE_REASON.taskExecutable,
-        NEXT_MOVE_REASON.v12Selected,
       ],
     });
   }

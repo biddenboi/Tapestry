@@ -338,10 +338,6 @@
   --lobby-action-color: var(--color-match);
 }
 
-.lobby-action-card--dojo {
-  --lobby-action-color: var(--green);
-}
-
 [data-theme="old_windows"] .lobby-action-card {
   border-width: 2px;
   border-style: outset;
@@ -357,8 +353,7 @@
   border-color: color-mix(in srgb, var(--gold) 46%, var(--border));
 }
 
-.lobby-action-card--compete .lobby-action-card__main,
-.lobby-action-card--dojo .lobby-action-card__main {
+.lobby-action-card--compete .lobby-action-card__main {
   padding-right: 96px;
 }
 

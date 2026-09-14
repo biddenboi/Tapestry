@@ -296,12 +296,6 @@ export async function parseLegacyPortablePackage(zip, {
 
   const appState = await readZipJson(zip, `${root}${normalizePath(manifest.appStateFile)}`);
   const economyState = await readZipJson(zip, `${root}${normalizePath(manifest.economyFile)}`);
-  const modelSettingsPath = manifest.modelArtifactFiles?.recommenderSettings;
-  const modelSettings = modelSettingsPath
-    ? await readZipJson(zip, `${root}${normalizePath(modelSettingsPath)}`)
-    : [];
-  if (!Array.isArray(modelSettings)) throw new Error('Legacy recommender settings must be a JSON array.');
-
   return {
     format: LEGACY_PACKAGE_FORMAT,
     manifest,
@@ -311,7 +305,6 @@ export async function parseLegacyPortablePackage(zip, {
     economyState: economyState && typeof economyState === 'object' ? economyState : {},
     journalMetadata,
     shadowJournals,
-    modelSettings,
     recordCount: Object.values(stores).reduce((total, records) => total + records.length, 0),
   };
 }

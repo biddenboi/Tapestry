@@ -3,7 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarification, taskSessionProvider, stateBuilder, recommender, worldRoute] = await Promise.all([
+const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarification, taskSessionProvider, worldRoute] = await Promise.all([
   read('../../app/shell/GameHub/GameHub.jsx'),
   read('../../app/App.jsx'),
   read('./components/EdgeNextMoveHost/EdgeNextMoveHost.jsx'),
@@ -14,8 +14,6 @@ const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarificatio
   read('./components/EdgeNextMoveHost/EdgeNextMoveHost.css'),
   read('./components/TaskClarification/TaskClarification.jsx'),
   read('../tasks/context/TaskSessionProvider.jsx'),
-  read('../../domain/navigation/NextMoveStateBuilder.js'),
-  read('../../domain/tasks/TaskRecommender.js'),
   read('./components/WorldRecommendationRoute/WorldRecommendationRoute.jsx'),
 ]);
 
@@ -81,13 +79,6 @@ test('bounded task clarification saves a Plan Receipt and makes failure terminal
   assert.match(clarification, /createTaskPlanReceipt/);
   assert.match(clarification, /STORES\.taskPlanReceipt/);
   assert.match(taskSessionProvider, /failTaskPlanReceipt/);
-});
-
-test('unchanged candidate state receives a deterministic V12 decision seed', () => {
-  assert.match(stateBuilder, /recommendationSeed/);
-  assert.match(stateBuilder, /executable-set:/);
-  assert.match(stateBuilder, /decisionSeed: recommendationSeed/);
-  assert.match(recommender, /decisionSeed: decisionSeed \|\| uuid\(\)/);
 });
 
 test('all theme families and sharp-theme conventions are explicit', () => {

@@ -9,13 +9,13 @@ const [lobby, pulses, requirements] = await Promise.all([
   read('../../app/data-source/panelDomainRequirements.js'),
 ]);
 
-test('Lobby prepares one social scene for both Match and Dojo pulse stacks', () => {
+test('Lobby prepares one social scene for Match pulse stacks', () => {
   assert.match(lobby, /new SocialWorldSceneController/);
   assert.doesNotMatch(lobby, /useSocialOccupancy|socialOccupancy|occupancy:/);
   assert.equal((lobby.match(/socialSceneController\.load\s*\(/g) || []).length, 1);
   assert.doesNotMatch(lobby, /socialSceneRefreshRevision|socialScene\.occupancy\.refreshAfter/);
   assert.match(lobby, /activityPulses\.match/);
-  assert.match(lobby, /activityPulses\.dojo/);
+  assert.doesNotMatch(lobby, /activityPulses\.dojo/);
   const pulseSelection = lobby.slice(
     lobby.indexOf('const activityPulses'),
     lobby.indexOf('const selectedMember'),

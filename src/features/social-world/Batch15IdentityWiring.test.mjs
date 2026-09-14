@@ -27,8 +27,6 @@ test('identity rendering is shared across ambient and competitive surfaces', asy
     'features/lobby/components/Lobby/Lobby.jsx',
     'features/matches/components/MatchArena/MatchArena.jsx',
     'features/matches/modals/MatchDetailsModal/MatchDetailsModal.jsx',
-    'features/matches/components/PracticeDojo/DojoRoom.jsx',
-    'features/matches/components/PracticeDojo/DojoStandings.jsx',
     'features/profile/pages/Profile/Profile.jsx',
   ];
   for (const path of paths) {

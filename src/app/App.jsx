@@ -92,7 +92,7 @@ function createApplicationDatabaseConnection() {
   ])
     .then(([, openResult]) => {
       if (!openResult?.initialization?.initialized) {
-        const error = new Error('Tapestry storage is already open in another tab. Close the other tab, then try again.');
+        const error = new Error('Tapestry local storage is still busy. Retry once the previous window has finished closing.');
         error.code = 'sqlite-writer-lease-unavailable';
         throw error;
       }
@@ -133,13 +133,7 @@ function App() {
   const [dataSourceReady, setDataSourceReady] = useState(false);
   const [instanceStandby, setInstanceStandby] = useState(false);
 
-  // Dojo session UUID — minted fresh whenever the player enters the dojo,
-  // cleared on exit. Mirrors how match.UUID is generated when COMPETE is
-  // pressed in Lobby.handleFindMatch — so dojo "sessions" become indexable
-  // first-class objects, the same as matches. Tasks completed while in dojo
-  // stamp this UUID onto the task record, and PracticeDojo's session-points
-  // view + top-sessions leaderboard both group by it.
-  const [dojoSessionUUID, setDojoSessionUUID] = useState(null);
+  const dojoSessionUUID = null;
 
   const databaseConnection = useMemo(createApplicationDatabaseConnection, []);
   const taskSoundActiveRef = useRef(false);
@@ -580,15 +574,11 @@ function App() {
     invalidateDomains,
   });
 
-  // Mint a fresh dojoSessionUUID on entry to dojo, clear it on exit.
-  // The (prev || uuid()) guard means the same session UUID is preserved if
-  // gameState briefly re-enters dojo within the same session — but in normal
-  // flow this just runs once per dojo entry.
+  // Dojo is deliberately disabled. Normalize stale in-memory state from older
+  // builds instead of allowing an inaccessible focus surface to open.
   useEffect(() => {
     if (gameState === GAME_STATE.dojo) {
-      setDojoSessionUUID((prev) => prev || uuid());
-    } else {
-      setDojoSessionUUID(null);
+      setGameState(GAME_STATE.idle);
     }
   }, [gameState]);
 
@@ -609,8 +599,6 @@ function App() {
     if (gameState === GAME_STATE.match) {
       const createdAt = activeMatch?.createdAt ? new Date(activeMatch.createdAt).getTime() : Date.now();
       if (Date.now() - createdAt < 12000) playSound('match-start', { volume: 1.08, throttleMs: 400 });
-    } else if (gameState === GAME_STATE.dojo) {
-      playSound('dojo-start', { volume: 0.95, throttleMs: 400 });
     }
     previousGameStateRef.current = gameState;
   }, [activeMatch?.createdAt, gameState, playSound]);

@@ -21,7 +21,6 @@ import { completeMatchPrimary } from '@domain/matches/MatchCompletionService.js'
 import { getPlayerScoutingLabel } from '@domain/matches/MatchActivity.js';
 import { buildMatchSnapshot } from '@domain/matches/MatchState.js';
 import { deriveMatchEvents } from '@domain/matches/MatchDirector.js';
-import { launchRecommendedTask } from '@domain/tasks/TaskRecommender.js';
 import { timeAsHHMMSS } from '@domain/time/Time.js';
 import { createTaskDraft } from '@domain/tasks/Tasks.js';
 import { getRank, getRankLabel, getRankGroupIndex } from '@domain/rank/Rank.js';
@@ -570,8 +569,6 @@ function PairMatchDock({
   remaining,
   inTask,
   currentTaskName,
-  startingNext,
-  onStartNext,
   onAddTask,
   onOpenQueue,
   onForfeit,
@@ -620,14 +617,6 @@ function PairMatchDock({
         <div>
           <button type="button" onClick={onAddTask} disabled={inTask}>Add task</button>
           <button type="button" onClick={onOpenQueue}>Open queue</button>
-          <button
-            type="button"
-            className="primary"
-            onClick={onStartNext}
-            disabled={inTask || startingNext}
-          >
-            {startingNext ? 'Finding…' : 'Start next'}
-          </button>
         </div>
       </section>
       {teammateContext && (
@@ -658,7 +647,6 @@ export default function MatchArena() {
   const [planningTodos, setPlanningTodos] = useState([]);
   const [planningHistory, setPlanningHistory] = useState([]);
   const [scoreEvents, setScoreEvents] = useState([]);
-  const [startingNext, setStartingNext]   = useState(false);
   const [isConcluding, setIsConcluding]   = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [confirmForfeit, setConfirmForfeit] = useState(false);
@@ -956,33 +944,6 @@ export default function MatchArena() {
     });
   };
 
-  const handleStartNext = async () => {
-    if (inTask || startingNext || !planningTodos.length) return;
-    setStartingNext(true);
-    try {
-      const launched = await launchRecommendedTask(databaseConnection, currentPlayer, {
-        todos: planningTodos,
-        history: planningHistory,
-        source: 'match',
-        mode: 'normal',
-        observationSessionUUID: activeMatch.UUID,
-      });
-      if (!launched?.task) return;
-      setActiveTask({
-        ...launched.task,
-        todoCreatedAt: launched.task.todoCreatedAt || launched.task.createdAt || null,
-        createdAt: null,
-        sessionRequestedAt: null,
-        originalDuration: Number(launched.task.estimatedDuration || 0),
-      });
-      requestAnimationFrame(() => {
-        showTaskPreviewMenu().catch((error) => console.warn('[MatchArena] task preview load failed:', error));
-      });
-    } finally {
-      setStartingNext(false);
-    }
-  };
-
   const handleReturn = () => {
     setShowEndScreen(false);
     setActiveMatch(null);
@@ -1077,8 +1038,6 @@ export default function MatchArena() {
           remaining={remaining}
           inTask={inTask}
           currentTaskName={currentTaskName}
-          startingNext={startingNext}
-          onStartNext={handleStartNext}
           onAddTask={openTaskCreationPopup}
           onOpenQueue={() => openPanel('queue')}
           onForfeit={() => setConfirmForfeit(true)}
@@ -1139,14 +1098,6 @@ export default function MatchArena() {
             <>
               <button onClick={openTaskCreationPopup} disabled={inTask}>Add task</button>
               <button onClick={() => openPanel('queue')}>Open queue</button>
-              <button
-                className="primary"
-                onClick={handleStartNext}
-                disabled={!planningTodos.length || inTask || startingNext}
-                title="Open the next recommended task"
-              >
-                {startingNext ? 'Finding...' : 'Start next'}
-              </button>
               <button className="danger" onClick={() => setConfirmForfeit(true)} disabled={isConcluding}>
                 Forfeit
               </button>

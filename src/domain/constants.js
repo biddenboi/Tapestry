@@ -45,6 +45,7 @@ export const STORES = {
   achievementEvent: 'achievementEvents',
   achievementState: 'achievementStates',
   achievementReceipt: 'achievementReceipts',
+  // Retained only so historical SQLite migrations can identify retired data.
   recommenderEvent: 'taskRecommendations',
   analyticsEvent: 'analyticsEvents',
   journal: 'journals',

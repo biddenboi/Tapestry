@@ -1,4 +1,4 @@
-import { STORES, GAME_STATE } from '@domain/constants.js';
+import { STORES } from '@domain/constants.js';
 import { getAchievementByKey } from '@domain/achievements/Achievements.js';
 import {
   ACHIEVEMENT_EVENT_TYPE,
@@ -6,8 +6,7 @@ import {
   processAchievementEvent,
   recordAchievementEvent,
 } from '@domain/achievements/AchievementProcessing.js';
-import { recordActionContribution, recordTaskContribution } from '@domain/contribution/Contribution.js';
-import { recordTaskRecommendationSessionResult } from '@domain/tasks/TaskRecommender.js';
+import { recordTaskContribution } from '@domain/contribution/Contribution.js';
 import { recordRewardProvenance } from '@domain/rewards/RewardProvenance.js';
 import { getCanonicalTaskPoints } from '@domain/tasks/Tasks.js';
 
@@ -127,38 +126,6 @@ export async function processTaskCompletionEvent(databaseConnection, eventOrId, 
     );
     results.push(contributionResult);
 
-    if (event.gameState === GAME_STATE.dojo) {
-      results.push(await runIdempotentProcessor(
-        databaseConnection,
-        event,
-        'dojo-leaderboard',
-        async () => {
-          await ensureProcessorDomains(databaseConnection, ['leaderboards']);
-          const standings = await databaseConnection.recordDojoStandingCompletion?.({ task, event, player });
-          return { standings };
-        },
-      ));
-      results.push(await runIdempotentProcessor(
-        databaseConnection,
-        event,
-        'dojo-contribution',
-        async () => {
-          const durationContribution = Math.max(1, Math.round(Math.max(0, Number(event.durationMs) || 0) / (30 * 60 * 1000)));
-          return recordActionContribution(databaseConnection, player, {
-            source: 'dojo',
-            sourceUUID: event.UUID,
-            value: durationContribution,
-            summary: `Dojo work: ${task.name || 'Completed task'}`,
-            taskUUID: task.UUID,
-            todoUUID: task.todoUUID || null,
-            completionEventUUID: null,
-            createdAt: event.completedAt,
-            inGameTimestamp: task.completedInGameTimestamp ?? task.inGameTimestamp ?? null,
-          });
-        },
-      ));
-    }
-
     const achievementResult = await runIdempotentProcessor(
       databaseConnection,
       event,
@@ -187,40 +154,6 @@ export async function processTaskCompletionEvent(databaseConnection, eventOrId, 
       },
     );
     results.push(achievementResult);
-
-    if (event.recommendation?.eventUUID) {
-      results.push(await runIdempotentProcessor(
-        databaseConnection,
-        event,
-        'recommender-outcome',
-        async () => {
-          await ensureProcessorDomains(databaseConnection, ['recommender']);
-          const completionOccurredAt = event.completedAt
-            || event.createdAt
-            || new Date().toISOString();
-          return recordTaskRecommendationSessionResult(
-            databaseConnection,
-            event.recommendation.eventUUID,
-            {
-              suggestedMinutes: event.recommendation.suggestedMinutes,
-              acceptedMinutes: event.recommendation.acceptedMinutes,
-              committedMs: event.committedMs,
-              actualMs: event.durationMs,
-              sessionStartedAt: new Date(
-                new Date(completionOccurredAt).getTime()
-                  - Math.max(0, Number(event.durationMs) || 0),
-              ).toISOString(),
-              sessionFinishedAt: completionOccurredAt,
-              completedAt: completionOccurredAt,
-              completed: event.recommendation.completed,
-              completedTaskUUID: event.taskUUID,
-              completionEventUUID: event.UUID,
-              reason: event.recommendation.completed ? 'commitment-met' : 'commitment-not-met',
-            },
-          );
-        },
-      ));
-    }
 
     const contribution = contributionResult.status === 'completed' ? contributionResult.result : null;
     const contributionGains = [

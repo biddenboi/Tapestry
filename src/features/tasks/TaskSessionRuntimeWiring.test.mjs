@@ -43,7 +43,7 @@ test('expanded and edge surfaces consume the same provider snapshot', () => {
   assert.match(hub, /<EdgeNextMoveHost \/>/);
   assert.doesNotMatch(hub, /<TaskSessionDock \/>/);
   assert.match(expanded, /canMinimize && <button/);
-  assert.doesNotMatch(expanded, /sourceGameState !== GAME_STATE\.dojo/);
+  assert.doesNotMatch(expanded, /dojo/i);
   assert.match(activeTaskMove, /onSettle/);
 });
 
@@ -52,7 +52,7 @@ test('settlement stays canonical, guarded, and source-stable after a Match concl
   assert.match(provider, /settlementOperationId/);
   assert.match(provider, /sourceGameState/);
   assert.match(provider, /record\.matchUUID \|\| record\.source === 'match'/);
-  assert.match(provider, /canMinimize: sourceGameState !== GAME_STATE\.dojo && !sourceDojoSessionUUID/);
+  assert.match(provider, /canMinimize: true/);
   assert.match(provider, /mode: mode === 'docked' && !current\.canMinimize \? 'expanded' : mode/);
   assert.match(provider, /gameState: current\.sourceGameState/);
   assert.match(provider, /actualDurationMs: loggedDurationMs/);

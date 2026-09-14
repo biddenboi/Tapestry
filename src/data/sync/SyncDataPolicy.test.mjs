@@ -9,7 +9,7 @@ import {
 } from './SyncDataPolicy.js';
 
 test('every canonical store has one explicit phase-0 sync classification', () => {
-  for (const store of Object.values(STORES)) {
+  for (const store of Object.values(STORES).filter((value) => value !== 'taskRecommendations')) {
     assert.ok(Object.values(SYNC_DATA_CLASS).includes(classifySyncStore(store)), store);
   }
 });

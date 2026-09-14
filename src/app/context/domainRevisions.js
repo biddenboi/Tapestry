@@ -1,6 +1,5 @@
 export const DATA_DOMAIN = Object.freeze({
   tasks: 'tasks',
-  recommender: 'recommender',
   matches: 'matches',
   leaderboards: 'leaderboards',
   social: 'social',
@@ -37,7 +36,6 @@ function freezeDomains(domains) {
 export const DOMAIN_INVALIDATION = Object.freeze({
   taskWrite: freezeDomains([
     DATA_DOMAIN.tasks,
-    DATA_DOMAIN.recommender,
     DATA_DOMAIN.leaderboards,
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.profiles,
@@ -47,7 +45,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
-  recommenderWrite: freezeDomains([DATA_DOMAIN.recommender, DATA_DOMAIN.contributionRoad]),
   matchWrite: freezeDomains([
     DATA_DOMAIN.matches,
     DATA_DOMAIN.leaderboards,
@@ -122,7 +119,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.goals,
     DATA_DOMAIN.competitiveArenas,
     DATA_DOMAIN.tasks,
-    DATA_DOMAIN.recommender,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
     DATA_DOMAIN.nextMove,
@@ -138,7 +134,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
   goalLinkWrite: freezeDomains([
     DATA_DOMAIN.goals,
     DATA_DOMAIN.tasks,
-    DATA_DOMAIN.recommender,
     DATA_DOMAIN.eventTrackers,
   ]),
   dailyLifecycleWrite: freezeDomains([

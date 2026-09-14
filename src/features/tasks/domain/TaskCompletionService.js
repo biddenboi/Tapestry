@@ -24,7 +24,7 @@ function cleanTaskRecord(task) {
   [
     'dueDateObj', 'dueKey', 'dueState', 'isOverdue', 'isToday', 'slope',
     'slopeTier', 'projectName', 'projectColor', 'wpd', 'ageDays', 'weight',
-    'recommendation',
+    'recommendation', 'taskRecommendationEventId',
   ].forEach((key) => delete clean[key]);
   return clean;
 }
@@ -44,7 +44,7 @@ function positiveMs(value, fallback = 0) {
  *
  * This function owns the complete task record, immediate player reward,
  * required todo/player state changes, and the single authoritative completion
- * event. All contribution, achievement, pass, dojo, and recommender work
+ * event. All contribution, achievement, and pass work
  * is delegated to recoverable secondary processors.
  */
 export async function completeTask({
@@ -98,19 +98,13 @@ export async function completeTask({
     throw error;
   }
 
-  const effectiveGameState = actionSession?.matchUUID
+  const effectiveGameState = actionSession?.matchUUID || gameState === GAME_STATE.match
     ? GAME_STATE.match
-    : actionSession?.dojoSessionUUID
-      ? GAME_STATE.dojo
-      : gameState;
-  const effectiveDojoSessionUUID = effectiveGameState === GAME_STATE.dojo
-    ? actionSession?.dojoSessionUUID || dojoSessionUUID || null
-    : null;
+    : GAME_STATE.idle;
+  const effectiveDojoSessionUUID = null;
   const effectiveSource = actionSession?.matchUUID
     ? 'match'
-    : actionSession?.dojoSessionUUID
-      ? 'shared'
-      : source;
+    : ['dojo', 'shared'].includes(source) ? 'manual' : source;
 
   const completedAt = asDate(completedAtInput, new Date());
   const immediate = completionMode === 'immediate';
@@ -181,9 +175,6 @@ export async function completeTask({
     tokens: Math.floor((player.tokens || 0) + tokensGained),
     minutesClearedToday: (player.minutesClearedToday || 0) + minutesCleared,
   };
-  const recommendationEventId = sourceTask.taskRecommendationEventId
-    || sourceTask.recommendation?.eventUUID
-    || null;
   const completionEvent = {
     UUID: completionEventUUID,
     parent: player.UUID,
@@ -216,12 +207,6 @@ export async function completeTask({
       rarity: reward.rarity || null,
       label: reward.label || null,
     },
-    recommendation: recommendationEventId ? {
-      eventUUID: recommendationEventId,
-      suggestedMinutes: Number(sourceTask.recommendation?.suggestedMinutes || sourceTask.estimatedDuration || 0),
-      acceptedMinutes: (committedMs || actualDurationMs) / MINUTE,
-      completed: committedMs <= 0 || actualDurationMs >= committedMs,
-    } : null,
   };
 
   const puts = [

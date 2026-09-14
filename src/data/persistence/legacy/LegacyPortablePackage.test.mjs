@@ -67,7 +67,7 @@ test('legacy nested archives become complete current store snapshots', async () 
   assert.equal(parsed.stores.resources[1].parent, 'player-2');
   assert.equal(parsed.stores.resources[1].kind, 'profilePicture');
   assert.deepEqual([...parsed.stores.resources[1].bytes], [0xff, 0xd8, 0x01, 0xff, 0xd9]);
-  assert.equal(parsed.modelSettings.length, 1);
+  assert.equal(parsed.modelSettings, undefined);
 });
 
 test('untitled legacy journals stay importable without losing their body', () => {

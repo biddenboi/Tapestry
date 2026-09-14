@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef } from 'react';
 import { useAppContext } from '@app/hooks/useAppContext.js';
 import { GAME_STATE } from '@domain/constants.js';
 
-import MobileDojoRuntime from './MobileDojoRuntime.jsx';
 import MobileMatchRuntime from './MobileMatchRuntime.jsx';
 
 export default function MobileArenaPage({ onBack }) {
@@ -16,12 +15,10 @@ export default function MobileArenaPage({ onBack }) {
     setGameState(GAME_STATE.idle);
     onBack?.();
   };
-  if (![GAME_STATE.dojo, GAME_STATE.match].includes(gameState)) return null;
+  if (gameState !== GAME_STATE.match) return null;
   return (
     <section ref={runtimeRef} className="mobile-arena-runtime mobile-page">
-      {gameState === GAME_STATE.dojo
-        ? <MobileDojoRuntime onBack={leave} />
-        : <MobileMatchRuntime onBack={leave} />}
+      <MobileMatchRuntime onBack={leave} />
     </section>
   );
 }

@@ -3,15 +3,12 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
-const [lobby, requirements, database, leaderboards, importExport, dojo, dojoStandings, dojoStandingsView] = await Promise.all([
+const [lobby, requirements, database, leaderboards, importExport] = await Promise.all([
   read('./Lobby.jsx'),
   read('../../../../app/data-source/panelDomainRequirements.js'),
   read('../../../../data/persistence/DatabaseConnectionHost.js'),
   read('../../../../domain/leaderboards/MaterializedLeaderboards.js'),
   read('../../../../data/persistence/services/ImportExportService.js'),
-  read('../../../matches/components/PracticeDojo/PracticeDojo.jsx'),
-  read('../../../matches/components/PracticeDojo/useDojoStandingsController.js'),
-  read('../../../matches/components/PracticeDojo/DojoStandings.jsx'),
 ]);
 
 test('Lobby opening reads materialized data plus one prepared social scene', () => {
@@ -87,13 +84,4 @@ test('every restored save rebuilds standings from its restored source evidence',
     assert.ok(offset > 0, `expected ${reason}`);
     assert.match(importExport.slice(Math.max(0, offset - 80), offset + reason.length + 16), /force: true/);
   }
-});
-
-test('Dojo leaderboard uses bounded typed standings with canonical identity', () => {
-  assert.match(dojo, /topSessions=\{standings\.top\}/);
-  assert.match(dojoStandingsView, /<DojoTopSessions[\s\S]*?sessions=\{topSessions\}/);
-  assert.match(dojoStandingsView, /<ProfileIdentity identity=\{session\.identity\}/);
-  assert.match(dojoStandings, /getDojoStandings\(\{/);
-  assert.match(dojoStandings, /topLimit:\s*10/);
-  assert.doesNotMatch(dojo + dojoStandings, /getAllPlayers\(\)|DojoLeaderboardSnapshots/);
 });

@@ -10,8 +10,6 @@ const [
   profileView,
   shopStyles,
   inventoryPopupStyles,
-  dojo,
-  dojoStyles,
   panelRegistry,
   gameHub,
 ] = await Promise.all([
@@ -21,13 +19,11 @@ const [
   read('../profile/pages/Profile/ProfileView.jsx'),
   read('../shop/pages/Shop/Shop.css'),
   read('../inventory/modals/InventoryItemPopup/InventoryItemPopup.css'),
-  read('../matches/components/PracticeDojo/PracticeDojo.jsx'),
-  read('../matches/components/PracticeDojo/PracticeDojo.css'),
   read('../../app/shell/GameHub/panelRegistry.js'),
   read('../../app/shell/GameHub/GameHub.jsx'),
 ]);
 
-test('Match and Dojo use one compact Fellow identity stack', () => {
+test('Match uses one compact Fellow identity stack', () => {
   assert.match(pulses, /ProfileIdentity/);
   assert.match(pulses, /avatarOnly/);
   assert.match(pulses, /avatarSize=\{24\}/);
@@ -44,17 +40,6 @@ test('shop cards and active inventory modals use modest, even corner radii', () 
   assert.doesNotMatch(shopStyles, /border-radius: 1[12]0px 1[12]0px/);
   assert.match(inventoryPopupStyles, /\.inv-popup\.ui-modal \{[\s\S]*?border-radius: 14px;/);
   assert.doesNotMatch(inventoryPopupStyles, /border-radius: 180px/);
-});
-
-test('Dojo room and standings use an on-demand drawer with stacked room cards and nested top sessions', () => {
-  assert.match(dojo, /className="dojo-social-sidebar"/);
-  assert.match(dojo, /className="dojo-people-btn"[\s\S]*?>[\s\S]*?People/);
-  assert.match(dojo, /className="dojo-social-backdrop"/);
-  assert.doesNotMatch(dojo, /DojoSessionSummary/);
-  assert.match(dojoStyles, /\.dojo-social-sidebar \{[\s\S]*?position: absolute;[\s\S]*?box-shadow:/);
-  assert.match(dojo, /topSessions=\{standings\.top\}/);
-  assert.match(dojoStyles, /\.dojo-room__roster \{[\s\S]*?display: flex;[\s\S]*?flex-direction: column;/);
-  assert.match(dojoStyles, /\.dojo-leaderboard \{[\s\S]*?width: 100%;/);
 });
 
 test('Tavern omits projected badges and replay imports its formatter', () => {

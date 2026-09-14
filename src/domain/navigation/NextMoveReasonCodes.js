@@ -1,13 +1,11 @@
 export const NEXT_MOVE_REASON = Object.freeze({
   activePairMatch: 'active-pair-match',
-  activeDojo: 'active-dojo-session',
   activeTask: 'active-task-session',
   fixedCommitment: 'fixed-commitment-imminent',
   preparationRequired: 'transition-preparation-required',
   savedContinuation: 'saved-continuation',
   continuationFeasible: 'continuation-feasible',
   taskExecutable: 'task-executable-now',
-  v12Selected: 'task-recommender-v12-selected',
   higherPriorityAmbiguity: 'higher-priority-ambiguity',
   planningCanUnlock: 'bounded-clarification-can-unlock',
   scheduleConflict: 'schedule-conflict',
@@ -26,14 +24,12 @@ export const NEXT_MOVE_REASON = Object.freeze({
 
 const COPY = Object.freeze({
   [NEXT_MOVE_REASON.activePairMatch]: 'A Pair Match is active.',
-  [NEXT_MOVE_REASON.activeDojo]: 'A Dojo session is active.',
   [NEXT_MOVE_REASON.activeTask]: 'A task session is already in progress.',
   [NEXT_MOVE_REASON.fixedCommitment]: 'A fixed commitment is approaching.',
   [NEXT_MOVE_REASON.preparationRequired]: 'Transition or preparation time is required now.',
   [NEXT_MOVE_REASON.savedContinuation]: 'Your previous boundary preserved a next visible action.',
   [NEXT_MOVE_REASON.continuationFeasible]: 'The saved continuation is still available and feasible.',
   [NEXT_MOVE_REASON.taskExecutable]: 'This task can produce useful progress now.',
-  [NEXT_MOVE_REASON.v12Selected]: 'V12 selected this task from the executable set.',
   [NEXT_MOVE_REASON.higherPriorityAmbiguity]: 'A more urgent task is blocked only by an unclear next step.',
   [NEXT_MOVE_REASON.planningCanUnlock]: 'One bounded clarification can make that task executable.',
   [NEXT_MOVE_REASON.scheduleConflict]: 'The current day contains a real scheduling conflict.',

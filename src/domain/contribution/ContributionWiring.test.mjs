@@ -26,7 +26,7 @@ test('major user actions are wired into Contribution exactly at their durable ac
   ]);
 
   assert.match(taskProcessors, /recordTaskContribution/);
-  assert.match(taskProcessors, /source:\s*'dojo'/);
+  assert.doesNotMatch(taskProcessors, /source:\s*'dojo'/);
   assert.match(events, /source:\s*'habit'/);
   assert.match(events, /source:\s*'quantity'/);
   assert.match(matchJobs, /source:\s*'match'/);

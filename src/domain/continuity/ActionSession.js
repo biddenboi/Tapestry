@@ -27,7 +27,6 @@ export const ACTION_SESSION_BLOCKER = Object.freeze({
 
 const ALLOWED_SOURCES = new Set([
   'arrival',
-  'recommender',
   'manual',
   'notification',
   'shared',

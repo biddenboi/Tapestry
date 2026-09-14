@@ -37,7 +37,7 @@ const local = [
 ];
 
 const derived = [
-  'derivedCaches', 'taskRecommendations', 'achievementStates', 'profileContextSuggestions',
+  'derivedCaches', 'achievementStates', 'profileContextSuggestions',
   'backgroundJobs', 'backgroundJobReceipts', 'contributionRoadStats',
   'contributionRoadMigrations', 'chronicleCollaborationOutbox',
 ];

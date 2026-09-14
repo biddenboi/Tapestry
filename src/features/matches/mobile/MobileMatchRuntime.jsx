@@ -6,7 +6,6 @@ import { getMatchDurationMs, getMatchTeams } from '@domain/matches/MatchContract
 import { buildInMemoryMatchScores, loadMatchRuntimeInput } from '@domain/matches/MatchRuntime.js';
 import { patchMatchStateCommand } from '@domain/matches/MatchSyncCommands.js';
 import { completeMatchPrimary } from '@domain/matches/MatchCompletionService.js';
-import { launchRecommendedTask } from '@domain/tasks/TaskRecommender.js';
 import { timeAsHHMMSS } from '@domain/time/Time.js';
 import { useTaskSession } from '@features/tasks/context/TaskSessionProvider.jsx';
 import { useMobileSurface } from '@app/mobile/MobileSurfaceContext.jsx';
@@ -174,27 +173,6 @@ export default function MobileMatchRuntime({ onBack }) {
     if (activeMatch?.status === MATCH_STATUS.active && remaining === 0) void conclude(false);
   }, [activeMatch?.status, conclude, remaining]);
 
-  const startNext = async () => {
-    if (busy || activeTask?.createdAt) return;
-    setBusy(true);
-    setError('');
-    try {
-      const launched = await launchRecommendedTask(databaseConnection, currentPlayer, {
-        todos: runtime.todos,
-        history: runtime.taskHistory,
-        source: 'match',
-        mode: 'normal',
-        observationSessionUUID: activeMatch.UUID,
-      });
-      if (!launched?.task) throw new Error('No open workspace task is eligible right now.');
-      openSurface('task-actions', { task: launched.task, onChanged: reload });
-    } catch (launchError) {
-      setError(launchError?.message || 'The next Match task could not be selected.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const chooseTask = () => openSurface('match-task-picker', {
     tasks: runtime.todos,
     onChoose: (task) => openSurface('task-actions', { task, onChanged: reload }),
@@ -257,10 +235,9 @@ export default function MobileMatchRuntime({ onBack }) {
       <div className="mobile-match-scoreboard"><strong>{Number(totals[0] || 0).toLocaleString()}</strong><span>VS</span><strong>{Number(totals[1] || 0).toLocaleString()}</strong></div>
       <div className="mobile-match-roster mobile-match-roster--compact">{teams.map((team, index) => <section key={`active-team-${index}`}><h2>{index === currentTeamIndex ? 'Your team' : 'Opponents'}</h2>{team.map((player) => <div key={player.UUID}><ProfileIdentity player={player} compact avatarOnly avatarSize={32} /><span>{player.username || player.name}</span><strong>{Number(scores[player.UUID] || 0).toLocaleString()}</strong></div>)}</section>)}</div>
       {activeTask?.createdAt && <article className="mobile-runtime-active-card"><span>Match work in progress</span><h2>{activeTask.name}</h2><p>The shared Action Session keeps this work pinned to the Match on phone and desktop.</p></article>}
-      <div className="mobile-runtime-actions mobile-runtime-actions--three">
+      <div className="mobile-runtime-actions">
         <button type="button" onClick={() => openSurface('task-composer', {})} disabled={busy || Boolean(activeTask?.createdAt)}>Add task</button>
-        <button type="button" onClick={chooseTask} disabled={busy || Boolean(activeTask?.createdAt) || !runtime.todos.length}>Choose task</button>
-        <button type="button" className="primary" onClick={startNext} disabled={busy || Boolean(activeTask?.createdAt)}>{busy ? 'Finding…' : 'Start next'}</button>
+        <button type="button" className="primary" onClick={chooseTask} disabled={busy || Boolean(activeTask?.createdAt) || !runtime.todos.length}>Choose task</button>
       </div>
       <button type="button" className="mobile-match-forfeit" disabled={busy} onClick={() => { if (window.confirm('Forfeit this Match? The result and Elo change will sync to desktop.')) void conclude(true); }}>Forfeit Match</button>
       {error && <div className="mobile-page-error" role="alert">{error}</div>}

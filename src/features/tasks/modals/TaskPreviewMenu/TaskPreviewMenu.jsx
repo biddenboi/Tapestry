@@ -15,7 +15,6 @@ import {
 } from '@domain/matches/MatchPromiseReward.js';
 import MarkdownEditor from '@shared/markdown-editor/MarkdownEditor.jsx';
 
-const loadTaskRecommender = () => measureDynamicModule('task-recommender', () => import('@domain/tasks/TaskRecommender.js'));
 const loadTaskSessionMenu = () => measureDynamicModule('task-session-menu', () =>
   import('@features/tasks/modals/TaskSessionMenu/TaskSessionMenu.jsx')).then((module) => module.default);
 
@@ -115,12 +114,6 @@ export default NiceModal.create(() => {
     modal.remove();
   };
 
-  const persistRecommendationNavigation = async (reason) => {
-    if (!safeActiveTask.taskRecommendationEventId && !safeActiveTask.recommendation?.eventUUID) return;
-    const { dismissRecommendationForTask } = await loadTaskRecommender();
-    await dismissRecommendationForTask(databaseConnection, safeActiveTask, reason);
-  };
-
   const canStart = () => Boolean(String(safeActiveTask.name ?? '').trim());
 
   const handleSliderChange = (e) => setSessionMinutes(Number(e.target.value));
@@ -152,22 +145,12 @@ export default NiceModal.create(() => {
           })
         : null;
       const committedMs = matchRewardContract?.promisedMs ?? requestedCommittedMs;
-      const recommendationEventId = safeActiveTask.taskRecommendationEventId || safeActiveTask.recommendation?.eventUUID;
-      if (recommendationEventId) {
-        const { recordTaskRecommendationOutcome } = await loadTaskRecommender();
-        await recordTaskRecommendationOutcome(databaseConnection, recommendationEventId, 'accepted', {
-          reason: 'preview-session-started',
-          suggestedMinutes: Number(safeActiveTask.recommendation?.suggestedMinutes || safeActiveTask.estimatedDuration || 0),
-          acceptedMinutes: committedMs / MINUTE,
-          committedMs,
-        });
-      }
       if (safeActiveTask.actionPlanUUID) {
         await consumeActionPlan(databaseConnection, safeActiveTask.actionPlanUUID);
       }
       const TaskSessionMenu = await loadTaskSessionMenu();
-      // Session state changes only after the recommendation acceptance and
-      // target modal are durable/available, so navigation cannot outrun them.
+      // Session state changes only after the target modal is available, so
+      // navigation cannot outrun it.
       setActiveTask((previous) => ({
         ...(previous || {}),
         createdAt: sessionStartedAt,
@@ -222,7 +205,6 @@ export default NiceModal.create(() => {
           plannedStart.getTime() + Math.max(30 * MINUTE, sessionMinutes * MINUTE),
         ).toISOString(),
       });
-      await persistRecommendationNavigation('preview-action-planned');
       setActiveTask({});
       invalidateDomains(DOMAIN_INVALIDATION.taskWrite);
       close();
@@ -238,7 +220,6 @@ export default NiceModal.create(() => {
     setPendingAction('delete');
     setNavigationError('');
     try {
-      await persistRecommendationNavigation('preview-task-deleted');
       if (safeActiveTask.UUID) {
         await deleteTaskCommand(databaseConnection, safeActiveTask);
         invalidateDomains(DOMAIN_INVALIDATION.taskWrite);
@@ -257,7 +238,6 @@ export default NiceModal.create(() => {
     setPendingAction('back');
     setNavigationError('');
     try {
-      await persistRecommendationNavigation('preview-returned-to-todo');
       const parent = currentPlayer?.UUID ? currentPlayer : await databaseConnection.getCurrentPlayer();
       const taskToSave = {
         ...safeActiveTask,
@@ -283,7 +263,6 @@ export default NiceModal.create(() => {
     setPendingAction('close');
     setNavigationError('');
     try {
-      await persistRecommendationNavigation('preview-overlay-closed');
       close();
     } catch (error) {
       console.warn('[TaskPreviewMenu] preview close failed:', error);

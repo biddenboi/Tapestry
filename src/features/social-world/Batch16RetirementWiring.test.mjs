@@ -17,7 +17,6 @@ const [
   rewards,
   materializedLeaderboards,
   demoSeeder,
-  practiceDojo,
   castService,
   evaluation,
   mapMigration,
@@ -36,7 +35,6 @@ const [
   read('../../domain/rewards/RewardSchedule.js'),
   read('../../domain/leaderboards/MaterializedLeaderboards.js'),
   read('../../data/persistence/services/DemoDataSeeder.js'),
-  read('../matches/components/PracticeDojo/PracticeDojo.jsx'),
   read('../../data/persistence/services/SocialWorldCastService.js'),
   read('../../domain/social-world/SocialWorldEvaluation.js'),
   read('../../data/persistence/sqlite/migrations/011_events_contributions_map.js'),
@@ -68,7 +66,7 @@ test('geographic capture, queries, settings, gyms, and hotspot rewards are absen
   assert.doesNotMatch(events + matches + feedComposer, /getCurrentLocation|navigator\.geolocation|match-map/);
   assert.doesNotMatch(rewards + taskProcessors, /hotspot|MapGyms|MapHotspots/i);
   assert.doesNotMatch(demoSeeder, /latitude|longitude|task gym|map overlay|route interpolation/i);
-  assert.doesNotMatch(materializedLeaderboards + demoSeeder + taskProcessors + practiceDojo, /DojoLeaderboardSnapshots|dojoLeaderboardSnapshot:v1|dojo-participants/);
+  assert.doesNotMatch(materializedLeaderboards + demoSeeder + taskProcessors, /DojoLeaderboardSnapshots|dojoLeaderboardSnapshot:v1|dojo-participants/);
 });
 
 test('immutable migration/import compatibility remains without a geographic query surface', () => {

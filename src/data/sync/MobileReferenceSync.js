@@ -13,20 +13,13 @@ import {
 
 // This is the bounded, mobile-safe bootstrap mirror. It deliberately excludes
 // attachments/resources, exports, drafts, derived caches, and analytics. The
-// only app-setting records admitted are portable Task Recommender v12 model
-// artifacts trained on desktop; mobile can serve them but does not receive the
-// rest of the desktop settings database. Normal edits still use command-specific sync; these records let a
+// Normal edits still use command-specific sync; these records let a
 // clean device reconstruct the synchronized working set before replaying the
 // operation log.
-export const MOBILE_ML_MODEL_RECORD_TYPE = 'ml-model';
-export const MOBILE_ML_MODEL_UUID_PREFIX = 'task-recommender-v12-';
 export const MOBILE_REFERENCE_CURSOR_STREAM = 'mobile-reference-v1';
 const MOBILE_REFERENCE_DELTA_PAGE_SIZE = 500;
 const mobileReferenceDeltaState = new WeakMap();
 
-export function isMobileMlModelRecord(record) {
-  return String(record?.UUID || '').startsWith(MOBILE_ML_MODEL_UUID_PREFIX);
-}
 export const MOBILE_REFERENCE_RECORD_TYPES = Object.freeze([
   ['profile', STORES.player],
   ['goal', STORES.project],
@@ -81,15 +74,10 @@ export const MOBILE_BOOTSTRAP_RECORD_TYPES = Object.freeze([
   ['achievement-receipt', STORES.achievementReceipt],
   ['friendship', STORES.friendship],
   ['notification', STORES.notification],
-  [MOBILE_ML_MODEL_RECORD_TYPE, STORES.appSetting],
 ]);
 
 export const STORE_BY_TYPE = new Map(MOBILE_BOOTSTRAP_RECORD_TYPES);
-// Model artifacts are captured by a prefix-filtered SQLite trigger. Do not map
-// the whole appSettings store here or ordinary desktop-only settings would be
-// mistaken for portable model records by generic mutation capture.
 export const RECORD_TYPE_BY_STORE = new Map(MOBILE_BOOTSTRAP_RECORD_TYPES
-  .filter(([recordType]) => recordType !== MOBILE_ML_MODEL_RECORD_TYPE)
   .map(([recordType, store]) => [store, recordType]));
 const SPECIAL_RECORD_TYPES = new Set(['routine-run', 'routine-step-receipt', 'effect-interval', 'effect-cancellation']);
 const MOBILE_PROJECTION_REPAIR_META_KEY = 'mobile-reference-projections-v1';
@@ -355,19 +343,17 @@ export async function reconcileMobileReferenceProjections(databaseConnection, {
   if (should(RECOVERY_PROJECTION_TYPES)) {
     const [
       achievementEvents, achievementStates, achievementReceipts,
-      taskRecommendations, analyticsEvents, derivedCaches, profileSummaries,
+      analyticsEvents, derivedCaches, profileSummaries,
     ] = await Promise.all([
       records(STORES.achievementEvent), records(STORES.achievementState),
-      records(STORES.achievementReceipt), records(STORES.recommenderEvent),
-      records(STORES.analyticsEvent), records(STORES.derivedCache), records(STORES.profileSummary),
+      records(STORES.achievementReceipt), records(STORES.analyticsEvent),
+      records(STORES.derivedCache), records(STORES.profileSummary),
     ]);
     results.recoveryModel = await importers.recoveryModel.import({
       achievementEvents,
       achievementStates,
       achievementReceipts,
-      taskRecommendations,
       analyticsEvents,
-      modelSettings: [],
       derivedCaches,
       profileSummaries,
     });
@@ -445,7 +431,6 @@ export async function collectMobileReferenceRecords(databaseConnection, {
     const entries = await databaseConnection.getAll(store);
     for (const entry of entries) {
       if (!entry?.UUID) continue;
-      if (recordType === MOBILE_ML_MODEL_RECORD_TYPE && !isMobileMlModelRecord(entry)) continue;
       if (recordType === 'goal-contribution'
           && !entry.goalUUID && !entry.projectId) continue;
       records.push(referenceRecord(recordType, entry.UUID, entry));
@@ -624,10 +609,6 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     for (const [recordType, store] of MOBILE_BOOTSTRAP_RECORD_TYPES) {
       const retained = idsByStore.get(store) || new Set();
       for (const local of localByStore.get(store)?.values?.() || []) {
-        // The app-settings store contains desktop-only settings alongside the
-        // portable model bundle. A mobile prune may remove stale model
-        // artifacts, but it must never treat unrelated settings as cloud data.
-        if (recordType === MOBILE_ML_MODEL_RECORD_TYPE && !isMobileMlModelRecord(local)) continue;
         if (retained.has(String(local.UUID))) continue;
         if (recordTime(local) > manifest.publishedTime) continue;
         deletes.push({ store, UUID: local.UUID });
@@ -1009,14 +990,6 @@ export async function restoreMobileBootstrapData(databaseConnection, transport, 
     pruneMissing,
     protectedRecordKeys: reconciliation.localWins,
   });
-  const completedTasks = await databaseConnection.getAll(STORES.task).catch(() => []);
-  const dojoTasks = completedTasks.filter((task) => task.source === 'dojo' && task.dojoSessionUUID);
-  for (const task of dojoTasks) {
-    // Rollup commands are idempotent by completed-task UUID.
-    // eslint-disable-next-line no-await-in-loop
-    await databaseConnection.persistenceRuntime?.dojoStandings?.recordTaskCompletion({ task }).catch(() => undefined);
-  }
-  await databaseConnection.persistenceRuntime?.dojoStandings?.materializeRanks?.().catch(() => undefined);
   // Elo/Points/contribution caches are derived from the restored canonical
   // rows. Rebuild them behind the usable shell; a large history must never
   // strand desktop or mobile on the cloud-opening interstitial.

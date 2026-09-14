@@ -37,7 +37,7 @@ function tabFromLocation() {
 }
 
 function initialTab(gameState) {
-  if ([GAME_STATE.dojo, GAME_STATE.match].includes(gameState)) return 'profile';
+  if (gameState === GAME_STATE.match) return 'profile';
   const routed = tabFromLocation();
   if (routed) return routed;
   const saved = typeof localStorage === 'undefined' ? '' : localStorage.getItem(LAST_TAB_KEY);
@@ -68,10 +68,6 @@ function MobileShellContent() {
 
   const selectTab = useCallback((next, { fromHistory = false, replace = false } = {}) => {
     if (!VALID_TABS.has(next)) return;
-    if (gameState === GAME_STATE.dojo && next !== 'profile') {
-      window.dispatchEvent(new CustomEvent('tapestry:mobile-arena-leave'));
-      setGameState(GAME_STATE.idle);
-    }
     if (surface) closeSurface({ force: true });
     setTab(next);
     localStorage.setItem(LAST_TAB_KEY, next);
@@ -96,7 +92,7 @@ function MobileShellContent() {
   }, []); // Route initialization is intentionally one-shot.
 
   useEffect(() => {
-    if ([GAME_STATE.dojo, GAME_STATE.match].includes(gameState) && tab !== 'profile') {
+    if (gameState === GAME_STATE.match && tab !== 'profile') {
       selectTab('profile');
     }
   }, [gameState, selectTab, tab]);

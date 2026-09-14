@@ -1,7 +1,6 @@
 export const HYDRATION_DOMAIN = Object.freeze({
   tasks: 'tasks',
   dojoSource: 'dojoSource',
-  recommender: 'recommender',
   matches: 'matches',
   leaderboards: 'leaderboards',
   social: 'social',
@@ -51,7 +50,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
     'nextMoveSurfacePreferences',
   ]),
   [HYDRATION_DOMAIN.dojoSource]: Object.freeze(['tasks', 'todos']),
-  [HYDRATION_DOMAIN.recommender]: Object.freeze(['taskRecommendations', 'appSettings']),
   [HYDRATION_DOMAIN.matches]: Object.freeze([
     'matches', 'backgroundJobs', 'backgroundJobReceipts', 'matchScoreEvents',
     'rewardProvenance', 'worldConsequenceReceipts',

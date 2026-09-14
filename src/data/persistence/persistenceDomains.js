@@ -3,7 +3,6 @@ import { STORES } from '@domain/constants.js';
 export const PERSISTENCE_DOMAIN = Object.freeze({
   core: 'core',
   tasks: 'tasks',
-  recommender: 'recommender',
   analytics: 'analytics',
   achievements: 'achievements',
   journals: 'journals',
@@ -38,7 +37,6 @@ export const PERSISTENCE_DOMAIN = Object.freeze({
 export const PERSISTENCE_ARTIFACT_CLASS = Object.freeze({
   authoritative: 'authoritative-data',
   derivedCache: 'derived-cache',
-  modelArtifact: 'model-artifact',
   userSnapshot: 'user-snapshot',
   recoveryGeneration: 'recovery-generation',
 });
@@ -81,7 +79,6 @@ const STORE_DOMAINS = Object.freeze({
   [STORES.todo]: ['tasks'],
   [STORES.project]: ['tasks', 'goals'],
   [STORES.contribution]: ['tasks', 'goals', 'competitiveArenas'],
-  [STORES.recommenderEvent]: ['recommender'],
   [STORES.analyticsEvent]: ['analytics'],
   [STORES.journal]: ['journals'],
   [STORES.journalComment]: ['journals'],
@@ -110,9 +107,6 @@ const STORE_DOMAINS = Object.freeze({
   [STORES.interfaceRevealReceipt]: ['contributionRoad'],
 });
 
-const MODEL_SETTING_PREFIXES = Object.freeze([
-  'task-recommender',
-]);
 const EVENT_SETTING_PREFIXES = Object.freeze([
   'wake-boundary:',
   'day-boundary:',
@@ -137,19 +131,8 @@ export function classifyDerivedCache(record = null) {
   return { domains: [PERSISTENCE_DOMAIN.core] };
 }
 
-export function isRecommenderModelSetting(record = null) {
-  const id = String(record?.UUID || '');
-  return MODEL_SETTING_PREFIXES.some((prefix) => id.startsWith(prefix));
-}
-
 export function classifyAppSetting(record = null) {
   const id = String(record?.UUID || '');
-  if (isRecommenderModelSetting(record)) {
-    return {
-      domains: [PERSISTENCE_DOMAIN.recommender],
-      artifactClass: PERSISTENCE_ARTIFACT_CLASS.modelArtifact,
-    };
-  }
   if (EVENT_SETTING_PREFIXES.some((prefix) => id.startsWith(prefix))) {
     return {
       domains: [PERSISTENCE_DOMAIN.dailyLifecycle],

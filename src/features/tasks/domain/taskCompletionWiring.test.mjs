@@ -7,7 +7,6 @@ const timed = await readFile(new URL('../context/TaskSessionProvider.jsx', impor
 const service = await readFile(new URL('./TaskCompletionService.js', import.meta.url), 'utf8');
 const processors = await readFile(new URL('./TaskCompletionProcessors.js', import.meta.url), 'utf8');
 const app = await readFile(new URL('../../../app/App.jsx', import.meta.url), 'utf8');
-const recommender = await readFile(new URL('../../../domain/tasks/TaskRecommender.js', import.meta.url), 'utf8');
 const todoList = await readFile(new URL('../components/TodoList/TodoList.jsx', import.meta.url), 'utf8');
 const todoListView = await readFile(new URL('../components/TodoList/TodoListView.jsx', import.meta.url), 'utf8');
 
@@ -31,7 +30,7 @@ test('the primary service atomically commits recurrence, reward, and the recover
 });
 
 test('secondary processors use durable receipts keyed by completion-event ID without auto-claiming Road rewards', () => {
-  for (const processor of ['contributions', 'dojo-leaderboard', 'dojo-contribution', 'achievements', 'recommender-outcome']) {
+  for (const processor of ['contributions', 'achievements']) {
     assert.match(processors, new RegExp(`['\"]${processor}['\"]`));
   }
   assert.doesNotMatch(processors, /pass-rewards|claimContributionPassReward|syncContributionPassRewards/);
@@ -40,7 +39,7 @@ test('secondary processors use durable receipts keyed by completion-event ID wit
   assert.match(processors, /recoverPendingTaskCompletionProcessing/);
   assert.match(app, /requested\.includes\('tasks'\).*recoverTaskCompletions/s);
   assert.match(app, /import\('@features\/tasks\/domain\/TaskCompletionProcessors\.js'\)/);
-  assert.match(recommender, /entry\?\.completionEventUUID === completionEventUUID/);
+  assert.doesNotMatch(processors, /dojo-|recommender-/);
 });
 
 test('task checkboxes expose the save in progress and reload from the durable record', () => {

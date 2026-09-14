@@ -114,8 +114,6 @@ test('timed work logs actual duration, evaluates commitment, and leaves the Todo
     UUID: 'todo-1',
     name: 'Keep working',
     estimatedDuration: 30,
-    taskRecommendationEventId: 'recommendation-1',
-    recommendation: { suggestedMinutes: 20 },
   };
   databaseConnection.stores.set('players', new Map([[player.UUID, player]]));
   databaseConnection.stores.set('todos', new Map([[todo.UUID, todo]]));
@@ -139,7 +137,7 @@ test('timed work logs actual duration, evaluates commitment, and leaves the Todo
   assert.equal(result.completedTask.points, 30);
   assert.equal(result.completedTask.pointsBase, 30);
   assert.equal(result.completionEvent.committedMs, 20 * MINUTE_MS);
-  assert.equal(result.completionEvent.recommendation.completed, false);
+  assert.equal('recommendation' in result.completionEvent, false);
   assert.equal(result.completedTask.todoUUID, todo.UUID);
 });
 

@@ -47,6 +47,7 @@ import migration054 from './054_journal_comment_reference_capture.js';
 import migration055 from './055_habit_reference_capture.js';
 import migration056 from './056_mobile_ml_model_reference_capture.js';
 import migration057 from './057_demo_agent_reset.js';
+import migration058 from './058_remove_task_recommender.js';
 
 export const SQLITE_MIGRATIONS = Object.freeze([
   migration001,
@@ -98,6 +99,7 @@ export const SQLITE_MIGRATIONS = Object.freeze([
   migration055,
   migration056,
   migration057,
+  migration058,
 ]);
 
 export default SQLITE_MIGRATIONS;

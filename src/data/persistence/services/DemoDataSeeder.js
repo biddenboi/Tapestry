@@ -1379,8 +1379,7 @@ export class DemoDataSeeder {
     });
 
     const demoNotes = [
-      { UUID: 'demo-note-1', content: '# Visual test checklist\n\n- Lobby and leaderboards\n- Tasks and Dojo\n- Events and Feed\n- Shop, Inventory, Profile, Settings', createdAt: iso(-3 * 24 * 60 * 60 * 1000), updatedAt: iso(-40 * 60 * 1000) },
-      { UUID: 'demo-note-2', content: '# Recommender observations\n\nCapture hydration, scoring, and total inference time after opening Dojo.', createdAt: iso(-2 * 24 * 60 * 60 * 1000), updatedAt: iso(-2 * 60 * 60 * 1000) },
+      { UUID: 'demo-note-1', content: '# Visual test checklist\n\n- Lobby and leaderboards\n- Tasks and Matches\n- Events and Feed\n- Shop, Inventory, Profile, Settings', createdAt: iso(-3 * 24 * 60 * 60 * 1000), updatedAt: iso(-40 * 60 * 1000) },
       { UUID: 'demo-note-3', content: '# Design fragments\n\nKeep the first action obvious and the supporting information quiet.', createdAt: iso(-24 * 60 * 60 * 1000), updatedAt: iso(-6 * 60 * 60 * 1000) },
     ];
     for (const note of demoNotes) {

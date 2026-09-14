@@ -20,6 +20,11 @@ export function installInstanceHandoffResponder({ release, onStandby } = {}) {
   let releasing = null;
   channel.onmessage = ({ data }) => {
     if (data?.type !== 'request-control' || data?.from === INSTANCE_ID || !data?.requestId) return;
+    channel.postMessage({
+      type: 'control-owner-present',
+      requestId: data.requestId,
+      from: INSTANCE_ID,
+    });
     if (!releasing) {
       releasing = Promise.resolve()
         .then(() => onStandby?.())
@@ -45,24 +50,37 @@ export function installInstanceHandoffResponder({ release, onStandby } = {}) {
   return () => channel.close();
 }
 
-export function requestInstanceControl({ timeoutMs = 12_000 } = {}) {
+export function requestInstanceControl({ timeoutMs = 12_000, discoveryMs = 500 } = {}) {
   if (typeof BroadcastChannel === 'undefined') {
     return Promise.resolve({ released: false, reason: 'broadcast-unavailable' });
   }
   const requestId = handoffId();
   const channel = new BroadcastChannel(CHANNEL_NAME);
   return new Promise((resolve, reject) => {
+    let ownerPresent = false;
+    const discoveryTimer = globalThis.setTimeout(() => {
+      if (ownerPresent) return;
+      globalThis.clearTimeout(timer);
+      channel.close();
+      resolve({ released: false, reason: 'no-active-owner' });
+    }, Math.min(discoveryMs, timeoutMs));
     const timer = globalThis.setTimeout(() => {
+      globalThis.clearTimeout(discoveryTimer);
       channel.close();
       resolve({ released: false, reason: 'handoff-timeout' });
     }, timeoutMs);
     channel.onmessage = ({ data }) => {
       if (data?.requestId !== requestId) return;
-      if (data.type === 'control-released') {
+      if (data.type === 'control-owner-present') {
+        ownerPresent = true;
+        globalThis.clearTimeout(discoveryTimer);
+      } else if (data.type === 'control-released') {
+        globalThis.clearTimeout(discoveryTimer);
         globalThis.clearTimeout(timer);
         channel.close();
         resolve({ released: true });
       } else if (data.type === 'control-release-failed') {
+        globalThis.clearTimeout(discoveryTimer);
         globalThis.clearTimeout(timer);
         channel.close();
         reject(new Error(data.message || 'The active Tapestry window could not release storage.'));
