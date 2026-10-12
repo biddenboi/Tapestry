@@ -104,12 +104,9 @@ export async function buildNextMoveState({
   const boundaryState = await databaseConnection.get(STORES.appSetting, `r1.workWindow:${playerUUID}`);
   const workEnd = safeTime(boundaryState?.value?.endsAt);
   const windowEndMs = [nextStart, workEnd].filter(t => t != null && t > nowMs).sort((a,b)=>a-b)[0] || null;
-  let r1Result = await databaseConnection.decideR1({ now: new Date(nowMs), todos,
-    windowEnd: windowEndMs == null ? null : new Date(windowEndMs) });
-  const endedAt = safeTime(boundaryState?.value?.endedAt);
-  if (endedAt != null && new Date(endedAt).toDateString() === new Date(nowMs).toDateString()) {
-    r1Result = { decision: { kind: 'free', ref: null, length: 0, rule: '1-work-ended', mode: 'normal', alerts: [], prompts: [] }, view: { items: [], disc: [] } };
-  }
+  const r1Result = await databaseConnection.decideR1({ now: new Date(nowMs), todos,
+    windowEnd: windowEndMs == null ? null : new Date(windowEndMs),
+    workWindow: boundaryState?.value || null });
   const { executableWork, alternatives, r1 } = mapR1NextMove({ ...r1Result, todos,
     windowMinutes: windowEndMs == null ? Infinity : Math.max(0, (windowEndMs-nowMs)/MINUTE) });
   const dayOrientation = null;

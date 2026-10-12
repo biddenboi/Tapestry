@@ -55,3 +55,27 @@ test('an explicit first override seeds task facts before its log, without duplic
  const supplied={UUID:'add',payload:{ev:'add',id:'a',now:toModelHours(at),q:1,d:toModelHours(todo.dueDate)}};
  assert.deepEqual(await prepareR1Mutation(db,[{type:'put',store:'r1Events',record:supplied}],'first-add'),[]);
 });
+
+test('End work stays closed across midnight until the Lot day rolls over', async () => {
+ const { decideR1 } = await import('./R1EventService.js');
+ const db = database();
+ const workWindow = { endedAt: new Date(2026, 9, 12, 17).toISOString() };
+ for (const now of [new Date(2026, 9, 12, 23, 59), new Date(2026, 9, 13, 0, 30), new Date(2026, 9, 13, 3, 59)]) {
+  const result = await decideR1(db, { now, workWindow });
+  assert.equal(result.decision.rule, '1-work-ended');
+  assert.equal(result.decision.kind, 'free');
+  assert.deepEqual(result.view, { items: [], disc: [] });
+ }
+ const resumed = await decideR1(db, { now: new Date(2026, 9, 13, 4), workWindow });
+ assert.notEqual(resumed.decision.rule, '1-work-ended');
+});
+
+test('a new shift or a future end receipt does not suppress R1 work', async () => {
+ const { decideR1 } = await import('./R1EventService.js');
+ const db = database();
+ const now = new Date(2026, 9, 12, 12);
+ for (const workWindow of [{ endedAt: null }, { endedAt: new Date(2026, 9, 12, 17).toISOString() }]) {
+  const result = await decideR1(db, { now, workWindow });
+  assert.notEqual(result.decision.rule, '1-work-ended');
+ }
+});

@@ -79,9 +79,19 @@ export async function recordR1Change(db, { sourceKey = crypto.randomUUID(), now 
   return appendR1Events(db, syncFacts(factsFromState(m), facts, toModelHours(now), { state: m }), { sourceKey });
 }
 
-export async function decideR1(db, { now = new Date(), todos = null, windowEnd = null, params = null } = {}) {
+export async function decideR1(db, { now = new Date(), todos = null, windowEnd = null, workWindow = null, params = null } = {}) {
   const m = await loadR1State(db); const at = toModelHours(now);
   const rows = await db.getAll(STORES.r1Event);
+  // End work lasts for the Lot model day, including the hours after midnight
+  // before the 04:00 rollover. Starting a new shift clears endedAt.
+  const ended = workWindow?.endedAt ? toModelHours(workWindow.endedAt) : NaN;
+  if (Number.isFinite(ended) && ended <= at && Math.floor(ended / 24) === Math.floor(at / 24)) {
+    return {
+      decision: { kind: 'free', ref: null, length: 0, rule: '1-work-ended', mode: 'normal', alerts: [], prompts: [] },
+      view: { items: [], disc: [] },
+      initialized: rows.length > 0,
+    };
+  }
   // Until the hand-run backfill is imported, the card can still use current facts
   // without preempting the guarded history import with a guessed live seed.
   if (!rows.length) {

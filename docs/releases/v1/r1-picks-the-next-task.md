@@ -8,6 +8,8 @@ Port Lot commit `c363f6e` with kA = 2, Module 2, shifted recurring starts, and p
 
 Todo start dates and habit minimums feed an append-only local event history. Source changes and R1 events commit together. Sequence allocation is serialized, failed writes leave the read cache unchanged, and Module 2 holds survive replay. Day entry and end work record a local availability window. The existing sleep time supplies its planned end until End work closes it sooner.
 
+End work remains effective across midnight until the approved Lot model day rolls over at 04:00 local time. Starting a new shift clears the end receipt. The availability boundary is evaluated at the R1 application service, with regression checks for midnight, the rollover, an explicitly reopened shift, and future receipts.
+
 The Gate also locks in margin mode. Locking an item creates a task in category Tapestry, using the estimate entered from its design note and the release window close as its deadline. Coins, ledger, Gate state, and the task save together. Returning or finishing an item retires or completes that task. Peter approved adding Estimate (minutes) to the note template and lock form.
 
 ## Estimate (minutes)
