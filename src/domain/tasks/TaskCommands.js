@@ -1,3 +1,4 @@
+import { normalizeR1TodoFields } from '@domain/tasks/R1TodoFields.js';
 import { STORES } from '../constants.js';
 import {
   DEFAULT_WORKSPACE_ID,
@@ -37,7 +38,7 @@ export async function saveTaskCommand(databaseConnection, task, {
     Number(task.syncVersion) || 0,
   ) + 1;
   const next = withWorkspacePlanningScope({
-    ...task,
+    ...normalizeR1TodoFields(task),
     syncVersion: nextVersion,
     updatedAt: occurredAt,
   }, {

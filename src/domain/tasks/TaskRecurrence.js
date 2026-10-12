@@ -118,6 +118,7 @@ export function advanceRecurringTodo(task = {}, completedAt = new Date()) {
   return {
     ...task,
     dueDate: next.toISOString(),
+    startDate: task.startDate ? new Date(new Date(task.startDate).getTime() + next.getTime() - validDate(task.dueDate, completed).getTime()).toISOString() : null,
     lastCompletedAt: completed.toISOString(),
     recurrence: ruleWithAnchor(task.recurrence || task.repeatRule, task.dueDate || completed),
   };

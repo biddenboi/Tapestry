@@ -48,7 +48,7 @@ function legacyDocument(table, record) {
 }
 
 test('059 upgrades a populated workspace, removes feature data, and keeps work and relationships usable', async (t) => {
-  const { client, shadow, documents } = await setup(t, SQLITE_MIGRATIONS.slice(0, -1));
+  const { client, shadow, documents } = await setup(t, SQLITE_MIGRATIONS.filter((migration) => migration.id < '059'));
   const legacyWork = {
     UUID: 'work', parent: 'p1', name: 'Completed work', points: 42, sessionDuration: 60000,
     source: 'dojo', dojoSessionUUID: 'training', nested: { dojoMomentum: { multiplierValue: 2 } },

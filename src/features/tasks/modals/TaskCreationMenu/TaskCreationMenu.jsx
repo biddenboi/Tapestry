@@ -239,6 +239,9 @@ export default NiceModal.create(() => {
         name: parsed.name,
         estimatedDuration: parsed.duration.minutes,
         dueDate: parsed.dueDate.iso,
+        startDate: activeTask.startDate || null,
+        isHabit: activeTask.isHabit === true,
+        habitMinMinutes: activeTask.habitMinMinutes || null,
         aversion: coerceAversion(activeTask.aversion),
         projectId: activeTask.projectId || null,
         recurrence: ruleWithAnchor(
@@ -338,6 +341,15 @@ export default NiceModal.create(() => {
               </div>
             )}
           </label>
+
+          <div className="tcm-meta-row">
+            <label>Start date<input type="date" value={activeTask.startDate ? String(activeTask.startDate).slice(0, 10) : ''}
+              onChange={(e) => setActiveTask((prev) => ({ ...prev, startDate: e.target.value ? new Date(`${e.target.value}T00:00:00`).toISOString() : null }))} /></label>
+            <label><input type="checkbox" checked={activeTask.isHabit === true}
+              onChange={(e) => setActiveTask((prev) => ({ ...prev, isHabit: e.target.checked }))} /> Habit</label>
+            {activeTask.isHabit && <label>Minimum minutes<input type="number" min="1" step="1" value={activeTask.habitMinMinutes ?? ''}
+              onChange={(e) => setActiveTask((prev) => ({ ...prev, habitMinMinutes: e.target.value === '' ? null : Number(e.target.value) }))} /></label>}
+          </div>
 
           {/* ── Goal + Resistance on same row ─────────────── */}
           <div className="tcm-meta-row">
