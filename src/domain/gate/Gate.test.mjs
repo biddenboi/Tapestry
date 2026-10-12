@@ -98,3 +98,5 @@ test('prompts name rules, branch and approved note paths', () => {
   assert.equal(slug(' !!! '), 'item');
   assert.ok(slug('A'.repeat(90)).length <= 48);
 });
+
+test('R1 margin keeps the Gate locked even with no open due-today tasks',()=>{ assert.equal(todayLock([],new Date(),{mode:'margin'}).locked,true); assert.equal(todayLock([],new Date(),{mode:'normal'}).locked,false); });

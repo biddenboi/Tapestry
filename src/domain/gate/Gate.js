@@ -64,24 +64,24 @@ export function gateConditions(state, { completedTasks = [], now }) {
   const inbox = { ready, met: ready > 0 };
   return { use, days, inbox, allMet: use.met && days.met && inbox.met };
 }
-export function todayLock(todos, now) {
+export function todayLock(todos, now, r1 = null) {
   const end = new Date(now); end.setHours(23, 59, 59, 999);
   const open = todos.filter((todo) => !todo.completedAt && !todo.deletedAt && !todo.archivedAt && todo.dueDate && new Date(todo.dueDate) <= end);
-  return { locked: open.length > 0, count: open.length, names: open.map((todo) => todo.name || todo.title || 'Untitled task') };
+  return { locked: open.length > 0 || r1?.mode === 'margin', count: open.length, names: open.map((todo) => todo.name || todo.title || 'Untitled task'), ...(r1 ? { margin: r1.mode === 'margin' } : {}) };
 }
 export function openGateWindow(state, { conditions, now }) {
   if (state.window) throw new GateError('window-open');
   if (!conditions.allMet) throw new GateError('not-earned');
   return { ...state, window: { release: state.releases.length, openedAt: iso(now), endsAt: iso(new Date(now).getTime() + GATE_RULES.windowDays * DAY), items: [] } };
 }
-export function lockGateItem(state, id, { ledgerUUID }) {
+export function lockGateItem(state, id, { ledgerUUID, estimateMinutes = null }) {
   if (!state.window) throw new GateError('window-closed');
   if (state.window.items.length >= GATE_RULES.maxItemsPerRelease) throw new GateError('window-full');
   const item = state.inbox.find((entry) => entry.id === id);
   if (!item) throw new GateError('item-missing');
   if (!isGateItemReady(item)) throw new GateError('item-not-ready');
   const price = gateItemPrice(item.kind);
-  return { price, state: { ...state, inbox: state.inbox.filter((entry) => entry.id !== id), window: { ...state.window, items: [...state.window.items, { ...item, price, ledgerUUID, step: 'design', checks: [] }] } } };
+  return { price, state: { ...state, inbox: state.inbox.filter((entry) => entry.id !== id), window: { ...state.window, items: [...state.window.items, { ...item, price, ledgerUUID, ...(estimateMinutes == null ? {} : { estimateMinutes }), step: 'design', checks: [] }] } } };
 }
 function updateWindowItem(state, id, transform) {
   if (!state.window) throw new GateError('window-closed');

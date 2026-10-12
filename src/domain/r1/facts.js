@@ -5,7 +5,7 @@ export function factsFromTodo(todo, { toHours, cycleHours = null } = {}) {
   const d = toHours(todo.dueDate); const start = todo.startDate ? toHours(todo.startDate) : null;
   if (!Number.isFinite(q) || q < 0 || !Number.isFinite(d) || (start != null && !Number.isFinite(start))) return null;
   return { id: String(todo.UUID), q, l: Number(todo.r1LoggedMinutes || 0) / 60, d, start,
-    cycle: cycleHours, habit: todo.isHabit === true, category: todo.projectId ? String(todo.projectId) : null,
+    cycle: cycleHours, habit: todo.isHabit === true, category: todo.r1Category ? String(todo.r1Category) : todo.projectId ? String(todo.projectId) : null,
     block: Number(todo.minimumBlockMinutes || 0) / 60, after: todo.afterTaskId ? String(todo.afterTaskId) : null,
     completed: Boolean(todo.completedAt) };
 }

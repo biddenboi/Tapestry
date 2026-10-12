@@ -2,6 +2,8 @@
 
 ## Change
 
+## Estimate (minutes)
+
 ## Deleted (files, folders, stores)
 
 ## Hooks touched
