@@ -12,8 +12,6 @@ import {
   STORES,
   SPECIAL_EVENT_IDS,
 } from '@domain/constants.js';
-import { fireFirstMatchIfDue, checkEntertainmentAndLog } from '@domain/events/Events.js';
-import { completeWorkLifecycle } from '@domain/events/DailyLifecycleService.js';
 import {
   buildGhostRoster,
   getMatchOutcomeForPlayer,
@@ -51,7 +49,7 @@ import { useResourceUrl } from '@shared/resource-image/ResourceImage.jsx';
 import { loadTaskCreationMenu } from '@features/tasks/loaders.js';
 import { loadRankProgressModal } from '@features/achievements/loaders.js';
 import { loadInsufficientPlayersModal, loadMatchDetailsModal } from '@features/matches/loaders.js';
-import { loadEndDayConfirm } from '@features/events/loaders.js';
+import { loadEndDayConfirm } from '@app/day-boundary/loaders.js';
 import { Icon } from '@shared/icons/Icon.jsx';
 import '@features/lobby/components/Lobby/Lobby.css';
 
@@ -471,14 +469,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
       });
       if (matchmakingCancelRef.current) return;
       await databaseConnection.add(STORES.match, match);
-      // Fire the First Match-of-the-Day special event if applicable. Idempotent
-      // for the IGT day — only fires once. Failures here must not block the
-      // match from starting.
-      try {
-        await fireFirstMatchIfDue(databaseConnection, currentPlayer, Date.now());
-      } catch (err) {
-        console.warn('[Lobby] first-match timing log failed:', err);
-      }
       setActiveMatch(match); setGameState(GAME_STATE.match); invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
     } catch (error) {
       console.error('[Lobby] matchmaking failed:', error);
@@ -654,11 +644,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
             {isWorkDay
               ? <button className="lpc-btn" onClick={async () => {
                   await ensureDomainLoaded(['dailyLifecycle', 'profiles']);
-                  await completeWorkLifecycle(databaseConnection, currentPlayer);
                   await endR1Shift(databaseConnection, currentPlayer);
-                  // Record the end-work lifecycle event immediately.
-                  try { await checkEntertainmentAndLog(databaseConnection, currentPlayer); }
-                  catch (err) { console.warn('[Lobby] entertainment check failed:', err); }
                   invalidateDomains(DOMAIN_INVALIDATION.dailyLifecycleWrite);
                 }}>End work day</button>
               : (

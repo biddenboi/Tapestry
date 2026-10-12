@@ -4,14 +4,13 @@ import test from 'node:test';
 
 const read = (name) => readFile(new URL(name, import.meta.url), 'utf8');
 
-test('mobile shell exposes exactly five product destinations with persistent tab state', async () => {
+test('mobile shell exposes exactly four product destinations with persistent tab state', async () => {
   const [shell, navigation] = await Promise.all([
     read('./MobileAppShell.jsx'),
     read('./MobileBottomNavigation.jsx'),
   ]);
   const destinations = [
     ['tasks', 'Today'],
-    ['habits', 'Events'],
     ['chronicle', 'Chronicle'],
     ['shop', 'Shop'],
     ['profile', 'More'],
@@ -19,9 +18,9 @@ test('mobile shell exposes exactly five product destinations with persistent tab
   for (const [id, label] of destinations) {
     assert.match(navigation, new RegExp(`id: '${id}', label: '${label}'`));
   }
-  assert.equal((navigation.match(/id: '/g) || []).length, 5);
+  assert.equal((navigation.match(/id: '/g) || []).length, 4);
   assert.match(shell, /MobileChroniclePage = lazy/);
-  assert.match(shell, /MobileHabitsPage = lazy/);
+  assert.doesNotMatch(shell, /MobileHabitsPage/);
   assert.match(shell, /MobileMorePage = lazy/);
   assert.match(shell, /MobileShopPage = lazy/);
   assert.match(shell, /panels\.map/);
@@ -88,10 +87,8 @@ test('mobile correctness uses workspace planning, boundary-only profile selectio
   assert.match(identityModel, /activeCosmetics/);
 });
 
-test('mobile Events, Goals, and Chronicle use dedicated mobile information architecture', async () => {
-  const [habits, habitPage, goals, goalPresentation, goalUpdate, chronicle, chronicleSheets, chronicleDraft] = await Promise.all([
-    read('../../features/events/mobile/MobileHabitsPage.jsx'),
-    read('../../features/events/pages/Events/HabitPage.jsx'),
+test('mobile Goals and Chronicle use dedicated mobile information architecture', async () => {
+  const [goals, goalPresentation, goalUpdate, chronicle, chronicleSheets, chronicleDraft] = await Promise.all([
     read('../../features/goals/mobile/MobileGoalsPage.jsx'),
     read('../../features/goals/mobile/MobileGoalPresentation.js'),
     read('../../features/goals/mobile/MobileGoalUpdateSheet.jsx'),
@@ -99,12 +96,6 @@ test('mobile Events, Goals, and Chronicle use dedicated mobile information archi
     read('../../features/chronicle/mobile/MobileChronicleSheets.jsx'),
     read('../../features/chronicle/mobile/MobileChronicleDraft.js'),
   ]);
-  assert.match(habits, /buildHabitPageModel/);
-  assert.match(habits, /<HabitPage/);
-  assert.match(habits, /<HabitEditor/);
-  assert.match(habits, /loadTrackerOverview/);
-  assert.match(habits, /onBackToHabits/);
-  assert.match(habitPage, /onOpenGoals/);
   assert.match(goals, /← Events/);
   assert.match(goals, /selectMobileGoalCards/);
   assert.match(goalPresentation, /overview\?\.activeGoals/);

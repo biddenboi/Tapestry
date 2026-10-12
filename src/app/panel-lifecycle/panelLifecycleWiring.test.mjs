@@ -10,7 +10,6 @@ const [
   feed,
   shop,
   lobby,
-  events,
   profile,
   notes,
   inbox,
@@ -21,14 +20,13 @@ const [
   read('../../features/feed/pages/FeedPage/FeedPage.jsx'),
   read('../../features/shop/pages/Shop/Shop.jsx'),
   read('../../features/lobby/components/Lobby/Lobby.jsx'),
-  read('../../features/events/pages/Events/Events.jsx'),
   read('../../features/profile/pages/Profile/Profile.jsx'),
   read('../../features/quick-notes/modals/QuickNotes/QuickNotes.jsx'),
   read('../../features/inbox/components/Inbox/Inbox.jsx'),
 ]);
 
 test('the common lifecycle covers the first eight requested interfaces', () => {
-  for (const panelId of ['map', 'feed', 'shop', 'lobby', 'events', 'profiles', 'inbox']) {
+  for (const panelId of ['map', 'feed', 'shop', 'lobby', 'profiles', 'inbox']) {
     assert.match(gameHub, new RegExp(`['"]${panelId}['"]`));
   }
   assert.match(gameHub, /usePanelLifecycleRegistry/);
@@ -37,7 +35,7 @@ test('the common lifecycle covers the first eight requested interfaces', () => {
 });
 
 test('panel work is gated or cancelled when lifecycle activity stops', () => {
-  for (const source of [feed, shop, lobby, events, profile, inbox]) {
+  for (const source of [feed, shop, lobby, profile, inbox]) {
     assert.match(source, /usePanelLifecycle/);
   }
   assert.match(world, /Coming soon/);

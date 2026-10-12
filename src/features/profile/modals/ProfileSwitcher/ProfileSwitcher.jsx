@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { v4 as uuid } from 'uuid';
-import { profileRitualDefaults } from '@domain/events/SharedRitualSettings.js';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { useAppContext } from '@app/hooks/useAppContext.js';
 import { STORES } from '@domain/constants.js';
@@ -12,7 +11,7 @@ import {
   prepareProfileHandoff,
   requireDailyLifecycleWake,
   setDurableEndOfDayState,
-} from '@domain/events/DailyLifecycleService.js';
+} from '@app/day-boundary/DailyLifecycleService.js';
 import { publishActiveProfileReference } from '@data/sync/MobileReferenceSync.js';
 import '@features/profile/modals/ProfileSwitcher/ProfileSwitcher.css';
 
@@ -216,7 +215,6 @@ export default NiceModal.create(({
     setSwitching(true);
     try {
       const sourceUUID = currentPlayer?.UUID;
-      const ritualDefaults = profileRitualDefaults(currentPlayer);
       await markChosen();
       const newPlayer = {
         UUID: uuid(),
@@ -224,7 +222,8 @@ export default NiceModal.create(({
         tokens: 0,
         elo: 0,
         minutesClearedToday: 0,
-        ...ritualDefaults,
+        wakeTime: currentPlayer?.wakeTime || '07:00',
+        sleepTime: currentPlayer?.sleepTime || '23:00',
         activeCosmetics: {},
         profilePicture: null,
       };

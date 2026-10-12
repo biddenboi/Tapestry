@@ -6,7 +6,6 @@ let source = await readFile(new URL('./MatchmakingCommand.js', import.meta.url),
 source = source
   .replace("import { v4 as uuid } from 'uuid';", "const uuid = () => 'generated-operation';")
   .replace("import { MATCH_STATUS, STORES } from '@domain/constants.js';", "const MATCH_STATUS = { pending: 'pending' }; const STORES = { match: 'matches' };")
-  .replace("import { fireFirstMatchIfDue } from '@domain/events/Events.js';", 'const fireFirstMatchIfDue = async () => undefined;')
   .replace("import { buildGhostRoster } from '@domain/matches/Match.js';", "const buildGhostRoster = async () => ({ insufficient: false, teammates: [{ UUID: 'ally' }], opponents: [{ UUID: 'opponent' }] });")
   .replace(`import {
   createPairMatchContextSnapshot,

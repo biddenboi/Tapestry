@@ -1,6 +1,5 @@
 import { v4 as uuid } from 'uuid';
 import { MATCH_STATUS, STORES } from '@domain/constants.js';
-import { fireFirstMatchIfDue } from '@domain/events/Events.js';
 import { buildGhostRoster } from '@domain/matches/Match.js';
 import {
   createPairMatchContextSnapshot,
@@ -94,7 +93,6 @@ export async function createPairMatchCommand(databaseConnection, currentPlayer, 
     origin: 'mobile',
     label: 'pair-match-create',
   });
-  await fireFirstMatchIfDue(databaseConnection, currentPlayer, commandTime.getTime()).catch(() => undefined);
   return Object.freeze({ match: saved?.match || match, duplicate: false, insufficient: false, operationId });
 }
 

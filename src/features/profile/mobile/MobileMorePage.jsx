@@ -6,7 +6,7 @@ import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { GAME_STATE } from '@domain/constants.js';
 import { createPairMatchCommand } from '@domain/matches/MatchmakingCommand.js';
 import { formatInGameTime, getCurrentIGT } from '@domain/time/Time.js';
-import { loadEndDayConfirm } from '@features/events/loaders.js';
+import { loadEndDayConfirm } from '@app/day-boundary/loaders.js';
 import MobileSettingsPage from '@features/settings/mobile/MobileSettingsPage.jsx';
 import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
 import EloChart from '@shared/elo-chart/EloChart.jsx';

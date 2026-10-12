@@ -5,7 +5,6 @@ export const PANEL_DOMAIN_REQUIREMENTS = Object.freeze({
   feed: Object.freeze([D.feed, D.chronicle, D.profiles]),
   shop: Object.freeze([D.shop]),
   lobby: Object.freeze([D.leaderboards, D.social]),
-  events: Object.freeze([D.eventTrackers]),
   profiles: Object.freeze([D.profileSummaries, D.leaderboards]),
   notes: Object.freeze([D.notes]),
   gate: Object.freeze([D.tasks, D.profiles, D.dailyLifecycle]),

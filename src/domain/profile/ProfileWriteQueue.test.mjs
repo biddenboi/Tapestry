@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { queueProfileWrite } from './ProfileWriteQueue.js';
-import { saveSharedRitualSettings } from '../events/SharedRitualSettings.js';
+import { saveProfileSettings } from './ProfileSettings.js';
 
 test('overlapping policy and general settings saves preserve both changes and profile data', async () => {
   let stored = { UUID: 'profile', username: 'Original', points: 42, wakeChecklist: [], sleepChecklist: [] };
@@ -16,7 +16,7 @@ test('overlapping policy and general settings saves preserve both changes and pr
     await gate;
     stored = { ...latest, inboxNotificationsEnabled: false };
   });
-  const general = saveSharedRitualSettings(database, stored, { activePatch: { username: 'Updated' } });
+  const general = saveProfileSettings(database, stored, { activePatch: { username: 'Updated' } });
   release();
   await Promise.all([policy, general]);
   assert.equal(stored.username, 'Updated');
@@ -33,14 +33,14 @@ test('a failed profile save does not block the next edit or another database', a
   assert.equal(await queueProfileWrite({}, async () => 'independent'), 'independent');
 });
 
-test('saving one general field keeps ritual changes received since the form opened', async () => {
+test('saving one general field keeps changes received since the form opened', async () => {
   const stale = { UUID: 'profile', username: 'Old', wakeChecklist: ['Old checklist'], sleepChecklist: [] };
   let stored = { ...stale, wakeChecklist: ['Newer checklist'], sleepTime: '22:00' };
   const database = {
     async getAll() { return [stored]; },
     async commitAtomicMutation({ puts }) { stored = puts[0].record; },
   };
-  await saveSharedRitualSettings(database, stale, { activePatch: { username: 'New' } });
+  await saveProfileSettings(database, stale, { activePatch: { username: 'New' } });
   assert.deepEqual(stored.wakeChecklist, ['Newer checklist']);
   assert.equal(stored.sleepTime, '22:00');
   assert.equal(stored.username, 'New');

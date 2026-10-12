@@ -12,8 +12,7 @@ import {
 import { getPlayerRankPresentation } from '@domain/rank/Rank.js';
 import { RankIcon } from '@shared/icons/RankIcon.jsx';
 import { Icon } from '@shared/icons/Icon.jsx';
-import { normalizeRitualChecklist } from '@domain/events/Events.js';
-import { saveSharedRitualSettings } from '@domain/events/SharedRitualSettings.js';
+import { saveProfileSettings } from '@domain/profile/ProfileSettings.js';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { reconcileOpeningTrail } from '@domain/contribution-road/ContributionRoad.js';
 import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
@@ -98,8 +97,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
     username: '',
     wakeTime: '07:00',
     sleepTime: '23:00',
-    wakeChecklist: '',
-    sleepChecklist: '',
   });
   const [folderBusy, setFolderBusy] = useState(false);
   const [folderError, setFolderError] = useState('');
@@ -150,8 +147,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
           username:    p.username    || '',
           wakeTime:    p.wakeTime    || '07:00',
           sleepTime:   p.sleepTime   || '23:00',
-          wakeChecklist: normalizeRitualChecklist(p.wakeChecklist).join('\n'),
-          sleepChecklist: normalizeRitualChecklist(p.sleepChecklist).join('\n'),
         });
       }
       const inv = await databaseConnection.getPlayerStore(STORES.inventory, p.UUID);
@@ -292,15 +287,9 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
         username:    form.username    || player.username,
         wakeTime:    form.wakeTime,
         sleepTime:   form.sleepTime,
-        wakeChecklist: normalizeRitualChecklist(form.wakeChecklist),
-        sleepChecklist: normalizeRitualChecklist(form.sleepChecklist),
       };
       const updated = Object.fromEntries(Object.entries(values).filter(([key]) => dirtyFormFields.current.has(key)));
-      setPlayer(await saveSharedRitualSettings(databaseConnection, player, {
-        activePatch: updated,
-        wakeChecklist: updated.wakeChecklist,
-        sleepChecklist: updated.sleepChecklist,
-      }));
+      setPlayer(await saveProfileSettings(databaseConnection, player, { activePatch: updated }));
       formDirtyRef.current = false;
       dirtyFormFields.current.clear();
       refreshApp();
@@ -423,34 +412,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
           </SettingsRow>
           <SettingsRow label="Bed Time" hint="Optional timing context; never a penalty gate">
             <input form="general-settings-form" disabled={saving} type="time" value={form.sleepTime} onChange={(e) => updateForm({ sleepTime: e.target.value })} className="settings-input settings-input--time" />
-          </SettingsRow>
-          <SettingsRow
-            label="Wake Checklist"
-            hint="Optional context. Check-ins do not grant rewards or multipliers."
-            className="settings-row--checklist"
-          >
-            <textarea
-              form="general-settings-form" disabled={saving}
-              value={form.wakeChecklist}
-              onChange={(e) => updateForm({ wakeChecklist: e.target.value })}
-              placeholder={'Drink water\nOpen the curtains\nReview today\'s plan'}
-              className="settings-input settings-input--checklist"
-              rows={5}
-            />
-          </SettingsRow>
-          <SettingsRow
-            label="Sleep Checklist"
-            hint="Optional handoff context. Missing it never removes coins."
-            className="settings-row--checklist"
-          >
-            <textarea
-              form="general-settings-form" disabled={saving}
-              value={form.sleepChecklist}
-              onChange={(e) => updateForm({ sleepChecklist: e.target.value })}
-              placeholder={'Clear the desk\nPrepare tomorrow\nPut devices away'}
-              className="settings-input settings-input--checklist"
-              rows={5}
-            />
           </SettingsRow>
           <div className="settings-save-row">
             <button type="submit" form="general-settings-form" disabled={saving} className="primary settings-save-btn">{saving ? 'SAVING…' : saved ? '✓ SAVED' : 'SAVE CHANGES'}</button>

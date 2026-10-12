@@ -20,13 +20,6 @@ export const FEATURE_ARCHITECTURE = Object.freeze({
     contracts: 'domain/matches/MatchContracts.js',
     worker: 'domain/matches/MatchPostMatchWorker.js',
   }),
-  events: Object.freeze({
-    view: 'features/events/pages/Events/Events.jsx',
-    controller: 'domain/events/DailyLifecycleService.js',
-    repository: 'domain/events/EventDomainRepository.js',
-    contracts: 'domain/events/LifecycleBoundaries.js',
-    worker: null,
-  }),
   profiles: Object.freeze({
     view: 'features/profile/pages/Profile/Profile.jsx',
     controller: 'features/profile/pages/Profile/ProfileDataController.js',

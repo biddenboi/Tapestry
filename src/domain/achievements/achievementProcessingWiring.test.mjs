@@ -12,7 +12,7 @@ const ordinaryPaths = [
   'features/feed/modals/JournalDetailModal/JournalDetailModal.jsx',
   'features/profile/pages/Profile/Profile.jsx',
   'features/shop/pages/Shop/Shop.jsx',
-  'domain/events/Events.js',
+  'app/day-boundary/DailyLifecycleService.js',
 ];
 
 const ordinarySources = await Promise.all(ordinaryPaths.map(read));

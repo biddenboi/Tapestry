@@ -18,7 +18,6 @@ import { RankIcon } from '@shared/icons/RankIcon.jsx';
 import TodoDetailModal from '@features/tasks/modals/TodoDetailModal/TodoDetailModal.jsx';
 import JournalDetailModal from '@features/feed/modals/JournalDetailModal/JournalDetailModal.jsx';
 import { loadMatchDetailsModal } from '@features/matches/loaders.js';
-import EventDetailModal from '@features/events/modals/EventDetailModal/EventDetailModal.jsx';
 import AchievementBadge from '@features/achievements/components/AchievementBadge/AchievementBadge.jsx';
 import { getAchievementByKey, computeRarity, getRarityLabel } from '@domain/achievements/Achievements.js';
 import {
@@ -780,8 +779,7 @@ export default function Profile({ uuid: targetUUID }) {
     if (item.type === 'journal') { NiceModal.show(JournalDetailModal, { item }); return; }
     if (item.type === 'task')    { NiceModal.show(TodoDetailModal, { item }); return; }
     if (item.type === 'match')   { openMatchDetails(item); return; }
-    /* item_use and wake/end_work/sleep events all use the generic event modal */
-    NiceModal.show(EventDetailModal, { item });
+    // Historical lifecycle rows remain readable in the daybook.
   };
 
   const openMatchDetails = (match) => {

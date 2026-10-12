@@ -1,4 +1,4 @@
-import { getIgtDayNumber } from '@domain/events/Events.js';
+import { getIgtDayNumber } from '@shared/time/igtDay.js';
 
 const STRIKE_THRESHOLD_PMF = Object.freeze([
   [1, 0.04], [2, 0.07], [3, 0.10], [4, 0.14],

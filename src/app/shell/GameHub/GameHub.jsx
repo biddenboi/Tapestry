@@ -22,10 +22,9 @@ import { EVENT, GAME_STATE } from '@domain/constants.js';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { getPlayerRankPresentation } from '@domain/rank/Rank.js';
 import { useScheduledDeadline } from '@shared/hooks/useScheduledDeadline.js';
-import { loadEndDayConfirm } from '@features/events/loaders.js';
+import { loadEndDayConfirm } from '@app/day-boundary/loaders.js';
 import {
   ContributionPass,
-  Events,
   Feed,
   Inbox,
   Gate,
@@ -59,9 +58,8 @@ import {
 import {
   getNextReminderDeadline,
 } from '@app/shell/GameHub/panelScheduling.js';
-import { getNextDailyLifecycleBoundary } from '@domain/events/LifecycleBoundaries.js';
-import { getDurableEndOfDayState } from '@domain/events/DailyLifecycleService.js';
-import { EVENT_TERMINOLOGY } from '@features/events/terminology.js';
+import { getNextDailyLifecycleBoundary } from '@app/day-boundary/LifecycleBoundaries.js';
+import { getDurableEndOfDayState } from '@app/day-boundary/DailyLifecycleService.js';
 import EdgeNextMoveHost from '@features/navigation/components/EdgeNextMoveHost/EdgeNextMoveHost.jsx';
 import QuickCaptureLauncher from '@features/chronicle/components/QuickCapture/QuickCaptureLauncher.jsx';
 import useOpeningTrail from '@features/opening-trail/useOpeningTrail.js';
@@ -80,15 +78,13 @@ const MANAGED_PANEL_IDS = Object.freeze([
   'feed',
   'shop',
   'lobby',
-  'events',
   'profiles',
   'inbox',
 ]);
-const MANAGED_OVERLAY_PANEL_IDS = Object.freeze(['feed', 'shop', 'events', 'profiles']);
+const MANAGED_OVERLAY_PANEL_IDS = Object.freeze(['feed', 'shop', 'profiles']);
 const ACTIVE_PANEL_LIFECYCLE_ID = Object.freeze({
   feed: 'feed',
   shop: 'shop',
-  events: 'events',
   profile: 'profiles',
 });
 
@@ -104,7 +100,6 @@ function getPanelMode(panel) {
 const SIDEBAR_NAV = [
   { id: 'hub',       label: 'Lobby',     title: 'Lobby',             color: 'var(--color-match)' },
   { id: 'tasks',     label: 'Tasks',     title: 'Tasks',             color: 'var(--color-task)' },
-  { id: 'events',    label: EVENT_TERMINOLOGY.navigation.label, title: EVENT_TERMINOLOGY.navigation.title, color: 'var(--color-event)' },
   { id: 'feed',      label: 'Feed',      title: 'Feed',              color: 'var(--color-feed)' },
   { id: 'inventory', label: 'Inventory', title: 'Inventory',         color: 'var(--color-inventory)' },
 ];
@@ -495,7 +490,6 @@ export default function GameHub() {
   );
 
   const renderManagedContent = (panelId) => {
-    if (panelId === 'events') return <Events />;
     if (panelId === 'feed') return <Feed />;
     if (panelId === 'shop') return <Shop />;
     if (panelId === 'profiles') {
