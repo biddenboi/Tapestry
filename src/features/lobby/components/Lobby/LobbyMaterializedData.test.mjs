@@ -32,7 +32,9 @@ test('Lobby opening reads materialized data without a social scene', () => {
   assert.doesNotMatch(lobby, /leaderboardHour|Math\.floor\(viewerIGT \/ HOUR\)/);
 });
 
-test('Elo graph includes self and compares rated players at current IGT', () => {
+test('Elo graph includes self and compares only rated friends at current IGT', () => {
+  assert.match(lobby, /setFellowRatings\(data\.friendRatings \|\| \[\]\)/);
+  assert.doesNotMatch(lobby, /setFellowRatings\(data\.fellowRatings/);
   assert.match(lobby, /visibleFellowRatings/);
   assert.match(lobby, /visibleFellowRatings = fellowRatings/);
   assert.match(lobby, /data=\{eloHistory\}/);

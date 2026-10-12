@@ -297,7 +297,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
       setMatchHistory(data.matchHistory);
       setTotalPoints(data.totalPoints);
       setEloHistory(data.eloHistory);
-      setFellowRatings(data.fellowRatings || []);
+      setFellowRatings(data.friendRatings || []);
       setViewerRating(data.viewerRating);
       setViewerHasVisibleRating(data.viewerHasVisibleRating);
       setAllPlayers(data.participants);
@@ -763,7 +763,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
                   {viewerHasVisibleRating && (
                     <span className="data-card-note">
                       You{visibleFellowRatings.length > 0
-                        ? ` + ${visibleFellowRatings.length} Fellow ${visibleFellowRatings.length === 1 ? 'journey' : 'journeys'}`
+                        ? ` + ${visibleFellowRatings.length} friend ${visibleFellowRatings.length === 1 ? 'journey' : 'journeys'}`
                         : ''} · through current IGT
                     </span>
                   )}
