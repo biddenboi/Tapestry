@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecords } from '../RetiredFeatureData.js';
 import {
   createImportLedgerStatements,
   deterministicRows,
@@ -88,6 +89,10 @@ export class PlanningShadowImporter {
   }
 
   async import({ projects = [], todos = [], tasks = [], reminders = [], runId = null } = {}) {
+    projects = sanitizeRetiredFeatureRecords(projects);
+    todos = sanitizeRetiredFeatureRecords(todos);
+    tasks = sanitizeRetiredFeatureRecords(tasks);
+    reminders = sanitizeRetiredFeatureRecords(reminders);
     const source = { projects, todos, tasks, reminders };
     const sourceFingerprint = await fingerprintShadowSource(source);
     const existing = await this.client.query({

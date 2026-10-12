@@ -35,9 +35,9 @@ function errorDetails(error) {
 
 export class SqliteShadowSourceNotReadyError extends Error {
   constructor(states, { cause = null } = {}) {
-    super('Dynamic fellow sources are not ready.', cause ? { cause } : undefined);
+    super('SQLite projection sources are not ready.', cause ? { cause } : undefined);
     this.name = 'SqliteShadowSourceNotReadyError';
-    this.code = 'social-cast-source-not-ready';
+    this.code = 'sqlite-projection-source-not-ready';
     this.states = Object.freeze(states);
   }
 }

@@ -52,7 +52,6 @@ export async function completeTask({
   task: sourceTask,
   player: providedPlayer = null,
   gameState = GAME_STATE.idle,
-  dojoSessionUUID = null,
   source = gameState,
   completionMode = 'timed',
   startedAt = null,
@@ -101,10 +100,9 @@ export async function completeTask({
   const effectiveGameState = actionSession?.matchUUID || gameState === GAME_STATE.match
     ? GAME_STATE.match
     : GAME_STATE.idle;
-  const effectiveDojoSessionUUID = null;
   const effectiveSource = actionSession?.matchUUID
     ? 'match'
-    : ['dojo', 'shared'].includes(source) ? 'manual' : source;
+    : source === 'shared' ? 'manual' : source;
 
   const completedAt = asDate(completedAtInput, new Date());
   const immediate = completionMode === 'immediate';
@@ -141,7 +139,6 @@ export async function completeTask({
     inGameTimestamp: viewerIGT,
     completedInGameTimestamp: viewerIGT,
     source: effectiveSource,
-    dojoSessionUUID: effectiveDojoSessionUUID,
     sessionDuration: committedMs || actualDurationMs,
     points,
     pointsBase: pointReward.basePoints,

@@ -108,25 +108,6 @@ function latestScheduleByPlayer(events = []) {
   return result;
 }
 
-function dojoMomentumByPlayer(eventBuffs = []) {
-  const result = {};
-  for (const buff of eventBuffs || []) {
-    const parent = cleanId(buff?.parent);
-    if (!parent || buff?.eventUUID !== SPECIAL_EVENT_IDS.dojoMultiplier) continue;
-    const previous = result[parent];
-    if (!previous || String(buff.updatedAt || buff.createdAt || '') > String(previous.updatedAt || previous.createdAt || '')) {
-      result[parent] = {
-        UUID: buff.UUID || null,
-        eventUUID: buff.eventUUID,
-        multiplierValue: Number(buff.multiplierValue || 1),
-        createdAt: buff.createdAt || null,
-        updatedAt: buff.updatedAt || null,
-      };
-    }
-  }
-  return result;
-}
-
 function completedTaskPoints(tasks = []) {
   const totalByPlayer = {};
   const dailyByPlayer = {};
@@ -273,7 +254,6 @@ export function buildMatchLeaderboardSnapshot({
     activeMatchUUIDByPlayer,
     eloHistoryByPlayer,
     scheduleByPlayer: latestScheduleByPlayer(events),
-    dojoMomentumByPlayer: dojoMomentumByPlayer(eventBuffs),
   }, {
     generatedAt,
     sourceVersions: sourceVersionsForRecordGroups({
@@ -323,7 +303,6 @@ function emptyMatchSnapshot() {
     activeMatchUUIDByPlayer: {},
     eloHistoryByPlayer: {},
     scheduleByPlayer: {},
-    dojoMomentumByPlayer: {},
   }, { sourceVersions: {}, generatedAt: null });
 }
 
@@ -399,7 +378,6 @@ export async function readLobbyMaterializedData(databaseConnection, playerUUID) 
     matchHistory: playerId ? snapshots.match.matchSummariesByPlayer?.[playerId] || [] : [],
     activeMatchUUID: playerId ? snapshots.match.activeMatchUUIDByPlayer?.[playerId] || null : null,
     scheduleStage: playerId ? snapshots.match.scheduleByPlayer?.[playerId] || null : null,
-    dojoMomentum: playerId ? snapshots.match.dojoMomentumByPlayer?.[playerId] || null : null,
     friendUUIDs: playerId ? snapshots.match.friendUUIDsByPlayer?.[playerId] || [] : [],
     eloHistory: playerId ? snapshots.match.eloHistoryByPlayer?.[playerId] || [] : [],
     todayPoints: playerId
@@ -631,13 +609,6 @@ export function leaderboardScopesForOperations(operations = []) {
     }
     if (store === STORES.event && operationTouches(operation, (event) => (
       [EVENT.wake, EVENT.end_work, EVENT.sleep].includes(event.type)
-    ))) {
-      scopes.add(LEADERBOARD_REBUILD_SCOPE.match);
-      scopes.add(LEADERBOARD_REBUILD_SCOPE.lobby);
-      continue;
-    }
-    if (store === STORES.eventBuff && operationTouches(operation, (buff) => (
-      buff.eventUUID === SPECIAL_EVENT_IDS.dojoMultiplier
     ))) {
       scopes.add(LEADERBOARD_REBUILD_SCOPE.match);
       scopes.add(LEADERBOARD_REBUILD_SCOPE.lobby);

@@ -64,7 +64,7 @@ export default function LifeContextBlock({
           <i aria-hidden="true" />
           <div>
             <strong>{isOwner ? 'Presence only' : 'Working privately'}</strong>
-            <p>{isOwner ? 'Your Social World presence still works. Add context only when it helps.' : 'No additional situation has been shared with you.'}</p>
+            <p>{isOwner ? 'Add profile context when it helps.' : 'No additional situation has been shared with you.'}</p>
           </div>
           {isOwner && <button type="button" onClick={() => setEditing(true)}>Add context</button>}
         </div>

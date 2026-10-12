@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecord } from '../persistence/RetiredFeatureData.js';
 /**
  * Phase-0 synchronization boundary.
  *
@@ -103,7 +104,7 @@ export const SYNC_FIELD_POLICY = Object.freeze({
   actionSessions: Object.freeze({
     shared: Object.freeze([
       'UUID', 'parent', 'targetType', 'targetUUID', 'goalUUID', 'milestoneUUID',
-      'matchUUID', 'dojoSessionUUID', 'startedAt', 'endedAt', 'activeDurationMs',
+      'matchUUID', 'startedAt', 'endedAt', 'activeDurationMs',
       'pausedDurationMs', 'activeAnchorAt', 'pausedAt', 'outcome', 'blockerType',
       'nextStep', 'outcomeNote', 'matchRewardContract', 'matchScoreFinalizedAt',
       'matchScoreEventUUID', 'createdAt', 'updatedAt', 'controllingDeviceId',
@@ -133,6 +134,8 @@ export const SYNC_FIELD_POLICY = Object.freeze({
 });
 
 export function stripDerivedSyncFields(store, record = {}) {
+  record = sanitizeRetiredFeatureRecord(record);
+  if (!record) return null;
   const policy = SYNC_FIELD_POLICY[store];
   if (!policy) return structuredClone(record);
   const excluded = new Set([...policy.local, ...policy.derived]);

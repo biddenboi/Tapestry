@@ -2,19 +2,9 @@ import CoreStorage from './CoreStorage.js';
 import PersistenceDevelopmentReporter from './PersistenceDevelopmentReporter.js';
 import { createDomainRepositories } from './repositories/createDomainRepositories.js';
 import ImportExportService from './services/ImportExportService.js';
+import FriendshipService from './services/FriendshipService.js';
 import TimelineQueryService from './services/TimelineQueryService.js';
 import ProfileDaybookQueryService from './services/ProfileDaybookQueryService.js';
-import SocialWorldPresenceService from './services/SocialWorldPresenceService.js';
-import SocialWorldQueryService from './services/SocialWorldQueryService.js';
-import SocialWorldCastService from './services/SocialWorldCastService.js';
-import SocialWorldFriendshipService from './services/SocialWorldFriendshipService.js';
-import SocialWorldResidencyService from './services/SocialWorldResidencyService.js';
-import SocialWorldSceneQueryService from './services/SocialWorldSceneQueryService.js';
-import SocialWorldProfileCardQueryService from './services/SocialWorldProfileCardQueryService.js';
-import SocialActivityIndexService from './services/SocialActivityIndexService.js';
-import SocialEncounterService from './services/SocialEncounterService.js';
-import DojoRoomQueryService from './services/DojoRoomQueryService.js';
-import DojoStandingsService from './services/DojoStandingsService.js';
 import ReminderQueryService from './services/ReminderQueryService.js';
 import EloQueryService from './services/EloQueryService.js';
 import ProfileLifecycleService from './services/ProfileLifecycleService.js';
@@ -77,6 +67,8 @@ export class PersistenceRuntime {
     this.repositories = createDomainRepositories(facade);
     this.timelineQueries = new TimelineQueryService(facade);
     this.profileDaybookQueries = new ProfileDaybookQueryService(facade);
+    this.socialRepository = this.sqliteStorageAdapter?.shadowDomains?.social || null;
+    this.friendships = new FriendshipService({ facade, repository: this.socialRepository });
     this.profileContextRepository = new SqliteProfileContextRepository(facade);
     this.profileContextFacts = new ProfileContextFactService(facade);
     this.profileContextProjections = new ProfileContextProjectionService({
@@ -91,66 +83,6 @@ export class PersistenceRuntime {
       projectionService: this.profileContextProjections,
     });
     this.profileContextActions = new ProfileContextActionService(facade);
-    this.socialWorldRepository = this.sqliteStorageAdapter?.shadowDomains?.socialWorld || null;
-    this.socialRepository = this.sqliteStorageAdapter?.shadowDomains?.social || null;
-    this.socialWorldPresence = this.socialWorldRepository
-      ? new SocialWorldPresenceService({ repository: this.socialWorldRepository })
-      : null;
-    this.socialWorldQueries = this.socialWorldRepository
-      ? new SocialWorldQueryService({
-          repository: this.socialWorldRepository,
-          client: this.sqliteStorageAdapter.client,
-        })
-      : null;
-    this.socialWorldCast = this.socialWorldRepository
-      ? new SocialWorldCastService({
-          repository: this.socialWorldRepository,
-          client: this.sqliteStorageAdapter.client,
-          readiness: this.sqliteShadowReadiness,
-        })
-      : null;
-    this.socialWorldFriendships = new SocialWorldFriendshipService({
-      facade,
-      repository: this.socialRepository,
-    });
-    this.socialWorldResidency = new SocialWorldResidencyService({
-      facade,
-      socialRepository: this.socialRepository,
-      castService: this.socialWorldCast,
-      client: this.sqliteStorageAdapter?.client || null,
-    });
-    this.socialWorldSceneQueries = new SocialWorldSceneQueryService({
-      residencyService: this.socialWorldResidency,
-      presenceQueryService: this.socialWorldQueries,
-      client: this.sqliteStorageAdapter?.client || null,
-      facade,
-    });
-    this.socialActivityIndex = this.socialWorldRepository
-      ? new SocialActivityIndexService({ client: this.sqliteStorageAdapter.client })
-      : null;
-    this.socialEncounters = this.socialActivityIndex
-      ? new SocialEncounterService({
-          client: this.sqliteStorageAdapter.client,
-          activityIndex: this.socialActivityIndex,
-        })
-      : null;
-    this.socialWorldProfileCards = this.socialWorldRepository
-      ? new SocialWorldProfileCardQueryService({
-          residencyService: this.socialWorldResidency,
-          presenceQueryService: this.socialWorldQueries,
-          client: this.sqliteStorageAdapter.client,
-          encounterService: this.socialEncounters,
-          profileContextProjectionService: this.profileContextProjections,
-        })
-      : null;
-    this.dojoRoomQueries = this.sqliteStorageAdapter?.client?.query
-      ? new DojoRoomQueryService({ client: this.sqliteStorageAdapter.client })
-      : null;
-    this.dojoStandings = this.sqliteStorageAdapter?.client?.query
-      ? new DojoStandingsService({
-          client: this.sqliteStorageAdapter.client,
-        })
-      : null;
     this.reminderQueries = new ReminderQueryService(facade);
     this.eloQueries = new EloQueryService(facade);
     this.profileLifecycle = new ProfileLifecycleService(facade);
@@ -451,7 +383,7 @@ export class PersistenceRuntime {
     return this._synchronizeSqliteProjection(SQLITE_SHADOW_PROJECTION.social, source);
   }
 
-  async synchronizeSqliteDynamicCastProjections({
+  async synchronizeSqliteCoreProjections({
     players,
     appState = {},
     economyState = {},
@@ -481,7 +413,7 @@ export class PersistenceRuntime {
     return { coreProfiles, planning, matches: matchProjection, social };
   }
 
-  assertDynamicCastSourcesReady() {
+  assertCoreProjectionSourcesReady() {
     return this.sqliteShadowReadiness.assertReady(SQLITE_SHADOW_PROJECTIONS);
   }
 
@@ -496,7 +428,7 @@ export class PersistenceRuntime {
         runId: this.sqliteShadowReadiness.sessionId,
       });
     }
-    return this.assertDynamicCastSourcesReady();
+    return this.assertCoreProjectionSourcesReady();
   }
 
   markSqliteProjectionsDirtyForStores(stores = []) {

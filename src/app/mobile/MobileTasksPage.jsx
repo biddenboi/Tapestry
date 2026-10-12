@@ -39,7 +39,6 @@ export default function MobileTasksPage() {
     notify,
     emitRewardEvent,
     gameState: [gameState],
-    dojoSessionUUID,
   } = useAppContext();
   const {
     openSurface,
@@ -120,7 +119,6 @@ export default function MobileTasksPage() {
         todo: task,
         player: currentPlayer,
         gameState,
-        dojoSessionUUID,
         notify,
         emitRewardEvent,
         source: 'mobile-agenda',

@@ -6,7 +6,12 @@ import SQLITE_MIGRATIONS from '../persistence/sqlite/migrations/index.js';
 import SqliteDocumentRepository from '../persistence/sqlite/SqliteDocumentRepository.js';
 import { referenceCaptureGuard } from './ReferenceCaptureGuard.js';
 import SyncRuntime from './SyncRuntime.js';
-import { synchronizeMobileReferenceData } from './MobileReferenceSync.js';
+import {
+  MOBILE_REFERENCE_CURSOR_STREAM,
+  restoreMobileBootstrapData,
+  synchronizeMobileReferenceChanges,
+  synchronizeMobileReferenceData,
+} from './MobileReferenceSync.js';
 import {
   LIVE_REFERENCE_TYPES,
   PROMPT_REFERENCE_TYPES,
@@ -140,6 +145,117 @@ async function createEndpoint({ server, deviceId, now }) {
   });
   return { client, connection, documents, runtime };
 }
+
+test('clean mobile bootstrap opens the restored workspace and catches edits made during download', async (t) => {
+  const now = () => new Date('2026-10-12T12:00:00.000Z');
+  const server = new InMemoryReferenceServer();
+  const mobile = await createEndpoint({ server, deviceId: 'clean-mobile', now });
+  t.after(() => mobile.client.close());
+  const profile = { UUID: 'bootstrap-profile', username: 'Cloud profile', syncUpdatedAt: now().toISOString() };
+  const task = { UUID: 'bootstrap-task', parent: profile.UUID, name: 'Before download', syncUpdatedAt: now().toISOString() };
+  await server.mergeMobileReferenceRecords([
+    { recordType: 'profile', recordId: profile.UUID, data: profile, updatedAt: now().toISOString() },
+    { recordType: 'task', recordId: task.UUID, data: task, updatedAt: now().toISOString() },
+  ]);
+  server.getMobileReferenceRecordsPaginated = async () => {
+    const snapshot = await server.getMobileReferenceRecords();
+    const updatedAt = '2026-10-12T12:01:00.000Z';
+    await server.mergeMobileReferenceRecords([{
+      recordType: 'task', recordId: task.UUID, updatedAt,
+      data: { ...task, name: 'Changed during download', syncUpdatedAt: updatedAt },
+    }]);
+    return snapshot;
+  };
+
+  const progress = [];
+  const result = await restoreMobileBootstrapData(mobile.connection, server, {
+    onProgress: (event) => progress.push(event.stage),
+  });
+
+  assert.equal(result.restored, true);
+  assert.equal(result.downloaded, 2);
+  assert.equal(result.catchUp.downloaded, 1);
+  assert.equal(progress.at(-1), 'opening');
+  assert.equal(mobile.connection.getActivePlayerUUID(), profile.UUID);
+  assert.equal((await mobile.documents.get(STORES.todo, task.UUID)).name, 'Changed during download');
+  assert.equal((await mobile.runtime.cursors.get(MOBILE_REFERENCE_CURSOR_STREAM)).serverSequence, server.sequence);
+  assert.equal((await mobile.runtime.referenceOutbox.listPending()).length, 0);
+});
+
+test('equal-sized reference pages with the same timestamp all persist before the cursor advances', async (t) => {
+  const now = () => new Date('2026-10-12T12:00:00.000Z');
+  const server = new InMemoryReferenceServer();
+  const mobile = await createEndpoint({ server, deviceId: 'paged-mobile', now });
+  t.after(() => mobile.client.close());
+  await server.mergeMobileReferenceRecords(['first-task', 'second-task', 'third-task'].map((UUID) => ({
+    recordType: 'task', recordId: UUID, updatedAt: now().toISOString(),
+    data: { UUID, name: UUID, syncUpdatedAt: now().toISOString() },
+  })));
+
+  const result = await synchronizeMobileReferenceChanges(mobile.connection, server, { pageSize: 1 });
+
+  assert.equal(result.downloaded, 3);
+  assert.deepEqual((await mobile.documents.getAll(STORES.todo)).map(({ UUID }) => UUID).sort(), [
+    'first-task', 'second-task', 'third-task',
+  ]);
+  assert.equal((await mobile.runtime.cursors.get(MOBILE_REFERENCE_CURSOR_STREAM)).serverSequence, 3);
+  const replay = await synchronizeMobileReferenceChanges(mobile.connection, server, { pageSize: 1 });
+  assert.equal(replay.applied, 0);
+  assert.equal((await mobile.runtime.referenceOutbox.listPending()).length, 0);
+});
+
+test('an existing phone repairs skipped cloud records once without losing pending offline work', async (t) => {
+  const now = () => new Date('2026-10-12T12:00:00.000Z');
+  const server = new InMemoryReferenceServer();
+  const mobile = await createEndpoint({ server, deviceId: 'repair-mobile', now });
+  t.after(() => mobile.client.close());
+  const profile = { UUID: 'repair-profile', username: 'Existing profile', syncUpdatedAt: now().toISOString() };
+  await server.mergeMobileReferenceRecords([
+    { recordType: 'profile', recordId: profile.UUID, data: profile, updatedAt: now().toISOString() },
+    ...['skipped-task', 'deleted-offline'].map((UUID) => ({
+      recordType: 'task', recordId: UUID, updatedAt: now().toISOString(),
+      data: { UUID, name: UUID, syncUpdatedAt: now().toISOString() },
+    })),
+    {
+      recordType: 'mobile-working-set-manifest', recordId: 'current',
+      updatedAt: '2026-10-12T12:02:00.000Z',
+      data: { publishedAt: '2026-10-12T12:02:00.000Z', schemaVersion: 4 },
+    },
+  ]);
+  // Older clients advanced past skipped batches, so an ordinary delta is empty.
+  await mobile.runtime.cursors.advance(MOBILE_REFERENCE_CURSOR_STREAM, server.sequence);
+  await mobile.documents.put(STORES.player, profile);
+  await mobile.documents.put(STORES.todo, {
+    UUID: 'offline-task', name: 'Not uploaded yet', syncUpdatedAt: now().toISOString(),
+  });
+  await mobile.runtime.referenceOutbox.queueReferences([{
+    recordType: 'task', recordId: 'deleted-offline', deleted: true,
+    updatedAt: '2026-10-12T12:03:00.000Z',
+    data: { UUID: 'deleted-offline', __deleted: true },
+  }]);
+  let snapshots = 0;
+  server.getMobileReferenceRecordsPaginated = async () => {
+    snapshots += 1;
+    if (snapshots === 1) throw new Error('Connection lost during recovery');
+    return server.getMobileReferenceRecords();
+  };
+  const sync = () => synchronizeMobileReferenceData(mobile.connection, server, {
+    forceActiveProfile: true, uploadReferences: false,
+  });
+
+  await assert.rejects(sync, /Connection lost during recovery/);
+  const repaired = await sync();
+  assert.equal(repaired.workingSetRepair.restored, true);
+  assert.equal((await mobile.documents.get(STORES.todo, 'skipped-task')).name, 'skipped-task');
+  assert.equal((await mobile.documents.get(STORES.todo, 'offline-task')).name, 'Not uploaded yet');
+  assert.equal(await mobile.documents.get(STORES.todo, 'deleted-offline'), null);
+  const pending = await mobile.runtime.referenceOutbox.listPending();
+  assert.ok(pending.some((entry) => entry.recordId === 'offline-task'));
+  assert.ok(pending.some((entry) => entry.recordId === 'deleted-offline' && entry.deleted));
+  const next = await sync();
+  assert.equal(next.workingSetRepair, null);
+  assert.equal(snapshots, 2, 'successful recovery must be durable and stop full snapshot downloads');
+});
 
 test('two local clients converge through the server without a physical mobile device', async (t) => {
   let currentTime = new Date('2026-08-03T12:00:00.000Z').getTime();

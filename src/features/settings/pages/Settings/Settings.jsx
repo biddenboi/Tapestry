@@ -107,8 +107,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
   const [verificationBusy, setVerificationBusy] = useState(false);
   const [interfaceRevealBusy, setInterfaceRevealBusy] = useState(false);
   const [interfaceRevealComplete, setInterfaceRevealComplete] = useState(false);
-  const [memoryBusy, setMemoryBusy] = useState(false);
-  const [privacyMessage, setPrivacyMessage] = useState('');
 
   // Guard: track when we last wrote a cosmetic so the re-load effect doesn't
   // overwrite local state before the DB flush propagates into context.
@@ -208,21 +206,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
       },
     },
   }));
-
-  const deleteEncounterMemories = async () => {
-    if (!player?.UUID || memoryBusy || !window.confirm('Delete every “since last saw” encounter memory for this profile? Underlying tasks, posts, Matches, and profiles are not deleted.')) return;
-    setMemoryBusy(true);
-    setPrivacyMessage('');
-    try {
-      const result = await databaseConnection.clearSocialEncounterMemories({ viewerId: player.UUID });
-      invalidateDomains?.(['encounters', 'socialWorld']);
-      setPrivacyMessage(`${result.deleted.toLocaleString()} encounter memory record${result.deleted === 1 ? '' : 's'} deleted.`);
-    } catch (error) {
-      setPrivacyMessage(error?.message || 'Encounter memories could not be deleted.');
-    } finally {
-      setMemoryBusy(false);
-    }
-  };
 
   const activeTheme        = resolveThemeId(player?.activeCosmetics?.appTheme || player?.activeCosmetics?.theme || DEFAULT_THEME_ID);
 
@@ -494,18 +477,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
               <span>{player?.inboxNotificationsEnabled !== false ? 'ON' : 'OFF'}</span>
             </label>
           </SettingsRow>
-          <SettingsRow label="Presence Detail" hint="Controls the most specific fact other players can see during live work">
-            <select
-              className="settings-input"
-              value={player?.presenceVisibilityPolicy || 'state-only'}
-              onChange={(event) => savePlayerPolicy({ presenceVisibilityPolicy: event.target.value })}
-            >
-              <option value="state-only">State only</option>
-              <option value="goal">Include linked Goal</option>
-              <option value="task">Include exact task</option>
-              <option value="private">Private</option>
-            </select>
-          </SettingsRow>
           <SettingsRow label="Proactive Prompt Budget" hint="Maximum delivered prompts per local day; defaults to two">
             <select
               className="settings-input"
@@ -541,18 +512,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
         </SettingsSection>
 
         <SettingsSection page="privacy" activePage={presentedPageId} icon={<Icon name="profile" size={16} />} title="Privacy">
-          <SettingsRow label="Presence detail">
-            <select
-              className="settings-input"
-              value={player?.presenceVisibilityPolicy || 'state-only'}
-              onChange={(event) => savePlayerPolicy({ presenceVisibilityPolicy: event.target.value })}
-            >
-              <option value="state-only">State only</option>
-              <option value="goal">Include linked Goal</option>
-              <option value="task">Include exact task</option>
-              <option value="private">Private</option>
-            </select>
-          </SettingsRow>
           <SettingsRow label="Profile visibility">
             <select
               className="settings-input"
@@ -564,10 +523,6 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
               <option value="private">Private</option>
             </select>
           </SettingsRow>
-          <SettingsRow label="Encounter memories" hint="Delete this profile’s “since last saw” receipts without deleting anyone’s underlying activity">
-            <button type="button" className="danger" disabled={memoryBusy} onClick={deleteEncounterMemories}>{memoryBusy ? 'Deleting…' : 'Delete memories…'}</button>
-          </SettingsRow>
-          {privacyMessage && <p className="settings-inline-message" role="status">{privacyMessage}</p>}
         </SettingsSection>
 
         <SettingsSection page="accessibility" activePage={presentedPageId} icon={<Icon name="eye" size={16} />} title="Accessibility">

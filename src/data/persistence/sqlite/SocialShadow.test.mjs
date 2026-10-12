@@ -109,10 +109,10 @@ test('Batch 21 request, acceptance, inbox reads, and closure are idempotent and 
     title: 'Alpha sent a request', message: 'Open Alpha’s profile.',
   });
   assert.equal(request.friendship.status, 'pending');
-  assert.deepEqual(request.invalidatedDomains, ['social','socialWorld','achievements','profileSummaries']);
+  assert.deepEqual(request.invalidatedDomains, ['social','achievements','profileSummaries']);
   const afterRequest = await context.shadow.social.getSourceVersions();
   for (const key of ['social','achievements','profileSummaries']) assert.equal(afterRequest[key], before[key] + 1);
-  assert.equal(afterRequest.socialWorld, before.socialWorld + 1);
+  assert.equal(afterRequest.socialWorld, undefined);
   for (const key of ['profiles','tasks','matches','leaderboards']) assert.equal(afterRequest[key], before[key]);
 
   const replay = await context.shadow.social.requestFriendship({
@@ -147,7 +147,7 @@ test('Batch 21 request, acceptance, inbox reads, and closure are idempotent and 
   assert.equal(await context.shadow.social.getFriendship('f1'), null);
   assert.equal((await context.shadow.social.listFriendshipsForPlayer('p2')).length, 0);
   assert.deepEqual(DOMAIN_INVALIDATION.inboxWrite, [DATA_DOMAIN.social]);
-  assert.deepEqual(DOMAIN_INVALIDATION.socialWrite, [DATA_DOMAIN.social,DATA_DOMAIN.socialWorld,DATA_DOMAIN.achievements,DATA_DOMAIN.profileSummaries,DATA_DOMAIN.contributionRoad]);
+  assert.deepEqual(DOMAIN_INVALIDATION.socialWrite, [DATA_DOMAIN.social,DATA_DOMAIN.achievements,DATA_DOMAIN.profileSummaries,DATA_DOMAIN.contributionRoad]);
 });
 
 test('Batch 21 profile wipe removes ephemeral social state without dangling memberships', async (t) => {

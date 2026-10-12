@@ -23,7 +23,7 @@ export const ACHIEVEMENT_EVENT_TYPE = Object.freeze({
 export const ACHIEVEMENT_EVENT_GROUPS = Object.freeze({
   [ACHIEVEMENT_EVENT_TYPE.taskCompleted]: Object.freeze([
     'grinder', 'scorer', 'deep_work', 'consistency', 'scholar', 'basket',
-    'king_of_the_hill', 'peace', 'savant',
+    'king_of_the_hill', 'savant',
   ]),
   [ACHIEVEMENT_EVENT_TYPE.matchCompleted]: Object.freeze([
     'overkill', 'underdog', 'contributor', 'soldier', 'long_game', 'climber',
@@ -38,7 +38,7 @@ export const ACHIEVEMENT_EVENT_GROUPS = Object.freeze({
   [ACHIEVEMENT_EVENT_TYPE.profileUpdated]: Object.freeze(['signature', 'climber', 'savant']),
 });
 
-const LEADERBOARD_GROUPS = new Set(['king_of_the_hill', 'peace', 'savant']);
+const LEADERBOARD_GROUPS = new Set(['king_of_the_hill', 'savant']);
 
 const inFlightByConnection = new WeakMap();
 const processingTailByConnection = new WeakMap();
@@ -105,8 +105,6 @@ function emptyCounters(player = {}) {
     economyLoggedTotal: 0,
     profileSignatureScore: 0,
     acceptedFriends: 0,
-    bestDojoSessionPoints: 0,
-    dojoSessionPointsByDay: {},
   };
 }
 
@@ -143,7 +141,6 @@ function applyEventToCounters(counters, event) {
   const next = {
     ...counters,
     taskDays: { ...(counters.taskDays || {}) },
-    dojoSessionPointsByDay: { ...(counters.dojoSessionPointsByDay || {}) },
   };
   const payload = event.payload || {};
 
@@ -161,13 +158,6 @@ function applyEventToCounters(counters, event) {
         next.taskDays[day] = finite(next.taskDays[day]) + 1;
         next.bestTasksInDay = Math.max(finite(next.bestTasksInDay), next.taskDays[day]);
         next.longestTaskDayStreak = longestConsecutiveDayRun(next.taskDays);
-        if (payload.source === 'dojo') {
-          next.dojoSessionPointsByDay[day] = finite(next.dojoSessionPointsByDay[day]) + finite(payload.points);
-          next.bestDojoSessionPoints = Math.max(
-            finite(next.bestDojoSessionPoints),
-            next.dojoSessionPointsByDay[day],
-          );
-        }
       }
       break;
     }
@@ -318,16 +308,6 @@ function evaluateGroups({ player, counters, event, groups, leaderboard }) {
         }
         break;
       }
-      case 'peace': {
-        if (leaderboard.isTopTenDojo) grant(achievements, earned, 'peace_1', event);
-        if (leaderboard.isTopDojo) {
-          grant(achievements, earned, 'peace_2', event);
-          grant(achievements, earned, 'peace_3', event);
-        } else {
-          delete achievements.peace_3;
-        }
-        break;
-      }
       case 'savant':
         if (
           counters.currentElo >= 3000
@@ -355,19 +335,8 @@ function leaderboardFor(states, playerUUID) {
     .sort((left, right) => right.value - left.value || String(left.parent).localeCompare(String(right.parent)));
   const topPoints = points.length > 1 ? points[0]?.value : null;
   const myPoints = points.find((entry) => entry.parent === playerUUID)?.value;
-  const dojo = [...states]
-    .flatMap((state) => Object.entries(state.counters?.dojoSessionPointsByDay || {})
-      .map(([day, value]) => ({ parent: state.parent, day, value: finite(value) })))
-    .filter((entry) => entry.value > 0)
-    .sort((left, right) => (
-      right.value - left.value
-      || String(left.day).localeCompare(String(right.day))
-      || String(left.parent).localeCompare(String(right.parent))
-    ));
   return {
     isTopPoints: topPoints != null && myPoints >= topPoints,
-    isTopDojo: dojo[0]?.parent === playerUUID,
-    isTopTenDojo: dojo.slice(0, 10).some((entry) => entry.parent === playerUUID),
   };
 }
 
@@ -571,16 +540,12 @@ export function buildAchievementCountersFromRecords(player, data = {}) {
   const eventLogs = (data.eventLogs || []).filter((entry) => entry?.parent === player.UUID);
   const transactions = (data.transactions || []).filter((entry) => entry?.parent === player.UUID);
   const taskDays = {};
-  const dojoSessionPointsByDay = {};
   let maxTaskDurationHours = 0;
   let lifetimeTaskPoints = 0;
   for (const task of tasks) {
     lifetimeTaskPoints += finite(task.points);
     const day = String(task.completedAt || '').split('T')[0];
     if (day) taskDays[day] = finite(taskDays[day]) + 1;
-    if (task.source === 'dojo' && day) {
-      dojoSessionPointsByDay[day] = finite(dojoSessionPointsByDay[day]) + finite(task.points);
-    }
     const durationMs = task.sessionDuration
       || (new Date(task.completedAt).getTime() - new Date(task.createdAt).getTime());
     maxTaskDurationHours = Math.max(maxTaskDurationHours, positive(durationMs) / 3600000);
@@ -629,8 +594,6 @@ export function buildAchievementCountersFromRecords(player, data = {}) {
       .reduce((sum, entry) => sum + positive(entry.amount ?? entry.cost), 0),
     profileSignatureScore: profileSignatureScore(player),
     acceptedFriends: (data.friends || []).filter((entry) => entry.status === 'accepted').length,
-    bestDojoSessionPoints: Math.max(0, ...Object.values(dojoSessionPointsByDay)),
-    dojoSessionPointsByDay,
   };
 }
 

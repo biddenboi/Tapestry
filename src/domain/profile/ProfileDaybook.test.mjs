@@ -36,7 +36,6 @@ test('active day is Today so far while earlier days are completed with stable to
       completedInGameTimestamp: DAY + 3 * HOUR,
       points: 120,
       durationMs: 25 * MINUTE,
-      dojoSessionUUID: 'dojo-1',
       completedAt: '2026-07-12T10:00:00.000Z',
     },
     {
@@ -64,7 +63,6 @@ test('active day is Today so far while earlier days are completed with stable to
     tasks: 1,
     matches: 0,
     contribution: 0,
-    dojoSessions: 1,
   });
   assert.equal(chapters[1].label, 'Day 1');
   assert.equal(chapters[1].status, 'completed');

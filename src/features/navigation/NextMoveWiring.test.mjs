@@ -3,7 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarification, taskSessionProvider, worldRoute] = await Promise.all([
+const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarification, taskSessionProvider] = await Promise.all([
   read('../../app/shell/GameHub/GameHub.jsx'),
   read('../../app/App.jsx'),
   read('./components/EdgeNextMoveHost/EdgeNextMoveHost.jsx'),
@@ -14,7 +14,6 @@ const [hub, app, host, drawer, drag, placement, edgeReveal, styles, clarificatio
   read('./components/EdgeNextMoveHost/EdgeNextMoveHost.css'),
   read('./components/TaskClarification/TaskClarification.jsx'),
   read('../tasks/context/TaskSessionProvider.jsx'),
-  read('./components/WorldRecommendationRoute/WorldRecommendationRoute.jsx'),
 ]);
 
 test('one persistent edge host replaces competing task recommendation surfaces', async () => {
@@ -55,18 +54,14 @@ test('dragging uses pointer capture, one animation frame, clamping, and accessib
   assert.match(placement, /normalizedY/);
 });
 
-test('deep routes carry exact intent and world highlighting', () => {
+test('deep routes carry exact intent', () => {
   assert.match(app, /const \[routeIntent, setRouteIntent\]/);
   assert.match(app, /const openRoute = useCallback/);
   assert.match(app, /entityUUID/);
   assert.match(hub, /focusTaskId/);
-  assert.match(hub, /data-next-move-target/);
-  assert.match(worldRoute, /route\?\.locationId/);
-  assert.match(worldRoute, /!route\?\.locationId/);
-  assert.match(worldRoute, /worldViewportRef/);
 });
 
-test('closing and deferring invalidate pending evaluation before clearing the world route', () => {
+test('closing and deferring invalidate pending evaluation', () => {
   assert.match(host, /evaluationGenerationRef\.current \+= 1/);
   assert.match(host, /if \(type === 'not-now'\) return/);
   assert.match(host, /const notNow = useCallback/);

@@ -1,3 +1,5 @@
+> Historical design/release notes. Dojo and the former social-world/map implementation are retired; the current social world is a Coming soon placeholder. See docs/PERSISTENCE.md for migration 059.
+
 # Charcoal Information Architecture, Achievements, Theme Depth, and Data Stabilization Specification
 
 **Target application:** Tapestry / Charcoal  

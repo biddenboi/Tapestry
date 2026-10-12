@@ -11,10 +11,10 @@ const [lobby, requirements, database, leaderboards, importExport] = await Promis
   read('../../../../data/persistence/services/ImportExportService.js'),
 ]);
 
-test('Lobby opening reads materialized data plus one prepared social scene', () => {
-  assert.match(requirements, /lobby: Object\.freeze\(\[D\.leaderboards, D\.socialWorld, D\.social\]\)/);
+test('Lobby opening reads materialized data without a social scene', () => {
+  assert.match(requirements, /lobby: Object\.freeze\(\[D\.leaderboards, D\.social\]\)/);
   assert.match(lobby, /readLobbyMaterializedData\(databaseConnection, currentPlayer\.UUID, lobbyViewerIGT\)/);
-  assert.equal((lobby.match(/socialSceneController\.load\s*\(/g) || []).length, 1);
+  assert.doesNotMatch(lobby, /socialSceneController/);
 
   const start = lobby.indexOf('const load = async () => {');
   const end = lobby.indexOf('useEffect(() => {', start + 1);
@@ -32,9 +32,9 @@ test('Lobby opening reads materialized data plus one prepared social scene', () 
   assert.doesNotMatch(lobby, /leaderboardHour|Math\.floor\(viewerIGT \/ HOUR\)/);
 });
 
-test('Elo graph includes self and restricts comparison journeys to live Fellows at current IGT', () => {
+test('Elo graph includes self and compares rated players at current IGT', () => {
   assert.match(lobby, /visibleFellowRatings/);
-  assert.match(lobby, /socialScene\?\.members/);
+  assert.match(lobby, /visibleFellowRatings = fellowRatings/);
   assert.match(lobby, /data=\{eloHistory\}/);
   assert.match(lobby, /seriesLabel=\{`\$\{username\} \(You\)`\}/);
   assert.match(lobby, /comparisonRatings=\{viewerHasVisibleRating \? visibleFellowRatings : \[\]\}/);

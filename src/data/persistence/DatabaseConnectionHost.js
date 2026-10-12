@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecord } from './RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import {
   measureDynamicModule,
@@ -14,10 +15,6 @@ import {
   preparePlayerIGTWrite,
   PROFILE_IGT_ACTIVITY_RECOVERY_VERSION,
 } from '@domain/time/Time.js';
-import {
-  SOCIAL_WORLD_PERFORMANCE_OPERATION,
-  measureSocialWorldOperation,
-} from '@domain/social-world/SocialWorldPerformance.js';
 import {
   applyProfileSummaryOperations,
   isProfileSummarySourceStore,
@@ -117,10 +114,7 @@ export class DatabaseConnectionHost {
     this.profileContextSuggestions = this.persistenceRuntime.profileContextSuggestions;
     this.profileContextCommands = this.persistenceRuntime.profileContextCommands;
     this.profileContextActions = this.persistenceRuntime.profileContextActions;
-    this.socialWorldPresence = this.persistenceRuntime.socialWorldPresence;
-    this.socialWorldQueries = this.persistenceRuntime.socialWorldQueries;
-    this.socialWorldCast = this.persistenceRuntime.socialWorldCast;
-    this.socialWorldFriendships = this.persistenceRuntime.socialWorldFriendships; this.socialWorldResidency = this.persistenceRuntime.socialWorldResidency; this.socialWorldSceneQueries = this.persistenceRuntime.socialWorldSceneQueries; this.socialActivityIndex = this.persistenceRuntime.socialActivityIndex; this.socialEncounters = this.persistenceRuntime.socialEncounters; this.socialWorldProfileCards = this.persistenceRuntime.socialWorldProfileCards; this.dojoRoomQueries = this.persistenceRuntime.dojoRoomQueries; this.dojoStandings = this.persistenceRuntime.dojoStandings;
+    this.friendships = this.persistenceRuntime.friendships;
     this.reminderQueries = this.persistenceRuntime.reminderQueries;
     this.eloQueries = this.persistenceRuntime.eloQueries;
     this.profileLifecycle = this.persistenceRuntime.profileLifecycle;
@@ -492,7 +486,12 @@ export class DatabaseConnectionHost {
       ? additionalStatements.filter(Boolean)
       : [];
     const requestedOperations = [
-      ...requestedPuts.map((entry) => ({ type: 'put', ...entry })),
+      ...requestedPuts.map((entry) => {
+        const record = sanitizeRetiredFeatureRecord(entry.record);
+        return record
+          ? { type: 'put', ...entry, record }
+          : { type: 'delete', store: entry.store, UUID: entry.record?.UUID };
+      }),
       ...requestedDeletes.map((entry) => ({ type: 'delete', ...entry })),
     ];
     if (requestedOperations.some((operation) => operation?.store === STORES.notes)) {
@@ -797,9 +796,7 @@ export class DatabaseConnectionHost {
   getProfileMatchesForPlayer(playerUUID, viewerIGT) { return this.timelineQueries.getProfileMatchesForPlayer(playerUUID, viewerIGT); }
   getVisibleMatchesForPlayer(playerUUID, viewerIGT) { return this.timelineQueries.getVisibleMatchesForPlayer(playerUUID, viewerIGT); }
   getProfileDaybookPage(query) {
-    return measureSocialWorldOperation(SOCIAL_WORLD_PERFORMANCE_OPERATION.profileDaybookPage, () => (
-      this.profileDaybookQueries.getProfileDaybookPage(query)
-    ));
+    return this.profileDaybookQueries.getProfileDaybookPage(query);
   }
   getPlayerReminders(playerUUID) { return this.reminderQueries.getPlayerReminders(playerUUID); }
   getWorkspaceReminders(workspaceId) { return this.reminderQueries.getWorkspaceReminders(workspaceId); }

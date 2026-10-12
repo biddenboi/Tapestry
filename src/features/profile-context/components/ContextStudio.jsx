@@ -122,8 +122,6 @@ export default function ContextStudio({
               <option value="private">Only me</option>
               <option value="selected">Selected people</option>
               <option value="collaborators">Collaborators</option>
-              <option value="fellows">Fellows</option>
-              <option value="cast">My cast</option>
             </select>
           </label>
           <button className="primary" type="submit" disabled={saving}>Save preferences</button>

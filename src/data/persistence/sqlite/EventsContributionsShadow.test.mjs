@@ -99,10 +99,10 @@ test('Batch 19 profile wipe clears current buffs but retains historical event an
     contributions: [{ UUID: 'p2-contribution', parent: 'p2', projectId: 'goal-2', source: 'manual', summary: 'Historical', value: 4, playerNameSnapshot: 'Beta', goalNameSnapshot: 'Historical', createdAt: fixed.toISOString(), location: { latitude: 41, longitude: -71 } }],
   });
   await context.shadow.coreProfiles.wipeProfile('p2', { operationId: 'wipe-events-p2', now: fixed });
-  const event = await context.client.query({ sql: "SELECT player_id AS playerId,latitude,longitude FROM lifecycle_events WHERE id='p2-event'", result: 'one' });
-  const contribution = await context.client.query({ sql: "SELECT player_id AS playerId,player_name_snapshot AS playerName,latitude,longitude FROM contributions WHERE id='p2-contribution'", result: 'one' });
+  const event = await context.client.query({ sql: "SELECT player_id AS playerId FROM lifecycle_events WHERE id='p2-event'", result: 'one' });
+  const contribution = await context.client.query({ sql: "SELECT player_id AS playerId,player_name_snapshot AS playerName FROM contributions WHERE id='p2-contribution'", result: 'one' });
   assert.equal(event.playerId, null);
-  assert.equal(Number(event.latitude), 40);
+  assert.equal('latitude' in event, false);
   assert.equal(contribution.playerId, null);
   assert.equal(contribution.playerName, 'Beta');
   assert.equal(await context.client.query({ sql: "SELECT COUNT(*) FROM event_buffs WHERE id='p2-buff'", result: 'value' }), 0);

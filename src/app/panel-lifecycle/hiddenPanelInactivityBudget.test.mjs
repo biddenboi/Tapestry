@@ -4,7 +4,6 @@ import test from 'node:test';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
 const sourcePaths = {
-  map: '../../features/social-world/components/SocialWorldShell/SocialWorldRuntime.jsx',
   feed: '../../features/feed/pages/FeedPage/FeedPage.jsx',
   shop: '../../features/shop/pages/Shop/Shop.jsx',
   lobby: '../../features/lobby/components/Lobby/Lobby.jsx',
@@ -24,8 +23,6 @@ test('all migrated panels expose an inactivity gate', () => {
 });
 
 test('hidden-panel recurring work has explicit stop or cleanup paths', () => {
-  assert.match(sources.map, /if \(!runtimeActive/);
-  assert.match(sources.map, /clearInterval|cancel/);
   assert.match(sources.feed, /if \(!canLoad\) return/);
   assert.doesNotMatch(sources.feed, /setInterval|IntersectionObserver/);
   assert.match(sources.shop, /clearTimeout\(purchaseFlashTimerRef\.current\)/);

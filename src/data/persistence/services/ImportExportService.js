@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecords } from '../RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import { measureDynamicModule } from '@shared/performance/startupPerf.js';
 import {
@@ -435,7 +436,9 @@ export class ImportExportService {
     let liveRestored = false;
     try {
       await stagingAdapter.open({ mode: 'memory' });
-      const migratedStores = await migrateLegacyQuickNotesToEntries(legacy.stores);
+      const migrated = await migrateLegacyQuickNotesToEntries(legacy.stores);
+      const migratedStores = Object.fromEntries(Object.entries(migrated)
+        .map(([store, rows]) => [store, sanitizeRetiredFeatureRecords(rows)]));
       const entries = Object.values(STORES).map((store) => [
         store,
         [

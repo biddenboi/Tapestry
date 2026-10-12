@@ -372,9 +372,6 @@ function DaybookChapterList({
           chapter.totals.matches
             ? `${chapter.totals.matches} Match${chapter.totals.matches === 1 ? '' : 'es'}`
             : null,
-          chapter.totals.dojoSessions
-            ? `${chapter.totals.dojoSessions} Dojo session${chapter.totals.dojoSessions === 1 ? '' : 's'}`
-            : null,
           chapter.totals.contribution
             ? `${Math.round(chapter.totals.contribution).toLocaleString()} contribution`
             : null,
@@ -443,22 +440,6 @@ function DaybookChapterList({
   );
 }
 
-function ProfilePresenceSummary({ presence }) {
-  if (!presence?.presentation) return null;
-  const view = presence.presentation;
-  return (
-    <section className={`profile-presence-summary profile-presence-summary--${view.state}`} aria-label="Semantic presence">
-      <div className="profile-presence-summary__state">
-        <span>{view.statusLabel}</span>
-        {presence.paused && <strong>PAUSED</strong>}
-      </div>
-      <div className="profile-presence-summary__copy">
-        <strong>{view.primary}</strong>
-        {view.secondary && <span>{view.secondary}</span>}
-      </div>
-    </section>
-  );
-}
 
 const TIMELINE_MODES = [
   ['activity', 'Daybook'],
@@ -1251,4 +1232,4 @@ function ProfileThemeCustomizer({
     </div>
   );
 }
-export { ProfileBannerEditor, ProfileBlockComposer, ProfilePlayerSearch, ProfileSkinView, ProfileTabs, ProfileThemeCustomizer, PlayerRow, TimelineControls, TimelineGroupList, DaybookChapterList, ProfilePresenceSummary, TimelineModeTabs, MilestoneList, ReplayPanel, MatchSummaryBand, MatchList, buildProfileBackgroundStyle, scorePlayerSearch };
+export { ProfileBannerEditor, ProfileBlockComposer, ProfilePlayerSearch, ProfileSkinView, ProfileTabs, ProfileThemeCustomizer, PlayerRow, TimelineControls, TimelineGroupList, DaybookChapterList, TimelineModeTabs, MilestoneList, ReplayPanel, MatchSummaryBand, MatchList, buildProfileBackgroundStyle, scorePlayerSearch };

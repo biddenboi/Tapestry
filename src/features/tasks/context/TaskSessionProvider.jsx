@@ -73,7 +73,6 @@ function localSessionFromRecord(record, task, sourceGameState) {
     pausedTotalMs: Math.max(0, Number(record.pausedDurationMs) || 0),
     submittingAction: null,
     sourceGameState,
-    sourceDojoSessionUUID: null,
     matchUUID: record.matchUUID || null,
     restoredFromContinuity: task.restoredFromContinuity === true,
     matchRewardContract: record.matchRewardContract || task.matchRewardContract || null,
@@ -220,7 +219,6 @@ export function TaskSessionProvider({ children }) {
             playerUUID: parent.UUID,
             task: activeTask,
             matchUUID: requestedSourceGameState === GAME_STATE.match ? activeMatch?.UUID || null : null,
-            dojoSessionUUID: null,
             source: sourceForSession(requestedSourceGameState, activeTask),
             startedAt: taskSessionRequestedAt(activeTask),
           });
@@ -282,7 +280,6 @@ export function TaskSessionProvider({ children }) {
           record,
           current.task,
           current.sourceGameState,
-          current.sourceDojoSessionUUID,
         );
         replaceSession({
           ...refreshed,
@@ -436,23 +433,6 @@ export function TaskSessionProvider({ children }) {
       .catch((error) => {
         console.warn(`[TaskSessionProvider] durable ${pausing ? 'pause' : 'resume'} failed:`, error);
       });
-    const presenceCommand = {
-      playerId: currentPlayer?.UUID,
-      viewerIGT: getCurrentIGT(currentPlayer, atMs),
-      commandId: `task-presence-${pausing ? 'pause' : 'resume'}:${current.sessionId}:${atMs}`,
-      at: new Date(atMs),
-    };
-    const command = pausing
-      ? databaseConnection.pauseSocialWorldPresence(presenceCommand)
-      : databaseConnection.resumeSocialWorldPresence(presenceCommand);
-    command.then((result) => {
-      if (result?.invalidatedDomains?.length) {
-        invalidateDomains(DOMAIN_INVALIDATION.presenceWrite);
-      }
-    }).catch((error) => console.warn(
-      `[TaskSessionProvider] presence ${pausing ? 'pause' : 'resume'} failed:`,
-      error,
-    ));
   }, [currentPlayer, databaseConnection, invalidateDomains, replaceSession, setActiveTask]);
 
   const finalizeMatchBoundary = useCallback(async (match, boundaryAt = new Date()) => {
@@ -515,7 +495,6 @@ export function TaskSessionProvider({ children }) {
             task: current.task,
             player: parent,
             gameState: current.sourceGameState,
-            dojoSessionUUID: current.sourceDojoSessionUUID,
             source: current.sourceGameState,
             completionMode: 'timed',
             startedAt: current.task.createdAt,
@@ -614,15 +593,6 @@ export function TaskSessionProvider({ children }) {
           return null;
         });
       }
-      await databaseConnection.closeCompletedTaskSessionPresence({
-        playerId: parent.UUID,
-        viewerIGT: getCurrentIGT(parent),
-        commandId: `task-presence-close:${current.actionSessionUUID}:${outcome}`,
-      }).then((presenceResult) => {
-        if (presenceResult?.invalidatedDomains?.length) {
-          invalidateDomains(DOMAIN_INVALIDATION.presenceWrite);
-        }
-      }).catch((error) => console.warn('[TaskSessionProvider] presence close failed:', error));
       setActiveTask(editTaskDraft || {});
       expandedSurfaceRef.current?.close?.();
       replaceSession(null);

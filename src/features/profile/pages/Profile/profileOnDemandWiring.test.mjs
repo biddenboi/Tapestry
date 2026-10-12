@@ -12,7 +12,7 @@ const [profile, controller, view, requirements, database] = await Promise.all([
 ]);
 
 test('Profiles open from materialized summaries before detailed domains', () => {
-  assert.match(requirements, /profiles: Object\.freeze\(\[D\.profileSummaries, D\.presence, D\.leaderboards\]\)/);
+  assert.match(requirements, /profiles: Object\.freeze\(\[D\.profileSummaries, D\.leaderboards\]\)/);
   assert.match(controller, /databaseConnection\.get\(STORES\.profileSummary, profileUUID\)/);
   assert.match(controller, /ensureDomainLoaded\?\.\(\['profiles', 'leaderboards'\]\)/);
   assert.match(controller, /databaseConnection\.getProfilePlayer\(profileUUID\)/);
@@ -53,10 +53,10 @@ test('profile summaries update as a materialized SQLite projection', () => {
 });
 
 
-test('background materialized summary refresh cannot downgrade canonical fellow access', () => {
+test('background materialized summary refresh cannot downgrade friendship access', () => {
   const accessWrites = profile.match(/setProfileAccess\(data\.access\)/g) || [];
   assert.equal(accessWrites.length, 0);
-  assert.match(profile, /Local visibility is owned exclusively by the canonical Social World access/);
+  assert.match(profile, /Local visibility is resolved from the viewer’s accepted friendships/);
   assert.match(profile, /loadProfileAccessData\(\{/);
   assert.match(profile, /if \(!cancelled && nextAccess\) setProfileAccess\(nextAccess\)/);
 });

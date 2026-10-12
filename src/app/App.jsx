@@ -29,7 +29,6 @@ import {
 import RewardFloatLayer from '@app/rewards/RewardFloatLayer.jsx';
 import { createPlayerRewardEvents, playerRewardEventRemovalDelay } from '@app/rewards/playerRewardEvents.js';
 import { useCurrentPlayerSession } from '@app/hooks/useCurrentPlayerSession.js';
-import { useSocialWorldPresenceLifecycle } from '@features/social-world/hooks/useSocialWorldPresenceLifecycle.js';
 import TaskSessionProvider from '@features/tasks/context/TaskSessionProvider.jsx';
 import {
   installSoundEffectUnlock,
@@ -128,12 +127,9 @@ function App() {
   const [activeSubview, setActiveSubview] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [routeIntent, setRouteIntent] = useState(null);
-  const [worldRoute, setWorldRoute] = useState(null);
   const [rewardEvents, setRewardEvents] = useState([]);
   const [dataSourceReady, setDataSourceReady] = useState(false);
   const [instanceStandby, setInstanceStandby] = useState(false);
-
-  const dojoSessionUUID = null;
 
   const databaseConnection = useMemo(createApplicationDatabaseConnection, []);
   const taskSoundActiveRef = useRef(false);
@@ -561,27 +557,6 @@ function App() {
 
   useInterval(() => setTimestamp(Date.now()), gameState === GAME_STATE.match ? null : MINUTE);
 
-  useSocialWorldPresenceLifecycle({
-    databaseConnection,
-    dataSourceReady,
-    currentPlayer,
-    timestamp,
-    gameState,
-    activeTask,
-    activeMatch,
-    dojoSessionUUID,
-    activePanel,
-    invalidateDomains,
-  });
-
-  // Dojo is deliberately disabled. Normalize stale in-memory state from older
-  // builds instead of allowing an inaccessible focus surface to open.
-  useEffect(() => {
-    if (gameState === GAME_STATE.dojo) {
-      setGameState(GAME_STATE.idle);
-    }
-  }, [gameState]);
-
   useEffect(() => {
     const taskActive = !!activeTask?.createdAt;
     if (taskActive && !taskSoundActiveRef.current) playSound('timer-start', { volume: 0.85 });
@@ -709,16 +684,13 @@ function App() {
     consumeRouteIntent,
     activeSubview,
     reportLocalSubpage,
-    worldRoute,
-    setWorldRoute,
-    dojoSessionUUID,
     openRoute,
     replaceRoute,
     openPanel,
     replacePanel,
     openInventoryPanel,
     closePanel,
-  }), [databaseConnection, timestamp, dataRevision, domainRevisions, invalidateDomains, ensureDomainLoaded, isDomainLoaded, refreshApp, notify, emitRewardEvent, playSound, currentPlayer, updateCurrentPlayer, commitCurrentProfile, currentPlayerLoaded, activeTask, gameState, activeMatch, activePanel, activeSubview, viewingProfile, routeIntent, consumeRouteIntent, reportLocalSubpage, worldRoute, dojoSessionUUID, openRoute, replaceRoute, openPanel, replacePanel, openInventoryPanel, closePanel]);
+  }), [databaseConnection, timestamp, dataRevision, domainRevisions, invalidateDomains, ensureDomainLoaded, isDomainLoaded, refreshApp, notify, emitRewardEvent, playSound, currentPlayer, updateCurrentPlayer, commitCurrentProfile, currentPlayerLoaded, activeTask, gameState, activeMatch, activePanel, activeSubview, viewingProfile, routeIntent, consumeRouteIntent, reportLocalSubpage, openRoute, replaceRoute, openPanel, replacePanel, openInventoryPanel, closePanel]);
 
   return (
     <AppContext.Provider value={contextValue}>

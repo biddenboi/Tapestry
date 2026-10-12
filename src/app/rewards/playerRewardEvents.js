@@ -11,7 +11,6 @@ const SOURCE_CENTERS = {
   quantity: { x: 50, y: 30, radius: 28 },
   match: { x: 50, y: 30, radius: 30 },
   'match-end': { x: 50, y: 34, radius: 30 },
-  dojo: { x: 50, y: 30, radius: 28 },
   inventory: { x: 52, y: 24, radius: 24 },
   shop: { x: 52, y: 24, radius: 24 },
   notification: { x: 52, y: 22, radius: 26 },
