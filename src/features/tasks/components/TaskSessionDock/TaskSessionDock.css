@@ -1,0 +1,36 @@
+.task-session-dock {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 900;
+  width: min(360px, calc(100vw - 40px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 8px 30px #0005;
+}
+.task-session-dock__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.task-session-dock__heading > div { min-width: 0; }
+.task-session-dock small { display: block; color: var(--text-muted); margin-bottom: 4px; }
+.task-session-dock strong { display: block; overflow-wrap: anywhere; }
+.task-session-dock time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.task-session-dock__actions { display: flex; gap: 8px; margin-top: 12px; }
+.task-session-dock button {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.task-session-dock button:hover, .task-session-dock button:focus-visible { border-color: var(--accent); }
+.task-session-dock button:disabled { opacity: .5; cursor: default; }
+.task-session-dock p { margin-bottom: 0; color: var(--red); font-size: 13px; }

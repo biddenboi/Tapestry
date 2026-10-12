@@ -16,7 +16,6 @@ export const PANEL_DOMAIN_REQUIREMENTS = Object.freeze({
   pass: Object.freeze([D.tasks, D.inventory, D.profiles]),
   match: Object.freeze([D.matches, D.tasks, D.profiles, D.dailyLifecycle]),
   reminders: Object.freeze([D.reminders]),
-  nextMove: Object.freeze([D.nextMove]),
 });
 
 export function domainsForPanel(panelId) {

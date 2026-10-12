@@ -18,7 +18,6 @@ export const DATA_DOMAIN = Object.freeze({
   reminders: 'reminders',
   profiles: 'profiles',
   profileSummaries: 'profileSummaries',
-  nextMove: 'nextMove',
   chronicle: 'chronicle',
   contributionRoad: 'contributionRoad',
 });
@@ -37,7 +36,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   matchWrite: freezeDomains([
@@ -46,7 +44,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   inboxWrite: freezeDomains([DATA_DOMAIN.social]),
@@ -64,7 +61,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   shopCatalogWrite: freezeDomains([DATA_DOMAIN.shop]),
@@ -110,7 +106,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.tasks,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   goalEvidenceWrite: freezeDomains([
@@ -131,7 +126,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
     DATA_DOMAIN.achievements,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   eventAnalyticsWrite: freezeDomains([
@@ -160,7 +154,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
   reminderWrite: freezeDomains([
     DATA_DOMAIN.reminders,
     DATA_DOMAIN.dailyLifecycle,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   profileWrite: freezeDomains([
@@ -171,17 +164,12 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.contributionRoad,
   ]),
-  nextMoveWrite: freezeDomains([
-    DATA_DOMAIN.nextMove,
-    DATA_DOMAIN.tasks,
-  ]),
   chronicleWrite: freezeDomains([
     DATA_DOMAIN.chronicle,
     DATA_DOMAIN.journals,
     DATA_DOMAIN.feed,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
   chronicleStoryWrite: freezeDomains([

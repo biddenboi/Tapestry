@@ -14,6 +14,7 @@ export const SQLITE_DOCUMENT_TABLES = Object.freeze({
   worldConsequenceReceipts: 'document_world_consequence_receipts',
   matchScoreEvents: 'document_match_score_events',
   taskPlanReceipts: 'document_task_plan_receipts',
+  // Retired Next Move names remain for immutable migration replay only.
   nextMoveDecisions: 'document_next_move_decisions',
   nextMoveFeedback: 'document_next_move_feedback',
   nextMoveSurfacePreferences: 'document_next_move_surface_preferences',

@@ -24,7 +24,6 @@ export const HYDRATION_DOMAIN = Object.freeze({
   profileInventory: 'profileInventory',
   notes: 'notes',
   analytics: 'analytics',
-  nextMove: 'nextMove',
   chronicle: 'chronicle',
   contributionRoad: 'contributionRoad',
 });
@@ -38,13 +37,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
     'actionSessions', 'handoffs', 'rewardProvenance',
     'worldConsequenceReceipts', 'matchScoreEvents',
     'taskPlanReceipts',
-  ]),
-  [HYDRATION_DOMAIN.nextMove]: Object.freeze([
-    'r1Events',
-    'taskPlanReceipts',
-    'nextMoveDecisions',
-    'nextMoveFeedback',
-    'nextMoveSurfacePreferences',
   ]),
   [HYDRATION_DOMAIN.matches]: Object.freeze([
     'matches', 'backgroundJobs', 'backgroundJobReceipts', 'matchScoreEvents',
@@ -128,11 +120,6 @@ export const DOMAIN_DEPENDENCIES = Object.freeze({
   [HYDRATION_DOMAIN.social]: Object.freeze([HYDRATION_DOMAIN.profiles]),
   [HYDRATION_DOMAIN.leaderboards]: Object.freeze([]),
   [HYDRATION_DOMAIN.achievements]: Object.freeze([HYDRATION_DOMAIN.profiles]),
-  [HYDRATION_DOMAIN.nextMove]: Object.freeze([
-    HYDRATION_DOMAIN.tasks,
-    HYDRATION_DOMAIN.goals,
-    HYDRATION_DOMAIN.reminders,
-  ]),
   [HYDRATION_DOMAIN.contributionRoad]: Object.freeze([
     HYDRATION_DOMAIN.profiles,
     HYDRATION_DOMAIN.inventory,

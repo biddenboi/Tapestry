@@ -46,6 +46,7 @@ function scrub(value) {
 const RETIRED_STORES = new Set([
   'profileContextItems', 'profileContextRecipients', 'profileContextSuggestions',
   'profileContextPreferences', 'profileContextAudit',
+  'nextMoveDecisions', 'nextMoveFeedback', 'nextMoveSurfacePreferences',
 ]);
 
 export function sanitizeRetiredFeatureRecord(record, store = null) {

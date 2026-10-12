@@ -31,10 +31,10 @@ const shared = [
 
 const local = [
   'r1Events',
-  'appSettings', 'nextMoveSurfacePreferences', 'chronicleDrafts',
+  'appSettings', 'chronicleDrafts',
   'chronicleFeedViewStates', 'chronicleStoryReadStates', 'chronicleResurfaceStates',
   'notes', 'analyticsEvents',
-  'nextMoveDecisions', 'nextMoveFeedback', 'taskPlanReceipts', 'interfaceRevealReceipts',
+  'taskPlanReceipts', 'interfaceRevealReceipts',
 ];
 
 const derived = [

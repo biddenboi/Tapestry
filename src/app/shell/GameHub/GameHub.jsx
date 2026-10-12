@@ -60,7 +60,7 @@ import {
 } from '@app/shell/GameHub/panelScheduling.js';
 import { getNextDailyLifecycleBoundary } from '@app/day-boundary/LifecycleBoundaries.js';
 import { getDurableEndOfDayState } from '@app/day-boundary/DailyLifecycleService.js';
-import EdgeNextMoveHost from '@features/navigation/components/EdgeNextMoveHost/EdgeNextMoveHost.jsx';
+import TaskSessionDock from '@features/tasks/components/TaskSessionDock/TaskSessionDock.jsx';
 import QuickCaptureLauncher from '@features/chronicle/components/QuickCapture/QuickCaptureLauncher.jsx';
 import useOpeningTrail from '@features/opening-trail/useOpeningTrail.js';
 import {
@@ -757,7 +757,7 @@ export default function GameHub() {
             )}
           </div>
         </Suspense>
-        <EdgeNextMoveHost />
+        <TaskSessionDock />
       </main>
 
       {inboxVisible && (
