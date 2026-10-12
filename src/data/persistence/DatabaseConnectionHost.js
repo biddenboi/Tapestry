@@ -109,12 +109,6 @@ export class DatabaseConnectionHost {
     this.repositories = this.persistenceRuntime.repositories;
     this.timelineQueries = this.persistenceRuntime.timelineQueries;
     this.profileDaybookQueries = this.persistenceRuntime.profileDaybookQueries;
-    this.profileContextRepository = this.persistenceRuntime.profileContextRepository;
-    this.profileContextFacts = this.persistenceRuntime.profileContextFacts;
-    this.profileContextProjections = this.persistenceRuntime.profileContextProjections;
-    this.profileContextSuggestions = this.persistenceRuntime.profileContextSuggestions;
-    this.profileContextCommands = this.persistenceRuntime.profileContextCommands;
-    this.profileContextActions = this.persistenceRuntime.profileContextActions;
     this.friendships = this.persistenceRuntime.friendships;
     this.reminderQueries = this.persistenceRuntime.reminderQueries;
     this.eloQueries = this.persistenceRuntime.eloQueries;
@@ -498,7 +492,7 @@ export class DatabaseConnectionHost {
       : [];
     const requestedOperations = [
       ...requestedPuts.map((entry) => {
-        const record = sanitizeRetiredFeatureRecord(entry.record);
+        const record = sanitizeRetiredFeatureRecord(entry.record, entry.store);
         return record
           ? { type: 'put', ...entry, record }
           : { type: 'delete', store: entry.store, UUID: entry.record?.UUID };

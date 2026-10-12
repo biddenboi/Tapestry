@@ -41,6 +41,7 @@ export const SQLITE_DOCUMENT_TABLES = Object.freeze({
   journals: 'document_journals',
   players: 'document_players',
   profileSummaries: 'document_profile_summaries',
+  // Retired Context schema names are retained for immutable migration replay.
   profileContextItems: 'document_profile_context_items',
   profileContextRecipients: 'document_profile_context_recipients',
   profileContextSuggestions: 'document_profile_context_suggestions',

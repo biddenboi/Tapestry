@@ -12,7 +12,8 @@ const RETIRED_AWARDS = new Set(['peace_1', 'peace_2', 'peace_3']);
 const RETIRED_EVENT = 'special-dojo-multiplier';
 
 function isRetiredRecord(record) {
-  return record?.UUID === RETIRED_EVENT
+  return record?.type === 'lifeContext'
+    || record?.UUID === RETIRED_EVENT
     || record?.eventUUID === RETIRED_EVENT
     || record?.specialKind === 'dojo_multiplier'
     || record?.type === 'match-dojo-effects'
@@ -42,10 +43,16 @@ function scrub(value) {
   return clean;
 }
 
-export function sanitizeRetiredFeatureRecord(record) {
+const RETIRED_STORES = new Set([
+  'profileContextItems', 'profileContextRecipients', 'profileContextSuggestions',
+  'profileContextPreferences', 'profileContextAudit',
+]);
+
+export function sanitizeRetiredFeatureRecord(record, store = null) {
+  if (RETIRED_STORES.has(store)) return null;
   return scrub(record) ?? null;
 }
 
-export function sanitizeRetiredFeatureRecords(records = []) {
-  return records.map(sanitizeRetiredFeatureRecord).filter(Boolean);
+export function sanitizeRetiredFeatureRecords(records = [], store = null) {
+  return records.map((record) => sanitizeRetiredFeatureRecord(record, store)).filter(Boolean);
 }

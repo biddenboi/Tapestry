@@ -18,7 +18,6 @@ export const DATA_DOMAIN = Object.freeze({
   reminders: 'reminders',
   profiles: 'profiles',
   profileSummaries: 'profileSummaries',
-  profileContext: 'profileContext',
   nextMove: 'nextMove',
   chronicle: 'chronicle',
   contributionRoad: 'contributionRoad',
@@ -38,7 +37,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.profiles,
     DATA_DOMAIN.profileSummaries,
-    DATA_DOMAIN.profileContext,
     DATA_DOMAIN.nextMove,
     DATA_DOMAIN.contributionRoad,
   ]),
@@ -172,10 +170,6 @@ export const DOMAIN_INVALIDATION = Object.freeze({
     DATA_DOMAIN.leaderboards,
     DATA_DOMAIN.achievements,
     DATA_DOMAIN.contributionRoad,
-  ]),
-  profileContextWrite: freezeDomains([
-    DATA_DOMAIN.profileContext,
-    DATA_DOMAIN.profiles,
   ]),
   nextMoveWrite: freezeDomains([
     DATA_DOMAIN.nextMove,

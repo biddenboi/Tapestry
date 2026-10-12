@@ -18,7 +18,6 @@ import {
 } from '@domain/matches/Match.js';
 import { buildCompetitionRankIdentity } from '@domain/matches/IGT.js';
 import {
-  createPairMatchContextSnapshot,
   getMatchDurationHours,
   getMatchTeams,
   isPairMatch,
@@ -430,30 +429,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
         selectedAchievements: currentPlayer.selectedAchievements || [],
       };
       const teams = [[viewerSnapshot, ...teammates], opponents];
-      let contextProjections = new Map();
-      try {
-        contextProjections = await databaseConnection.getProfileContextProjections({
-          viewerId: currentPlayer.UUID,
-          subjects: teams.flat()
-            .filter((player) => String(player.UUID) !== String(currentPlayer.UUID))
-            .map((player) => ({
-              subjectId: player.UUID,
-              relationshipTier: teammates.some((teammate) => teammate.UUID === player.UUID)
-                ? 'friend'
-                : 'dynamic',
-            })),
-          viewerIGT: matchStartIGT,
-          revision: domainRevisions.profileContext || 0,
-        });
-      } catch (contextError) {
-        console.warn('[Lobby] Pair Match context snapshots could not be projected:', contextError);
-      }
-      const contextSnapshot = createPairMatchContextSnapshot({
-        viewerUUID: currentPlayer.UUID,
-        teams,
-        projections: contextProjections,
-        createdAt,
-      });
       const match = withImmutableMatchSnapshots({
         UUID: uuid(),
         createdAt,
@@ -464,7 +439,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
         lockedAt: null,
         inGameTimestamp: matchStartIGT,
         teams,
-        contextSnapshot,
         result: null,
       });
       if (matchmakingCancelRef.current) return;

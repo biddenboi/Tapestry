@@ -107,7 +107,6 @@ export default function MobileMorePage() {
       }
       const result = await createPairMatchCommand(databaseConnection, currentPlayer, {
         operationId: uuid(),
-        profileContextRevision: domainRevisions.profileContext || 0,
       });
       if (result.insufficient) {
         setError(`A new Match needs more match-ready profiles (${result.available || 0} available). A Match started on desktop will appear here after Private Sync.`);

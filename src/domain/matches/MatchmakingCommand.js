@@ -2,7 +2,6 @@ import { v4 as uuid } from 'uuid';
 import { MATCH_STATUS, STORES } from '@domain/constants.js';
 import { buildGhostRoster } from '@domain/matches/Match.js';
 import {
-  createPairMatchContextSnapshot,
   PAIR_MATCH_RULESET_ID,
   withImmutableMatchSnapshots,
 } from '@domain/matches/MatchContracts.js';
@@ -31,7 +30,6 @@ function snapshotPlayer(player, currentPlayer) {
 export async function createPairMatchCommand(databaseConnection, currentPlayer, {
   operationId = uuid(),
   durationHours = 1,
-  profileContextRevision = 0,
   at = new Date(),
 } = {}) {
   if (!databaseConnection || !currentPlayer?.UUID) throw new Error('Matchmaking requires an active local profile.');
@@ -55,18 +53,6 @@ export async function createPairMatchCommand(databaseConnection, currentPlayer, 
 
   const createdAt = commandTime.toISOString();
   const teams = [[snapshotPlayer(matchmakingPlayer, currentPlayer), ...roster.teammates], roster.opponents];
-  let projections = new Map();
-  try {
-    projections = await databaseConnection.getProfileContextProjections?.({
-      viewerId: currentPlayer.UUID,
-      subjects: teams.flat().filter((player) => String(player.UUID) !== String(currentPlayer.UUID)).map((player) => ({
-        subjectId: player.UUID,
-        relationshipTier: roster.teammates.some((teammate) => String(teammate.UUID) === String(player.UUID)) ? 'friend' : 'dynamic',
-      })),
-      viewerIGT: matchStartIGT,
-      revision: profileContextRevision,
-    }) || new Map();
-  } catch { /* Match creation remains available when optional context projection is unavailable. */ }
 
   const match = withImmutableMatchSnapshots({
     UUID: matchUUID,
@@ -79,12 +65,6 @@ export async function createPairMatchCommand(databaseConnection, currentPlayer, 
     lockedAt: null,
     inGameTimestamp: matchStartIGT,
     teams,
-    contextSnapshot: createPairMatchContextSnapshot({
-      viewerUUID: currentPlayer.UUID,
-      teams,
-      projections,
-      createdAt,
-    }),
     result: null,
   });
   const saved = await saveMatchStateCommand(databaseConnection, match, {

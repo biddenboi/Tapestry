@@ -489,11 +489,6 @@ function CenterNode({ team1Total, team2Total, myOnTeam1 }) {
   );
 }
 
-function matchContextSummary(player) {
-  return player?.matchContext?.chapter?.text
-    || player?.matchContext?.capsule?.[0]?.text
-    || null;
-}
 
 /* ── Fixed Pair Match reveal and readiness ───────────────── */
 function PairMatchStaging({
@@ -514,7 +509,6 @@ function PairMatchStaging({
     team.reduce((sum, player) => sum + Number(player.elo || 0), 0) / Math.max(1, team.length),
   );
   const teammate = myTeam.find((player) => String(player.UUID) !== String(currentPlayer?.UUID));
-  const teammateContext = matchContextSummary(teammate);
 
   return (
     <div className="vs-screen pair-match-staging">
@@ -540,11 +534,6 @@ function PairMatchStaging({
       <div className="pair-staging-contract">
         <span>{readyPhase ? 'READY CHECK' : 'TEAM REVEAL'}</span>
         <strong>2v2 · 60 minutes · rated · live scores</strong>
-        {teammate && teammateContext && (
-          <p className="pair-staging-context">
-            <b>{teammate.username || 'Teammate'}:</b> {teammateContext}
-          </p>
-        )}
         <div className="pair-staging-actions">
           <button type="button" onClick={onLeave} disabled={busy}>Leave queue</button>
           <button
@@ -581,7 +570,6 @@ function PairMatchDock({
   const opponents = teams[myTeamIndex === 0 ? 1 : 0] || [];
   const teamTotal = (team) => team.reduce((sum, player) => sum + Number(scores[player.UUID] || 0), 0);
   const teammate = myTeam.find((player) => String(player.UUID) !== String(currentPlayer?.UUID));
-  const teammateContext = matchContextSummary(teammate);
   const renderTeam = (label, team, tone) => (
     <section className="pair-dock-team" data-tone={tone}>
       <header><span>{label}</span><strong>{teamTotal(team).toLocaleString()}</strong></header>
@@ -619,12 +607,6 @@ function PairMatchDock({
           <button type="button" onClick={onOpenQueue}>Open queue</button>
         </div>
       </section>
-      {teammateContext && (
-        <section className="pair-dock-context">
-          <span>Teammate context</span>
-          <p>{teammateContext}</p>
-        </section>
-      )}
       <footer className="pair-dock-footer">
         <button type="button" className="danger" onClick={onForfeit}>Forfeit</button>
       </footer>

@@ -33,7 +33,6 @@ test('all supported data domains have an independent revision slot', () => {
     'reminders',
     'profiles',
     'profileSummaries',
-    'profileContext',
     'nextMove',
     'chronicle',
     'contributionRoad',

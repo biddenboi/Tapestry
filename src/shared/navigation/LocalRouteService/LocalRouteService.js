@@ -2,7 +2,7 @@ export const LOCAL_SECTION_ROUTES = Object.freeze({
   tasks: Object.freeze(['now', 'queue', 'all', 'planning', 'history']),
   goals: Object.freeze(['overview', 'areas', 'reviews', 'completed']),
   goal: Object.freeze(['overview', 'roadmap', 'activity', 'people', 'review-settings']),
-  profile: Object.freeze(['overview', 'context', 'history', 'competition', 'identity']),
+  profile: Object.freeze(['overview', 'friends', 'history', 'competition', 'identity']),
   match: Object.freeze(['arena', 'current']),
   feed: Object.freeze(['journals']),
   chronicle: Object.freeze(['latest', 'stories', 'essays', 'revisit', 'archive']),

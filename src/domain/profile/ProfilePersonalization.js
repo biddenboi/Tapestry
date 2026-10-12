@@ -82,9 +82,7 @@ export const DEFAULT_PROFILE_PERSONALIZATION = {
   showAchievements: true,
   showHighlights: true,
   showActivity: true,
-  blocks: [
-    { id: 'life-context', type: 'lifeContext', columns: 12, height: 360 },
-  ],
+  blocks: [],
 };
 
 export const PROFILE_BLOCK_MIN_COLUMNS = 3;
@@ -93,7 +91,6 @@ export const PROFILE_BLOCK_MIN_HEIGHT = 200;
 export const PROFILE_BLOCK_MAX_HEIGHT = 720;
 
 const PROFILE_BLOCK_DEFAULTS = {
-  lifeContext: { columns: 12, height: 360 },
   text: { columns: 12, height: 240 },
   stats: { columns: 6, height: 240 },
   achievements: { columns: 6, height: 240 },
@@ -104,15 +101,6 @@ const PROFILE_BLOCK_DEFAULTS = {
 };
 
 export const PROFILE_BLOCK_DEFINITIONS = [
-  {
-    type: 'lifeContext',
-    label: 'Life Context',
-    description: 'Share a current chapter, near horizon, and how others can show up.',
-    free: true,
-    unique: true,
-    defaultColumns: PROFILE_BLOCK_DEFAULTS.lifeContext.columns,
-    defaultHeight: PROFILE_BLOCK_DEFAULTS.lifeContext.height,
-  },
   {
     type: 'text',
     label: 'Text Block',

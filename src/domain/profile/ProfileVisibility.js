@@ -4,14 +4,14 @@ export const VISIBILITY_TIER = Object.freeze({ self: 'self', friend: 'friend', o
 
 export const PROFILE_TAB = Object.freeze({
   overview: 'overview',
-  context: 'context',
+  friends: 'friends',
   history: 'history',
   competition: 'competition',
   identity: 'identity',
 });
 
 const ALL_OVERVIEW_BLOCKS = Object.freeze([
-  'lifeContext', 'text', 'stats', 'achievements', 'activity', 'rankGraph', 'highlights', 'goalContribution',
+  'text', 'stats', 'achievements', 'activity', 'rankGraph', 'highlights', 'goalContribution',
 ]);
 
 export const PROFILE_VISIBILITY_POLICY = Object.freeze({
@@ -27,7 +27,7 @@ export const PROFILE_VISIBILITY_POLICY = Object.freeze({
   }),
   [VISIBILITY_TIER.friend]: Object.freeze({
     label: 'Friend',
-    allowedTabs: Object.freeze([PROFILE_TAB.overview, PROFILE_TAB.context, PROFILE_TAB.history, PROFILE_TAB.competition]),
+    allowedTabs: Object.freeze([PROFILE_TAB.overview, PROFILE_TAB.friends, PROFILE_TAB.history, PROFILE_TAB.competition]),
     daybookScope: 'full',
     matchScope: 'full',
     socialScope: 'full',
@@ -42,7 +42,7 @@ export const PROFILE_VISIBILITY_POLICY = Object.freeze({
     matchScope: 'none',
     socialScope: 'none',
     settingsScope: 'none',
-    overviewBlockTypes: Object.freeze(['lifeContext', 'text', 'achievements']),
+    overviewBlockTypes: Object.freeze(['text', 'achievements']),
     canViewRichLastActive: false,
   }),
 });

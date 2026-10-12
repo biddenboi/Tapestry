@@ -913,15 +913,11 @@ function ProfileSkinView({
   onRemoveBlock,
   contributionDistribution,
   totalContribution,
-  lifeContext,
 }) {
   const skin = getProfileSkin(prefs.skin);
   const blocks = prefs.blocks || [];
 
   const renderBlockContent = (block) => {
-    if (block.type === 'lifeContext') return lifeContext || (
-      <div className="profile-empty-row">No life context is visible for this relationship.</div>
-    );
     if (block.type === 'text') {
       return (
         <>

@@ -1,5 +1,4 @@
 import '@features/profile/pages/Profile/Profile.css';
-import '@features/profile-context/profile-context.css';
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import NiceModal from '@ebay/nice-modal-react';
@@ -81,8 +80,6 @@ import {
   buildProfileBackgroundStyle,
   scorePlayerSearch,
 } from '@features/profile/pages/Profile/ProfileView.jsx';
-import LifeContextBlock from '@features/profile-context/components/LifeContextBlock.jsx';
-import { useProfileContextController } from '@features/profile-context/hooks/useProfileContextController.js';
 import { useLocalSectionRoute } from '@shared/navigation/LocalSectionNav/LocalSectionRouteState.js';
 import { PROFILE_LOCAL_PAGES } from '@features/profile/pages/subpages/ProfilePages.js';
 
@@ -190,17 +187,6 @@ export default function Profile({ uuid: targetUUID }) {
           profileId: resolvedProfileUUID,
         })
   ), [currentPlayer?.UUID, profileAccess, resolvedProfileUUID]);
-  const profileContext = useProfileContextController({
-    databaseConnection,
-    ensureDomainLoaded,
-    invalidateDomains,
-    ownerId: resolvedProfileUUID,
-    viewerId: currentPlayer?.UUID,
-    relationshipTier: access.tier,
-    viewerIGT,
-    revision: domainRevisions.profileContext,
-    enabled: canLoad,
-  });
   const daybookQuery = useMemo(() => ({
     type: timelineType,
     search: timelineSearch,
@@ -430,7 +416,7 @@ export default function Profile({ uuid: targetUUID }) {
     if (activeTab === 'competition' && access.matchScope === 'full') {
       loadProfileMatches().catch((error) => console.warn('[Profile] match load failed:', error));
     }
-    if (activeTab === 'context' && access.socialScope === 'full') {
+    if (activeTab === 'friends' && access.socialScope === 'full') {
       loadSocialProfile().catch((error) => console.warn('[Profile] social load failed:', error));
     }
     if (access.settingsScope === 'full' && (activeTab === 'identity' || profileBlockEditorOpen || showBannerEditor)) {
@@ -1289,23 +1275,6 @@ export default function Profile({ uuid: targetUUID }) {
               onRemoveBlock={handleRemoveProfileBlock}
               contributionDistribution={contributionDistribution}
               totalContribution={totalContribution}
-              lifeContext={(
-                <LifeContextBlock
-                  ownerId={resolvedProfileUUID}
-                  isOwner={isSelf}
-                  projection={profileContext.projection}
-                  ownerState={profileContext.ownerState}
-                  people={players.filter((entry) => entry.UUID !== resolvedProfileUUID)}
-                  loading={profileContext.loading}
-                  saving={profileContext.saving}
-                  onSaveQuick={profileContext.saveQuick}
-                  onRefreshSuggestions={profileContext.refreshSuggestions}
-                  onResolveSuggestion={profileContext.resolveSuggestion}
-                  onRevoke={profileContext.revokeItem}
-                  onPreview={profileContext.preview}
-                  onSavePreferences={profileContext.savePreferences}
-                />
-              )}
             />
           </div>
         )}
@@ -1397,23 +1366,8 @@ export default function Profile({ uuid: targetUUID }) {
           </div>
         )}
 
-        {activeTab === 'context' && (
-          <div className="profile-tab-panel profile-social-panel profile-context-panel">
-            <LifeContextBlock
-              ownerId={resolvedProfileUUID}
-              isOwner={isSelf}
-              projection={profileContext.projection}
-              ownerState={profileContext.ownerState}
-              people={players.filter((entry) => entry.UUID !== resolvedProfileUUID)}
-              loading={profileContext.loading}
-              saving={profileContext.saving}
-              onSaveQuick={profileContext.saveQuick}
-              onRefreshSuggestions={profileContext.refreshSuggestions}
-              onResolveSuggestion={profileContext.resolveSuggestion}
-              onRevoke={profileContext.revokeItem}
-              onPreview={profileContext.preview}
-              onSavePreferences={profileContext.savePreferences}
-            />
+        {activeTab === 'friends' && (
+          <div className="profile-tab-panel profile-social-panel profile-friends-panel">
             <section className="profile-panel">
               <div className="profile-panel-header">
                 <div>

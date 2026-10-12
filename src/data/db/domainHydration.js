@@ -18,7 +18,6 @@ export const HYDRATION_DOMAIN = Object.freeze({
   reminders: 'reminders',
   profiles: 'profiles',
   profileSummaries: 'profileSummaries',
-  profileContext: 'profileContext',
   profileTimeline: 'profileTimeline',
   profileMatches: 'profileMatches',
   profileSocial: 'profileSocial',
@@ -108,13 +107,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
   [HYDRATION_DOMAIN.reminders]: Object.freeze(['reminders', 'interventionDecisions']),
   [HYDRATION_DOMAIN.profiles]: Object.freeze(['players']),
   [HYDRATION_DOMAIN.profileSummaries]: Object.freeze(['profileSummaries']),
-  [HYDRATION_DOMAIN.profileContext]: Object.freeze([
-    'profileContextItems',
-    'profileContextRecipients',
-    'profileContextSuggestions',
-    'profileContextPreferences',
-    'profileContextAudit',
-  ]),
   [HYDRATION_DOMAIN.profileTimeline]: Object.freeze(['transactions']),
   [HYDRATION_DOMAIN.profileMatches]: Object.freeze([]),
   [HYDRATION_DOMAIN.profileSocial]: Object.freeze([]),
@@ -134,7 +126,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
 
 export const DOMAIN_DEPENDENCIES = Object.freeze({
   [HYDRATION_DOMAIN.social]: Object.freeze([HYDRATION_DOMAIN.profiles]),
-  [HYDRATION_DOMAIN.profileContext]: Object.freeze([HYDRATION_DOMAIN.profiles]),
   [HYDRATION_DOMAIN.leaderboards]: Object.freeze([]),
   [HYDRATION_DOMAIN.achievements]: Object.freeze([HYDRATION_DOMAIN.profiles]),
   [HYDRATION_DOMAIN.nextMove]: Object.freeze([

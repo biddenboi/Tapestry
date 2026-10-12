@@ -20,7 +20,7 @@ export const PAIR_MATCH_V1 = Object.freeze({
   ratingPolicy: 'elo-team-average-v1',
   scoreVisibility: 'live-fixed',
   scoringPolicy: 'sum-eligible-task-points',
-  contextPolicy: 'profile-projection-snapshot-v1',
+  contextPolicy: 'none',
   minimumValidActivityMs: 60 * 1000,
   forfeitPolicy: 'forced-team-loss-v1',
   scoreRewardPolicy: MATCH_PROMISE_REWARD_POLICY_ID,

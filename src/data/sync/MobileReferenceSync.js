@@ -589,7 +589,7 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     }
     const current = localByStore.get(store).get(incomingData.UUID);
     if (current && recordTime(current) >= incomingTime) continue;
-    if (entry.deleted || incomingData.__deleted || !sanitizeRetiredFeatureRecord(incomingData)) {
+    if (entry.deleted || incomingData.__deleted || !sanitizeRetiredFeatureRecord(incomingData, store)) {
       if (current) deletes.push({ store, UUID: incomingData.UUID });
       const typedTable = TYPED_DELETE_TABLE_BY_RECORD_TYPE.get(entry.recordType);
       if (typedTable) {
