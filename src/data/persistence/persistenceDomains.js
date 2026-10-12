@@ -40,6 +40,7 @@ export const PERSISTENCE_ARTIFACT_CLASS = Object.freeze({
 });
 
 const STORE_DOMAINS = Object.freeze({
+  [STORES.r1Event]: ['tasks', 'nextMove'],
   [STORES.task]: ['tasks'],
   [STORES.taskCompletionEvent]: ['tasks'],
   [STORES.taskCompletionReceipt]: ['tasks'],

@@ -76,6 +76,7 @@ export function createActionSession({
   milestoneUUID = task?.milestoneUUID || null,
   matchUUID = null,
   source = 'manual',
+  sessionKind = task?.sessionKind || 'work',
   startedAt = new Date().toISOString(),
   matchRewardContract = task?.matchRewardContract || null,
   controllingDeviceId = null,
@@ -86,6 +87,7 @@ export function createActionSession({
   return Object.freeze({
     UUID,
     parent: String(playerUUID),
+    sessionKind: ['work', 'extra', 'rest', 'reward', 'wait'].includes(sessionKind) ? sessionKind : 'work',
     targetType: task.targetType || 'todo',
     targetUUID: String(task.UUID),
     targetName: boundedText(task.name || 'Untitled task', 300),
@@ -144,7 +146,7 @@ export async function startActionSession(databaseConnection, input) {
   });
   const operationId = requestedOperationId || `action-session-start:${session.UUID}`;
   const existingTodo = await databaseConnection.get(STORES.todo, input.task.UUID);
-  const taskRecord = existingTodo ? null : {
+  const taskRecord = existingTodo || ['rest', 'reward', 'wait'].includes(session.sessionKind) ? null : {
     ...input.task,
     UUID: input.task.UUID,
     parent: input.playerUUID,
@@ -411,6 +413,16 @@ export async function settleActionSession(databaseConnection, {
       ? sessionElapsed(current, endedAtDate.getTime())
       : Number(activeDurationMs) || 0,
   );
+  if (['rest', 'reward', 'wait'].includes(current.sessionKind)) {
+    const session = { ...current, endedAt: at, activeDurationMs: duration, activeAnchorAt: null,
+      pausedAt: null, outcome, outcomeNote, updatedAt: at,
+      activityIntervals: (current.activityIntervals || []).map((interval) => ({ ...interval, endsAt: interval.endsAt || at })),
+      points: 0, coins: 0, contributionValue: 0 };
+    await databaseConnection.commitAtomicMutation({ label: 'r1-discretionary-stop',
+      operationId: requestedOperationId || `r1-session-stop:${current.UUID}`,
+      puts: [{ store: STORES.actionSession, record: session }], flush: true });
+    return { session, points: 0, coins: 0, contribution: 0, provenance: [], integration: {} };
+  }
   const acceptedEffort = effortIsAccepted(outcome, duration);
   const calculatedPoints = acceptedEffort
     ? getTimeBasedTaskPoints(duration, `${current.UUID}:${outcome}`).points

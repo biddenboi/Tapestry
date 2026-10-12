@@ -251,6 +251,8 @@ export class ProfileLifecycleService {
     for (const store of universalStores) await reparentStore(store);
     await safeDelete(STORES.goalParticipant, (entry) => entry.playerUUID === playerUUID || entry.parent === playerUUID);
 
+    // STORES.r1Event is append-only workspace history: retain it when a profile
+    // is removed, like the household tasks it describes. Never reparent events.
     // Delete only profile-bound progress, economy, and social data.
     const parentScoped = [
       STORES.event, STORES.transaction,

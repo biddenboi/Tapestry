@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { R1State, replay } from '@domain/r1/state.js';
+import { syncFacts, factsFromState } from '@domain/r1/host.js';
+import { decideWith } from '@domain/r1/decide.js';
+const fact = (patch = {}) => ({ id: 'a', q: 5, l: 0, d: 96, start: null, cycle: null, habit: false, category: null, block: 0, after: null, completed: false, ...patch });
+const sync = (m, facts, now = 1) => { const events = syncFacts(factsFromState(m), facts, now, { state: m }); events.forEach((e) => m.apply(e)); return events; };
+test('Lot host: adds once and replays to the same state', () => { const m = new R1State(); const f = fact({ l: 1 }); const events = sync(m, [f]); assert.deepEqual(events.map((e) => e.ev), ['add', 'estimate']); assert.deepEqual(sync(m, [f], 1.1), []); assert.deepEqual(decideWith(m, 1), decideWith(replay(events), 1)); });
+test('Lot host: logged session time is not a re-estimate', () => { const m = new R1State(); sync(m, [fact()]); m.apply({ ev: 'log', start: 1, dur: 1, kind: 'work', ref: 'a' }); assert.deepEqual(sync(m, [fact({ l: 1 })], 2.1), []); assert.deepEqual(sync(m, [fact({ q: 2 })], 2.2).map((e) => e.ev), ['estimate']); });
+test('Lot host: repeating close completes and undo reopens', () => { const m = new R1State(); const f = fact({ q: 1, cycle: 168 }); sync(m, [f]); assert.deepEqual(sync(m, [{ ...f, d: 264 }]).map((e) => e.ev), ['complete']); assert.deepEqual(sync(m, [f]).map((e) => e.ev), ['reopen']); assert.deepEqual(sync(m, [{ ...f, d: 98 }]).map((e) => e.ev), ['deadline']); });
+test('Lot host: gone tasks are removed with their historical logs retained', () => { const m = new R1State(); sync(m, [fact()]); assert.deepEqual(sync(m, []).map((e) => e.ev), ['remove']); assert.equal(decideWith(m, 1).kind, 'free'); });

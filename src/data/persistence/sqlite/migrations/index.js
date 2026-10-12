@@ -1,3 +1,4 @@
+import migration061 from './061_r1_events.js';
 import migration060 from './060_r1_fields.js';
 import migration001 from './001_runtime_control.js';
 import migration002 from './002_document_stores.js';
@@ -105,6 +106,7 @@ export const SQLITE_MIGRATIONS = Object.freeze([
   migration058,
   migration059,
   migration060,
+  migration061,
 ]);
 
 export default SQLITE_MIGRATIONS;

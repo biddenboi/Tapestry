@@ -30,6 +30,7 @@ const shared = [
 ];
 
 const local = [
+  'r1Events',
   'appSettings', 'nextMoveSurfacePreferences', 'chronicleDrafts',
   'chronicleFeedViewStates', 'chronicleStoryReadStates', 'chronicleResurfaceStates',
   'notes', 'analyticsEvents', 'profileContextPreferences',

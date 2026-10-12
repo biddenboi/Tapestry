@@ -49,6 +49,7 @@ export const SQLITE_DOCUMENT_TABLES = Object.freeze({
   events: 'document_events',
   shop: 'document_shop',
   todos: 'document_todos',
+  r1Events: 'document_r1_events',
   transactions: 'document_transactions',
   inventory: 'document_inventory',
   matches: 'document_matches',
@@ -167,6 +168,7 @@ export function buildDocumentSchemaSql({
   onlyContributionRoadStores = false,
 } = {}) {
   const tables = Object.values(SQLITE_DOCUMENT_TABLES)
+    .filter((table) => table !== 'document_r1_events') // Added only by immutable migration 061.
     .filter((table) => !onlyContributionRoadStores || CONTRIBUTION_ROAD_DOCUMENT_TABLES.has(table))
     .filter((table) => includeGoalStores || !GOAL_DOCUMENT_TABLES.has(table))
     .filter((table) => includeContinuityStores || !CONTINUITY_DOCUMENT_TABLES.has(table))
