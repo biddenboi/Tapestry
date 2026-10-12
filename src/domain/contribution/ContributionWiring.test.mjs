@@ -17,8 +17,8 @@ test('major user actions are wired into Contribution exactly at their durable ac
     read('./Contribution.js'),
     read('../../features/tasks/domain/TaskCompletionProcessors.js'),
     read('../matches/MatchPostMatchJobs.js'),
-    read('../../features/feed/modals/PostComposerModal/PostComposerModal.jsx'),
-    read('../../features/feed/modals/JournalDetailModal/JournalDetailModal.jsx'),
+    read('../../features/chronicle/modals/ChronicleComposerModal/ChronicleComposerModal.jsx'),
+    read('../../features/chronicle/modals/ChronicleEntryModal/ChronicleEntryModal.jsx'),
     read('../../data/persistence/repositories/GoalRepository.js'),
     read('../continuity/ActionSession.js'),
   ]);

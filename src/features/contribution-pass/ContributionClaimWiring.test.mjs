@@ -10,7 +10,7 @@ test('Contribution Road is the only UI path that claims milestone cosmetics', as
     read('./pages/ContributionPass/RecognitionBoardV2.jsx'),
     read('../../domain/contribution/Contribution.js'),
     read('../tasks/domain/TaskCompletionProcessors.js'),
-    read('../feed/modals/PostComposerModal/PostComposerModal.jsx'),
+    read('../chronicle/modals/ChronicleComposerModal/ChronicleComposerModal.jsx'),
     read('../../domain/profile/ProfileSummary.js'),
     read('../profile/pages/Profile/ProfileDataController.js'),
   ]);

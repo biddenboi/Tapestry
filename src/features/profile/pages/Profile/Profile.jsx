@@ -16,7 +16,7 @@ import { getRank, getRankLabel, getRankProgress, getRankGlow, getRankClass } fro
 import { getRankFramePresentation } from '@domain/rank/RankFrame.js';
 import { RankIcon } from '@shared/icons/RankIcon.jsx';
 import TodoDetailModal from '@features/tasks/modals/TodoDetailModal/TodoDetailModal.jsx';
-import JournalDetailModal from '@features/feed/modals/JournalDetailModal/JournalDetailModal.jsx';
+import ChronicleEntryModal from '@features/chronicle/modals/ChronicleEntryModal/ChronicleEntryModal.jsx';
 import { loadMatchDetailsModal } from '@features/matches/loaders.js';
 import AchievementBadge from '@features/achievements/components/AchievementBadge/AchievementBadge.jsx';
 import { getAchievementByKey, computeRarity, getRarityLabel } from '@domain/achievements/Achievements.js';
@@ -776,7 +776,7 @@ export default function Profile({ uuid: targetUUID }) {
   };
 
   const openHistoryItem = (item) => {
-    if (item.type === 'journal') { NiceModal.show(JournalDetailModal, { item }); return; }
+    if (item.type === 'journal') { NiceModal.show(ChronicleEntryModal, { item }); return; }
     if (item.type === 'task')    { NiceModal.show(TodoDetailModal, { item }); return; }
     if (item.type === 'match')   { openMatchDetails(item); return; }
     // Historical lifecycle rows remain readable in the daybook.
@@ -794,7 +794,7 @@ export default function Profile({ uuid: targetUUID }) {
 
   const openHighlight = (card) => {
     if (card.action === 'match' && card.item) { openMatchDetails(card.item); return; }
-    if (card.action === 'journal' && card.item) { NiceModal.show(JournalDetailModal, { item: card.item }); return; }
+    if (card.action === 'journal' && card.item) { NiceModal.show(ChronicleEntryModal, { item: card.item }); return; }
     if (card.action === 'task' && card.item) { NiceModal.show(TodoDetailModal, { item: card.item }); return; }
     if (card.action === 'achievements') setShowAchievements(true);
   };

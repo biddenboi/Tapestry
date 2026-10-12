@@ -1,6 +1,6 @@
 export const FEATURE_ARCHITECTURE = Object.freeze({
   feed: Object.freeze({
-    view: 'features/feed/components/Feed/Feed.jsx',
+    view: 'features/feed/pages/FeedPage/FeedPage.jsx',
     controller: 'domain/feed/FeedOrdering.js',
     repository: 'data/persistence/repositories/FeedRepository.js',
     contracts: 'domain/feed/FeedOrdering.js',
