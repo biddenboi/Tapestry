@@ -28,6 +28,19 @@ A clean desktop may restore the newest checkpoint, then apply newer reference an
 
 Mobile never uploads or downloads the full checkpoint. Its clean-device bootstrap pages through owner-scoped mobile reference rows and repairs the normalized projections needed by IGT, Elo, Points, contribution, Matches, and graphs.
 
+Mobile reference application uses a fresh SQLite transaction ID for each batch.
+Timestamps and row counts are not transaction identities: separate pages can
+share both values. Record clocks and normalized upserts keep replay safe.
+
+Clients upgraded from the older batch-ID implementation re-read the cloud
+working set once to recover rows skipped behind an already-advanced cursor.
+This repair does not prune local-only records and protects newer pending edits
+and deletion tombstones. The local `mobile-reference-apply-repair-v1` marker is
+written only after the snapshot and its concurrent-change catch-up succeed;
+network failures retry normally. A fresh bootstrap writes the same marker, so
+subsequent syncs use deltas without an extra full download. This client repair
+does not require an additional server migration.
+
 ## Portable ML artifacts
 
 Task Recommender v12 training remains a desktop responsibility. Only app-setting records with the `task-recommender-v12-` prefix are captured as `ml-model` references. Mobile downloads those portable model artifacts for local inference; unrelated settings, optimizer/training state, analytics, exports, and recovery artifacts are excluded.
