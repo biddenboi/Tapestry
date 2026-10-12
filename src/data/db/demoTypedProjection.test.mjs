@@ -6,7 +6,7 @@ import InProcessSqliteClient from '../persistence/sqlite/testing/InProcessSqlite
 import SqliteRuntime from '../persistence/sqlite/SqliteRuntime.js';
 import SqliteStorageAdapter from '../persistence/sqlite/SqliteStorageAdapter.js';
 
-test('demo seed prepares the typed semantic world, Dojo, and encounter-memory paths', async (t) => {
+test('demo seed preserves task, profile, friendship and mobile projection paths', async (t) => {
   const alias = (path) => fileURLToPath(new URL(path, import.meta.url));
   const server = await createServer({
     root: alias('../..'),
@@ -21,15 +21,13 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
         '@shared': alias('../../shared'),
       },
     },
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false },
     appType: 'custom',
   });
   const sqliteRuntime = new SqliteRuntime({ logger: { warn() {} } });
   const client = new InProcessSqliteClient({ runtime: sqliteRuntime });
   const sqliteStorageAdapter = new SqliteStorageAdapter({ client });
   const { default: DatabaseConnection } = await server.ssrLoadModule('/data/DatabaseConnection.js');
-  const { buildTaverns } = await server.ssrLoadModule('/domain/social-world/TavernProjection.js');
-  const { selectLobbyActivityPulses } = await server.ssrLoadModule('/domain/social-world/LobbyPresencePulses.js');
   const { recoverPendingTaskCompletionProcessing } = await server.ssrLoadModule(
     '/features/tasks/domain/TaskCompletionProcessors.js',
   );
@@ -56,8 +54,6 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
   await recoverPendingAchievementEvents(databaseConnection);
   assert.equal(seeded.typedDemo.status, 'seeded');
   // Every seeded demo profile starts at zero Elo, Contribution, and Points.
-  // The typed world may still select one equal-baseline near peer.
-  assert.equal(seeded.typedDemo.castSize, 1);
   assert.equal('residentDemo' in seeded, false);
   const themeInventory = (await databaseConnection.getAll('inventory'))
     .filter((item) => item.parent === 'demo-player' && item.type === 'cosmetic_theme');
@@ -95,52 +91,6 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
     result: 'value',
   }), 17);
 
-  const scene = await databaseConnection.getSocialWorldScene({
-    viewerId: 'demo-player',
-    viewerIGT: seeded.typedDemo.viewerIGT,
-  });
-  assert.equal(scene.members.length, 4);
-  assert.deepEqual(scene.locations.find((location) => location.id === 'dojo').occupants, [
-    'demo-rival-mika',
-    'demo-rival-rhea',
-  ]);
-  assert.equal(scene.members.every((member) => !('occupantKind' in member)), true);
-  const taverns = buildTaverns(scene.members);
-  assert.equal(taverns.some((tavern) => tavern.id === 'tavern:dojo' && tavern.count === 2), true);
-  const pulses = selectLobbyActivityPulses(scene, { excludeProfileId: 'demo-player' });
-  assert.equal(pulses.dojo.length, 2);
-  assert.equal(pulses.match.length, 1);
-
-  const roomFacts = await databaseConnection.getDojoRoomFacts({
-    occupants: [
-      { profileId: 'demo-rival-rhea', sessionId: 'demo-dojo-rhea' },
-      { profileId: 'demo-rival-mika', sessionId: 'demo-dojo-mika' },
-    ],
-    viewerIGT: seeded.typedDemo.viewerIGT,
-  });
-  assert.deepEqual(roomFacts.map((fact) => fact.sessionPoints), [0, 0]);
-
-  const standings = await databaseConnection.getDojoStandings({
-    playerId: 'demo-player',
-    currentSessionId: 'demo-dojo-session-player',
-    topLimit: 10,
-    aroundRadius: 2,
-  });
-  assert.equal(standings.current.points, 0);
-  assert.equal(standings.top.length >= 1, true);
-  assert.equal(standings.updating, false);
-
-  const rheaCard = await databaseConnection.getSocialWorldProfileCard({
-    viewerId: 'demo-player',
-    profileId: 'demo-rival-rhea',
-    viewerIGT: seeded.typedDemo.viewerIGT,
-  });
-  assert.equal(rheaCard.context.reason, 'no-shared-context');
-  assert.deepEqual(rheaCard.context.items, []);
-  assert.equal(rheaCard.thread, null);
-  assert.deepEqual(rheaCard.next, []);
-  assert.equal(rheaCard.new.count, 0);
-
   // Reproduce an older clean-device bootstrap: canonical documents exist but
   // normalized profile/IGT/Match projections were never built. A reference
   // reconciliation must repair them before recovery processors run.
@@ -158,6 +108,8 @@ test('demo seed prepares the typed semantic world, Dojo, and encounter-memory pa
       { sql: 'DROP TRIGGER preserve_workspace_planning_before_player_delete', result: 'changes' },
       { sql: 'DELETE FROM players', result: 'changes' },
       { sql: 'DELETE FROM shadow_import_runs', result: 'changes' },
+      // The simulated incomplete bootstrap never committed import commands.
+      { sql: "DELETE FROM runtime_command_receipts WHERE command_label LIKE 'shadow-import-%'", result: 'changes' },
       {
         sql: "DELETE FROM sync_reference_meta WHERE key='mobile-reference-projections-v1'",
         result: 'changes',

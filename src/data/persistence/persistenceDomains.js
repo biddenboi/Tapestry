@@ -18,8 +18,6 @@ export const PERSISTENCE_DOMAIN = Object.freeze({
   matches: 'matches',
   leaderboards: 'leaderboards',
   social: 'social',
-  presence: 'presence',
-  socialWorld: 'socialWorld',
   notes: 'notes',
   reminders: 'reminders',
   continuity: 'continuity',
@@ -113,7 +111,6 @@ const EVENT_SETTING_PREFIXES = Object.freeze([
   'end-of-day:',
 ]);
 const LEADERBOARD_SETTING_PREFIXES = Object.freeze([
-  'dojoLeaderboardSnapshot:',
   'matchLeaderboardSnapshot:',
   'contributionLeaderboardSnapshot:',
 ]);

@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecords } from '../RetiredFeatureData.js';
 import {
   asObject,
   createImportLedgerStatements,
@@ -125,6 +126,8 @@ export class CoreProfileShadowImporter {
     settings = [],
     runId = null,
   } = {}) {
+    players = sanitizeRetiredFeatureRecords(players);
+    settings = sanitizeRetiredFeatureRecords(settings);
     const source = { players, appState, economyState, settings };
     const sourceFingerprint = await fingerprintShadowSource(source);
     const existing = await this.client.query({

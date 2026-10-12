@@ -14,8 +14,6 @@ export const CONTEXT_AUDIENCE = Object.freeze({
   private: 'private',
   selected: 'selected',
   collaborators: 'collaborators',
-  fellows: 'fellows',
-  cast: 'cast',
 });
 
 export const CONTEXT_STATUS = Object.freeze({

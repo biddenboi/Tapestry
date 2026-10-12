@@ -130,7 +130,6 @@ export const CONTRIBUTION_ACTION_VALUES = Object.freeze({
   habit: 1,
   quantity: 1,
   duration: 1,
-  dojo: 1,
   match: 3,
   'task-session': 2,
   'goal-completed': 5,

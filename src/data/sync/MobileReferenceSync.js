@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecord } from '../persistence/RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import {
   effectCancellationStatement,
@@ -161,7 +162,7 @@ export function referenceRecord(recordType, recordId, data, updatedAt = null) {
     recordId: String(recordId),
     workspaceId,
     playerId: WORKSPACE_DEFINITION_TYPES.has(recordType) ? null : recordPlayer(scopedData),
-    data: scopedData,
+    data: sanitizeRetiredFeatureRecord(scopedData) || { UUID: String(recordId), __deleted: true },
     updatedAt: new Date(updatedAt || recordTime(scopedData)).toISOString(),
   };
 }
@@ -588,7 +589,7 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     }
     const current = localByStore.get(store).get(incomingData.UUID);
     if (current && recordTime(current) >= incomingTime) continue;
-    if (entry.deleted || incomingData.__deleted) {
+    if (entry.deleted || incomingData.__deleted || !sanitizeRetiredFeatureRecord(incomingData)) {
       if (current) deletes.push({ store, UUID: incomingData.UUID });
       const typedTable = TYPED_DELETE_TABLE_BY_RECORD_TYPE.get(entry.recordType);
       if (typedTable) {

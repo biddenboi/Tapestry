@@ -1,7 +1,7 @@
 import { parseJson, stableJson } from './shadowDomainUtils.js';
 import { bumpSourceVersionStatements, readSourceVersions } from './sourceVersionUtils.js';
 
-const SOCIAL_INVALIDATIONS = Object.freeze(['social', 'socialWorld', 'achievements', 'profileSummaries']);
+const SOCIAL_INVALIDATIONS = Object.freeze(['social', 'achievements', 'profileSummaries']);
 const INBOX_INVALIDATIONS = Object.freeze(['social']);
 
 function timestamp(value, fallback) {
@@ -122,7 +122,7 @@ export class SqliteSocialRepository {
             Number.isFinite(Number(inGameTimestamp)) ? Math.trunc(Number(inGameTimestamp)) : null,
             stableJson(metadata)],
           result: 'changes',
-        }, ...bumpSourceVersionStatements(['socialWorld'], at)],
+        }],
       });
     } catch (error) {
       const messageText = String(error?.message || '');
@@ -166,7 +166,7 @@ export class SqliteSocialRepository {
             Number.isFinite(Number(inGameTimestamp)) ? Math.trunc(Number(inGameTimestamp)) : null,
             stableJson(metadata)],
           result: 'changes',
-        }, ...bumpSourceVersionStatements(['socialWorld'], at)],
+        }],
       });
     } catch (error) {
       const messageText = String(error?.message || '');
@@ -192,7 +192,7 @@ export class SqliteSocialRepository {
         statements: [{
           sql: 'INSERT INTO friendship_close_commands(operation_id,friendship_id,actor_player_id,closed_at) VALUES(?,?,?,?)',
           bind: [operationId, friendshipId, actorId, at], result: 'changes',
-        }, ...bumpSourceVersionStatements(['socialWorld'], at)],
+        }],
       });
     } catch (error) {
       if (String(error?.message || '').includes('friendship-not-closable')) error.code = 'not-closable';

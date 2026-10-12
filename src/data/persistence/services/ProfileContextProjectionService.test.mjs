@@ -25,8 +25,8 @@ test('batch projection uses constant store reads and isolates selected recipient
   const stores = new Map([
     [STORES.profileContextItem, [
       item('a-selected', 'a', 'selected', 'Only viewer one'),
-      item('a-cast', 'a', 'cast', 'Visible to cast'),
-      item('b-fellows', 'b', 'fellows', 'Visible to Fellows'),
+      item('a-collaborators', 'a', 'collaborators', 'Visible to collaborators'),
+      item('b-collaborators', 'b', 'collaborators', 'Visible to collaborators'),
     ]],
     [STORES.profileContextRecipient, [{
       UUID: 'a-selected:viewer-1',
@@ -49,7 +49,7 @@ test('batch projection uses constant store reads and isolates selected recipient
     viewerId: 'viewer-1',
     subjects: [
       { subjectId: 'a', relationshipTier: 'friend' },
-      { subjectId: 'b', relationshipTier: 'dynamic' },
+      { subjectId: 'b', relationshipTier: 'friend' },
       { subjectId: 'c', relationshipTier: 'dynamic' },
     ],
     viewerIGT: 100,
@@ -57,8 +57,8 @@ test('batch projection uses constant store reads and isolates selected recipient
     now: new Date('2026-07-27T12:00:00.000Z'),
   });
   assert.equal(reads, 4);
-  assert.deepEqual(projections.get('a').items.map((entry) => entry.text), ['Only viewer one', 'Visible to cast']);
-  assert.deepEqual(projections.get('b').items.map((entry) => entry.text), ['Visible to Fellows']);
+  assert.deepEqual(projections.get('a').items.map((entry) => entry.text), ['Only viewer one', 'Visible to collaborators']);
+  assert.deepEqual(projections.get('b').items.map((entry) => entry.text), ['Visible to collaborators']);
   assert.equal(projections.get('c').reason, 'no-shared-context');
 
   const viewerTwo = await service.getProjection({
@@ -69,6 +69,6 @@ test('batch projection uses constant store reads and isolates selected recipient
     revision: 1,
     now: new Date('2026-07-27T12:00:00.000Z'),
   });
-  assert.deepEqual(viewerTwo.items.map((entry) => entry.text), ['Visible to cast']);
+  assert.deepEqual(viewerTwo.items.map((entry) => entry.text), ['Visible to collaborators']);
 });
 

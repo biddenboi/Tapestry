@@ -848,66 +848,7 @@
   border-color: var(--accent-border);
 }
 
-.profile-presence-summary {
-  display: grid;
-  grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 13px 15px;
-  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--text-dim);
-}
-
-.profile-presence-summary--current {
-  border-left-color: var(--green);
-  box-shadow: inset 12px 0 22px rgba(73, 212, 143, 0.05);
-}
-
-.profile-presence-summary--projected {
-  border-left-color: var(--accent-bright);
-}
-
-.profile-presence-summary--recent {
-  border-left-color: var(--color-event);
-}
-
-.profile-presence-summary__state,
-.profile-presence-summary__copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.profile-presence-summary__state span,
-.profile-presence-summary__state strong {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-
-.profile-presence-summary__state strong {
-  color: var(--color-event);
-}
-
-.profile-presence-summary__copy > strong {
-  color: var(--text-bright);
-}
-
-.profile-presence-summary__copy > span {
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
 @media (max-width: 720px) {
-  .profile-presence-summary {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
   .profile-daybook-chapter {
     grid-template-columns: 1fr;
     gap: 10px;

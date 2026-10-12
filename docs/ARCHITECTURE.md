@@ -21,12 +21,12 @@ Current features include lobby, matches, tasks, profile, feed, shop, inventory, 
 src/domain owns business rules and derived models. Domain functions should avoid React and direct browser APIs. Important areas are:
 
 - time: real time, in-game time, formatting, local day boundaries.
-- rank: ELO, ranks, rank gates, dojo unlocks, match duration rules.
+- rank: ELO, ranks, rank gates, match duration rules.
 - tasks and planning: task duration, slope and work-per-day calculations, task drafts, planning recommendations.
 - matches: matchmaking, ghost roster generation, replay traces, ELO changes, scoring state, highlights.
 - feed: hidden activity state capture, post ranking, journal tags, image normalization.
 - shop: reward item models, inventory use rules, cooldowns, recommendation ranking.
-- events: wake/sleep, workday transitions, dojo contribution, habit events, event logs.
+- events: wake/sleep, workday transitions, habit events, event logs.
 - achievements: achievement catalog and checking/progress logic.
 - profile: biography, derived stats, personalization, insight panels, friendship-adjacent summaries.
 - contribution: overall reputation, goal-scoped contribution, contribution pass rewards, goal checks, manual reports, and unlock state.
@@ -69,9 +69,9 @@ In-game time is calculated from profile history and used as a boundary for simul
 
 Matches build a roster from active and simulated profiles. For ghost players, the primary path replays one of the player's completed historical match traces visible at the viewer IGT, scales it to the new duration, and derives expected output. If no trace exists, the fallback estimates from ELO and task history through the same IGT boundary. Live scoring uses task sessions, highlights, rank/ELO updates, achievements, and match result records.
 
-## Map Layer
+## Social World Placeholder
 
-The default shell is map-first. src/features/world-map owns the Leaflet/OpenStreetMap rendering layer, active/nearby profile markers, derived gym and hotspot markers, tile failure handling, offline-safe fallback background, app-level viewport persistence, and browser-location refresh cadence. It uses the last known browser location immediately when available, then refreshes geolocation at roughly five-minute intervals. src/domain/map owns browser-neutral geometry, located-action timeline extraction from tasks/journals/events/matches, IGT interpolation, nearest-profile selection, deterministic softening, derived task-gym clustering, and repeated-location hotspot derivation so movement, gyms, and hotspot bonuses can be tested without React or Leaflet.
+The base area renders `SocialWorldPlaceholder` with “Coming soon”. It has no context dependencies, queries, timers, presence tracking, or location services. Friendships and profile visibility live independently in the social and profile domains. Migration 059 removes the retired Dojo/social-world tables and captured map coordinates.
 
 ## Feed And Shop Recommendation Model
 

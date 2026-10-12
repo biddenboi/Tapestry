@@ -5,7 +5,6 @@ import {
   processAchievementEvent,
   recordAchievementEvent,
 } from '@domain/achievements/AchievementProcessing.js';
-import { clearDojoMultiplier } from '@domain/events/Events.js';
 import { LEADERBOARD_REBUILD_SCOPE, queueMaterializedLeaderboardRebuild } from '@domain/leaderboards/MaterializedLeaderboards.js';
 import { computeEloChanges } from '@domain/matches/Elo.js';
 import { buildMatchHighlights } from '@domain/matches/MatchHighlights.js';
@@ -26,7 +25,6 @@ export const MATCH_JOB_TYPE = Object.freeze({
   contribution: 'match-contribution',
   narration: 'match-narration',
   cache: 'match-cache',
-  dojoEffects: 'match-dojo-effects',
 });
 
 const JOB_SPECS = Object.freeze([
@@ -34,7 +32,6 @@ const JOB_SPECS = Object.freeze([
   Object.freeze({ type: MATCH_JOB_TYPE.leaderboard, priority: BACKGROUND_JOB_PRIORITY.high, maxAttempts: 3, execution: 'main' }),
   Object.freeze({ type: MATCH_JOB_TYPE.achievements, priority: BACKGROUND_JOB_PRIORITY.normal + 10, maxAttempts: 3, execution: 'main' }),
   Object.freeze({ type: MATCH_JOB_TYPE.contribution, priority: BACKGROUND_JOB_PRIORITY.normal + 5, maxAttempts: 3, execution: 'main' }),
-  Object.freeze({ type: MATCH_JOB_TYPE.dojoEffects, priority: BACKGROUND_JOB_PRIORITY.normal, maxAttempts: 3, execution: 'main' }),
   Object.freeze({ type: MATCH_JOB_TYPE.narration, priority: BACKGROUND_JOB_PRIORITY.normal - 5, maxAttempts: 2, execution: 'worker' }),
   Object.freeze({ type: MATCH_JOB_TYPE.cache, priority: BACKGROUND_JOB_PRIORITY.idle, maxAttempts: 2, execution: 'main' }),
 ]);
@@ -389,37 +386,6 @@ async function processCache(databaseConnection, matchUUID) {
   return { invalidated: true };
 }
 
-async function processDojoEffects(databaseConnection, matchUUID) {
-  const match = await databaseConnection.get(STORES.match, matchUUID);
-  if (!match?.parent) return { updated: false };
-  await databaseConnection.ensureDomainLoaded?.('eventBuffs');
-  const activeBuffs = await databaseConnection.getActiveEventBuffsForPlayer(match.parent).catch(() => []);
-  const dojoBuff = (activeBuffs || []).find((buff) => buff?.eventUUID === SPECIAL_EVENT_IDS.dojoMultiplier);
-  await clearDojoMultiplier(databaseConnection, match.parent);
-  if (!dojoBuff || match.result?.dojoMomentum?.consumed) return { updated: !!dojoBuff };
-  return withMatchMutationLock(databaseConnection, matchUUID, async () => {
-    const current = await databaseConnection.get(STORES.match, matchUUID);
-    if (!current?.result || current.result.dojoMomentum?.consumed) return { updated: false, alreadyApplied: true };
-    const multiplierValue = finite(dojoBuff.multiplierValue, 1);
-    await databaseConnection.commitAtomicMutation({
-      label: 'post-match-dojo-effect',
-      puts: [{
-        store: STORES.match,
-        record: {
-          ...current,
-          result: {
-            ...current.result,
-            dojoMomentum: { consumed: true, multiplierValue },
-          },
-        },
-      }],
-      flush: false,
-      queueDerived: false,
-    });
-    return { updated: true, multiplierValue };
-  });
-}
-
 function handlerForType(databaseConnection, type, context) {
   const handlers = {
     [MATCH_JOB_TYPE.elo]: (record) => processElo(databaseConnection, record.matchUUID),
@@ -428,7 +394,6 @@ function handlerForType(databaseConnection, type, context) {
     [MATCH_JOB_TYPE.contribution]: (record) => processContribution(databaseConnection, record.matchUUID),
     [MATCH_JOB_TYPE.narration]: (record, schedulerContext) => processNarration(databaseConnection, record.matchUUID, schedulerContext.signal),
     [MATCH_JOB_TYPE.cache]: (record) => processCache(databaseConnection, record.matchUUID),
-    [MATCH_JOB_TYPE.dojoEffects]: (record) => processDojoEffects(databaseConnection, record.matchUUID),
   };
   return handlers[type];
 }

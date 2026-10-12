@@ -13,20 +13,6 @@ export const FEATURE_ARCHITECTURE = Object.freeze({
     contracts: 'domain/shop/Shop.js',
     worker: null,
   }),
-  map: Object.freeze({
-    view: 'features/social-world/components/SocialWorldShell/SocialWorldScene.jsx',
-    controller: 'features/social-world/controllers/SocialWorldSceneController.js',
-    repository: 'data/persistence/sqlite/SqliteSocialWorldRepository.js',
-    contracts: 'domain/social-world/SocialWorldContracts.js',
-    worker: null,
-  }),
-  socialWorld: Object.freeze({
-    view: 'features/social-world/components/SocialWorldShell/SocialWorldScene.jsx',
-    controller: 'features/social-world/controllers/SocialWorldSceneController.js',
-    repository: 'data/persistence/sqlite/SqliteSocialWorldRepository.js',
-    contracts: 'domain/social-world/SocialWorldContracts.js',
-    worker: null,
-  }),
   matches: Object.freeze({
     view: 'features/matches/components/MatchArena/MatchArena.jsx',
     controller: 'domain/matches/MatchCompletionService.js',

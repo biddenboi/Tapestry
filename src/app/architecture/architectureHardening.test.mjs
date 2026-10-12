@@ -43,7 +43,7 @@ test('broad feature and shared UI barrels are absent', async () => {
 
 test('heavy panel views remain behind dynamic imports', async () => {
   const registry = await readFile(path.join(root, 'app/shell/GameHub/panelRegistry.js'), 'utf8');
-  for (const name of ['Lobby', 'TodoList', 'Events', 'Feed', 'SocialWorldShell']) {
+  for (const name of ['Lobby', 'TodoList', 'Events', 'Feed', 'SocialWorldPlaceholder']) {
     assert.match(registry, new RegExp(`import\\([^)]*${name}`));
   }
   assert.doesNotMatch(registry, /import\s+[^;]+from ['"]@features\/(?:lobby|feed|social-world)\/.*\.jsx['"]/);

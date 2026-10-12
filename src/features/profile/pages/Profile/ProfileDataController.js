@@ -1,7 +1,7 @@
 import { STORES } from '@domain/constants.js';
 import { getCurrentIGT } from '@domain/time/Time.js';
 import { buildProfileViewModel } from '@domain/profile/Profile.js';
-import { resolveProfileVisibility } from '@domain/social-world/ProfileVisibility.js';
+import { resolveProfileVisibility } from '@domain/profile/ProfileVisibility.js';
 import {
   projectContributionLeaderboardAtIGT,
   projectMatchLeaderboardAtIGT,
@@ -132,10 +132,6 @@ export async function loadMaterializedProfileData({
     matches: resolved?.recentMatches || resolved?.profileView?.matchSummary?.recent || [],
     friends: players.filter((entry) => acceptedUUIDs.has(entry.UUID)),
     friendship: relationship,
-    // Local visibility is intentionally not projected from a materialized profile
-    // summary. A viewed profile's friendUUIDs describe that profile's own social
-    // links and cannot authoritatively determine the viewer's friend/dynamic tier.
-    // Profile.jsx obtains local access from getSocialWorldProfileAccess instead.
     ownedPassIds: new Set(resolved?.ownedCosmeticIds || ['default']),
     ratingProjection: {
       elo: projectedRating?.elo ?? null,
@@ -153,16 +149,13 @@ export async function loadProfileAccessData({
   profileUUID,
 }) {
   if (!currentPlayer?.UUID || !profileUUID) return null;
-  await Promise.all([
-    ensureDomainLoaded?.('profileSocial'),
-    ensureDomainLoaded?.('socialWorld'),
-  ]);
-  if (typeof databaseConnection.getSocialWorldProfileAccess !== 'function') return null;
-  return databaseConnection.getSocialWorldProfileAccess({
-    viewerId: currentPlayer.UUID,
-    profileId: profileUUID,
-    viewerIGT: getCurrentIGT(currentPlayer),
-  });
+  await ensureDomainLoaded?.('profileSocial');
+  const friendships = await databaseConnection.getFriendshipsForPlayer(currentPlayer.UUID);
+  const friendIds = friendships
+    .filter((row) => row.status === 'accepted' && Number(row.inGameTimestamp || 0) <= getCurrentIGT(currentPlayer))
+    .flatMap((row) => row.players || [])
+    .filter((id) => id !== currentPlayer.UUID);
+  return resolveProfileVisibility({ viewerId: currentPlayer.UUID, profileId: profileUUID, friendIds });
 }
 
 export async function loadProfileTimelineData({
@@ -175,7 +168,7 @@ export async function loadProfileTimelineData({
 }) {
   await ensureDomainLoaded('profileTimeline');
   const currentIGT = Math.max(0, Number(viewerIGT) || 0);
-  const [player, daybook, contributions, goals, presence] = await Promise.all([
+  const [player, daybook, contributions, goals] = await Promise.all([
     databaseConnection.get(STORES.player, profileUUID),
     databaseConnection.getProfileDaybookPage({
       profileId: profileUUID,
@@ -185,19 +178,9 @@ export async function loadProfileTimelineData({
     }),
     safeRows(databaseConnection.getPlayerStoreThroughIGT(STORES.contribution, profileUUID, currentIGT), 'contribution timeline'),
     safeRows(databaseConnection.getAll(STORES.project), 'goal metadata'),
-    typeof databaseConnection.getSocialWorldPresence === 'function'
-      ? databaseConnection.getSocialWorldPresence({
-          profileId: profileUUID,
-          viewerIGT: currentIGT,
-          isActiveProfile: profileUUID === currentPlayer?.UUID,
-        }).catch((error) => {
-          console.warn('[Profile] optional presence load failed:', error);
-          return null;
-        })
-      : Promise.resolve(null),
   ]);
   const history = daybook.entries.filter((entry) => entry.type !== 'match');
-  return { player, daybook, history, contributions, goals, presence };
+  return { player, daybook, history, contributions, goals };
 }
 
 export async function loadProfileDaybookPage({
@@ -214,22 +197,6 @@ export async function loadProfileDaybookPage({
     viewerIGT: Math.max(0, Number(viewerIGT) || 0),
     dayLimit: 5,
     ...query,
-  });
-}
-
-export async function loadProfilePresence({
-  databaseConnection,
-  ensureDomainLoaded,
-  currentPlayer,
-  profileUUID,
-  viewerIGT = getCurrentIGT(currentPlayer),
-}) {
-  await ensureDomainLoaded?.('presence');
-  if (typeof databaseConnection.getSocialWorldPresence !== 'function') return null;
-  return databaseConnection.getSocialWorldPresence({
-    profileId: profileUUID,
-    viewerIGT: Math.max(0, Number(viewerIGT) || 0),
-    isActiveProfile: profileUUID === currentPlayer?.UUID,
   });
 }
 

@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecords } from '../RetiredFeatureData.js';
 import {
   createImportLedgerStatements,
   deterministicRows,
@@ -24,21 +25,6 @@ function finite(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function location(record) {
-  const source = record?.location && typeof record.location === 'object' ? record.location : record || {};
-  const latitude = finite(source.latitude);
-  const longitude = finite(source.longitude);
-  if (latitude == null || longitude == null || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    return { latitude: null, longitude: null, accuracy: null, capturedAt: null };
-  }
-  return {
-    latitude,
-    longitude,
-    accuracy: finite(source.accuracy) == null ? null : Math.max(0, finite(source.accuracy)),
-    capturedAt: textOrNull(source.capturedAt),
-  };
-}
-
 export class EventsShadowImporter {
   constructor({ client, now = () => new Date() } = {}) {
     if (!client) throw new Error('EventsShadowImporter requires a SQLite client.');
@@ -47,6 +33,11 @@ export class EventsShadowImporter {
   }
 
   async import({ events = [], customEvents = [], eventLogs = [], eventBuffs = [], contributions = [], runId = null } = {}) {
+    events = sanitizeRetiredFeatureRecords(events);
+    customEvents = sanitizeRetiredFeatureRecords(customEvents);
+    eventLogs = sanitizeRetiredFeatureRecords(eventLogs);
+    eventBuffs = sanitizeRetiredFeatureRecords(eventBuffs);
+    contributions = sanitizeRetiredFeatureRecords(contributions);
     const source = { events, customEvents, eventLogs, eventBuffs, contributions };
     const sourceFingerprint = await fingerprintShadowSource(source);
     const existing = await this.client.query({
@@ -78,20 +69,18 @@ export class EventsShadowImporter {
       const id = String(record.UUID);
       const playerId = playerIds.has(record.parent) ? record.parent : null;
       if (record.parent && !playerId) diagnostics.push({ kind: 'lifecycle-event', recordId: id, reason: 'unknown-player', playerId: record.parent });
-      const loc = location(record);
       statements.push({
         sql: `INSERT INTO lifecycle_events(
                 id,player_id,event_type,name,category,description,created_at,in_game_timestamp,
-                latitude,longitude,location_accuracy,location_captured_at,extra_json
-              ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+                extra_json
+              ) VALUES(?,?,?,?,?,?,?,?,?)
               ON CONFLICT(id) DO UPDATE SET
                 player_id=excluded.player_id,event_type=excluded.event_type,name=excluded.name,category=excluded.category,
                 description=excluded.description,created_at=excluded.created_at,in_game_timestamp=excluded.in_game_timestamp,
-                latitude=excluded.latitude,longitude=excluded.longitude,location_accuracy=excluded.location_accuracy,
-                location_captured_at=excluded.location_captured_at,extra_json=excluded.extra_json`,
+                extra_json=excluded.extra_json`,
         bind: [id, playerId, textOrNull(record.type) || 'event', textOrNull(record.name), textOrNull(record.category), textOrNull(record.description),
           textOrNull(record.createdAt) || timestamp, Number.isFinite(Number(record.inGameTimestamp)) ? Math.trunc(Number(record.inGameTimestamp)) : null,
-          loc.latitude, loc.longitude, loc.accuracy, loc.capturedAt, boundedJson(omitKeys(record, EVENT_KEYS))], result: 'changes',
+          boundedJson(omitKeys(record, EVENT_KEYS))], result: 'changes',
       });
     }
 
@@ -132,21 +121,19 @@ export class EventsShadowImporter {
       const playerId = playerIds.has(record.parent) ? record.parent : null;
       const eventId = record.eventUUID && customIds.has(record.eventUUID) ? record.eventUUID : null;
       if (record.eventUUID && !eventId) diagnostics.push({ kind: 'event-log', recordId: id, reason: 'unknown-event', eventId: record.eventUUID });
-      const loc = location(record);
       statements.push({
         sql: `INSERT INTO event_logs(
                 id,player_id,event_id,event_type,status,value,logged_at,logged_date,created_at,in_game_timestamp,
-                latitude,longitude,location_accuracy,extra_json
-              ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                extra_json
+              ) VALUES(?,?,?,?,?,?,?,?,?,?,?)
               ON CONFLICT(id) DO UPDATE SET
                 player_id=excluded.player_id,event_id=excluded.event_id,event_type=excluded.event_type,status=excluded.status,
                 value=excluded.value,logged_at=excluded.logged_at,logged_date=excluded.logged_date,created_at=excluded.created_at,
-                in_game_timestamp=excluded.in_game_timestamp,latitude=excluded.latitude,longitude=excluded.longitude,
-                location_accuracy=excluded.location_accuracy,extra_json=excluded.extra_json`,
+                in_game_timestamp=excluded.in_game_timestamp,extra_json=excluded.extra_json`,
         bind: [id, playerId, eventId, textOrNull(record.type), textOrNull(record.status), finite(record.value),
           textOrNull(record.loggedAt ?? record.createdAt) || timestamp, textOrNull(record.loggedDate), textOrNull(record.createdAt) || timestamp,
           Number.isFinite(Number(record.inGameTimestamp)) ? Math.trunc(Number(record.inGameTimestamp)) : null,
-          loc.latitude, loc.longitude, loc.accuracy, boundedJson(omitKeys(record, LOG_KEYS))], result: 'changes',
+          boundedJson(omitKeys(record, LOG_KEYS))], result: 'changes',
       });
     }
 
@@ -184,13 +171,12 @@ export class EventsShadowImporter {
       const goalId = requestedGoal && projectIds.has(requestedGoal) ? requestedGoal : null;
       const taskId = record.taskUUID && taskIds.has(record.taskUUID) ? record.taskUUID : null;
       const todoId = record.todoUUID && todoIds.has(record.todoUUID) ? record.todoUUID : null;
-      const loc = location(record);
       statements.push({
         sql: `INSERT INTO contributions(
                 id,player_id,goal_id,task_id,todo_id,completion_event_id,source,direction,summary,value,
                 reward_band,reward_rarity,reward_coins,player_name_snapshot,goal_name_snapshot,task_name_snapshot,
-                created_at,completed_at,in_game_timestamp,latitude,longitude,extra_json
-              ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                created_at,completed_at,in_game_timestamp,extra_json
+              ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
               ON CONFLICT(id) DO UPDATE SET
                 player_id=excluded.player_id,goal_id=excluded.goal_id,task_id=excluded.task_id,todo_id=excluded.todo_id,
                 completion_event_id=excluded.completion_event_id,source=excluded.source,direction=excluded.direction,
@@ -198,7 +184,7 @@ export class EventsShadowImporter {
                 reward_rarity=excluded.reward_rarity,reward_coins=excluded.reward_coins,
                 player_name_snapshot=excluded.player_name_snapshot,goal_name_snapshot=excluded.goal_name_snapshot,
                 task_name_snapshot=excluded.task_name_snapshot,completed_at=excluded.completed_at,
-                in_game_timestamp=excluded.in_game_timestamp,latitude=excluded.latitude,longitude=excluded.longitude,
+                in_game_timestamp=excluded.in_game_timestamp,
                 extra_json=excluded.extra_json`,
         bind: [id, playerId, goalId, taskId, todoId, textOrNull(record.completionEventUUID), contributionSource,
           textOrNull(record.direction), textOrNull(record.summary ?? record.taskName), finite(record.value) ?? 0,
@@ -206,7 +192,7 @@ export class EventsShadowImporter {
           textOrNull(record.playerNameSnapshot), textOrNull(record.goalNameSnapshot), textOrNull(record.taskName ?? record.summary),
           textOrNull(record.createdAt) || timestamp, textOrNull(record.completedAt),
           Number.isFinite(Number(record.inGameTimestamp)) ? Math.trunc(Number(record.inGameTimestamp)) : null,
-          loc.latitude, loc.longitude, boundedJson(omitKeys(record, CONTRIBUTION_KEYS))], result: 'changes',
+          boundedJson(omitKeys(record, CONTRIBUTION_KEYS))], result: 'changes',
       });
     }
 

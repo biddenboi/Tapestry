@@ -40,7 +40,6 @@ import { RankIcon } from '@shared/icons/RankIcon.jsx';
 import SharedEloChart from '@shared/elo-chart/EloChart.jsx';
 import { createTaskDraft } from '@domain/tasks/Tasks.js';
 import { getCurrentIGT } from '@domain/time/Time.js';
-import { selectLobbyActivityPulses } from '@domain/social-world/LobbyPresencePulses.js';
 import {
   MATERIALIZED_LEADERBOARDS_REBUILDING_EVENT,
   MATERIALIZED_LEADERBOARDS_UPDATED_EVENT,
@@ -53,11 +52,6 @@ import { loadRankProgressModal } from '@features/achievements/loaders.js';
 import { loadInsufficientPlayersModal, loadMatchDetailsModal } from '@features/matches/loaders.js';
 import { loadEndDayConfirm } from '@features/events/loaders.js';
 import { Icon } from '@shared/icons/Icon.jsx';
-import SocialWorldSceneController from '@features/social-world/controllers/SocialWorldSceneController.js';
-import SocialWorldProfileCardController from '@features/social-world/controllers/SocialWorldProfileCardController.js';
-import { useLiveViewerScene } from '@features/social-world/hooks/useLiveViewerScene.js';
-import PresencePulseStack from '@features/social-world/components/PresencePulseStack/PresencePulseStack.jsx';
-import ProfilePresenceDrawer from '@features/social-world/components/ProfilePresenceDrawer/ProfilePresenceDrawer.jsx';
 import '@features/lobby/components/Lobby/Lobby.css';
 
 const showModal = async (loader, props = {}) => {
@@ -279,25 +273,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
   const [rankedUUIDs, setRankedUUIDs]     = useState({ global: [], friends: [], points: [], contribution: [] });
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
   const [leaderboardsUpdating, setLeaderboardsUpdating] = useState(false);
-  const [preparedSocialScene, setPreparedSocialScene] = useState(null);
-  const [selectedProfileId, setSelectedProfileId] = useState(null);
-  const [profileCard, setProfileCard] = useState(null);
-  const [profileCardError, setProfileCardError] = useState(null);
-  const socialSceneController = useMemo(
-    () => new SocialWorldSceneController({ gateway: databaseConnection }),
-    [databaseConnection],
-  );
-  const profileCardController = useMemo(
-    () => new SocialWorldProfileCardController({ gateway: databaseConnection }),
-    [databaseConnection],
-  );
   const lobbyViewerIGT = getCurrentIGT(currentPlayer, timestamp);
-  const preparedViewerScene = preparedSocialScene?.viewer?.profileId === currentPlayer?.UUID
-    ? preparedSocialScene
-    : null;
-  const socialScene = useLiveViewerScene(preparedViewerScene, {
-    viewerIGT: lobbyViewerIGT,
-  });
   const lobbyViewerIGTBucket = Math.floor(lobbyViewerIGT / 60000);
 
   const clearMatchmakingDelay = useCallback(() => {
@@ -359,68 +335,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
     lobbyViewerIGTBucket,
     setActiveMatch,
     setGameState,
-  ]);
-
-  // Lobby projects its bounded pulses from the same Fellow scene as the map.
-  useEffect(() => {
-    if (!canLoad || !currentPlayer?.UUID) return undefined;
-    let cancelled = false;
-    socialSceneController.load({
-      viewerId: currentPlayer.UUID,
-      viewerIGT: getCurrentIGT(currentPlayer),
-    }).then((scene) => {
-      if (!cancelled) setPreparedSocialScene(scene);
-    }).catch((error) => {
-      if (!cancelled) {
-        setPreparedSocialScene(null);
-        console.warn('[Lobby] social presence snapshot load failed:', error);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [
-    canLoad,
-    currentPlayer?.UUID,
-    domainRevisions.presence,
-    domainRevisions.profiles,
-    domainRevisions.social,
-    domainRevisions.socialWorld,
-    socialSceneController,
-  ]);
-
-  useEffect(() => {
-    if (isActive || !selectedProfileId) return;
-    setSelectedProfileId(null);
-    setProfileCard(null);
-    setProfileCardError(null);
-  }, [isActive, selectedProfileId]);
-
-  useEffect(() => {
-    if (!isActive || !selectedProfileId || !currentPlayer?.UUID) return undefined;
-    let cancelled = false;
-    setProfileCard(null);
-    setProfileCardError(null);
-    profileCardController.load({
-      viewerId: currentPlayer.UUID,
-      profileId: selectedProfileId,
-      viewerIGT: getCurrentIGT(currentPlayer),
-    }).then((card) => {
-      if (!cancelled) setProfileCard(card);
-    }).catch((error) => {
-      if (!cancelled) setProfileCardError(error);
-    });
-    return () => { cancelled = true; };
-  }, [
-    currentPlayer?.UUID,
-    domainRevisions.goals,
-    domainRevisions.matches,
-    domainRevisions.presence,
-    domainRevisions.profiles,
-    domainRevisions.social,
-    domainRevisions.socialWorld,
-    domainRevisions.tasks,
-    isActive,
-    profileCardController,
-    selectedProfileId,
   ]);
 
   useEffect(() => {
@@ -601,30 +515,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
     }).catch((error) => console.warn('[Lobby] match details load failed:', error));
   };
 
-  const recordVisibleEncounter = useCallback(({ profileId, surface, visibleFacts = [] }) => {
-    if (!currentPlayer?.UUID || !profileId || profileId === currentPlayer.UUID) return;
-    const operationId = globalThis.crypto?.randomUUID?.()
-      || `${surface}:${currentPlayer.UUID}:${profileId}:${Date.now()}:${Math.random()}`;
-    profileCardController.recordEncounter({
-      viewerId: currentPlayer.UUID,
-      profileId,
-      viewerIGT: getCurrentIGT(currentPlayer),
-      surface,
-      visibleFacts,
-      operationId,
-    }).catch((error) => console.warn('[Lobby] profile encounter could not be recorded:', error));
-  }, [currentPlayer, profileCardController]);
-
-  const closeProfileCard = useCallback(() => {
-    setSelectedProfileId(null);
-    setProfileCard(null);
-    setProfileCardError(null);
-  }, []);
-
-  const inspectOccupant = useCallback((profileId) => {
-    setSelectedProfileId(profileId);
-  }, []);
-
   const playersByUUID = useMemo(
     () => new Map((allPlayers || []).map((player) => [String(player.UUID), player])),
     [allPlayers],
@@ -698,20 +588,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
     hasVisibleRating: viewerHasVisibleRating,
     rankLabel: viewerHasVisibleRating ? getRankLabel(elo) : 'Unrated',
   };
-  const activityPulses = useMemo(() => selectLobbyActivityPulses(socialScene, {
-    excludeProfileId: currentPlayer?.UUID,
-    limit: 3,
-  }), [currentPlayer?.UUID, socialScene]);
-  const visibleFellowRatings = useMemo(() => {
-    const fellowIds = new Set((socialScene?.members || [])
-      .map((member) => String(member?.profileId || ''))
-      .filter((profileId) => profileId && profileId !== String(currentPlayer?.UUID || '')));
-    return fellowRatings.filter((rating) => fellowIds.has(String(rating.UUID)));
-  }, [currentPlayer?.UUID, fellowRatings, socialScene]);
-  const selectedMember = selectedProfileId
-    ? socialScene?.memberById?.get(selectedProfileId) || null
-    : null;
-  const socialViewerIGT = lobbyViewerIGT;
+  const visibleFellowRatings = fellowRatings;
 
   const lb = currentPlayer?.activeCosmetics?.lobbyBanner;
   const lobbyBannerUrl = useResourceUrl(lb?.type === 'image' ? lb.value : null);
@@ -833,12 +710,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
                 <p>60 minutes · rated · 2v2</p>
                 <span className="lobby-action-cta">{loadingMatch ? 'Matching...' : 'Queue'}</span>
               </button>
-              <PresencePulseStack
-                members={activityPulses.match}
-                label="Players active in Match"
-                surface="lobby-match"
-                onInspectProfile={inspectOccupant}
-              />
             </article>
 
           </div>
@@ -959,21 +830,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
           onCancel={handleCancelMatchmaking}
         />
       )}
-      <ProfilePresenceDrawer
-        analyticsSurface="lobby"
-        open={Boolean(selectedProfileId)}
-        summary={selectedMember}
-        card={profileCard}
-        loading={Boolean(selectedProfileId) && !profileCard && !profileCardError}
-        error={profileCardError}
-        viewerIGT={socialViewerIGT}
-        onClose={closeProfileCard}
-        onEncounterVisible={recordVisibleEncounter}
-        onOpenProfile={(profileId) => {
-          closeProfileCard();
-          openPanel('profile', profileId);
-        }}
-      />
     </div>
   );
 }

@@ -54,13 +54,12 @@ import {
   canAccessProfileTab,
   filterProfileOverviewBlocks,
   resolveProfileVisibility,
-} from '@domain/social-world/ProfileVisibility.js';
+} from '@domain/profile/ProfileVisibility.js';
 import {
   loadMaterializedProfileData,
   loadProfileAccessData,
   loadProfileInventoryData,
   loadProfileDaybookPage,
-  loadProfilePresence,
   loadProfileMatchData,
   loadProfileSocialData,
   loadProfileTimelineData,
@@ -75,7 +74,6 @@ import {
   PlayerRow,
   TimelineControls,
   DaybookChapterList,
-  ProfilePresenceSummary,
   TimelineModeTabs,
   MilestoneList,
   ReplayPanel,
@@ -140,7 +138,6 @@ export default function Profile({ uuid: targetUUID }) {
   const [timelineLoaded, setTimelineLoaded] = useState(false);
   const [daybookPage, setDaybookPage] = useState(null);
   const [daybookLoading, setDaybookLoading] = useState(false);
-  const [presence, setPresence] = useState(null);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [socialLoaded, setSocialLoaded] = useState(false);
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
@@ -219,8 +216,6 @@ export default function Profile({ uuid: targetUUID }) {
     domainRevisions.shop,
     domainRevisions.competitiveArenas,
     domainRevisions.profileSummaries,
-    domainRevisions.presence,
-    domainRevisions.socialWorld,
   ].join(':');
   const daybookQueryKey = JSON.stringify([
     resolvedProfileUUID,
@@ -253,9 +248,9 @@ export default function Profile({ uuid: targetUUID }) {
     setMatches(data.matches);
     setFriends(data.friends);
     setFriendship(data.friendship);
-    // Local visibility is owned exclusively by the canonical Social World access
+    // Local visibility is resolved from the viewer’s accepted friendships
     // query below. Materialized summaries refresh on IGT/profile revisions and
-    // must never overwrite an already-resolved fellow/friend tier with their
+    // must never overwrite an already-resolved friend tier with their
     // incomplete fallback access projection.
     setOwnedPassIds(data.ownedPassIds);
     setContributions([]);
@@ -290,7 +285,6 @@ export default function Profile({ uuid: targetUUID }) {
     canLoad,
     domainRevisions.profileSummaries,
     domainRevisions.social,
-    domainRevisions.socialWorld,
     loadMaterializedSummary,
   ]);
 
@@ -311,7 +305,6 @@ export default function Profile({ uuid: targetUUID }) {
     currentPlayer,
     databaseConnection,
     domainRevisions.social,
-    domainRevisions.socialWorld,
     ensureDomainLoaded,
     resolvedProfileUUID,
   ]);
@@ -336,7 +329,6 @@ export default function Profile({ uuid: targetUUID }) {
       setContributions(data.contributions);
       setGoals(data.goals);
       setDaybookPage(data.daybook);
-      setPresence(data.presence);
       lastDaybookQueryRef.current = daybookQueryKey;
       setTimelineLoaded(true);
     } finally {
@@ -388,7 +380,6 @@ export default function Profile({ uuid: targetUUID }) {
     lastDaybookQueryRef.current = '';
     setTimelineLoaded(false);
     setDaybookPage(null);
-    setPresence(null);
     setDaybookLoading(false);
     setMatchesLoaded(false);
     setSocialLoaded(false);
@@ -417,17 +408,9 @@ export default function Profile({ uuid: targetUUID }) {
           viewerIGT,
           query: daybookQuery,
         }),
-        loadProfilePresence({
-          databaseConnection,
-          ensureDomainLoaded,
-          currentPlayer,
-          profileUUID: resolvedProfileUUID,
-          viewerIGT,
-        }),
-      ]).then(([page, nextPresence]) => {
+      ]).then(([page]) => {
         if (daybookRequestRef.current !== requestId) return;
         setDaybookPage(page);
-        setPresence(nextPresence);
         lastDaybookQueryRef.current = daybookQueryKey;
       }).catch((error) => {
         if (daybookRequestRef.current === requestId) {
@@ -787,7 +770,7 @@ export default function Profile({ uuid: targetUUID }) {
     invalidateDomains(DOMAIN_INVALIDATION.socialWrite);
     notify({
       title: 'Friend place opened',
-      message: `${player.username} is no longer a friend. Their encounter history remains recorded.`,
+      message: `${player.username} is no longer a friend. `,
       kind: 'info',
       persist: false,
     });
@@ -1336,7 +1319,7 @@ export default function Profile({ uuid: targetUUID }) {
                 <span className="profile-card-title">DAYBOOK</span>
                 <p className="profile-panel-sub">
                   {access.daybookScope === 'recent'
-                    ? 'A limited five-day window from this current cast profile.'
+                    ? 'Recent profile history.'
                     : 'Read recorded activity by IGT day, inspect milestones, or replay history at the same coordinate.'}
                 </p>
               </div>
@@ -1369,7 +1352,6 @@ export default function Profile({ uuid: targetUUID }) {
             <div className="profile-tab-scroll">
               {timelineMode === 'activity' && (
                 <>
-                  <ProfilePresenceSummary presence={presence} />
                   <DaybookChapterList
                     chapters={daybookChapters}
                     currentPlayerUUID={currentPlayer?.UUID}
@@ -1518,7 +1500,7 @@ export default function Profile({ uuid: targetUUID }) {
       <ConfirmDialog
         open={confirmEndFriendship}
         title="End this friendship?"
-        message="This opens one friend place without replacing anyone. Recorded encounters and observed history are preserved."
+        message="This opens one friend place without replacing anyone. Your task and match history are preserved."
         target={player?.username}
         confirmLabel="End friendship"
         destructive

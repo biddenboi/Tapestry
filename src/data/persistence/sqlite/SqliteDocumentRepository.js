@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecord } from '../RetiredFeatureData.js';
 import {
   SQLITE_DOCUMENT_RANGE_FIELDS,
   documentTableForStore,
@@ -132,6 +133,14 @@ function resourceMetadataRecord(record, payload) {
 }
 
 async function preparePut(store, record) {
+  const clean = sanitizeRetiredFeatureRecord(record);
+  if (!clean) {
+    return { projected: { uuid: record.UUID }, statements: [{
+      sql: `DELETE FROM ${documentTableForStore(store)} WHERE uuid=?`,
+      bind: [String(record.UUID)], result: 'changes',
+    }] };
+  }
+  record = clean;
   if (store !== RESOURCE_STORE) {
     const projected = projectDocumentRecord(record);
     return { projected, statements: [putStatement(store, projected)] };

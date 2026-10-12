@@ -96,9 +96,7 @@
 .evt-quant-log,
 .evt-section--timeline,
 .evt-section--history,
-.evt-section--compact,
-.evt-section--dojo-status,
-.evt-section--dojo-info {
+.evt-section--compact {
     background:
         linear-gradient(145deg, color-mix(in srgb, var(--evt-accent) 7%, transparent), transparent 54%),
         var(--bg-card);
@@ -135,16 +133,12 @@
     font-size: clamp(20px, 3vw, 28px);
 }
 
-.evt-dojo-status-grid,
-.evt-dojo-info-grid,
 .evt-ritual-formula {
     gap: 0;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
 }
 
-.evt-dojo-status-card,
-.evt-dojo-info-card,
 .evt-ritual-formula > div {
     padding: 13px 15px;
     background: transparent;
@@ -152,8 +146,6 @@
     border-right: 1px solid var(--border-subtle);
 }
 
-.evt-dojo-status-card:last-child,
-.evt-dojo-info-card:last-child,
 .evt-ritual-formula > div:last-child {
     border-right: 0;
 }
@@ -164,8 +156,6 @@
     }
 
     .evt-stat-block,
-    .evt-dojo-status-card,
-    .evt-dojo-info-card,
     .evt-ritual-formula > div {
         border-right: 0 !important;
         border-bottom: 1px solid var(--border-subtle) !important;

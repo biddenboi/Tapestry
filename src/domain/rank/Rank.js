@@ -288,7 +288,7 @@ export function getRankGroupFloor(elo = 0) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * Matchmaking / dojo availability helpers
+ * Matchmaking availability helpers
  * ──────────────────────────────────────────────────────────────────────
  * These centralise the rank-tier policy decisions so callers (Lobby,
  * MatchArena, GameHub, Match.js, the rank-up modal) all share a single
@@ -297,7 +297,6 @@ export function getRankGroupFloor(elo = 0) {
  * Pair Match duration and rules are fixed at every rank. Only the
  * synthetic-filler availability policy varies by rank.
  *
- * Dojo training is rank-agnostic and available to every profile.
  */
 
 /** Echo (synthetic) ghost fillers permitted only at the lowest two tiers. */

@@ -18,8 +18,6 @@ test('all supported data domains have an independent revision slot', () => {
     'matches',
     'leaderboards',
     'social',
-    'presence',
-    'socialWorld',
     'feed',
     'journals',
     'shop',
@@ -50,7 +48,7 @@ test('targeted invalidation increments only named domains', () => {
   assert.equal(next.matches, 1);
   assert.equal(next.shop, 0);
   assert.equal(next.feed, 0);
-  assert.equal(next.socialWorld, 0);
+  assert.equal(next.socialWorld, undefined);
 });
 
 test('task writes do not invalidate Shop', () => {

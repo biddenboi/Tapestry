@@ -7,7 +7,7 @@ test('migration 031 installs continuity relational and document contracts', asyn
   const client = new InProcessSqliteClient();
   await client.initialize({ mode: 'memory' });
   t.after(() => client.close());
-  client.applyMigrations(SQLITE_MIGRATIONS, { applicationVersion: 'continuity-test' });
+  client.applyMigrations(SQLITE_MIGRATIONS.filter((migration) => migration.id <= '031_continuity_system'), { applicationVersion: 'continuity-test' });
 
   const required = [
     'action_plans',

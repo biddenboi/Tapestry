@@ -17,10 +17,7 @@ const [
 ] = await Promise.all([
   read('../shell/GameHub/GameHub.jsx'),
   read('../day-boundary/useDayBoundaryAutomation.js'),
-  Promise.all([
-    read('../../features/social-world/components/SocialWorldShell/SocialWorldShell.jsx'),
-    read('../../features/social-world/components/SocialWorldShell/SocialWorldRuntime.jsx'),
-  ]).then((parts) => parts.join('\n')),
+  read('../../features/social-world/SocialWorldPlaceholder.jsx'),
   read('../../features/feed/pages/FeedPage/FeedPage.jsx'),
   read('../../features/shop/pages/Shop/Shop.jsx'),
   read('../../features/lobby/components/Lobby/Lobby.jsx'),
@@ -40,11 +37,11 @@ test('the common lifecycle covers the first eight requested interfaces', () => {
 });
 
 test('panel work is gated or cancelled when lifecycle activity stops', () => {
-  for (const source of [world, feed, shop, lobby, events, profile, inbox]) {
+  for (const source of [feed, shop, lobby, events, profile, inbox]) {
     assert.match(source, /usePanelLifecycle/);
   }
-  assert.match(world, /runtimeActive\s*=\s*isActive/);
-  assert.match(world, /if \(!runtimeActive\) return <SocialWorldStaticShell/);
+  assert.match(world, /Coming soon/);
+  assert.doesNotMatch(world, /useEffect|useAppContext|setInterval/);
   assert.match(feed, /if \(!canLoad\) return/);
   assert.doesNotMatch(feed, /setInterval|IntersectionObserver/);
   assert.match(shop, /clearTimeout\(purchaseFlashTimerRef\.current\)/);

@@ -41,9 +41,9 @@ Do not store canonical app records in browser storage. Browser storage may hold 
 4. Add sidebar or drawer navigation only if it is a first-class area.
 5. Keep panel loading and error states inside the shell or feature boundary, not scattered through callers.
 
-## Add Map Behavior
+## Social World Placeholder
 
-Put projection, distance, interpolation, location normalization, and gym clustering rules under src/domain/map with Node tests. Keep Leaflet-specific rendering in src/features/world-map. Do not store viewport state on profile records; use app settings for UI viewport state and domain records only for captured action locations.
+The social world is reserved for future work. Its current placeholder performs no data reads or tracking. Dojo and Leaflet are retired; do not restore their former persistence contracts.
 
 ## Add Domain Logic
 

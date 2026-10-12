@@ -1,12 +1,12 @@
 import { HYDRATION_DOMAIN as D } from '@data/db/domainHydration.js';
 
 export const PANEL_DOMAIN_REQUIREMENTS = Object.freeze({
-  map: Object.freeze([D.profiles, D.socialWorld, D.social]),
+  map: Object.freeze([]),
   feed: Object.freeze([D.feed, D.chronicle, D.profiles]),
   shop: Object.freeze([D.shop]),
-  lobby: Object.freeze([D.leaderboards, D.socialWorld, D.social]),
+  lobby: Object.freeze([D.leaderboards, D.social]),
   events: Object.freeze([D.eventTrackers]),
-  profiles: Object.freeze([D.profileSummaries, D.presence, D.leaderboards]),
+  profiles: Object.freeze([D.profileSummaries, D.leaderboards]),
   notes: Object.freeze([D.notes]),
   inbox: Object.freeze([D.social, D.profileSummaries]),
   tasks: Object.freeze([D.tasks, D.reminders]),
