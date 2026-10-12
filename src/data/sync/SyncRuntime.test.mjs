@@ -608,3 +608,48 @@ test('concurrent sync lanes upload each pending reference only once', async (t) 
   assert.equal(calls, 1);
   assert.equal((await runtime.referenceOutbox.listPending()).length, 0);
 });
+
+test('a rejected command from another device is an audit receipt, not a local conflict', async (t) => {
+  const { client, documents } = await createContext();
+  t.after(() => client.close());
+  await documents.put('todos', { UUID: 'kept', name: 'Keep canonical task' });
+  const runtime = new SyncRuntime({ client, windowRef: null, now: () => FIXED });
+  const entry = {
+    operationId: 'other-device-delete', commandType: 'deleteTask', entityType: 'task',
+    entityId: 'kept', status: 'conflict', serverSequence: 123,
+    payload: { taskId: 'kept' }, result: { status: 'conflict', errorCode: 'base-version-conflict' },
+  };
+  const receipt = await runtime.conflicts.preserveUnsupportedRemote(entry);
+  assert.equal(receipt.status, 'resolved-server');
+  assert.deepEqual(receipt.serverPayload.payload, entry.payload);
+  assert.equal((await runtime.cursors.get('owner')).serverSequence, 123);
+  assert.equal((await documents.get('todos', 'kept')).name, 'Keep canonical task');
+  assert.equal((await runtime.conflicts.listOpen()).length, 0);
+});
+
+test('startup repairs historical remote rejection receipts while retaining genuine conflicts', async (t) => {
+  const { client, documents } = await createContext();
+  t.after(() => client.close());
+  const runtime = new SyncRuntime({ client, windowRef: null, now: () => FIXED });
+  const entry = {
+    operationId: 'historical-delete', commandType: 'deleteTask', entityType: 'task',
+    entityId: 'kept', status: 'conflict', serverSequence: 123,
+    payload: { taskId: 'kept' }, result: { status: 'conflict' },
+  };
+  const receipt = await runtime.conflicts.preserveUnsupportedRemote(entry);
+  await client.query({ sql: "UPDATE sync_conflicts SET status='open',resolved_at=NULL WHERE id=?", bind: [receipt.id] });
+  await runtime.conflicts.preserveUnsupportedRemote({ ...entry, operationId: 'unsupported-accepted', status: 'accepted', serverSequence: 124, result: { entity: { version: 2 } } });
+  await commitTodo(documents, 'local-conflict', 'Local edit');
+  await runtime.operations.settle([{ operationId: 'local-conflict', status: 'conflict', serverPayload: { name: 'Other edit' } }]);
+  await runtime.initialize({ start: false });
+  assert.equal((await runtime.conflicts.get(receipt.id)).status, 'resolved-server');
+  assert.deepEqual((await runtime.conflicts.get(receipt.id)).serverPayload, receipt.serverPayload);
+  assert.deepEqual((await runtime.conflicts.listOpen()).map((c) => c.operationId).sort(), ['local-conflict', 'unsupported-accepted']);
+  assert.equal(runtime.getStatus().status, 'conflict');
+  await runtime.conflicts.resolve('sync-conflict:local-conflict', 'resolved-server');
+  await runtime.conflicts.resolve('unsupported-remote:unsupported-accepted', 'resolved-server');
+  const status = await runtime.getDiagnostics();
+  assert.notEqual(status.status, 'conflict');
+  assert.equal(status.latestError, null);
+  assert.equal((await documents.get('todos', 'todo-1')).name, 'Local edit');
+});

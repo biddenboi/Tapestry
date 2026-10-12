@@ -123,6 +123,7 @@ export class SyncRuntime {
   async initialize({ start = true } = {}) {
     await this.operations.recoverUploading();
     this.device = await this.devices.getActive();
+    await this.conflicts.acknowledgeRemoteRejections();
     await this.statusStore.refresh();
     if (start) {
       this.started = true;
