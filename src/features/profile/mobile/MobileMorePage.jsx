@@ -6,7 +6,7 @@ import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { GAME_STATE } from '@domain/constants.js';
 import { createPairMatchCommand } from '@domain/matches/MatchmakingCommand.js';
 import { formatInGameTime, getCurrentIGT } from '@domain/time/Time.js';
-import { loadEndDayConfirm } from '@features/events/loaders.js';
+import { loadEndDayConfirm } from '@app/day-boundary/loaders.js';
 import MobileSettingsPage from '@features/settings/mobile/MobileSettingsPage.jsx';
 import ProfileIdentity from '@shared/profile-identity/ProfileIdentity.jsx';
 import EloChart from '@shared/elo-chart/EloChart.jsx';
@@ -107,7 +107,6 @@ export default function MobileMorePage() {
       }
       const result = await createPairMatchCommand(databaseConnection, currentPlayer, {
         operationId: uuid(),
-        profileContextRevision: domainRevisions.profileContext || 0,
       });
       if (result.insufficient) {
         setError(`A new Match needs more match-ready profiles (${result.available || 0} available). A Match started on desktop will appear here after Private Sync.`);

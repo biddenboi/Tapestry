@@ -12,15 +12,12 @@ import {
   STORES,
   SPECIAL_EVENT_IDS,
 } from '@domain/constants.js';
-import { fireFirstMatchIfDue, checkEntertainmentAndLog } from '@domain/events/Events.js';
-import { completeWorkLifecycle } from '@domain/events/DailyLifecycleService.js';
 import {
   buildGhostRoster,
   getMatchOutcomeForPlayer,
 } from '@domain/matches/Match.js';
 import { buildCompetitionRankIdentity } from '@domain/matches/IGT.js';
 import {
-  createPairMatchContextSnapshot,
   getMatchDurationHours,
   getMatchTeams,
   isPairMatch,
@@ -51,7 +48,7 @@ import { useResourceUrl } from '@shared/resource-image/ResourceImage.jsx';
 import { loadTaskCreationMenu } from '@features/tasks/loaders.js';
 import { loadRankProgressModal } from '@features/achievements/loaders.js';
 import { loadInsufficientPlayersModal, loadMatchDetailsModal } from '@features/matches/loaders.js';
-import { loadEndDayConfirm } from '@features/events/loaders.js';
+import { loadEndDayConfirm } from '@app/day-boundary/loaders.js';
 import { Icon } from '@shared/icons/Icon.jsx';
 import '@features/lobby/components/Lobby/Lobby.css';
 
@@ -297,7 +294,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
       setMatchHistory(data.matchHistory);
       setTotalPoints(data.totalPoints);
       setEloHistory(data.eloHistory);
-      setFellowRatings(data.fellowRatings || []);
+      setFellowRatings(data.friendRatings || []);
       setViewerRating(data.viewerRating);
       setViewerHasVisibleRating(data.viewerHasVisibleRating);
       setAllPlayers(data.participants);
@@ -432,30 +429,6 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
         selectedAchievements: currentPlayer.selectedAchievements || [],
       };
       const teams = [[viewerSnapshot, ...teammates], opponents];
-      let contextProjections = new Map();
-      try {
-        contextProjections = await databaseConnection.getProfileContextProjections({
-          viewerId: currentPlayer.UUID,
-          subjects: teams.flat()
-            .filter((player) => String(player.UUID) !== String(currentPlayer.UUID))
-            .map((player) => ({
-              subjectId: player.UUID,
-              relationshipTier: teammates.some((teammate) => teammate.UUID === player.UUID)
-                ? 'friend'
-                : 'dynamic',
-            })),
-          viewerIGT: matchStartIGT,
-          revision: domainRevisions.profileContext || 0,
-        });
-      } catch (contextError) {
-        console.warn('[Lobby] Pair Match context snapshots could not be projected:', contextError);
-      }
-      const contextSnapshot = createPairMatchContextSnapshot({
-        viewerUUID: currentPlayer.UUID,
-        teams,
-        projections: contextProjections,
-        createdAt,
-      });
       const match = withImmutableMatchSnapshots({
         UUID: uuid(),
         createdAt,
@@ -466,19 +439,10 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
         lockedAt: null,
         inGameTimestamp: matchStartIGT,
         teams,
-        contextSnapshot,
         result: null,
       });
       if (matchmakingCancelRef.current) return;
       await databaseConnection.add(STORES.match, match);
-      // Fire the First Match-of-the-Day special event if applicable. Idempotent
-      // for the IGT day — only fires once. Failures here must not block the
-      // match from starting.
-      try {
-        await fireFirstMatchIfDue(databaseConnection, currentPlayer, Date.now());
-      } catch (err) {
-        console.warn('[Lobby] first-match timing log failed:', err);
-      }
       setActiveMatch(match); setGameState(GAME_STATE.match); invalidateDomains(DOMAIN_INVALIDATION.matchWrite);
     } catch (error) {
       console.error('[Lobby] matchmaking failed:', error);
@@ -654,11 +618,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
             {isWorkDay
               ? <button className="lpc-btn" onClick={async () => {
                   await ensureDomainLoaded(['dailyLifecycle', 'profiles']);
-                  await completeWorkLifecycle(databaseConnection, currentPlayer);
                   await endR1Shift(databaseConnection, currentPlayer);
-                  // Record the end-work lifecycle event immediately.
-                  try { await checkEntertainmentAndLog(databaseConnection, currentPlayer); }
-                  catch (err) { console.warn('[Lobby] entertainment check failed:', err); }
                   invalidateDomains(DOMAIN_INVALIDATION.dailyLifecycleWrite);
                 }}>End work day</button>
               : (
@@ -763,7 +723,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
                   {viewerHasVisibleRating && (
                     <span className="data-card-note">
                       You{visibleFellowRatings.length > 0
-                        ? ` + ${visibleFellowRatings.length} Fellow ${visibleFellowRatings.length === 1 ? 'journey' : 'journeys'}`
+                        ? ` + ${visibleFellowRatings.length} friend ${visibleFellowRatings.length === 1 ? 'journey' : 'journeys'}`
                         : ''} · through current IGT
                     </span>
                   )}

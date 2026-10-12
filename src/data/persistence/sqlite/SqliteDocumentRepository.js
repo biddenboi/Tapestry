@@ -133,7 +133,7 @@ function resourceMetadataRecord(record, payload) {
 }
 
 async function preparePut(store, record) {
-  const clean = sanitizeRetiredFeatureRecord(record);
+  const clean = sanitizeRetiredFeatureRecord(record, store);
   if (!clean) {
     return { projected: { uuid: record.UUID }, statements: [{
       sql: `DELETE FROM ${documentTableForStore(store)} WHERE uuid=?`,

@@ -8,11 +8,11 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 const ordinaryPaths = [
   'features/tasks/domain/TaskCompletionProcessors.js',
   'features/matches/components/MatchArena/MatchArena.jsx',
-  'features/feed/modals/PostComposerModal/PostComposerModal.jsx',
-  'features/feed/modals/JournalDetailModal/JournalDetailModal.jsx',
+  'features/chronicle/modals/ChronicleComposerModal/ChronicleComposerModal.jsx',
+  'features/chronicle/modals/ChronicleEntryModal/ChronicleEntryModal.jsx',
   'features/profile/pages/Profile/Profile.jsx',
   'features/shop/pages/Shop/Shop.jsx',
-  'domain/events/Events.js',
+  'app/day-boundary/DailyLifecycleService.js',
 ];
 
 const ordinarySources = await Promise.all(ordinaryPaths.map(read));

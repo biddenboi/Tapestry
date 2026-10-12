@@ -2,7 +2,7 @@ import { isTaskPlanReceiptValid } from './TaskPlanReceipt.js';
 import {
   taskPriorityClass,
   usefulTaskFitsWindow,
-} from '../navigation/NextMovePolicyV1.js';
+} from './TaskWindow.js';
 
 const EXTERNAL_BLOCKERS = new Set([
   'person',

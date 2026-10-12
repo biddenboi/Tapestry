@@ -23,7 +23,7 @@ const {
   normalizeProfilePersonalization,
 } = await server.ssrLoadModule('/domain/profile/ProfilePersonalization.js');
 
-test('an explicitly removed Life Context block stays removed', () => {
+test('explicit text blocks are preserved', () => {
   const normalized = normalizeProfilePersonalization({
     blocks: [
       { id: 'note', type: 'text', title: 'Note', content: 'Kept' },
@@ -33,12 +33,9 @@ test('an explicitly removed Life Context block stays removed', () => {
   assert.deepEqual(normalized.blocks.map((block) => block.type), ['text']);
 });
 
-test('the default Life Context block is only supplied for a profile with no blocks field', () => {
-  assert.deepEqual(
-    normalizeProfilePersonalization({}).blocks.map((block) => block.type),
-    ['lifeContext'],
-  );
-  assert.deepEqual(normalizeProfilePersonalization({ blocks: [] }).blocks, []);
+test('profiles have no default Context block and legacy Context blocks are filtered', () => {
+  assert.deepEqual(normalizeProfilePersonalization({}).blocks, []);
+  assert.deepEqual(normalizeProfilePersonalization({ blocks: [{ type: 'lifeContext', id: 'old' }] }).blocks, []);
 });
 
 test('empty text block fields remain controlled empty values', () => {

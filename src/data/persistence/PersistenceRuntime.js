@@ -8,12 +8,6 @@ import ProfileDaybookQueryService from './services/ProfileDaybookQueryService.js
 import ReminderQueryService from './services/ReminderQueryService.js';
 import EloQueryService from './services/EloQueryService.js';
 import ProfileLifecycleService from './services/ProfileLifecycleService.js';
-import SqliteProfileContextRepository from './repositories/SqliteProfileContextRepository.js';
-import ProfileContextFactService from './services/ProfileContextFactService.js';
-import ProfileContextSuggestionService from './services/ProfileContextSuggestionService.js';
-import ProfileContextProjectionService from './services/ProfileContextProjectionService.js';
-import ProfileContextCommandService from './services/ProfileContextCommandService.js';
-import ProfileContextActionService from './services/ProfileContextActionService.js';
 import DomainHydrationCoordinator from './services/DomainHydrationCoordinator.js';
 import DemoDataSeeder from './services/DemoDataSeeder.js';
 import { STORES } from '../../domain/constants.js';
@@ -69,20 +63,6 @@ export class PersistenceRuntime {
     this.profileDaybookQueries = new ProfileDaybookQueryService(facade);
     this.socialRepository = this.sqliteStorageAdapter?.shadowDomains?.social || null;
     this.friendships = new FriendshipService({ facade, repository: this.socialRepository });
-    this.profileContextRepository = new SqliteProfileContextRepository(facade);
-    this.profileContextFacts = new ProfileContextFactService(facade);
-    this.profileContextProjections = new ProfileContextProjectionService({
-      repository: this.profileContextRepository,
-    });
-    this.profileContextSuggestions = new ProfileContextSuggestionService({
-      repository: this.profileContextRepository,
-      factService: this.profileContextFacts,
-    });
-    this.profileContextCommands = new ProfileContextCommandService({
-      repository: this.profileContextRepository,
-      projectionService: this.profileContextProjections,
-    });
-    this.profileContextActions = new ProfileContextActionService(facade);
     this.reminderQueries = new ReminderQueryService(facade);
     this.eloQueries = new EloQueryService(facade);
     this.profileLifecycle = new ProfileLifecycleService(facade);

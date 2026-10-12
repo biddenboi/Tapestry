@@ -15,10 +15,8 @@ export const loadLobby = measuredImport('lobby', () =>
   import('@features/lobby/components/Lobby/Lobby.jsx').then((module) => module.default));
 export const loadTodoList = measuredImport('todo-list', () =>
   import('@features/tasks/components/TodoList/TodoList.jsx').then((module) => module.default));
-export const loadEvents = measuredImport('events', () =>
-  import('@features/events/pages/Events/Events.jsx').then((module) => module.default));
 export const loadFeed = measuredImport('feed', () =>
-  import('@features/feed/components/Feed/Feed.jsx').then((module) => module.default));
+  import('@features/feed/pages/FeedPage/FeedPage.jsx').then((module) => module.default));
 export const loadSocialWorldPlaceholder = measuredImport('social-world-placeholder', () =>
   import('@features/social-world/SocialWorldPlaceholder.jsx').then((module) => module.default));
 export const loadReminderModal = measuredImport('reminder-modal', () =>
@@ -33,7 +31,6 @@ export const Shop = lazyFeature(loadShop);
 export const ContributionPass = lazyFeature(loadContributionPass);
 export const Inventory = lazyFeature(loadInventory);
 export const Profile = lazyFeature(loadProfile);
-export const Events = lazyFeature(loadEvents);
 export const Gate = lazyFeature(loadGate);
 export const Inbox = lazyFeature(loadInbox);
 export const Feed = lazyFeature(loadFeed);
@@ -47,10 +44,9 @@ export const GAME_HUB_DYNAMIC_BOUNDARIES = Object.freeze({
   shop: '@features/shop/pages/Shop/Shop.jsx',
   inventory: '@features/inventory/pages/Inventory/Inventory.jsx',
   profiles: '@features/profile/pages/Profile/Profile.jsx',
-  events: '@features/events/pages/Events/Events.jsx',
   gate: '@features/gate/components/Gate/Gate.jsx',
   inbox: '@features/inbox/components/Inbox/Inbox.jsx',
-  feed: '@features/feed/components/Feed/Feed.jsx',
+  feed: '@features/feed/pages/FeedPage/FeedPage.jsx',
   map: '@features/social-world/SocialWorldPlaceholder.jsx',
   settings: '@features/settings/pages/Settings/Settings.jsx',
 });

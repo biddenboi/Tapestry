@@ -31,7 +31,6 @@ test('lazy hydration exposes the requested typed domains', () => {
     'profileMatches',
     'profileSocial',
     'profileInventory',
-    'nextMove',
     'chronicle',
   ]) {
     assert.ok(HYDRATION_DOMAINS.includes(domain), `${domain} should be independently loadable`);
@@ -55,13 +54,6 @@ test('high-value domains own only their persistence stores', () => {
     'worldConsequenceReceipts',
     'matchScoreEvents',
     'taskPlanReceipts',
-  ]);
-  assert.deepEqual(DOMAIN_STORE_KEYS.nextMove, [
-    'r1Events',
-    'taskPlanReceipts',
-    'nextMoveDecisions',
-    'nextMoveFeedback',
-    'nextMoveSurfacePreferences',
   ]);
   assert.deepEqual(DOMAIN_STORE_KEYS.chronicle, [
     'chronicleEntryMetadata',
@@ -102,11 +94,6 @@ test('composite domains load explicit dependencies without becoming global sync 
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.leaderboards], []);
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.achievements], ['profiles']);
   assert.equal(HYDRATION_DOMAIN.socialWorld, undefined);
-  assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.nextMove], [
-    'tasks',
-    'goals',
-    'reminders',
-  ]);
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.chronicle], ['journals']);
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.feed], [
     'journals',

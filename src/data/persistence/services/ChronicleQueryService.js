@@ -96,6 +96,22 @@ export class ChronicleQueryService {
     return { entries, stories, memberships, storyById, accessByEntry, revisionByEntry };
   }
 
+  async pastJournals({ viewerUUID, viewerIGT = Infinity, now = Date.now() } = {}) {
+    if (!viewerUUID) return [];
+    const snapshot = await this._snapshot(viewerIGT);
+    return snapshot.entries
+      .filter((entry) => !entry.deletedAt && !entry.deleted && !entry.isDeleted)
+      .filter((entry) => entry.lifecycleState === 'published')
+      .filter((entry) => {
+        const occurredAt = new Date(entry.occurrenceAt || entry.createdAt).getTime();
+        return Number.isFinite(occurredAt) && occurredAt <= Number(now);
+      })
+      .filter((entry) => canViewChronicleEntry(entry, {
+        viewerUUID, authorUUID: entry.parent, viewerIGT,
+      }))
+      .map((entry) => safeForViewer(entry, viewerUUID));
+  }
+
   async recent({
     viewerUUID,
     viewerIGT = Infinity,

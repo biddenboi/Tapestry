@@ -31,15 +31,14 @@ const shared = [
 
 const local = [
   'r1Events',
-  'appSettings', 'nextMoveSurfacePreferences', 'chronicleDrafts',
+  'appSettings', 'chronicleDrafts',
   'chronicleFeedViewStates', 'chronicleStoryReadStates', 'chronicleResurfaceStates',
-  'notes', 'analyticsEvents', 'profileContextPreferences',
-  'profileContextItems', 'profileContextRecipients', 'profileContextAudit',
-  'nextMoveDecisions', 'nextMoveFeedback', 'taskPlanReceipts', 'interfaceRevealReceipts',
+  'notes', 'analyticsEvents',
+  'taskPlanReceipts', 'interfaceRevealReceipts',
 ];
 
 const derived = [
-  'derivedCaches', 'achievementStates', 'profileContextSuggestions',
+  'derivedCaches', 'achievementStates',
   'backgroundJobs', 'backgroundJobReceipts', 'contributionRoadStats',
   'contributionRoadMigrations', 'chronicleCollaborationOutbox',
 ];
@@ -135,7 +134,7 @@ export const SYNC_FIELD_POLICY = Object.freeze({
 });
 
 export function stripDerivedSyncFields(store, record = {}) {
-  record = sanitizeRetiredFeatureRecord(record);
+  record = sanitizeRetiredFeatureRecord(record, store);
   if (!record) return null;
   const policy = SYNC_FIELD_POLICY[store];
   if (!policy) return structuredClone(record);

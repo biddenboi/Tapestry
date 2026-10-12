@@ -4,10 +4,10 @@ import {
   getDailyLifecycleAppLaunchId,
   getDailyLifecycleLaunchState,
   needsInitialProfile,
-} from '@domain/events/DailyLifecycleService.js';
+} from '@app/day-boundary/DailyLifecycleService.js';
 import { markStartup } from '@shared/performance/startupPerf.js';
 import { loadProfileSwitcher } from '@features/profile/loaders.js';
-import { loadWakePopup } from '@features/events/loaders.js';
+import { loadWakePopup } from '@app/day-boundary/loaders.js';
 
 const startupLatch = {
   profileSwitcherKey: null,

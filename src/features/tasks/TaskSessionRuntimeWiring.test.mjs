@@ -3,12 +3,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const [provider, menu, nextMoveHost, nextMoveDrawer, activeTaskMove, expanded, app, hub] = await Promise.all([
+const [provider, menu, dock, expanded, app, hub] = await Promise.all([
   read('./context/TaskSessionProvider.jsx'),
   read('./modals/TaskSessionMenu/TaskSessionMenu.jsx'),
-  read('../navigation/components/EdgeNextMoveHost/EdgeNextMoveHost.jsx'),
-  read('../navigation/components/NextMoveDrawer/NextMoveDrawer.jsx'),
-  read('../navigation/components/NextMoveDrawer/ActiveTaskMove.jsx'),
+  read('./components/TaskSessionDock/TaskSessionDock.jsx'),
   read('./components/TaskSessionExpanded/TaskSessionExpanded.jsx'),
   read('../../app/App.jsx'),
   read('../../app/shell/GameHub/GameHub.jsx'),
@@ -22,29 +20,21 @@ test('one app-level provider owns the only task-session presentation interval', 
   );
   assert.equal((provider.match(/useInterval\s*\(/g) || []).length, 1);
   assert.doesNotMatch(menu, /useInterval|setInterval/);
-  assert.doesNotMatch(nextMoveHost, /useInterval|setInterval/);
+  assert.doesNotMatch(dock, /useInterval|setInterval/);
   assert.doesNotMatch(expanded, /useInterval|setInterval/);
 });
 
-test('expanded and edge surfaces consume the same provider snapshot', () => {
+test('expanded and docked sessions consume the same provider snapshot', () => {
   assert.match(menu, /snapshot\.mode !== 'expanded'/);
   assert.match(expanded, /useTaskSession/);
-  assert.match(nextMoveHost, /useTaskSession/);
-  assert.match(nextMoveDrawer, /ActiveTaskMove/);
-  assert.match(activeTaskMove, /next-move-active-task/);
-  assert.match(activeTaskMove, /Open full session/);
-  assert.match(nextMoveDrawer, /onExpand=\{taskSession\.expand\}/);
-  assert.match(nextMoveHost, /taskSession\.snapshot\?\.mode === 'docked'/);
-  assert.match(nextMoveHost, /surface === 'active-session'/);
-  assert.match(nextMoveHost, /previousSessionUUID && !activeSessionUUID/);
-  assert.match(nextMoveHost, /explicitlyOpenedRef\.current/);
-  assert.match(nextMoveDrawer, /Ready for a new move/);
-  assert.match(nextMoveHost, /hiddenForFocusSurface = gameState !== GAME_STATE\.idle && !activeTaskSurface/);
-  assert.match(hub, /<EdgeNextMoveHost \/>/);
-  assert.doesNotMatch(hub, /<TaskSessionDock \/>/);
+  assert.match(dock, /useTaskSession/);
+  assert.match(dock, /snapshot\.mode !== 'docked'/);
+  assert.match(dock, /onClick=\{expand\}/);
+  assert.match(dock, /onClick=\{togglePause\}/);
+  assert.match(dock, /settleSession/);
+  assert.match(hub, /<TaskSessionDock \/>/);
+  assert.doesNotMatch(hub, /EdgeNextMoveHost/);
   assert.match(expanded, /canMinimize && <button/);
-  assert.doesNotMatch(expanded, /dojo/i);
-  assert.match(activeTaskMove, /onSettle/);
 });
 
 test('settlement stays canonical, guarded, and source-stable after a Match concludes', () => {

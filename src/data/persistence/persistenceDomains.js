@@ -27,7 +27,6 @@ export const PERSISTENCE_DOMAIN = Object.freeze({
   profiles: 'profiles',
   profileSummaries: 'profileSummaries',
   resources: 'resources',
-  nextMove: 'nextMove',
   chronicle: 'chronicle',
   contributionRoad: 'contributionRoad',
 });
@@ -40,7 +39,7 @@ export const PERSISTENCE_ARTIFACT_CLASS = Object.freeze({
 });
 
 const STORE_DOMAINS = Object.freeze({
-  [STORES.r1Event]: ['tasks', 'nextMove'],
+  [STORES.r1Event]: ['tasks'],
   [STORES.task]: ['tasks'],
   [STORES.taskCompletionEvent]: ['tasks'],
   [STORES.taskCompletionReceipt]: ['tasks'],
@@ -53,10 +52,7 @@ const STORE_DOMAINS = Object.freeze({
   [STORES.rewardProvenance]: ['continuity'],
   [STORES.worldConsequenceReceipt]: ['worldConsequences', 'continuity'],
   [STORES.matchScoreEvent]: ['matches', 'continuity'],
-  [STORES.taskPlanReceipt]: ['tasks', 'nextMove'],
-  [STORES.nextMoveDecision]: ['nextMove'],
-  [STORES.nextMoveFeedback]: ['nextMove'],
-  [STORES.nextMoveSurfacePreference]: ['nextMove'],
+  [STORES.taskPlanReceipt]: ['tasks'],
   [STORES.chronicleEntryMetadata]: ['chronicle'],
   [STORES.chronicleStory]: ['chronicle'],
   [STORES.chronicleStoryEntry]: ['chronicle'],
@@ -203,7 +199,6 @@ export function persistenceMetadataForStore(store, record = null) {
     STORES.achievementReceipt,
     STORES.backgroundJobReceipt,
     STORES.profileSummary,
-    STORES.nextMoveDecision,
     STORES.contributionRoadStat,
   ].includes(store)
     ? PERSISTENCE_ARTIFACT_CLASS.derivedCache

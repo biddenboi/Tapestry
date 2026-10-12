@@ -28,7 +28,7 @@ test('secondary domains are no longer prepared by the player-session startup hoo
 });
 
 test('feature panels remain dynamic imports', () => {
-  for (const feature of ['Lobby', 'TodoList', 'Events', 'Feed', 'SocialWorldPlaceholder']) {
+  for (const feature of ['Lobby', 'TodoList', 'Feed', 'SocialWorldPlaceholder']) {
     assert.match(panelRegistry, new RegExp(`import\\([^)]*${feature}`));
   }
 });

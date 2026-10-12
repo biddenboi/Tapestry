@@ -23,11 +23,6 @@ const IGT_STORES = new Set([
   STORES.rewardProvenance,
   STORES.worldConsequenceReceipt,
   STORES.matchScoreEvent,
-  STORES.profileContextItem,
-  STORES.profileContextRecipient,
-  STORES.profileContextSuggestion,
-  STORES.profileContextPreference,
-  STORES.profileContextAudit,
 ]);
 
 export const TIMESTAMPED_STORES = new Set([...IGT_STORES, STORES.contribution]);

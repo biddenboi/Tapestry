@@ -1,6 +1,5 @@
 import { STORES } from '@domain/constants.js';
-// Keep the existing lifecycle while recording the small availability boundary
-// R1 needs. Events screens remain until their later Gate removal item.
+// Small, device-local work availability boundary for the R1 model.
 export async function startR1Shift(db, player, now = new Date()) {
  const end=new Date(now);const [hours,minutes]=String(player.sleepTime||'23:00').split(':').map(Number);
  end.setHours(hours,minutes,0,0);if(end<=now)end.setDate(end.getDate()+1);

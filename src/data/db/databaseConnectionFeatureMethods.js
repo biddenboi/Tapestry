@@ -34,47 +34,6 @@ export async function getAllProfilePlayers() {
   return mergeProfilePlayerLists(typedPlayers, documentPlayers);
 }
 
-export function getProfileContextProjection(query) {
-  return this.profileContextProjections?.getProjection(query) || Promise.resolve(null);
-}
-
-export function getProfileContextProjections(query) {
-  return this.profileContextProjections?.getProjections(query) || Promise.resolve(new Map());
-}
-
-export function getProfileContextOwnerState({ ownerId, viewerId } = {}) {
-  if (!ownerId || String(ownerId) !== String(viewerId)) return Promise.resolve(null);
-  return this.profileContextRepository?.getOwnerState(ownerId) || Promise.resolve(null);
-}
-
-export function refreshProfileContextSuggestions(command) {
-  return this.profileContextSuggestions?.refresh(command) || Promise.resolve([]);
-}
-
-export function saveQuickProfileContext(command) {
-  return this.profileContextCommands?.saveQuickContext(command) || Promise.resolve([]);
-}
-
-export function saveProfileContextItem(command) {
-  return this.profileContextCommands?.saveItem(command) || Promise.resolve(null);
-}
-
-export function revokeProfileContextItem(command) {
-  return this.profileContextCommands?.revokeItem(command) || Promise.resolve(false);
-}
-
-export function resolveProfileContextSuggestion(command) {
-  return this.profileContextCommands?.resolveSuggestion(command) || Promise.resolve(null);
-}
-
-export function saveProfileContextPreferences(command) {
-  return this.profileContextCommands?.savePreferences(command) || Promise.resolve(null);
-}
-
-export function performProfileContextAction(command) {
-  return this.profileContextActions?.perform(command) || Promise.resolve({ performed: false });
-}
-
 function reconcileAuthoritativeFriendship(connection, {
   type,
   friendship = null,
@@ -358,16 +317,6 @@ export function clearBanPending(playerUUID) {
 export const databaseConnectionFeatureMethods = {
   getProfilePlayer,
   getAllProfilePlayers,
-  getProfileContextProjection,
-  getProfileContextProjections,
-  getProfileContextOwnerState,
-  refreshProfileContextSuggestions,
-  saveQuickProfileContext,
-  saveProfileContextItem,
-  revokeProfileContextItem,
-  resolveProfileContextSuggestion,
-  saveProfileContextPreferences,
-  performProfileContextAction,
   requestSocialFriendship,
   acceptSocialFriendship,
   closeSocialFriendship,

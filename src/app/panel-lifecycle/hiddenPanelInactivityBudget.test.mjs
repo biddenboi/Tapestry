@@ -7,7 +7,6 @@ const sourcePaths = {
   feed: '../../features/feed/pages/FeedPage/FeedPage.jsx',
   shop: '../../features/shop/pages/Shop/Shop.jsx',
   lobby: '../../features/lobby/components/Lobby/Lobby.jsx',
-  events: '../../features/events/pages/Events/Events.jsx',
   profiles: '../../features/profile/pages/Profile/Profile.jsx',
   notes: '../../features/quick-notes/modals/QuickNotes/QuickNotes.jsx',
   inbox: '../../features/inbox/components/Inbox/Inbox.jsx',
@@ -27,7 +26,6 @@ test('hidden-panel recurring work has explicit stop or cleanup paths', () => {
   assert.doesNotMatch(sources.feed, /setInterval|IntersectionObserver/);
   assert.match(sources.shop, /clearTimeout\(purchaseFlashTimerRef\.current\)/);
   assert.match(sources.lobby, /if \(!isActive\) return undefined;[\s\S]*clearInterval/);
-  assert.doesNotMatch(sources.events, /setInterval\(/);
   assert.match(sources.profiles, /resizeCleanupRef\.current\?\.\(\)/);
   assert.match(sources.notes, /cancelAutosave|flush/);
   assert.match(sources.inbox, /usePanelRequestScope/);

@@ -5,7 +5,6 @@ import {
   getDisplaySlope,
 } from '@domain/tasks/Tasks.js';
 import { getLocalDate } from '@domain/time/Time.js';
-export { evaluateDayOrientationNeed } from './DayOrientationNeed.js';
 
 export const PLANNING_MODES = [
   { id: 'normal', label: 'Normal push', minutes: 25 },

@@ -102,7 +102,7 @@ export default function Gate() {
         setError("Locked until today's tasks are done"); return false;
       }
       await operation(fresh, freshInputs);
-      invalidateDomains(['dailyLifecycle', 'tasks', 'nextMove']);
+      invalidateDomains(['dailyLifecycle', 'tasks']);
       await refresh();
       return true;
     } catch (reason) { setError(errors[reason.code] || reason.message || 'The Gate could not save. Try again.'); return false; }

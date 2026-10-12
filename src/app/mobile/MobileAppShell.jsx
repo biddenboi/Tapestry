@@ -12,22 +12,19 @@ import useVisualViewport from './useVisualViewport.js';
 import './MobileAppShell.css';
 
 const MobileChroniclePage = lazy(() => import('@features/chronicle/mobile/MobileChroniclePage.jsx'));
-const MobileHabitsPage = lazy(() => import('@features/events/mobile/MobileHabitsPage.jsx'));
 const MobileMorePage = lazy(() => import('@features/profile/mobile/MobileMorePage.jsx'));
 const MobileShopPage = lazy(() => import('@features/shop/mobile/MobileShopPage.jsx'));
 
 const LAST_TAB_KEY = 'tapestry.mobile.last-tab.v2';
-const VALID_TABS = new Set(['tasks', 'habits', 'chronicle', 'shop', 'profile']);
+const VALID_TABS = new Set(['tasks', 'chronicle', 'shop', 'profile']);
 const TAB_ROUTES = Object.freeze({
   tasks: 'today',
-  habits: 'habits',
   chronicle: 'chronicle',
   shop: 'shop',
   profile: 'more',
 });
 const ROUTE_TABS = Object.freeze({
   ...Object.fromEntries(Object.entries(TAB_ROUTES).map(([key, value]) => [value, key])),
-  goals: 'habits',
 });
 
 function tabFromLocation() {
@@ -140,7 +137,6 @@ function MobileShellContent() {
 
   const panels = [
     ['tasks', <MobileTasksPage />],
-    ['habits', <MobileHabitsPage />],
     ['chronicle', <MobileChroniclePage />],
     ['shop', <MobileShopPage />],
     ['profile', <MobileMorePage />],

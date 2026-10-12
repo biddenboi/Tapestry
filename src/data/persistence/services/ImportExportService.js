@@ -438,7 +438,7 @@ export class ImportExportService {
       await stagingAdapter.open({ mode: 'memory' });
       const migrated = await migrateLegacyQuickNotesToEntries(legacy.stores);
       const migratedStores = Object.fromEntries(Object.entries(migrated)
-        .map(([store, rows]) => [store, sanitizeRetiredFeatureRecords(rows)]));
+        .map(([store, rows]) => [store, sanitizeRetiredFeatureRecords(rows, store)]));
       const entries = Object.values(STORES).map((store) => [
         store,
         [

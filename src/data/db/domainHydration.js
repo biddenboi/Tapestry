@@ -18,14 +18,12 @@ export const HYDRATION_DOMAIN = Object.freeze({
   reminders: 'reminders',
   profiles: 'profiles',
   profileSummaries: 'profileSummaries',
-  profileContext: 'profileContext',
   profileTimeline: 'profileTimeline',
   profileMatches: 'profileMatches',
   profileSocial: 'profileSocial',
   profileInventory: 'profileInventory',
   notes: 'notes',
   analytics: 'analytics',
-  nextMove: 'nextMove',
   chronicle: 'chronicle',
   contributionRoad: 'contributionRoad',
 });
@@ -39,13 +37,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
     'actionSessions', 'handoffs', 'rewardProvenance',
     'worldConsequenceReceipts', 'matchScoreEvents',
     'taskPlanReceipts',
-  ]),
-  [HYDRATION_DOMAIN.nextMove]: Object.freeze([
-    'r1Events',
-    'taskPlanReceipts',
-    'nextMoveDecisions',
-    'nextMoveFeedback',
-    'nextMoveSurfacePreferences',
   ]),
   [HYDRATION_DOMAIN.matches]: Object.freeze([
     'matches', 'backgroundJobs', 'backgroundJobReceipts', 'matchScoreEvents',
@@ -108,13 +99,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
   [HYDRATION_DOMAIN.reminders]: Object.freeze(['reminders', 'interventionDecisions']),
   [HYDRATION_DOMAIN.profiles]: Object.freeze(['players']),
   [HYDRATION_DOMAIN.profileSummaries]: Object.freeze(['profileSummaries']),
-  [HYDRATION_DOMAIN.profileContext]: Object.freeze([
-    'profileContextItems',
-    'profileContextRecipients',
-    'profileContextSuggestions',
-    'profileContextPreferences',
-    'profileContextAudit',
-  ]),
   [HYDRATION_DOMAIN.profileTimeline]: Object.freeze(['transactions']),
   [HYDRATION_DOMAIN.profileMatches]: Object.freeze([]),
   [HYDRATION_DOMAIN.profileSocial]: Object.freeze([]),
@@ -134,14 +118,8 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
 
 export const DOMAIN_DEPENDENCIES = Object.freeze({
   [HYDRATION_DOMAIN.social]: Object.freeze([HYDRATION_DOMAIN.profiles]),
-  [HYDRATION_DOMAIN.profileContext]: Object.freeze([HYDRATION_DOMAIN.profiles]),
   [HYDRATION_DOMAIN.leaderboards]: Object.freeze([]),
   [HYDRATION_DOMAIN.achievements]: Object.freeze([HYDRATION_DOMAIN.profiles]),
-  [HYDRATION_DOMAIN.nextMove]: Object.freeze([
-    HYDRATION_DOMAIN.tasks,
-    HYDRATION_DOMAIN.goals,
-    HYDRATION_DOMAIN.reminders,
-  ]),
   [HYDRATION_DOMAIN.contributionRoad]: Object.freeze([
     HYDRATION_DOMAIN.profiles,
     HYDRATION_DOMAIN.inventory,

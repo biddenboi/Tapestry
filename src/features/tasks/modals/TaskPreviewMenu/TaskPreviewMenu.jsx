@@ -8,7 +8,7 @@ import { measureDynamicModule } from '@shared/performance/startupPerf.js';
 import { GAME_STATE, MATCH_STATUS, STORES, MINUTE } from '@domain/constants.js';
 import { deleteTaskCommand, saveTaskCommand } from '@domain/tasks/TaskCommands.js';
 import { consumeActionPlan, saveActionPlan } from '@domain/continuity/ActionPlan.js';
-import { getNormalizedActiveEffects } from '@domain/events/ActiveEffectsCache.js';
+import { getNormalizedActiveEffects } from '@domain/inventory/ActiveEffectsCache.js';
 import {
   buildMatchPromiseContract,
   matchSupportsPromiseRewards,

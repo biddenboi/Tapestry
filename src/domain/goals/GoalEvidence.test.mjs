@@ -2,15 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const [evidence, events, contribution] = await Promise.all([
+const [evidence, contribution] = await Promise.all([
   readFile(new URL('./GoalEvidence.js', import.meta.url), 'utf8'),
-  readFile(new URL('../events/Events.js', import.meta.url), 'utf8'),
   readFile(new URL('../contribution/Contribution.js', import.meta.url), 'utf8'),
 ]);
 
-test('linked habits resolve their Goal before using the idempotent action receipt', () => {
-  assert.match(events, /recordLinkedActionContribution/);
-  assert.match(events, /entityType: 'habit'/);
+test('linked actions resolve their Goal before using the idempotent action receipt', () => {
   assert.match(evidence, /resolvePrimaryLinkedGoalUUID/);
   assert.ok(contribution.includes('`action-contribution:${source}:${player.UUID}:${sourceUUID}`'));
 });

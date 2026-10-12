@@ -2,5 +2,5 @@ import { measureDynamicModule } from '@shared/performance/startupPerf.js';
 
 export const loadFeed = () => measureDynamicModule(
   'feed',
-  () => import('./components/Feed/Feed.jsx'),
+  () => import('./pages/FeedPage/FeedPage.jsx'),
 ).then((module) => module.default);

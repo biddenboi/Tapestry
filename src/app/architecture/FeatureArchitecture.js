@@ -1,6 +1,6 @@
 export const FEATURE_ARCHITECTURE = Object.freeze({
   feed: Object.freeze({
-    view: 'features/feed/components/Feed/Feed.jsx',
+    view: 'features/feed/pages/FeedPage/FeedPage.jsx',
     controller: 'domain/feed/FeedOrdering.js',
     repository: 'data/persistence/repositories/FeedRepository.js',
     contracts: 'domain/feed/FeedOrdering.js',
@@ -19,13 +19,6 @@ export const FEATURE_ARCHITECTURE = Object.freeze({
     repository: 'data/persistence/repositories/MatchRepository.js',
     contracts: 'domain/matches/MatchContracts.js',
     worker: 'domain/matches/MatchPostMatchWorker.js',
-  }),
-  events: Object.freeze({
-    view: 'features/events/pages/Events/Events.jsx',
-    controller: 'domain/events/DailyLifecycleService.js',
-    repository: 'domain/events/EventDomainRepository.js',
-    contracts: 'domain/events/LifecycleBoundaries.js',
-    worker: null,
   }),
   profiles: Object.freeze({
     view: 'features/profile/pages/Profile/Profile.jsx',
