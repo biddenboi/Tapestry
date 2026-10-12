@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecords } from '../RetiredFeatureData.js';
 import {
   asObject,
   createImportLedgerStatements,
@@ -30,6 +31,12 @@ export class RecoveryModelShadowImporter {
     profileSummaries = [],
     runId = null,
   } = {}) {
+    achievementEvents = sanitizeRetiredFeatureRecords(achievementEvents);
+    achievementStates = sanitizeRetiredFeatureRecords(achievementStates);
+    achievementReceipts = sanitizeRetiredFeatureRecords(achievementReceipts);
+    analyticsEvents = sanitizeRetiredFeatureRecords(analyticsEvents);
+    derivedCaches = sanitizeRetiredFeatureRecords(derivedCaches);
+    profileSummaries = sanitizeRetiredFeatureRecords(profileSummaries);
     const source = {
       achievementEvents, achievementStates, achievementReceipts,
       analyticsEvents, derivedCaches, profileSummaries,

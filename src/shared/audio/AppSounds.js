@@ -228,10 +228,6 @@ function playPattern(ctx, soundName, volume, themeId) {
       tone({ start: now, frequency: 494, duration: 0.1, gain: 0.09, type: 'triangle' });
       tone({ start: now + 0.065, frequency: 740, duration: 0.14, gain: 0.08, type: 'sine' });
       break;
-    case 'dojo-start':
-      tone({ start: now, frequency: 146, endFrequency: 293, duration: 0.2, gain: 0.12, type: 'triangle' });
-      tone({ start: now + 0.12, frequency: 439, duration: 0.18, gain: 0.08, type: 'sine' });
-      break;
     case 'success':
       tone({ start: now, frequency: 520, duration: 0.08, gain: 0.08, type: 'triangle' });
       tone({ start: now + 0.07, frequency: 780, duration: 0.12, gain: 0.07, type: 'sine' });

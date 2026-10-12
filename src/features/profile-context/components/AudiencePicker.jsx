@@ -2,11 +2,9 @@ import { CONTEXT_AUDIENCE } from '@domain/profile-context/Contracts.js';
 import ProfilePicture from '@shared/profile-picture/ProfilePicture.jsx';
 
 const OPTIONS = [
-  [CONTEXT_AUDIENCE.private, 'Only me', 'Safe default; nothing appears in Social World.'],
+  [CONTEXT_AUDIENCE.private, 'Only me', 'Visible only to you.'],
   [CONTEXT_AUDIENCE.selected, 'Selected people', 'Only the named recipients can see it.'],
   [CONTEXT_AUDIENCE.collaborators, 'Collaborators', 'Accepted collaborators only.'],
-  [CONTEXT_AUDIENCE.fellows, 'Fellows', 'Current Fellow relationships only.'],
-  [CONTEXT_AUDIENCE.cast, 'My cast', 'Collaborators and current Fellows.'],
 ];
 
 export default function AudiencePicker({ value, onChange, people = [], recipientIds = [], onRecipientsChange }) {

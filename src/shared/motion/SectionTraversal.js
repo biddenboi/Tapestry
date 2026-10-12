@@ -11,7 +11,6 @@ function resolveTraversalScope(source) {
     '.settings-page',
     '.inventory-page',
     '.chronicle-page',
-    '.dojo',
     '.match-section-shell',
   ].join(',')) || source.parentElement;
 }

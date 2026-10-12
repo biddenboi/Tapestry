@@ -1,0 +1,24 @@
+.social-world-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  box-sizing: border-box;
+  text-align: center;
+  color: var(--text-dim, #a1a1aa);
+}
+
+.social-world-placeholder h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text, inherit);
+}
+
+.social-world-placeholder p {
+  margin: 0;
+  font-size: 0.95rem;
+}

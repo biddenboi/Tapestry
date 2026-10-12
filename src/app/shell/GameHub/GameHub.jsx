@@ -33,7 +33,7 @@ import {
   Shop,
   Settings,
   TodoList,
-  SocialWorldShell,
+  SocialWorldPlaceholder,
   loadReminderModal,
 } from '@app/shell/GameHub/panelRegistry.js';
 import '@app/shell/GameHub/GameHub.css';
@@ -60,7 +60,6 @@ import { getNextDailyLifecycleBoundary } from '@domain/events/LifecycleBoundarie
 import { getDurableEndOfDayState } from '@domain/events/DailyLifecycleService.js';
 import { EVENT_TERMINOLOGY } from '@features/events/terminology.js';
 import EdgeNextMoveHost from '@features/navigation/components/EdgeNextMoveHost/EdgeNextMoveHost.jsx';
-import { worldRouteTargetsPanel } from '@features/navigation/services/WorldRouteHighlightService.js';
 import QuickCaptureLauncher from '@features/chronicle/components/QuickCapture/QuickCaptureLauncher.jsx';
 import useOpeningTrail from '@features/opening-trail/useOpeningTrail.js';
 import {
@@ -153,7 +152,6 @@ export default function GameHub() {
     viewingProfile: [viewingProfile],
     routeIntent,
     consumeRouteIntent,
-    worldRoute,
     openPanel,
     replacePanel,
     closePanel,
@@ -325,7 +323,6 @@ export default function GameHub() {
       const decision = await decideNotification(databaseConnection, currentPlayer, candidate, {
         activeSession: !!activeTask?.createdAt,
         activeMatch: gameState === GAME_STATE.match,
-        activeDojo: false,
       });
       return decision.decision === 'deliver' ? { ...reminder, interventionDecision: decision } : null;
     }));
@@ -473,7 +470,7 @@ export default function GameHub() {
       readinessKey={panelLifecycleStates.map}
       onReady={markPanelLifecycleReady}
     >
-      <SocialWorldShell deferHeavyWork={deferWorldLayer} />
+      <SocialWorldPlaceholder />
     </LifecyclePanel>
   );
 
@@ -608,13 +605,11 @@ export default function GameHub() {
                 : id === 'inventory'
                   ? activePanel === id || INVENTORY_CHILD_PANELS.has(activePanel)
                   : activePanel === id;
-              const nextMoveTarget = worldRouteTargetsPanel(worldRoute?.locationId, id);
               return (
                 <button
                   key={id}
                   type="button"
-                  className={`hub-world-button hub-world-button--nav ${active ? 'active' : ''} ${nextMoveTarget ? 'is-next-move-target' : ''} ${silhouette ? 'is-opening-silhouette' : ''}`}
-                  data-next-move-target={nextMoveTarget ? 'true' : undefined}
+                  className={`hub-world-button hub-world-button--nav ${active ? 'active' : ''} ${silhouette ? 'is-opening-silhouette' : ''}`}
                   onClick={() => handleNavClick(id)}
                   title={silhouette ? `${title} · introduced after your first task-session outcome; available now` : title}
                   aria-label={silhouette ? `${title}, Opening Trail preview, available now` : title}

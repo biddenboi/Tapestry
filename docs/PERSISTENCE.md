@@ -100,3 +100,10 @@ receipt-only updates when allocating versions, and serializes cursor allocation
 per owner. `supabase/tests/reference_cursor_correctness.sql` exercises the
 contract on an isolated PostgreSQL fixture; the Node suite covers concurrent
 uploads, same-millisecond acknowledgements, retries, and overlapping settings.
+
+
+## Retired Dojo and social-world data
+
+Migration `059_remove_dojo_social_world` removes presence intervals, cast assignments/reviews, activity indexes, encounter receipts, Dojo session standings and their triggers. It removes the map view and coordinate columns, the action-session Dojo column, retired event/buff/log records, Dojo awards, derived settings, and nested feature metadata. Completed tasks retain their duration and earned value; their legacy Dojo source becomes `manual`. Profiles, friendships, matches and general completion reward receipts remain intact.
+
+Shared record cleanup produces durable sync updates and deletion tombstones. The document/facade, typed legacy import and mobile reference boundaries filter retired records and sanitize nested metadata, so older saves/devices cannot reinstall the features. Former cast audience choices narrow to collaborators; Fellow-only context becomes private. Prior migrations remain immutable for existing save compatibility. This upgrade runs when the updated app opens or restores a workspace; it does not modify external historical backup files or deploy changes to a live account.

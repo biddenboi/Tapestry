@@ -7,8 +7,7 @@ import {
   textOrNull,
 } from './shadowDomainUtils.js';
 import { deserializeProfilePictureValue } from '../profilePictureValue.js';
-import SqliteSocialWorldRepository from './SqliteSocialWorldRepository.js';
-import SqliteSocialWorldProfileSwitchCoordinator from './SqliteSocialWorldProfileSwitchCoordinator.js';
+import SqliteProfileSwitchCoordinator from './SqliteProfileSwitchCoordinator.js';
 
 function hydratePlayer(row, cosmetics = []) {
   if (!row) return null;
@@ -49,9 +48,8 @@ export class SqliteCoreProfileRepository {
     if (!client) throw new Error('SqliteCoreProfileRepository requires a SQLite client.');
     this.client = client;
     this.now = now;
-    this.socialWorldProfileSwitch = new SqliteSocialWorldProfileSwitchCoordinator({
+    this.profileSwitch = new SqliteProfileSwitchCoordinator({
       client,
-      presenceRepository: new SqliteSocialWorldRepository({ client, now }),
       now,
     });
   }
@@ -154,7 +152,7 @@ export class SqliteCoreProfileRepository {
   }
 
   async switchProfile(options = {}) {
-    const result = await this.socialWorldProfileSwitch.switchProfile(options);
+    const result = await this.profileSwitch.switchProfile(options);
     return {
       ...result,
       player: options.toPlayerId ? await this.getPlayer(options.toPlayerId) : null,
@@ -255,11 +253,6 @@ export class SqliteCoreProfileRepository {
       purchaseLedgerAnonymized: ['purchase_ledger', 'player_id'],
       friendshipsDeleted: ['friendship_members', 'player_id'],
       notificationsDeleted: ['notifications', 'recipient_player_id'],
-      presenceIntervalsDeleted: ['semantic_presence_intervals', 'player_id'],
-      dojoSessionRollupsDeleted: ['dojo_session_rollups', 'player_id'],
-      castAssignmentsViewerDeleted: ['social_cast_assignments', 'viewer_player_id'],
-      castAssignmentsSubjectDeleted: ['social_cast_assignments', 'subject_player_id'],
-      castReviewsViewerDeleted: ['social_cast_reviews', 'viewer_player_id'],
       achievementEventsAnonymized: ['achievement_events', 'player_id'],
       achievementStatesDeleted: ['achievement_states', 'player_id'],
       achievementReceiptsAnonymized: ['achievement_receipts', 'player_id'],
@@ -304,10 +297,6 @@ export class SqliteCoreProfileRepository {
             recommendationEvents: counts.recommendationEventsDeleted,
             modelSettings: counts.modelSettingsDeleted,
             analyticsEvents: counts.analyticsEventsDeleted,
-            presenceIntervals: counts.presenceIntervalsDeleted,
-            dojoSessionRollups: counts.dojoSessionRollupsDeleted,
-            castAssignments: counts.castAssignmentsViewerDeleted + counts.castAssignmentsSubjectDeleted,
-            castReviews: counts.castReviewsViewerDeleted,
           },
         }
       : {
@@ -323,10 +312,6 @@ export class SqliteCoreProfileRepository {
             recommendationEvents: counts.recommendationEventsDeleted,
             modelSettings: counts.modelSettingsDeleted,
             analyticsEvents: counts.analyticsEventsDeleted,
-            presenceIntervals: counts.presenceIntervalsDeleted,
-            dojoSessionRollups: counts.dojoSessionRollupsDeleted,
-            castAssignments: counts.castAssignmentsViewerDeleted + counts.castAssignmentsSubjectDeleted,
-            castReviews: counts.castReviewsViewerDeleted,
           },
         };
     const statements = [];
@@ -351,18 +336,6 @@ export class SqliteCoreProfileRepository {
         { sql: 'DELETE FROM inventory_items WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'DELETE FROM friendships WHERE requester_player_id=? OR recipient_player_id=?', bind: [playerId, playerId], result: 'changes' },
         { sql: 'DELETE FROM notifications WHERE recipient_player_id=?', bind: [playerId], result: 'changes' },
-        { sql: 'DELETE FROM dojo_session_rollups WHERE player_id=?', bind: [playerId], result: 'changes' },
-        { sql: 'DELETE FROM semantic_presence_intervals WHERE player_id=?', bind: [playerId], result: 'changes' },
-        {
-          sql: `UPDATE social_cast_reviews
-                SET review_after_igt=reviewed_at_igt,updated_at=?
-                WHERE viewer_player_id IN (
-                  SELECT viewer_player_id FROM social_cast_assignments WHERE subject_player_id=?
-                )`,
-          bind: [timestamp, playerId], result: 'changes',
-        },
-        { sql: 'DELETE FROM social_cast_reviews WHERE viewer_player_id=?', bind: [playerId], result: 'changes' },
-        { sql: 'DELETE FROM social_cast_assignments WHERE viewer_player_id=? OR subject_player_id=?', bind: [playerId, playerId], result: 'changes' },
         { sql: 'UPDATE achievement_events SET player_id=NULL WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'UPDATE achievement_receipts SET player_id=NULL WHERE player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'DELETE FROM achievement_states WHERE player_id=?', bind: [playerId], result: 'changes' },
@@ -379,15 +352,6 @@ export class SqliteCoreProfileRepository {
     } else {
       statements.push(
         { sql: 'UPDATE notes SET player_id=NULL WHERE player_id=?', bind: [playerId], result: 'changes' },
-        {
-          sql: `UPDATE social_cast_reviews
-                SET review_after_igt=reviewed_at_igt,updated_at=?
-                WHERE viewer_player_id IN (
-                  SELECT viewer_player_id FROM social_cast_assignments WHERE subject_player_id=?
-                )`,
-          bind: [timestamp, playerId], result: 'changes',
-        },
-        { sql: 'DELETE FROM social_cast_reviews WHERE viewer_player_id=?', bind: [playerId], result: 'changes' },
         { sql: 'DELETE FROM players WHERE id=?', bind: [playerId], result: 'changes' },
       );
     }

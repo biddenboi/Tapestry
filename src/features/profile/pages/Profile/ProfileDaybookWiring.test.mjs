@@ -3,11 +3,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const [profile, controller, view, worldRuntime, app, persistence, database] = await Promise.all([
+const [profile, controller, view, app, persistence, database] = await Promise.all([
   read('./Profile.jsx'),
   read('./ProfileDataController.js'),
   read('./ProfileView.jsx'),
-  read('../../../social-world/components/SocialWorldShell/SocialWorldRuntime.jsx'),
   read('../../../../app/App.jsx'),
   read('../../../../data/persistence/PersistenceRuntime.js'),
   read('../../../../data/persistence/DatabaseConnectionHost.js'),
@@ -38,11 +37,8 @@ test('Daybook is the default Profile history presentation without changing lazy 
   assert.match(controller, /ensureDomainLoaded\('profileInventory'\)/);
 });
 
-test('Profile and semantic-world projections share the existing app-level minute timestamp', () => {
+test('Profile uses the existing app-level minute timestamp', () => {
   assert.match(app, /useInterval\(\(\) => setTimestamp\(Date\.now\(\)\)/);
-  assert.match(worldRuntime, /getCurrentIGT\(currentPlayer, timestamp\)/);
-  assert.doesNotMatch(worldRuntime, /setInterval/);
-  assert.doesNotMatch(worldRuntime, /SocialOccupancy|resident/i);
   assert.match(profile, /getCurrentIGT\(currentPlayer, timestamp\)/);
 });
 

@@ -43,7 +43,6 @@ export async function decideNotification(databaseConnection, player, candidate, 
   now = new Date(),
   activeSession = false,
   activeMatch = false,
-  activeDojo = false,
   quietHours = false,
 } = {}) {
   const policy = policyForPlayer(player);
@@ -64,7 +63,7 @@ export async function decideNotification(databaseConnection, player, candidate, 
   ));
   const reasonCodes = [];
   if (!policy.categories[candidate.type]) reasonCodes.push('category-disabled');
-  if (activeSession || activeMatch || activeDojo) reasonCodes.push('meaningful-session-active');
+  if (activeSession || activeMatch) reasonCodes.push('meaningful-session-active');
   if (quietHours) reasonCodes.push('quiet-hours');
   if (todayDelivered.length >= policy.maximumPerDay) reasonCodes.push('daily-budget-exhausted');
   if (sameTarget.filter((row) => row.deliveredAt).length >= policy.maximumRepeatPerAction) {
@@ -83,7 +82,6 @@ export async function decideNotification(databaseConnection, player, candidate, 
     contextSnapshot: {
       activeSession,
       activeMatch,
-      activeDojo,
       quietHours,
       dailyDelivered: todayDelivered.length,
     },

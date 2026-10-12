@@ -35,31 +35,31 @@ test('strictest-wins disclosure matrix keeps private, selected, tier, source, an
   assert.equal(decision({ audience: 'selected' }, { relationshipTier: 'friend', recipientIds: ['someone-else'] }).allowed, false);
   assert.equal(decision({ audience: 'collaborators' }, { relationshipTier: 'friend' }).allowed, true);
   assert.equal(decision({ audience: 'collaborators' }, { relationshipTier: 'dynamic' }).allowed, false);
-  assert.equal(decision({ audience: 'fellows' }, { relationshipTier: 'dynamic' }).allowed, true);
-  assert.equal(decision({ audience: 'cast' }, { relationshipTier: 'outside' }).allowed, false);
+  assert.equal(decision({ audience: 'fellows' }, { relationshipTier: 'dynamic' }).allowed, false);
+  assert.equal(decision({ audience: 'collaborators' }, { relationshipTier: 'outside' }).allowed, false);
   assert.equal(decision({
-    audience: 'cast',
+    audience: 'collaborators',
     sourceVisibility: 'private',
   }, { relationshipTier: 'friend' }).reason, 'source-visibility');
   assert.equal(decision({
-    audience: 'cast',
+    audience: 'collaborators',
     sensitivity: 'private',
   }, { relationshipTier: 'friend' }).reason, 'sensitivity');
 });
 
 test('status, expiry, availability opt-in, and automatic inference fail closed', () => {
-  assert.equal(decision({ status: 'revoked', audience: 'cast' }, { relationshipTier: 'friend' }).allowed, false);
+  assert.equal(decision({ status: 'revoked', audience: 'collaborators' }, { relationshipTier: 'friend' }).allowed, false);
   assert.equal(decision({
-    audience: 'cast',
+    audience: 'collaborators',
     expiresAt: '2025-01-01T00:00:00.000Z',
   }, { relationshipTier: 'friend' }).reason, 'expired-time');
   assert.equal(decision({
-    audience: 'cast',
+    audience: 'collaborators',
     inGameTimestamp: 101,
   }, { relationshipTier: 'friend', asOfIGT: 100 }).reason, 'future-igt');
   assert.equal(decision({
     type: 'availability',
-    audience: 'cast',
+    audience: 'collaborators',
   }, { relationshipTier: 'friend' }).reason, 'availability-opt-out');
 
   const validation = validateProfileContextItem({

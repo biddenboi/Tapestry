@@ -1,11 +1,8 @@
 export const HYDRATION_DOMAIN = Object.freeze({
   tasks: 'tasks',
-  dojoSource: 'dojoSource',
   matches: 'matches',
   leaderboards: 'leaderboards',
   social: 'social',
-  presence: 'presence',
-  socialWorld: 'socialWorld',
   feed: 'feed',
   journals: 'journals',
   shop: 'shop',
@@ -49,14 +46,11 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
     'nextMoveFeedback',
     'nextMoveSurfacePreferences',
   ]),
-  [HYDRATION_DOMAIN.dojoSource]: Object.freeze(['tasks', 'todos']),
   [HYDRATION_DOMAIN.matches]: Object.freeze([
     'matches', 'backgroundJobs', 'backgroundJobReceipts', 'matchScoreEvents',
     'rewardProvenance', 'worldConsequenceReceipts',
   ]),
   [HYDRATION_DOMAIN.social]: Object.freeze(['friendships', 'notifications']),
-  [HYDRATION_DOMAIN.presence]: Object.freeze([]),
-  [HYDRATION_DOMAIN.socialWorld]: Object.freeze([]),
   [HYDRATION_DOMAIN.feed]: Object.freeze([
     'journalComments',
     'chronicleEntryMetadata',
@@ -139,14 +133,6 @@ export const DOMAIN_STORE_KEYS = Object.freeze({
 
 export const DOMAIN_DEPENDENCIES = Object.freeze({
   [HYDRATION_DOMAIN.social]: Object.freeze([HYDRATION_DOMAIN.profiles]),
-  [HYDRATION_DOMAIN.socialWorld]: Object.freeze([
-    HYDRATION_DOMAIN.presence,
-    HYDRATION_DOMAIN.profiles,
-    HYDRATION_DOMAIN.tasks,
-    HYDRATION_DOMAIN.matches,
-    HYDRATION_DOMAIN.social,
-    HYDRATION_DOMAIN.profileContext,
-  ]),
   [HYDRATION_DOMAIN.profileContext]: Object.freeze([HYDRATION_DOMAIN.profiles]),
   [HYDRATION_DOMAIN.leaderboards]: Object.freeze([]),
   [HYDRATION_DOMAIN.achievements]: Object.freeze([HYDRATION_DOMAIN.profiles]),

@@ -1,3 +1,5 @@
+> Historical design/release notes. Dojo and the former social-world/map implementation are retired; the current social world is a Coming soon placeholder. See docs/PERSISTENCE.md for migration 059.
+
 # Mobile Phase 1 correctness
 
 Phase 1 establishes the ownership and attribution boundaries required by the mobile companion. It does not include the Phase 2 Today redesign or later mobile presentation work.

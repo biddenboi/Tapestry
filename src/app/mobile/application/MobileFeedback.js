@@ -14,7 +14,6 @@ export function taskCompletionFeedback(task, result = {}) {
     numericDelta('contribution', result.reward?.contribution, 'Contribution'),
     numericDelta('goal', result.goalProgressDelta, 'Goal progress'),
     numericDelta('match', result.matchContribution, 'Match'),
-    numericDelta('dojo', result.dojoContribution, 'Dojo'),
   ].filter(Boolean);
   return Object.freeze({
     id: feedbackId('task-completed', result.completionEvent?.UUID || task?.UUID),

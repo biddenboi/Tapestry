@@ -85,12 +85,6 @@ const ICONS = {
     '<line x1="6" y1="12" x2="14" y2="7" stroke-width="1.6"/>' +
     '<polygon points="10,3.5 10.7,5.5 12.8,5.5 11.2,6.7 11.8,8.7 10,7.5 8.2,8.7 8.8,6.7 7.2,5.5 9.3,5.5" fill="currentColor" opacity="0.6" stroke="none"/>'
   ),
-  peace: svgWrap(
-    '<polygon points="10,2 18,10 10,18 2,10"/>' +
-    '<polygon points="10,5 15,10 10,15 5,10"/>' +
-    '<polygon points="10,8 12,10 10,12 8,10" fill="currentColor" opacity="0.25" stroke="none"/>' +
-    '<circle cx="10" cy="10" r="1.2" fill="currentColor" stroke="none"/>'
-  ),
   legacy: svgWrap(
     '<path d="M4 3 L13 3 L16 6 L16 18 L4 18 Z"/>' +
     '<path d="M4 3 L13 3 L16 6 L16 18 L4 18 Z" fill="currentColor" opacity="0.08" stroke="none"/>' +
@@ -298,16 +292,6 @@ export const ACHIEVEMENT_GROUPS = [
       { tier: 3, label: 'Officer III',    desc: 'Won 5 matches in a row.' },
       { tier: 4, label: 'General IV',     desc: 'Won 10 matches in a row.' },
       { tier: 5, label: 'War Machine V',  desc: 'Won 100 matches in a row.' },
-    ],
-  },
-  {
-    id: 'peace',
-    icon: ICONS.peace,
-    color: '#22d3ee',
-    tiers: [
-      { tier: 1, label: 'Peace I',      desc: 'Posted a dojo session strong enough to appear on the Top Sessions board.' },
-      { tier: 2, label: 'Meditation II', desc: 'Claimed the #1 spot on the Top Sessions dojo leaderboard.' },
-      { tier: 3, label: 'Serenity III',  desc: 'Currently holds the #1 spot on the Top Sessions dojo leaderboard.' },
     ],
   },
   {
@@ -524,11 +508,6 @@ const ACHIEVEMENT_GROUP_META = {
     name: 'Soldier',
     category: 'competition',
     summary: 'Build long current win streaks.',
-  },
-  peace: {
-    name: 'Peace',
-    category: 'discipline',
-    summary: 'Post dojo sessions strong enough to place on the board.',
   },
   legacy: {
     name: 'Legacy',
@@ -1234,27 +1213,6 @@ export async function reconcileAchievements(player, db, { reason, data = null } 
   if (friendCount >= ACHIEVEMENT_THRESHOLDS.town[2] && grant(achievements, 'town_3')) earned.push('town_3');
   if (friendCount >= ACHIEVEMENT_THRESHOLDS.town[1] && grant(achievements, 'town_2')) earned.push('town_2');
   if (friendCount >= ACHIEVEMENT_THRESHOLDS.town[0] && grant(achievements, 'town_1')) earned.push('town_1');
-
-  /* ── Peace / Dojo top sessions ─── */
-  const dayMap = {};
-  allTasks.filter((t) => t.completedAt && t.parent && t.source === 'dojo').forEach((t) => {
-    const day = t.completedAt.split('T')[0];
-    const key = `${t.parent}__${day}`;
-    if (!dayMap[key]) dayMap[key] = { playerUUID: t.parent, day, points: 0 };
-    dayMap[key].points += (t.points || 0);
-  });
-  const sessions = Object.values(dayMap).sort((a, b) => b.points - a.points);
-  const top10    = sessions.slice(0, 10);
-  const top1     = sessions[0];
-  const inTop10  = top10.some((s) => s.playerUUID === player.UUID);
-  const isTop1   = top1?.playerUUID === player.UUID;
-  if (inTop10 && grant(achievements, 'peace_1')) earned.push('peace_1');
-  if (isTop1) {
-    if (grant(achievements, 'peace_2')) earned.push('peace_2');
-    if (grant(achievements, 'peace_3')) earned.push('peace_3');
-  } else if (achievements['peace_3']) {
-    delete achievements['peace_3']; // dynamic tier 3
-  }
 
   /* ── Long Game ─── */
   const allMatches = data?.matches || await db.getMatchesForPlayer(player.UUID);

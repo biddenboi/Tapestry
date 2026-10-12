@@ -1,14 +1,10 @@
-import { SPECIAL_EVENT_IDS, STORES } from '@domain/constants.js';
+import { STORES } from '@domain/constants.js';
 import { readGlobalMoney, writeGlobalMoney } from '@data/db/economyState.js';
 import { normalizeAppState, compressDataUrl } from '@data/db/databaseConnectionUtils.js';
 import {
   mergeProfilePlayer,
   mergeProfilePlayerLists,
 } from '@data/db/profilePlayerReadModel.js';
-import {
-  SOCIAL_WORLD_PERFORMANCE_OPERATION,
-  measureSocialWorldOperation,
-} from '@domain/social-world/SocialWorldPerformance.js';
 
 /* ═════════════════════════════════════════════════════════════════
    PROFILE PLAYER READ MODEL
@@ -36,86 +32,6 @@ export async function getAllProfilePlayers() {
     this.getAll(STORES.player),
   ]);
   return mergeProfilePlayerLists(typedPlayers, documentPlayers);
-}
-
-/* ═════════════════════════════════════════════════════════════════
-   SOCIAL-WORLD PRESENCE
-═════════════════════════════════════════════════════════════════ */
-
-export async function transitionSocialWorldPresence(command) {
-  if (!this.socialWorldPresence) {
-    return { status: 'unavailable', invalidatedDomains: [] };
-  }
-  const playerId = command?.playerId;
-  const shadow = this.persistenceRuntime?.sqliteStorageAdapter?.shadowDomains;
-  if (playerId && shadow?.coreProfiles && shadow?.importers?.coreProfiles) {
-    const existing = await shadow.coreProfiles.getPlayer(playerId);
-    if (!existing) {
-      const player = await this.get(STORES.player, playerId);
-      if (!player) {
-        return { status: 'player-unavailable', invalidatedDomains: [] };
-      }
-      await this.persistenceRuntime.synchronizeSqliteIdentity({
-        players: [player],
-        appState: normalizeAppState({ ...this.appState, activePlayerUUID: playerId }),
-        economyState: this.economyState,
-      });
-    }
-  }
-  return this.socialWorldPresence.transitionPresence(command);
-}
-
-export async function pauseSocialWorldPresence(command) {
-  return this.socialWorldPresence?.pausePresence(command)
-    || Promise.resolve({ status: 'unavailable', invalidatedDomains: [] });
-}
-
-export async function resumeSocialWorldPresence(command) {
-  return this.socialWorldPresence?.resumePresence(command)
-    || Promise.resolve({ status: 'unavailable', invalidatedDomains: [] });
-}
-
-export function closeSocialWorldPresence(command) {
-  return this.socialWorldPresence?.closePresence(command)
-    || Promise.resolve({ status: 'unavailable', invalidatedDomains: [] });
-}
-
-export function closeCompletedTaskSessionPresence(command) {
-  return this.socialWorldPresence?.closeCompletedTaskSession(command)
-    || Promise.resolve({ status: 'unavailable', invalidatedDomains: [] });
-}
-
-export function reconcileSocialWorldPresence(command) {
-  return this.socialWorldPresence?.reconcileOpenIntervals(command)
-    || Promise.resolve({ status: 'unavailable', invalidatedDomains: [] });
-}
-
-export function getSocialWorldPresence(query) {
-  return this.socialWorldQueries?.getProfilePresence(query) || Promise.resolve(null);
-}
-
-export function getSocialWorldCast(query) {
-  return measureSocialWorldOperation(SOCIAL_WORLD_PERFORMANCE_OPERATION.dynamicCast, () => (
-    this.socialWorldCast?.getDynamicCast(query) || Promise.resolve(null)
-  ));
-}
-
-export function getSocialWorldResidency(query) {
-  return this.socialWorldResidency?.getResidency(query) || Promise.resolve(null);
-}
-
-export function getSocialWorldProfileAccess(query) {
-  return this.socialWorldResidency?.getProfileAccess(query) || Promise.resolve(null);
-}
-
-export function getSocialWorldScene(query) {
-  return measureSocialWorldOperation(SOCIAL_WORLD_PERFORMANCE_OPERATION.sceneQuery, () => (
-    this.socialWorldSceneQueries?.getSceneSnapshot(query) || Promise.resolve(null)
-  ));
-}
-
-export function getSocialWorldProfileCard(query) {
-  return this.socialWorldProfileCards?.getProfileCard(query) || Promise.resolve(null);
 }
 
 export function getProfileContextProjection(query) {
@@ -159,44 +75,6 @@ export function performProfileContextAction(command) {
   return this.profileContextActions?.perform(command) || Promise.resolve({ performed: false });
 }
 
-export function getDojoRoomFacts(query) {
-  return this.dojoRoomQueries?.getRoomFacts(query) || Promise.resolve([]);
-}
-
-export function getDojoStandings(query) {
-  return measureSocialWorldOperation(SOCIAL_WORLD_PERFORMANCE_OPERATION.dojoAround, () => (
-    this.dojoStandings?.getStandings(query)
-      || Promise.resolve({ current: null, around: [], top: [], updating: false })
-  ));
-}
-
-export function recordDojoStandingCompletion(command) {
-  return this.dojoStandings?.recordTaskCompletion(command)
-    || Promise.resolve({ updated: false, status: 'unavailable' });
-}
-
-export function materializeDojoStandings() {
-  return this.dojoStandings?.materializeRanks()
-    || Promise.resolve({ updated: false, status: 'unavailable' });
-}
-
-export function recordSocialEncounter(command) {
-  return this.socialEncounters?.recordEncounter(command)
-    || Promise.resolve({ recorded: false, invalidatedDomains: [] });
-}
-
-export function getSinceLastSaw(query) {
-  return measureSocialWorldOperation(SOCIAL_WORLD_PERFORMANCE_OPERATION.encounterDelta, () => (
-    this.socialEncounters?.getSinceLastSaw(query)
-      || Promise.resolve({ count: 0, preview: [], groups: [], facts: [], previousEncounter: null })
-  ));
-}
-
-export function clearSocialEncounterMemories(command) {
-  return this.socialEncounters?.clearMemories(command)
-    || Promise.resolve({ deleted: 0, invalidatedDomains: [] });
-}
-
 function reconcileAuthoritativeFriendship(connection, {
   type,
   friendship = null,
@@ -230,7 +108,7 @@ function reconcileAuthoritativeFriendship(connection, {
 }
 
 export async function requestSocialFriendship(command) {
-  const result = await this.socialWorldFriendships.requestFriendship(command);
+  const result = await this.friendships.requestFriendship(command);
   if (result?.friendship) {
     reconcileAuthoritativeFriendship(this, {
       type: 'put',
@@ -242,7 +120,7 @@ export async function requestSocialFriendship(command) {
 }
 
 export async function acceptSocialFriendship(command) {
-  const result = await this.socialWorldFriendships.acceptFriendship(command);
+  const result = await this.friendships.acceptFriendship(command);
   if (result?.friendship) {
     reconcileAuthoritativeFriendship(this, {
       type: 'put',
@@ -254,7 +132,7 @@ export async function acceptSocialFriendship(command) {
 }
 
 export async function closeSocialFriendship(command) {
-  const result = await this.socialWorldFriendships.closeFriendship(command);
+  const result = await this.friendships.closeFriendship(command);
   reconcileAuthoritativeFriendship(this, {
     type: 'delete',
     friendshipId: result?.friendshipId || command?.friendshipId,
@@ -321,7 +199,6 @@ export async function getActiveEventBuffsForPlayer(playerUUID) {
   const all = await this.getPlayerStore(STORES.eventBuff, playerUUID);
   const now = Date.now();
   return all.filter((b) => {
-    if (b.eventUUID === SPECIAL_EVENT_IDS.dojoMultiplier) return true;
     if (!b.expiresAt) return true;
     const exp = new Date(b.expiresAt).getTime();
     return Number.isFinite(exp) ? exp > now : true;
@@ -481,18 +358,6 @@ export function clearBanPending(playerUUID) {
 export const databaseConnectionFeatureMethods = {
   getProfilePlayer,
   getAllProfilePlayers,
-  transitionSocialWorldPresence,
-  pauseSocialWorldPresence,
-  resumeSocialWorldPresence,
-  closeSocialWorldPresence,
-  closeCompletedTaskSessionPresence,
-  reconcileSocialWorldPresence,
-  getSocialWorldPresence,
-  getSocialWorldCast,
-  getSocialWorldResidency,
-  getSocialWorldProfileAccess,
-  getSocialWorldScene,
-  getSocialWorldProfileCard,
   getProfileContextProjection,
   getProfileContextProjections,
   getProfileContextOwnerState,
@@ -503,13 +368,6 @@ export const databaseConnectionFeatureMethods = {
   resolveProfileContextSuggestion,
   saveProfileContextPreferences,
   performProfileContextAction,
-  getDojoRoomFacts,
-  getDojoStandings,
-  recordDojoStandingCompletion,
-  materializeDojoStandings,
-  recordSocialEncounter,
-  getSinceLastSaw,
-  clearSocialEncounterMemories,
   requestSocialFriendship,
   acceptSocialFriendship,
   closeSocialFriendship,

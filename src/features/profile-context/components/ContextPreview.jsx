@@ -2,14 +2,12 @@ import { useEffect, useState } from 'react';
 
 const VIEWERS = [
   ['self', 'You', 'self'],
-  ['fellow', 'A Fellow', 'dynamic'],
   ['collaborator', 'A collaborator', 'friend'],
-  ['cast', 'Another cast member', 'dynamic'],
-  ['outside', 'Outside your cast', 'outside'],
+  ['outside', 'Another viewer', 'outside'],
 ];
 
 export default function ContextPreview({ ownerId, people = [], onPreview }) {
-  const [viewerType, setViewerType] = useState('fellow');
+  const [viewerType, setViewerType] = useState('collaborator');
   const [namedViewerId, setNamedViewerId] = useState('');
   const [projection, setProjection] = useState(null);
   const selected = VIEWERS.find(([id]) => id === viewerType) || VIEWERS[1];
@@ -29,7 +27,7 @@ export default function ContextPreview({ ownerId, people = [], onPreview }) {
       <header>
         <div>
           <span>Preview as viewer</span>
-          <p>This runs the same disclosure policy used by Social World.</p>
+          <p>This runs the same disclosure policy used by profiles.</p>
         </div>
         <select value={viewerType} onChange={(event) => setViewerType(event.target.value)}>
           {VIEWERS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}

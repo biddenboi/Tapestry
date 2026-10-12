@@ -14,7 +14,6 @@ const SENSITIVITY_RANK = Object.freeze({
 const TIER_CEILING = Object.freeze({
   self: CONTEXT_SENSITIVITY.private,
   friend: CONTEXT_SENSITIVITY.personal,
-  dynamic: CONTEXT_SENSITIVITY.low,
   outside: null,
 });
 
@@ -23,8 +22,6 @@ function audienceAllows(audience, tier, viewerId, recipients) {
   if (audience === CONTEXT_AUDIENCE.private) return false;
   if (audience === CONTEXT_AUDIENCE.selected) return recipients.has(String(viewerId || ''));
   if (audience === CONTEXT_AUDIENCE.collaborators) return tier === 'friend';
-  if (audience === CONTEXT_AUDIENCE.fellows) return tier === 'dynamic';
-  if (audience === CONTEXT_AUDIENCE.cast) return tier === 'friend' || tier === 'dynamic';
   return false;
 }
 

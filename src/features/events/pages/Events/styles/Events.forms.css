@@ -349,10 +349,6 @@
         overflow: visible;
         padding-right: 0;
     }
-    .evt-dojo-status-grid,
-    .evt-dojo-info-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
     .evt-goal-overview {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -372,10 +368,6 @@
     .evt-detail-hero-name { font-size: 26px; }
     .evt-detail-stats { grid-template-columns: 1fr; }
     .evt-cal-cell { min-height: 34px; }
-    .evt-dojo-status-grid,
-    .evt-dojo-info-grid {
-        grid-template-columns: 1fr;
-    }
     .evt-goal-grid {
         grid-template-columns: 1fr;
     }

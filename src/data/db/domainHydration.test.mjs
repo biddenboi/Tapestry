@@ -99,14 +99,7 @@ test('high-value domains own only their persistence stores', () => {
 test('composite domains load explicit dependencies without becoming global sync aliases', () => {
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.leaderboards], []);
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.achievements], ['profiles']);
-  assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.socialWorld], [
-    'presence',
-    'profiles',
-    'tasks',
-    'matches',
-    'social',
-    'profileContext',
-  ]);
+  assert.equal(HYDRATION_DOMAIN.socialWorld, undefined);
   assert.deepEqual(DOMAIN_DEPENDENCIES[HYDRATION_DOMAIN.nextMove], [
     'tasks',
     'goals',

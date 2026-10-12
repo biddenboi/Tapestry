@@ -8,7 +8,7 @@ test('readiness requires a successful synchronization in the current session', a
   const readiness = new SqliteShadowReadinessCoordinator({ sessionId: 'boot-a' });
   assert.throws(
     () => readiness.assertReady(SQLITE_SHADOW_PROJECTIONS),
-    (error) => error.code === 'social-cast-source-not-ready',
+    (error) => error.code === 'sqlite-projection-source-not-ready',
   );
 
   let calls = 0;
@@ -44,7 +44,7 @@ test('dirty and failed projections remain observable and block selection', async
   readiness.markDirty('matches');
   assert.throws(
     () => readiness.assertReady(SQLITE_SHADOW_PROJECTIONS),
-    (error) => error.code === 'social-cast-source-not-ready'
+    (error) => error.code === 'sqlite-projection-source-not-ready'
       && error.states.find((state) => state.domain === 'matches')?.state === 'dirty',
   );
 
