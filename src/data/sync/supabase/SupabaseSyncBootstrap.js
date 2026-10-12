@@ -104,13 +104,12 @@ export class SupabaseSyncBootstrap {
         && localPlayers.some((player) => (
           player?.UUID && player.UUID !== 'demo-player' && !String(player.UUID).startsWith('demo-')
         ));
-      const shouldStartRoutineSync = mobile || hadLocalWorkspace;
+      const shouldStartRoutineSync = hadLocalWorkspace;
 
       this.runtime.setCheckpointPublishingEnabled(hadLocalWorkspace && !mobile);
-      // A clean desktop/web device must download and restore the cloud SQLite
-      // checkpoint before any routine sync can publish local state. Configure
-      // the transport without auto-starting SyncRuntime; DataSourceGate owns
-      // the restore and then starts the first synchronization explicitly.
+      // Clean devices must finish their initial restore before routine sync:
+      // desktop restores a SQLite checkpoint, mobile restores reference rows.
+      // The data-source gates then start synchronization explicitly.
       await this.runtime.configure({ transport, device, schedule: false });
       this.runtime.cancelScheduledSync?.();
 
@@ -203,8 +202,9 @@ export class SupabaseSyncBootstrap {
 
       // Authentication/transport readiness is independent of synchronization.
       // A clean desktop/web device returns immediately so DataSourceGate can
-      // download the cloud checkpoint. Existing workspaces and mobile clients
-      // start routine sync after the transport and supplemental hooks exist.
+      // download the cloud checkpoint. Existing workspaces start routine sync
+      // after the transport and supplemental hooks exist. A clean mobile gate
+      // starts it after reference restore, avoiding a second startup download.
       this.auth.setSyncState('ready');
       if (shouldStartRoutineSync) {
         this.runtime.scheduleSync('supabase-session-configured');

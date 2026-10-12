@@ -92,7 +92,6 @@ export const STORES = {
 export const GAME_STATE = {
   idle:  'idle',
   match: 'match',
-  dojo:  'dojo',
 };
 
 export const MATCH_STATUS = {
@@ -114,7 +113,6 @@ export const SPECIAL_EVENT_IDS = {
   sleepTime:      'special-sleep-time',
   firstMatch:     'special-first-match',
   entertainment:  'special-entertainment',
-  dojoMultiplier: 'special-dojo-multiplier',
 };
 
 export const SPECIAL_KIND = {
@@ -122,15 +120,9 @@ export const SPECIAL_KIND = {
   sleep_time:      'sleep_time',
   first_match:     'first_match',
   entertainment:   'entertainment',
-  dojo_multiplier: 'dojo_multiplier',
 };
 
 // Decay rates for special events (in ms). On-target = full ceiling, decays exponentially.
-//
-// Note: the dojo_multiplier kind is intentionally absent from this tuning table —
-// it is not a decay-curve special, it's an accumulator. Its value is computed
-// per-task as (taskWeight × hoursWorked) and added into the existing buff entry,
-// then cleared on the next match conclude. See applyDojoContribution / clearDojoMultiplier.
 export const SPECIAL_EVENT_TUNING = {
   wake_time:     { timingCeiling: 0.15, checklistCeiling: 0.10, decayMs: 30 * 60 * 1000 },
   sleep_time:    { timingCeiling: 0.15, checklistCeiling: 0.10, decayMs: 30 * 60 * 1000 },

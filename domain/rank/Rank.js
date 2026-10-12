@@ -276,7 +276,7 @@ export function getRankGroupFloor(elo = 0) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * Match-duration / matchmaking / dojo availability helpers
+ * Match-duration / matchmaking availability helpers
  * ──────────────────────────────────────────────────────────────────────
  * These centralise the rank-tier policy decisions so callers (Lobby,
  * MatchArena, GameHub, Match.js, the rank-up modal) all share a single
@@ -287,7 +287,6 @@ export function getRankGroupFloor(elo = 0) {
  *   Platinum, Diamond   → 3h matches, real-only candidates
  *   Ascendant+          → 4h matches, real-only candidates
  *
- * Dojo training is rank-agnostic and available to every profile.
  */
 
 /** Match duration in hours, keyed off rank group. */

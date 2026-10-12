@@ -4,7 +4,7 @@ export const SOUND_CUES = Object.freeze([
   'panel-open', 'panel-close', 'lobby-open', 'timer-start', 'add', 'upvote', 'downvote',
   'comment', 'task-complete', 'roll', 'coins', 'contribution', 'achievement', 'purchase',
   'matchmaking', 'match-start', 'match-event', 'victory', 'defeat', 'warning', 'feed-post',
-  'dojo-start', 'success', 'notification', 'theme-preview',
+  'success', 'notification', 'theme-preview',
 ]);
 
 const pack = (definition) => Object.freeze(definition);

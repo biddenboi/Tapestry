@@ -19,9 +19,7 @@ import SqliteCommerceRepository from './SqliteCommerceRepository.js';
 import SocialShadowImporter from './SocialShadowImporter.js';
 import RecoveryModelShadowImporter from './RecoveryModelShadowImporter.js';
 import SqliteSocialRepository from './SqliteSocialRepository.js';
-import SqliteSocialWorldRepository from './SqliteSocialWorldRepository.js';
 import SqliteRecoveryModelRepository from './SqliteRecoveryModelRepository.js';
-import DojoStandingsService from '../services/DojoStandingsService.js';
 
 export class SqliteShadowDomainRuntime {
   constructor({ client, now = () => new Date(), random = Math.random } = {}) {
@@ -36,9 +34,7 @@ export class SqliteShadowDomainRuntime {
     this.events = new SqliteEventsRepository({ client, now });
     this.commerce = new SqliteCommerceRepository({ client, now });
     this.social = new SqliteSocialRepository({ client, now });
-    this.socialWorld = new SqliteSocialWorldRepository({ client, now });
     this.recoveryModel = new SqliteRecoveryModelRepository({ client, now });
-    this.dojoStandings = new DojoStandingsService({ client, now });
     this.importers = Object.freeze({
       coreProfiles: new CoreProfileShadowImporter({ client, now }),
       planning: new PlanningShadowImporter({ client, now }),

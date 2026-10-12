@@ -110,7 +110,6 @@ export function MobileTaskActionSheet({ payload }) {
     notify,
     emitRewardEvent,
     gameState: [gameState],
-    dojoSessionUUID,
     activeTask: [, setActiveTask],
   } = useAppContext();
   const { closeSurface, openSurface, presentFeedback } = useMobileSurface();
@@ -139,7 +138,6 @@ export function MobileTaskActionSheet({ payload }) {
         todo: task,
         player: currentPlayer,
         gameState,
-        dojoSessionUUID,
         notify,
         emitRewardEvent,
         source: 'mobile-task-action',

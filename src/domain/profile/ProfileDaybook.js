@@ -125,7 +125,6 @@ export function buildDaybookPage(entries, viewerIGT, {
 }
 
 function buildChapter(dayIndex, activeDayIndex, entries) {
-  const dojoSessions = new Set();
   const totals = entries.reduce((result, entry) => {
     const kind = daybookEntryKind(entry);
     result.points += Math.floor(finiteNonNegative(entry.pointsBase ?? entry.points));
@@ -137,10 +136,8 @@ function buildChapter(dayIndex, activeDayIndex, entries) {
     result.contribution += kind === 'contribution'
       ? finiteNonNegative(entry.value ?? entry.contribution)
       : 0;
-    if (entry.dojoSessionUUID) dojoSessions.add(entry.dojoSessionUUID);
     return result;
   }, { points: 0, activeMs: 0, tasks: 0, matches: 0, contribution: 0 });
-  totals.dojoSessions = dojoSessions.size;
   const explicitRankEntries = entries.filter((entry) => daybookEntryKind(entry) === 'rank');
   const rankSources = explicitRankEntries.length ? explicitRankEntries : entries;
   const rankMovement = rankSources.reduce((sum, entry) => {
@@ -194,7 +191,7 @@ function chapterThreadReferences(chapter, priorProjectIds) {
 }
 
 function transitionDelta(chapter, prior) {
-  const fields = ['points', 'activeMs', 'tasks', 'matches', 'dojoSessions', 'contribution'];
+  const fields = ['points', 'activeMs', 'tasks', 'matches', 'contribution'];
   const result = Object.fromEntries(fields.map((field) => [
     field,
     Number(chapter.totals[field] || 0) - Number(prior?.totals?.[field] || 0),

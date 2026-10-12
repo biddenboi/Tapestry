@@ -4,7 +4,6 @@ import { calculateItemCost, DEFAULT_SHOP_ITEMS } from '@domain/shop/Shop.js';
 import { buildProfileSummaries } from '@domain/profile/ProfileSummary.js';
 import { normalizePendingCustomization } from '@data/db/databaseConnectionUtils.js';
 import { HYDRATION_DOMAINS } from '@data/db/domainHydration.js';
-import { SEMANTIC_LOCATION } from '@domain/social-world/SocialWorldContracts.js';
 import { getCurrentIGT } from '@domain/time/Time.js';
 import { ACHIEVEMENT_V2_BY_ID } from '@domain/achievements-v2/AchievementCatalogV2.js';
 import { synchronizeThemeRecipeManifests } from '@domain/themes/ThemeRecipeRegistry.js';
@@ -140,7 +139,7 @@ export class DemoDataSeeder {
     await shadow.importers.planning.import({
       projects,
       todos,
-      tasks: tasks.filter((task) => task.UUID !== lateSocialTask?.UUID),
+      tasks,
       reminders,
     });
     await shadow.importers.matches.import({
@@ -161,136 +160,9 @@ export class DemoDataSeeder {
     });
     runtime.markSqliteAuthoritativeProjectionsReady();
 
-    const repository = shadow.socialWorld;
-    const seedClosedPresence = async ({
-      id,
-      playerId,
-      location,
-      sourceType,
-      sourceId,
-      startedIGT,
-      endedIGT,
-      enteredAt,
-      exitedAt,
-    }) => {
-      await repository.transitionPresence({
-        intervalId: id,
-        playerId,
-        location,
-        sourceType,
-        sourceId,
-        startedIGT,
-        enteredAt,
-        commandId: `${id}:enter`,
-      });
-      await repository.closePresence({
-        playerId,
-        endedIGT,
-        exitedAt,
-        closeReason: 'surface-exit',
-        expectedLocation: location,
-        commandId: `${id}:exit`,
-      });
-    };
-
-    await repository.transitionPresence({
-      intervalId: 'demo-presence-self-commons',
-      playerId: 'demo-player',
-      location: SEMANTIC_LOCATION.commons,
-      sourceType: 'surface',
-      sourceId: 'semantic-world',
-      startedIGT: viewerIGT - (5 * MINUTE),
-      enteredAt: at(-5 * MINUTE),
-      commandId: 'demo-presence-self-commons:enter',
-    });
-    await seedClosedPresence({
-      id: 'demo-presence-rhea-dojo',
-      playerId: 'demo-rival-rhea',
-      location: SEMANTIC_LOCATION.dojo,
-      sourceType: 'dojo-session',
-      sourceId: 'demo-dojo-rhea',
-      startedIGT: viewerIGT - (25 * MINUTE),
-      endedIGT: viewerIGT + (75 * MINUTE),
-      enteredAt: at(-25 * MINUTE),
-      exitedAt: at(75 * MINUTE),
-    });
-    await seedClosedPresence({
-      id: 'demo-presence-mika-dojo',
-      playerId: 'demo-rival-mika',
-      location: SEMANTIC_LOCATION.dojo,
-      sourceType: 'dojo-session',
-      sourceId: 'demo-dojo-mika',
-      startedIGT: viewerIGT - (18 * MINUTE),
-      endedIGT: viewerIGT + (65 * MINUTE),
-      enteredAt: at(-18 * MINUTE),
-      exitedAt: at(65 * MINUTE),
-    });
-
-    const cast = await runtime.socialWorldCast.getDynamicCast({
-      viewerId: 'demo-player',
-      viewerIGT,
-      committedAt: new Date(now),
-    });
-    const [matchFamiliar, recentFamiliar] = cast?.assignments || [];
-    if (matchFamiliar?.subjectId) {
-      await seedClosedPresence({
-        id: `demo-presence-${matchFamiliar.subjectId}-match`,
-        playerId: matchFamiliar.subjectId,
-        location: SEMANTIC_LOCATION.matchArena,
-        sourceType: 'match',
-        sourceId: 'demo-match-window',
-        startedIGT: viewerIGT - (15 * MINUTE),
-        endedIGT: viewerIGT + (30 * MINUTE),
-        enteredAt: at(-15 * MINUTE),
-        exitedAt: at(30 * MINUTE),
-      });
-    }
-    if (recentFamiliar?.subjectId) {
-      await seedClosedPresence({
-        id: `demo-presence-${recentFamiliar.subjectId}-recent`,
-        playerId: recentFamiliar.subjectId,
-        location: SEMANTIC_LOCATION.planning,
-        sourceType: 'panel',
-        sourceId: 'tasks',
-        startedIGT: viewerIGT - (35 * MINUTE),
-        endedIGT: viewerIGT - (10 * MINUTE),
-        enteredAt: at(-35 * MINUTE),
-        exitedAt: at(-10 * MINUTE),
-      });
-    }
-
-    for (const task of tasks.filter((task) => task.source === 'dojo' && task.dojoSessionUUID)) {
-      await shadow.dojoStandings.recordTaskCompletion({ task });
-    }
-    await shadow.dojoStandings.materializeRanks();
-
-    const initialRheaMemory = await runtime.socialEncounters.getSinceLastSaw({
-      viewerId: 'demo-player',
-      subjectId: 'demo-rival-rhea',
-      viewerIGT,
-    });
-    await runtime.socialEncounters.recordEncounter({
-      viewerId: 'demo-player',
-      subjectId: 'demo-rival-rhea',
-      viewerIGT,
-      surface: 'profile-drawer',
-      visibleFacts: initialRheaMemory.facts,
-      operationId: 'demo-rhea-baseline-encounter',
-      encounteredAt: new Date(now - (12 * MINUTE)),
-    });
-    if (lateSocialTask) {
-      await shadow.planning.upsertTask(lateSocialTask, {
-        operationId: 'demo-rhea-social-update',
-      });
-      await runtime.socialActivityIndex.ensureSubjectIndexed({
-        subjectId: 'demo-rival-rhea',
-      });
-    }
-
     return {
       status: 'seeded',
       viewerIGT,
-      castSize: cast?.assignments?.length || 0,
     };
   }
 
@@ -374,8 +246,8 @@ export class DemoDataSeeder {
     this.setGlobalMoney(0);
 
     const demoProfiles = [
-      { UUID: 'demo-rival-rhea', username: 'Rhea', description: 'Accepted friend projected into the shared Dojo and its Tavern.', elo: 0, profilePicture: demoAvatar('R', '#a78bfa'), title: 'wayfinder', theme: 'minimalist_light' },
-      { UUID: 'demo-rival-mika', username: 'Mika', description: 'Accepted friend with a live Dojo room session and typed standing.', elo: 0, profilePicture: demoAvatar('M', '#34d399'), title: 'builder', theme: 'pixelated' },
+      { UUID: 'demo-rival-rhea', username: 'Rhea', description: 'Accepted friend with a history of completed work.', elo: 0, profilePicture: demoAvatar('R', '#a78bfa'), title: 'wayfinder', theme: 'minimalist_light' },
+      { UUID: 'demo-rival-mika', username: 'Mika', description: 'Accepted friend with recent completed tasks.', elo: 0, profilePicture: demoAvatar('M', '#34d399'), title: 'builder', theme: 'pixelated' },
       { UUID: 'demo-rival-sol', username: 'Sol', description: 'Comparison profile with recent semantic activity for the inactive rail.', elo: 0, profilePicture: demoAvatar('S', '#fb7185'), title: 'momentum', theme: 'mature_beige' },
       { UUID: 'demo-rival-iris', username: 'Iris', description: 'Comparison profile available for a factual Match Arena pulse.', elo: 0, profilePicture: demoAvatar('I', '#f59e0b'), title: 'trailkeeper', theme: 'dreamcore' },
       { UUID: 'demo-rival-nox', username: 'Nox', description: 'Horizon profile used to exercise bounded cast selection.', elo: 0, profilePicture: demoAvatar('N', '#60a5fa'), title: 'vanguard', theme: 'gamification' },
@@ -402,9 +274,9 @@ export class DemoDataSeeder {
     const goal = {
       UUID: 'demo-goal-main',
       parent: player.UUID,
-      name: 'Social World Polish',
+      name: 'Workspace Polish',
       description: 'Demo Goal used to populate semantic-world, task, event, and shop surfaces.',
-      finishCondition: 'The social world is visually coherent, persistent, and ready for a stable release.',
+      finishCondition: 'The workspace is visually coherent, persistent, and ready for a stable release.',
       areaUUID: 'demo-area-charcoal',
       progressType: 'milestones',
       lifecycleStatus: 'active',
@@ -591,12 +463,12 @@ export class DemoDataSeeder {
 
     const rivalGoals = [
       {
-        UUID: 'demo-rhea-goal', parent: 'demo-rival-rhea', name: 'Semantic World Rollout',
-        description: 'Rhea’s continuing thread across Dojo, Taverns, and profile-presence changes.',
+        UUID: 'demo-rhea-goal', parent: 'demo-rival-rhea', name: 'Workspace Rollout',
+        description: 'Rhea’s continuing work across tasks and goals.',
         status: 'active', createdAt: iso(-9 * 24 * 60 * 60 * 1000),
       },
       {
-        UUID: 'demo-mika-goal', parent: 'demo-rival-mika', name: 'Dojo Reliability',
+        UUID: 'demo-mika-goal', parent: 'demo-rival-mika', name: 'Task Reliability',
         description: 'Mika’s continuing thread for room facts and typed session standings.',
         status: 'active', createdAt: iso(-8 * 24 * 60 * 60 * 1000),
       },
@@ -622,7 +494,7 @@ export class DemoDataSeeder {
     const rivalTodos = [
       {
         UUID: 'demo-rhea-todo-1', parent: 'demo-rival-rhea', projectId: 'demo-rhea-goal',
-        name: 'Review Tavern roster copy', dueDate: iso(18 * 60 * 60 * 1000), estimatedDuration: 20,
+        name: 'Review profile overview copy', dueDate: iso(18 * 60 * 60 * 1000), estimatedDuration: 20,
         description: 'Explicit next step for Rhea’s compact profile card.', createdAt: iso(-24 * 60 * 60 * 1000),
       },
       {
@@ -632,7 +504,7 @@ export class DemoDataSeeder {
       },
       {
         UUID: 'demo-mika-todo-1', parent: 'demo-rival-mika', projectId: 'demo-mika-goal',
-        name: 'Recheck Dojo room totals', dueDate: iso(30 * 60 * 60 * 1000), estimatedDuration: 15,
+        name: 'Recheck Task room totals', dueDate: iso(30 * 60 * 60 * 1000), estimatedDuration: 15,
         description: 'Explicit next step for Mika’s compact profile card.', createdAt: iso(-18 * 60 * 60 * 1000),
       },
     ];
@@ -698,7 +570,7 @@ export class DemoDataSeeder {
       todoUUID: null,
       projectId: goal.UUID,
       goalName: goal.name,
-      name: 'Reviewed semantic world hierarchy',
+      name: 'Reviewed workspace hierarchy',
       estimatedDuration: 30,
       sessionDuration: 30 * 60 * 1000,
       points: 0,
@@ -739,16 +611,16 @@ export class DemoDataSeeder {
         inGameTimestamp: igt(-22 * 60 * 60 * 1000), completedInGameTimestamp: igt(-21.8 * 60 * 60 * 1000),
       },
       {
-        UUID: 'demo-task-dojo-1', parent: player.UUID, projectId: goal.UUID,
-        name: 'Dojo navigation audit', estimatedDuration: 20, sessionDuration: 18 * 60 * 1000,
-        points: 0, pointsBase: 0, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
+        UUID: 'demo-task-focus-1', parent: player.UUID, projectId: goal.UUID,
+        name: 'Task navigation audit', estimatedDuration: 20, sessionDuration: 18 * 60 * 1000,
+        points: 0, pointsBase: 0, source: 'manual',
         createdAt: iso(-7 * 60 * 60 * 1000), completedAt: iso(-6.7 * 60 * 60 * 1000),
         inGameTimestamp: igt(-7 * 60 * 60 * 1000), completedInGameTimestamp: igt(-6.7 * 60 * 60 * 1000),
       },
       {
-        UUID: 'demo-task-dojo-2', parent: player.UUID, projectId: 'demo-goal-learning',
-        name: 'Dojo recommendation follow-through', estimatedDuration: 30, sessionDuration: 27 * 60 * 1000,
-        points: 0, pointsBase: 0, source: 'dojo', dojoSessionUUID: 'demo-dojo-session-player',
+        UUID: 'demo-task-focus-2', parent: player.UUID, projectId: 'demo-goal-learning',
+        name: 'Task recommendation follow-through', estimatedDuration: 30, sessionDuration: 27 * 60 * 1000,
+        points: 0, pointsBase: 0, source: 'manual',
         createdAt: iso(-6.5 * 60 * 60 * 1000), completedAt: iso(-6.05 * 60 * 60 * 1000),
         inGameTimestamp: igt(-6.5 * 60 * 60 * 1000), completedInGameTimestamp: igt(-6.05 * 60 * 60 * 1000),
       },
@@ -766,8 +638,8 @@ export class DemoDataSeeder {
     const rivalTasks = [
       ['demo-rhea-task-a', 'demo-rival-rhea', 'Rhea planning pass', -90 * 60 * 1000, -82 * 60 * 1000, 90],
       ['demo-rhea-task-b', 'demo-rival-rhea', 'Rhea follow-through', 88 * 60 * 1000, 96 * 60 * 1000, 120],
-      ['demo-mika-task-a', 'demo-rival-mika', 'Dojo baseline set', -4 * 60 * 60 * 1000, -3.8 * 60 * 60 * 1000, 160],
-      ['demo-mika-task-b', 'demo-rival-mika', 'Dojo score defended', -70 * 60 * 1000, -64 * 60 * 1000, 210],
+      ['demo-mika-task-a', 'demo-rival-mika', 'Task baseline set', -4 * 60 * 60 * 1000, -3.8 * 60 * 60 * 1000, 160],
+      ['demo-mika-task-b', 'demo-rival-mika', 'Task score defended', -70 * 60 * 1000, -64 * 60 * 1000, 210],
       ['demo-sol-task-a', 'demo-rival-sol', 'Deep focus block', -3 * 60 * 60 * 1000, -2.7 * 60 * 60 * 1000, 110],
       ['demo-sol-task-b', 'demo-rival-sol', 'Future planning block', 2.3 * 60 * 60 * 1000, 2.5 * 60 * 60 * 1000, 130],
     ];
@@ -789,40 +661,14 @@ export class DemoDataSeeder {
         completedInGameTimestamp: igt(doneOffset),
       });
     }
-    const rivalDojoTasks = [
-      ['demo-rhea-dojo-1', 'demo-rival-rhea', 'demo-dojo-rhea', 'Rhea dojo sprint', 260, -12 * 60 * 60 * 1000],
-      ['demo-rhea-dojo-2', 'demo-rival-rhea', 'demo-dojo-rhea', 'Rhea dojo finish', 190, -11.5 * 60 * 60 * 1000],
-      ['demo-mika-dojo-1', 'demo-rival-mika', 'demo-dojo-mika', 'Mika dojo focus', 390, -18 * 60 * 60 * 1000],
-      ['demo-sol-dojo-1', 'demo-rival-sol', 'demo-dojo-sol', 'Sol dojo reset', 175, -30 * 60 * 60 * 1000],
-    ];
-    for (const [UUID, parent, dojoSessionUUID, name, points, completedOffset] of rivalDojoTasks) {
-      await this.add(STORES.task, {
-        UUID,
-        parent,
-        todoUUID: null,
-        projectId: rivalGoalByPlayer.get(parent) || goal.UUID,
-        goalName: goal.name,
-        name,
-        source: 'dojo',
-        dojoSessionUUID,
-        estimatedDuration: 25,
-        sessionDuration: 25 * 60 * 1000,
-        points: 0,
-        pointsBase: 0,
-        createdAt: iso(completedOffset - 25 * 60 * 1000),
-        completedAt: iso(completedOffset),
-        inGameTimestamp: igt(completedOffset - 25 * 60 * 1000),
-        completedInGameTimestamp: igt(completedOffset),
-      });
-    }
     await this.add(STORES.task, {
       UUID: 'demo-rhea-social-update',
       parent: 'demo-rival-rhea',
       todoUUID: null,
       projectId: 'demo-rhea-goal',
-      goalName: 'Semantic World Rollout',
-      name: 'Refined Tavern roster states',
-      description: 'A deliberately late typed import so Since You Last Saw has one factual new change.',
+      goalName: 'Workspace Rollout',
+      name: 'Refined profile overview',
+      description: 'A recent completed task shown in the profile history.',
       estimatedDuration: 18,
       sessionDuration: 18 * MINUTE,
       points: 0,
@@ -919,16 +765,6 @@ export class DemoDataSeeder {
       });
     }
     await this.add(STORES.eventBuff, {
-      UUID: 'demo-buff-dojo-momentum',
-      parent: player.UUID,
-      eventUUID: SPECIAL_EVENT_IDS.dojoMultiplier,
-      multiplierValue: 1.18,
-      accumulatedValue: 0.18,
-      createdAt: iso(-6 * 60 * 60 * 1000),
-      updatedAt: iso(-5.8 * 60 * 60 * 1000),
-      expiresAt: null,
-    });
-    await this.add(STORES.eventBuff, {
       UUID: 'demo-buff-expired',
       parent: player.UUID,
       eventUUID: 'demo-habit-stretch',
@@ -938,7 +774,7 @@ export class DemoDataSeeder {
     });
 
     const journals = [
-      ['demo-journal-1', 'Semantic world notes', 'The semantic world should feel like the base space. Cards need clear hierarchy and readable residency.', 'reflection', -3 * 60 * 60 * 1000],
+      ['demo-journal-1', 'Workspace notes', 'The workspace should feel calm. Cards need clear hierarchy and readable details.', 'reflection', -3 * 60 * 60 * 1000],
       ['demo-journal-2', 'Shop layout pass', 'The cart should read as a separate capsule beside the catalog, never as content inside it.', 'post', -90 * 60 * 1000],
       ['demo-journal-3', 'Task tray idea', 'Compact task tray should stay plain: a circular checkbox and a task name. Details belong in the full view.', 'post', -35 * 60 * 1000],
     ];
@@ -985,7 +821,7 @@ export class DemoDataSeeder {
         entityType: 'journal',
         entityUUID: 'demo-journal-1',
         relation: 'evidence',
-        labelSnapshot: 'Semantic world notes',
+        labelSnapshot: 'Workspace notes',
       },
     ];
     for (const link of demoGoalLinks) {
@@ -1004,7 +840,7 @@ export class DemoDataSeeder {
       entry: 'Today I tested the semantic residency cards and documented the transitions that felt most natural.\n\nThe next pass is about reducing visual noise.',
       type: 'post',
       postType: 'post',
-      tags: ['field-report', 'social-world'],
+      tags: ['field-report', 'workspace'],
       images: [demoAvatar('SW', '#7c3aed')],
       votes: { 'demo-player': 1, 'demo-rival-mika': 1 },
       createdAt: iso(-50 * 60 * 1000),
@@ -1231,7 +1067,7 @@ export class DemoDataSeeder {
     for (const transaction of demoTransactions) await this.add(STORES.transaction, transaction);
 
     const demoContributions = [
-      ['demo-contribution-1', player.UUID, goal.UUID, 'Refined the semantic world hierarchy', 0, -5 * 24 * 60 * 60 * 1000],
+      ['demo-contribution-1', player.UUID, goal.UUID, 'Refined the workspace hierarchy', 0, -5 * 24 * 60 * 60 * 1000],
       ['demo-contribution-2', player.UUID, 'demo-goal-learning', 'Documented the inference lifecycle', 0, -3 * 24 * 60 * 60 * 1000],
       ['demo-contribution-3', player.UUID, 'demo-goal-wellbeing', 'Added a sustainable recovery block', 0, -24 * 60 * 60 * 1000],
     ];
@@ -1411,8 +1247,6 @@ export class DemoDataSeeder {
         economyLoggedTotal: 48.5,
         profileSignatureScore: 6,
         acceptedFriends: 2,
-        bestDojoSessionPoints: 365,
-        dojoSessionPointsByDay: {},
       },
       appliedEvents: {},
       eventAwards: {},

@@ -1,3 +1,5 @@
+> Historical design/release notes. Dojo and the former social-world/map implementation are retired; the current social world is a Coming soon placeholder. See docs/PERSISTENCE.md for migration 059.
+
 # Goals System: Research Basis, Product Direction, and Implementation Specification
 
 **Target application:** Tapestry / Charcoal local-first gamified life system  

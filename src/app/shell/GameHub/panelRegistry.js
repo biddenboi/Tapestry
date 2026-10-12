@@ -5,6 +5,7 @@ import { loadShop } from '@features/shop/loaders.js';
 import { loadContributionPass } from '@features/contribution-pass/loaders.js';
 import { loadInventory } from '@features/inventory/loaders.js';
 import { loadProfile } from '@features/profile/loaders.js';
+import { loadGate } from '@features/gate/loaders.js';
 import { loadInbox } from '@features/inbox/loaders.js';
 
 const measuredImport = (name, importer) => () => measureDynamicModule(name, importer);
@@ -18,8 +19,8 @@ export const loadEvents = measuredImport('events', () =>
   import('@features/events/pages/Events/Events.jsx').then((module) => module.default));
 export const loadFeed = measuredImport('feed', () =>
   import('@features/feed/components/Feed/Feed.jsx').then((module) => module.default));
-export const loadSocialWorldShell = measuredImport('social-world-shell', () =>
-  import('@features/social-world/components/SocialWorldShell/SocialWorldShell.jsx').then((module) => module.default));
+export const loadSocialWorldPlaceholder = measuredImport('social-world-placeholder', () =>
+  import('@features/social-world/SocialWorldPlaceholder.jsx').then((module) => module.default));
 export const loadReminderModal = measuredImport('reminder-modal', () =>
   import('@features/reminders/modals/ReminderModal/ReminderModal.jsx').then((module) => module.default));
 export const loadSettings = measuredImport('settings', () =>
@@ -33,9 +34,10 @@ export const ContributionPass = lazyFeature(loadContributionPass);
 export const Inventory = lazyFeature(loadInventory);
 export const Profile = lazyFeature(loadProfile);
 export const Events = lazyFeature(loadEvents);
+export const Gate = lazyFeature(loadGate);
 export const Inbox = lazyFeature(loadInbox);
 export const Feed = lazyFeature(loadFeed);
-export const SocialWorldShell = lazyFeature(loadSocialWorldShell);
+export const SocialWorldPlaceholder = lazyFeature(loadSocialWorldPlaceholder);
 export const Settings = lazyFeature(loadSettings);
 
 export const GAME_HUB_DYNAMIC_BOUNDARIES = Object.freeze({
@@ -46,8 +48,9 @@ export const GAME_HUB_DYNAMIC_BOUNDARIES = Object.freeze({
   inventory: '@features/inventory/pages/Inventory/Inventory.jsx',
   profiles: '@features/profile/pages/Profile/Profile.jsx',
   events: '@features/events/pages/Events/Events.jsx',
+  gate: '@features/gate/components/Gate/Gate.jsx',
   inbox: '@features/inbox/components/Inbox/Inbox.jsx',
   feed: '@features/feed/components/Feed/Feed.jsx',
-  map: '@features/social-world/components/SocialWorldShell/SocialWorldShell.jsx',
+  map: '@features/social-world/SocialWorldPlaceholder.jsx',
   settings: '@features/settings/pages/Settings/Settings.jsx',
 });

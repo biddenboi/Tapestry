@@ -9,7 +9,6 @@ Tapestry is a local-first life-sim and productivity game. It tracks tasks, journ
 - SQLite WASM with a persistent desktop backup and a bounded mobile working set
 - Supabase operation/reference synchronization and Cloudflare Pages hosting
 - JSZip for save snapshots and import/export bundles
-- Leaflet with OpenStreetMap tiles for the map-first shell
 - Node test runner for domain and persistence regression tests
 
 ## Setup
@@ -28,7 +27,7 @@ Tapestry is a local-first life-sim and productivity game. It tracks tasks, journ
 
 4. Run regression tests:
 
-       node --test src/**/*.test.mjs
+       npm test
 
 5. Start Electron in development when needed:
 
@@ -68,13 +67,14 @@ Feature code should prefer app context for data access. Domain code should stay 
 
 Desktop keeps the complete SQLite workspace locally so every feature works offline. Local changes are committed atomically and recorded separately in durable operation/reference outboxes; reconnecting uploads only those changes, then downloads newer cloud changes. Periodic verified SQLite checkpoints are desktop recovery backups, not the normal synchronization payload.
 
-Mobile restores only the mobile-safe working set and referenced resources. It can continue an already-cached session offline, but a cleared/new phone needs the cloud to reconstruct that cache. Match and task-session coordination synchronize immediately, ordinary planning, Event-definition, and commerce edits use a short buffer, and journal, Event-completion, stat, and comment changes use the background lane. Desktop-trained Task Recommender v12 model artifacts are the only app-settings records distributed to mobile.
+Mobile restores only the mobile-safe working set and referenced resources. It can continue an already-cached session offline, but a cleared/new phone needs the cloud to reconstruct that cache. Match and task-session coordination synchronize immediately, ordinary planning, Event-definition, and commerce edits use a short buffer, and journal, Event-completion, stat, and comment changes use the background lane. The Task Recommender is retired.
+
+Dojo has been removed. The social world currently shows **Coming soon**. Migration 059 removes their projections, location coordinates, Dojo awards and metadata while retaining completed work, profiles, friendships, and matches. Older saves and incoming reference records are sanitized on restore.
 
 ## Common Workflows
 
 - Add a screen: create or extend src/features/<feature>/, export the public screen loader or helper from src/features/<feature>/index.js, then register it in the app shell.
 - Add a rule: place pure functions under src/domain/<area>/ and import them from features through @domain.
-- Add map behavior: keep projection, distance, interpolation, and location normalization in src/domain/map; keep Leaflet rendering in src/features/world-map.
 - Add persistence: update src/data/db/saveBundleFormat.js and src/data/db/saveBundleUtils.js, then add or update a Node regression test.
 - Add shared UI: place browser-neutral components in src/shared/ui and export them from src/shared/ui/index.js.
 - Add docs: update docs/ARCHITECTURE.md, docs/FEATURE_GUIDE.md, docs/PERSISTENCE.md, or docs/APP_SUMMARY.md when a change alters boundaries or app behavior.

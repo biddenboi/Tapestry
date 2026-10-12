@@ -29,19 +29,6 @@ export default function MobileSettingsPage({ onBack }) {
     }
   };
 
-  const deleteMemories = async () => {
-    if (!currentPlayer?.UUID || busy || !window.confirm('Delete all “since last saw” encounter memories for this profile? This does not delete anyone’s tasks, posts, or activity.')) return;
-    setBusy(true);
-    setError('');
-    try {
-      const result = await databaseConnection.clearSocialEncounterMemories({ viewerId: currentPlayer.UUID });
-      setError(`${result.deleted.toLocaleString()} encounter memory record${result.deleted === 1 ? '' : 's'} deleted.`);
-    } catch (deleteError) {
-      setError(deleteError?.message || 'Encounter memories could not be deleted.');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   if (!section) {
     return (
@@ -65,9 +52,7 @@ export default function MobileSettingsPage({ onBack }) {
         <label className="mobile-settings-toggle"><div><strong>Larger mobile text</strong><span>Increases companion text without changing desktop layout.</span></div><input type="checkbox" checked={currentPlayer?.largeMobileText === true} disabled={busy} onChange={(event) => update({ largeMobileText: event.target.checked })} /></label>
       </div>}
       {section === 'privacy' && <div className="mobile-settings-card-list">
-        <label className="mobile-field"><span>Presence detail</span><select value={currentPlayer?.presenceVisibilityPolicy || 'state-only'} disabled={busy} onChange={(event) => update({ presenceVisibilityPolicy: event.target.value })}><option value="state-only">State only</option><option value="goal">Include linked Goal</option><option value="task">Include exact task</option><option value="private">Private</option></select></label>
         <label className="mobile-field"><span>Profile visibility</span><select value={currentPlayer?.profileVisibility || 'fellows'} disabled={busy} onChange={(event) => update({ profileVisibility: event.target.value })}><option value="public">Public</option><option value="fellows">Fellows</option><option value="private">Private</option></select></label>
-        <div className="mobile-settings-card"><div><strong>Encounter memories</strong><span>Deletes this profile’s “since last saw” receipts without deleting the underlying activity.</span></div><button type="button" className="danger" disabled={busy} onClick={deleteMemories}>{busy ? 'Deleting…' : 'Delete memories…'}</button></div>
       </div>}
       {error && <div className="mobile-page-error" role="alert">{error}</div>}
     </section>

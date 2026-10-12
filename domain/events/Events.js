@@ -82,7 +82,7 @@ async function replaceBuffForEvent(db, player, customEvent, multiplierValue, sou
 async function clearDayScopedEventBuffs(db, playerUUID) {
   if (!db || !playerUUID) return;
   const all = await db.getPlayerStore(STORES.eventBuff, playerUUID);
-  for (const b of all.filter((x) => x.eventUUID !== SPECIAL_EVENT_IDS.dojoMultiplier)) {
+  for (const b of all) {
     // eslint-disable-next-line no-await-in-loop
     await db.remove(STORES.eventBuff, b.UUID);
   }
@@ -185,8 +185,6 @@ export async function startDay(db, player) {
   if (!player) return;
   await db.add(STORES.player, { ...player, minutesClearedToday: 0 });
   await writeEvent(db, player, EVENT.wake, 'Started the day');
-  // Clear day-scoped buffs only. Dojo Momentum is match-scoped and must
-  // survive day transitions until this profile's next match concludes.
   try { await clearDayScopedEventBuffs(db, player.UUID); } catch { /* non-fatal */ }
   try { await checkHabitFailures(db, player); } catch { /* non-fatal */ }
   try { await refreshReverseEventBuffs(db, player); } catch { /* non-fatal */ }
@@ -652,105 +650,4 @@ export async function applyPendingSleepTimeBuff(db, player) {
   delete updated.pendingIncomingSleepReward;
   await db.add(STORES.player, updated);
   return buff;
-}
-
-// ─── Dojo multiplier ────────────────────────────────────────────────────
-// The dojo-multiplier buff is an accumulator, not a decay-curve special.
-// Each completed dojo task contributes (taskWeight × hoursWorked) to the
-// additive delta. The accumulated buff persists across dojo exits and is
-// spent on (and cleared by) the next match conclude. While in dojo, the
-// buff is filtered out of the live points calculation so it doesn't compound
-// onto subsequent dojo tasks within the same session — see TaskSessionMenu.
-
-/**
- * Add to the player's accumulated dojo multiplier.
- *
- *   contribution = taskWeight × hoursWorked
- *
- * where taskWeight is the existing aversion×urgency×commitment task multiplier
- * (the same number labeled "task" in the session UI breakdown) and hoursWorked
- * is `actualDurationMs / HOUR`. The contribution is added to the buff's current
- * additive delta — i.e. if the buff is currently 1 + a and we add c, the new
- * buff is 1 + a + c. Returns the new buff entry, or null if no contribution
- * was applied (zero/negative duration or weight).
- *
- * Also writes an event-log row for auditing and "earned today" summaries.
- */
-export async function applyDojoContribution(db, player, taskWeight, durationMs, {
-  completionEventUUID = null,
-} = {}) {
-  if (!player) return null;
-  const customEvent = await db.get(STORES.customEvent, SPECIAL_EVENT_IDS.dojoMultiplier);
-  if (!customEvent) return null;
-
-  const hours = Math.max(0, Number(durationMs) || 0) / (60 * 60 * 1000);
-  const weight = Math.max(0, Number(taskWeight) || 0);
-  const delta = weight * hours;
-  if (delta <= 0) return null;
-
-  const existing = (await db.getPlayerStore(STORES.eventBuff, player.UUID))
-    .filter((buff) => buff.eventUUID === SPECIAL_EVENT_IDS.dojoMultiplier);
-  const currentBuff = existing[0] || null;
-  const appliedCompletionEventUUIDs = Array.isArray(currentBuff?.appliedCompletionEventUUIDs)
-    ? currentBuff.appliedCompletionEventUUIDs
-    : [];
-  const logUUID = completionEventUUID
-    ? `task-completion:${completionEventUUID}:dojo-log`
-    : null;
-
-  // The accumulated buff records every completion event already applied. That
-  // makes replay safe even if the process stopped after the buff write but
-  // before its audit log or processor receipt was written.
-  if (completionEventUUID && appliedCompletionEventUUIDs.includes(completionEventUUID)) {
-    if (logUUID && !(await db.get(STORES.eventLog, logUUID))) {
-      await writeEventLog(db, {
-        ...makeEventLog(
-          player,
-          customEvent,
-          'special',
-          SPECIAL_KIND.dojo_multiplier,
-          'success',
-          delta,
-          { completionEventUUID },
-        ),
-        UUID: logUUID,
-      });
-    }
-    return currentBuff;
-  }
-
-  const current = currentBuff ? Number(currentBuff.multiplierValue) || 1 : 1;
-  const next = current + delta;
-  const buff = await replaceBuffForEvent(db, player, customEvent, next, 'dojo', {
-    expiresAt: null,
-    metadata: completionEventUUID ? {
-      appliedCompletionEventUUIDs: [...appliedCompletionEventUUIDs, completionEventUUID],
-    } : {},
-  });
-
-  const log = makeEventLog(
-    player,
-    customEvent,
-    'special',
-    SPECIAL_KIND.dojo_multiplier,
-    'success',
-    delta,
-    completionEventUUID ? { completionEventUUID } : {},
-  );
-  if (logUUID) log.UUID = logUUID;
-  await writeEventLog(db, log);
-  return buff;
-}
-
-/** Wipe the player's dojo multiplier buff. Called from match conclude
- *  regardless of outcome — the match happened, the multiplier was applied
- *  (per the live-buff sum at task-submit time during the match), so it
- *  gets wiped. */
-export async function clearDojoMultiplier(db, playerUUID) {
-  if (!db || !playerUUID) return;
-  const all = await db.getPlayerStore(STORES.eventBuff, playerUUID);
-  for (const b of all.filter((x) => x.eventUUID === SPECIAL_EVENT_IDS.dojoMultiplier)) {
-    // eslint-disable-next-line no-await-in-loop
-    await db.remove(STORES.eventBuff, b.UUID);
-  }
 }

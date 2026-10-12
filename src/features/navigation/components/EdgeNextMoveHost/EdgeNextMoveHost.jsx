@@ -17,10 +17,6 @@ import { useTaskSession } from '../../../tasks/context/TaskSessionProvider.jsx';
 import { showTaskPreviewMenu } from '../../../tasks/modals/TaskPreviewMenu/loadTaskPreviewMenu.js';
 import { followNavigationRoute } from '../../services/NavigationRouteService.js';
 import { applyNextMoveFeedback } from '../../services/SuggestionFeedbackService.js';
-import {
-  clearWorldRoute,
-  showWorldRoute,
-} from '../../services/WorldRouteHighlightService.js';
 import NextMoveDrawer from '../NextMoveDrawer/NextMoveDrawer.jsx';
 import useDraggableNextMove from './useDraggableNextMove.js';
 import useEdgeReveal from './useEdgeReveal.js';
@@ -52,7 +48,6 @@ export default function EdgeNextMoveHost() {
     activeMatch: [activeMatch],
     gameState: [gameState],
     openRoute,
-    setWorldRoute,
   } = useAppContext();
   const taskSession = useTaskSession();
   const panelRef = useRef(null);
@@ -82,14 +77,13 @@ export default function EdgeNextMoveHost() {
     setLoading(false);
     setError('');
     setClarificationTask(null);
-    clearWorldRoute(setWorldRoute);
     if (dockedTaskSession) {
       setSurface('active-session');
       return;
     }
     setSurface('recommendation');
     setRequestVersion((version) => version + 1);
-  }, [dockedTaskSession, setWorldRoute]);
+  }, [dockedTaskSession]);
   const decisionRepository = useMemo(
     () => databaseConnection ? new NextMoveDecisionRepository(databaseConnection) : null,
     [databaseConnection],
@@ -154,7 +148,6 @@ export default function EdgeNextMoveHost() {
       await decisionRepository.save(shown);
       if (generation !== evaluationGenerationRef.current) return null;
       setDecision(shown);
-      showWorldRoute(setWorldRoute, shown.destination);
       return shown;
     } catch (nextError) {
       if (generation !== evaluationGenerationRef.current) return null;
@@ -173,7 +166,6 @@ export default function EdgeNextMoveHost() {
     ensureDomainLoaded,
     gameState,
     playerUUID,
-    setWorldRoute,
     taskSession.snapshot,
   ]);
 
@@ -230,7 +222,6 @@ export default function EdgeNextMoveHost() {
     };
   }, [openRecommendation]);
 
-  useEffect(() => () => clearWorldRoute(setWorldRoute), [setWorldRoute]);
 
   const close = useCallback(() => {
     explicitlyOpenedRef.current = false;
@@ -243,8 +234,7 @@ export default function EdgeNextMoveHost() {
     setLoading(false);
     setError('');
     setClarificationTask(null);
-    clearWorldRoute(setWorldRoute);
-  }, [commitPixels, pixels, placement.mode, setWorldRoute]);
+  }, [commitPixels, pixels, placement.mode]);
 
   const markAccepted = useCallback(async () => {
     if (!decision) return decision;

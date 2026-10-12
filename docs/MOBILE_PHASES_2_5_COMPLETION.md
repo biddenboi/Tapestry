@@ -1,3 +1,5 @@
+> Historical design/release notes. Dojo and the former social-world/map implementation are retired; the current social world is a Coming soon placeholder. See docs/PERSISTENCE.md for migration 059.
+
 # Mobile companion phases 2–5
 
 This document records the implementation boundaries and validation state for the Today/editors, Goals/Chronicle, Shop/More, and cross-device polish phases. Phase 1 ownership and migration details remain in `MOBILE_PHASE_1_CORRECTNESS.md`.

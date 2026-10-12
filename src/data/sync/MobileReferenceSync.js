@@ -1,3 +1,4 @@
+import { sanitizeRetiredFeatureRecord } from '../persistence/RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import {
   effectCancellationStatement,
@@ -19,6 +20,7 @@ import {
 export const MOBILE_REFERENCE_CURSOR_STREAM = 'mobile-reference-v1';
 const MOBILE_REFERENCE_DELTA_PAGE_SIZE = 500;
 const mobileReferenceDeltaState = new WeakMap();
+const MOBILE_REFERENCE_APPLY_REPAIR_KEY = 'mobile-reference-apply-repair-v1';
 
 export const MOBILE_REFERENCE_RECORD_TYPES = Object.freeze([
   ['profile', STORES.player],
@@ -160,7 +162,7 @@ export function referenceRecord(recordType, recordId, data, updatedAt = null) {
     recordId: String(recordId),
     workspaceId,
     playerId: WORKSPACE_DEFINITION_TYPES.has(recordType) ? null : recordPlayer(scopedData),
-    data: scopedData,
+    data: sanitizeRetiredFeatureRecord(scopedData) || { UUID: String(recordId), __deleted: true },
     updatedAt: new Date(updatedAt || recordTime(scopedData)).toISOString(),
   };
 }
@@ -214,6 +216,28 @@ export async function publishCurrentMobileResources(databaseConnection, transpor
 async function sqliteClient(databaseConnection) {
   await databaseConnection.ready;
   return databaseConnection?.persistenceRuntime?.sqliteStorageAdapter?.client || null;
+}
+
+async function needsReferenceApplyRepair(databaseConnection) {
+  const client = await sqliteClient(databaseConnection);
+  if (!client?.query) return false;
+  const repaired = await client.query({
+    sql: 'SELECT 1 FROM sync_reference_meta WHERE key=?',
+    bind: [MOBILE_REFERENCE_APPLY_REPAIR_KEY],
+    result: 'value',
+  });
+  return !repaired;
+}
+
+async function markReferenceApplyRepaired(databaseConnection) {
+  const client = await sqliteClient(databaseConnection);
+  if (!client?.query) return;
+  await client.query({
+    sql: `INSERT INTO sync_reference_meta(key,value_json,updated_at) VALUES(?,?,?)
+          ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at`,
+    bind: [MOBILE_REFERENCE_APPLY_REPAIR_KEY, JSON.stringify({ version: 1 }), new Date().toISOString()],
+    result: 'changes',
+  });
 }
 
 function intersects(left, right) {
@@ -565,7 +589,7 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     }
     const current = localByStore.get(store).get(incomingData.UUID);
     if (current && recordTime(current) >= incomingTime) continue;
-    if (entry.deleted || incomingData.__deleted) {
+    if (entry.deleted || incomingData.__deleted || !sanitizeRetiredFeatureRecord(incomingData)) {
       if (current) deletes.push({ store, UUID: incomingData.UUID });
       const typedTable = TYPED_DELETE_TABLE_BY_RECORD_TYPE.get(entry.recordType);
       if (typedTable) {
@@ -616,8 +640,11 @@ export async function applyMobileReferenceRecords(databaseConnection, records = 
     }
   }
   if (puts.length || deletes.length || typedDeleteStatements.length || orderedNormalizedStatements.length) {
+    // Let persistence assign a fresh transaction ID. Different snapshot/delta
+    // pages can have identical timestamps and row counts; deriving an ID from
+    // those values silently discarded later pages as duplicate commands.
+    // Record clocks and normalized upserts make replay safe after a crash.
     await databaseConnection.commitAtomicMutation({
-      operationId: `mobile-bootstrap:${newest}:${puts.length}:${deletes.length}:${orderedNormalizedStatements.length}`,
       label: 'mobile-bootstrap-refresh',
       puts,
       deletes,
@@ -879,12 +906,21 @@ export async function synchronizeMobileReferenceData(databaseConnection, transpo
     : [];
   if (local.length) await transport.mergeMobileReferenceRecords(local);
 
+  // Older mobile builds could skip a page after a transaction-ID collision
+  // while still advancing the cursor. A delta alone cannot recover those
+  // rows. Re-read the snapshot once, retaining local-only offline work.
+  let workingSetRepair = null;
+  if (forceActiveProfile && await needsReferenceApplyRepair(databaseConnection)) {
+    workingSetRepair = await restoreMobileBootstrapData(databaseConnection, transport, {
+      pruneMissing: false,
+    });
+  }
+
   const delta = await synchronizeMobileReferenceChanges(databaseConnection, transport, {
     forceActiveProfile,
   });
 
-  let workingSetRepair = null;
-  if (forceActiveProfile) {
+  if (forceActiveProfile && !workingSetRepair) {
     const manifest = delta.manifest;
     const localState = databaseConnection.getMobileWorkingSetState?.() || {};
     const localAppliedTime = new Date(localState.appliedAt || 0).getTime() || 0;
@@ -903,6 +939,12 @@ export async function synchronizeMobileReferenceData(databaseConnection, transpo
 
   return {
     ...delta,
+    downloaded: Number(delta.downloaded || 0) + Number(workingSetRepair?.downloaded || 0),
+    applied: Number(delta.applied || 0) + Number(workingSetRepair?.applied || 0),
+    recordTypes: [...new Set([
+      ...(delta.recordTypes || []),
+      ...(workingSetRepair?.recordTypes || []),
+    ])].sort(),
     uploaded: local.length,
     workingSetRepair,
   };
@@ -1018,6 +1060,10 @@ export async function restoreMobileBootstrapData(databaseConnection, transport, 
         forceActiveProfile: true,
       })
     : { synchronized: false, downloaded: 0, applied: 0, recordTypes: [] };
+  // Persist completion only after snapshot application and catch-up succeed.
+  // A failed download remains retryable on the next synchronization.
+  await markReferenceApplyRepaired(databaseConnection);
+  await databaseConnection.flushWrites?.();
   onProgress?.({
     stage: 'opening',
     downloaded: remote.length,
@@ -1027,7 +1073,6 @@ export async function restoreMobileBootstrapData(databaseConnection, transport, 
   return {
     restored: true,
     downloaded: remote.length,
-    dojoRollups: dojoTasks.length,
     referenceConflicts: {
       localWins: reconciliation.localWins.size
         + Number(catchUp.referenceConflicts?.localWins || 0),
