@@ -8,6 +8,7 @@ export const PANEL_DOMAIN_REQUIREMENTS = Object.freeze({
   events: Object.freeze([D.eventTrackers]),
   profiles: Object.freeze([D.profileSummaries, D.presence, D.leaderboards]),
   notes: Object.freeze([D.notes]),
+  gate: Object.freeze([D.tasks, D.profiles, D.dailyLifecycle]),
   inbox: Object.freeze([D.social, D.profileSummaries]),
   tasks: Object.freeze([D.tasks, D.reminders]),
   queue: Object.freeze([D.tasks, D.reminders]),

@@ -16,6 +16,8 @@ import {
   markStartupSettled,
   registerStaticModule,
 } from '@shared/performance/startupPerf.js';
+import { gateConditions } from '@domain/gate/Gate.js';
+import { loadGate, loadGateInputs } from '@features/gate/gateCommands.js';
 import { EVENT, GAME_STATE } from '@domain/constants.js';
 import { DOMAIN_INVALIDATION } from '@app/context/domainRevisions.js';
 import { getPlayerRankPresentation } from '@domain/rank/Rank.js';
@@ -26,6 +28,7 @@ import {
   Events,
   Feed,
   Inbox,
+  Gate,
   Inventory,
   Lobby,
   MatchArena,
@@ -163,6 +166,23 @@ export default function GameHub() {
 
   const notifyRef = useRef(notify);
   useEffect(() => { notifyRef.current = notify; }, [notify]);
+  const [gateBadge, setGateBadge] = useState(false);
+  useEffect(() => {
+    let active = true;
+    let timer;
+    Promise.all([ensureDomainLoaded('tasks'), ensureDomainLoaded('dailyLifecycle')])
+      .then(() => Promise.all([loadGate(databaseConnection), loadGateInputs(databaseConnection)]))
+      .then(([state, inputs]) => {
+        if (!active) return;
+        const update = () => setGateBadge(Boolean(state.window) || gateConditions(state, {
+          completedTasks: inputs.completedTasks, now: new Date(),
+        }).allMet);
+        update();
+        timer = setInterval(update, 60_000);
+      })
+      .catch(() => { if (active) setGateBadge(false); });
+    return () => { active = false; clearInterval(timer); };
+  }, [databaseConnection, ensureDomainLoaded, domainRevisions.tasks, domainRevisions.dailyLifecycle, activePanel]);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [lobbyOpen, setLobbyOpen] = useState(false);
   const [dueReminders, setDueReminders] = useState([]);
@@ -532,6 +552,7 @@ export default function GameHub() {
       );
     }
     if (managedOverlayPanelId) content = renderManagedPanel(managedOverlayPanelId, true);
+    if (activePanel === 'gate') content = <Gate />;
     if (activePanel === 'pass')      content = <ContributionPass />;
     if (activePanel === 'inventory') content = <Inventory />;
     if (activePanel === 'settings') {
@@ -643,6 +664,17 @@ export default function GameHub() {
               {unreadCount > 0 && (
                 <span className="hub-world-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
+            </button>
+
+            <button
+              type="button"
+              className={`hub-world-button hub-world-button--utility ${activePanel === 'gate' ? 'active' : ''}`}
+              onClick={() => { setLobbyOpen(false); setInboxOpen(false); replacePanel('gate'); }}
+              title="Gate"
+              aria-label="Gate"
+            >
+              <Icon name="gate" size={20} />
+              {gateBadge && <span className="hub-session-dot" aria-label="Gate ready or open" />}
             </button>
 
             {!!activeTask?.createdAt && <div className="hub-session-dot" title="Session active" />}
