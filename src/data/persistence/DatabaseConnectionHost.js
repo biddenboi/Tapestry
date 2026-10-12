@@ -1,4 +1,4 @@
-import { prepareR1Mutation, loadR1State, recordR1Change } from './services/R1EventService.js';
+import { prepareR1Mutation, loadR1State, recordR1Change, decideR1 } from './services/R1EventService.js';
 import { sanitizeRetiredFeatureRecord } from './RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import {
@@ -469,6 +469,7 @@ export class DatabaseConnectionHost {
     void mutationType;
   }
 
+  decideR1(options) { return decideR1(this, options); }
   loadR1State() { return loadR1State(this); }
   recordR1Change(options) { return recordR1Change(this, options); }
 

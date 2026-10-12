@@ -1,3 +1,4 @@
+import { endR1Shift } from '@app/day-boundary/R1DayBoundary.js';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { v4 as uuid } from 'uuid';
 import NiceModal from '@ebay/nice-modal-react';
@@ -654,6 +655,7 @@ export default function Lobby({ reminders = [], onOpenReminder, onDismissReminde
               ? <button className="lpc-btn" onClick={async () => {
                   await ensureDomainLoaded(['dailyLifecycle', 'profiles']);
                   await completeWorkLifecycle(databaseConnection, currentPlayer);
+                  await endR1Shift(databaseConnection, currentPlayer);
                   // Record the end-work lifecycle event immediately.
                   try { await checkEntertainmentAndLog(databaseConnection, currentPlayer); }
                   catch (err) { console.warn('[Lobby] entertainment check failed:', err); }

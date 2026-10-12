@@ -1,14 +1,10 @@
+import { mapR1NextMove } from '@domain/navigation/R1NextMove.js';
 import { STORES } from '../constants.js';
-import { taskPriorityClass } from './NextMovePolicyV1.js';
 import { materialStateKey } from './NextMoveInvalidation.js';
 import {
   buildTaskClarificationCandidate,
   normalizeTaskPlanningMetadata,
-  taskIsExecutableNow,
 } from '../planning/TaskPlanningEligibility.js';
-import { isTaskPlanReceiptValid } from '../planning/TaskPlanReceipt.js';
-import { evaluateDayOrientationNeed } from '../planning/DayOrientationNeed.js';
-import { evaluateGoalDirectionNeed } from '../planning/GoalDirectionNeed.js';
 import { NEXT_MOVE_REASON } from './NextMoveReasonCodes.js';
 
 const MINUTE = 60 * 1000;
@@ -40,6 +36,7 @@ function upcomingCommitment(reminders, nowMs) {
 
 function nextFixedStart(reminders, nowMs) {
   return reminders
+    .filter(item => !item.completedAt && !item.dismissedAt && item.fixedCommitment !== false)
     .map(effectiveReminderTime)
     .filter((time) => time != null && time > nowMs)
     .sort((a, b) => a - b)[0] || null;
@@ -74,18 +71,12 @@ export async function buildNextMoveState({
   const [
     rawTodos,
     receipts,
-    handoffs,
     reminders,
-    goals,
-    milestones,
     sessions,
   ] = await Promise.all([
     readPlayerStore(databaseConnection, STORES.todo, playerUUID),
     readPlayerStore(databaseConnection, STORES.taskPlanReceipt, playerUUID),
-    readPlayerStore(databaseConnection, STORES.handoff, playerUUID),
     readPlayerStore(databaseConnection, STORES.reminder, playerUUID),
-    readPlayerStore(databaseConnection, STORES.project, playerUUID),
-    databaseConnection.getAll(STORES.goalMilestone).catch(() => []),
     readPlayerStore(databaseConnection, STORES.actionSession, playerUUID),
   ]);
 
@@ -101,40 +92,6 @@ export async function buildNextMoveState({
     ? Infinity
     : Math.max(0, Math.floor((nextStart - nowMs) / 1000));
 
-  const activeHandoff = [...handoffs]
-    .filter((handoff) => handoff.status === 'active' && handoff.nextStep)
-    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0] || null;
-  const continuationTask = activeHandoff
-    ? todos.find((task) => String(task.UUID) === String(activeHandoff.resumeTargetUUID))
-    : null;
-  const continuation = continuationTask
-    && !continuationTask.completedAt
-    && !continuationTask.blockerType
-    ? {
-        UUID: continuationTask.UUID,
-        entityUUID: continuationTask.UUID,
-        entityType: 'task',
-        title: activeHandoff.nextStep || `Continue ${continuationTask.name}`,
-        context: activeHandoff.unresolvedContext || `Resume ${continuationTask.name}.`,
-        routeLabel: `Tasks → ${continuationTask.name} → resume`,
-        primaryAction: { type: 'resume-task', label: 'Resume' },
-        sourceEntityRefs: [
-          { type: 'handoff', UUID: activeHandoff.UUID },
-          { type: 'task', UUID: continuationTask.UUID },
-        ],
-        invalidationKeys: [
-          materialStateKey('handoff', activeHandoff),
-          materialStateKey('task', continuationTask),
-        ],
-      }
-    : null;
-
-  const executableTasks = todos.filter((task) => taskIsExecutableNow(task, {
-    receipt: receiptByTask.get(String(task.UUID)),
-    availableWindowSeconds,
-    currentLocationContext,
-  }));
-  const urgentTasks = todos.filter((task) => taskPriorityClass(task, now) <= 1);
   const clarification = todos
     .map((task) => buildTaskClarificationCandidate(
       task,
@@ -144,52 +101,19 @@ export async function buildNextMoveState({
     .filter(Boolean)
     .sort((a, b) => a.priorityClass - b.priorityClass)[0] || null;
 
-  const executableSetKey = executableTasks
-    .map((task) => materialStateKey('task', task))
-    .sort()
-    .join('|');
-  const selectedTask = [...executableTasks]
-    .sort((a, b) => (
-      taskPriorityClass(a, now) - taskPriorityClass(b, now)
-      || Number(a.estimatedDuration || Infinity) - Number(b.estimatedDuration || Infinity)
-      || String(a.UUID || '').localeCompare(String(b.UUID || ''))
-    ))[0] || null;
-  const selectedReceipt = selectedTask
-    ? receiptByTask.get(String(selectedTask.UUID))
-    : null;
-  const executableWork = selectedTask ? {
-    UUID: selectedTask.UUID,
-    entityUUID: selectedTask.UUID,
-    entityType: 'task',
-    title: selectedReceipt && isTaskPlanReceiptValid(selectedReceipt, selectedTask)
-      ? selectedReceipt.nextAction
-      : selectedTask.nextAction || selectedTask.name || 'Begin the next task',
-    context: 'This is the highest-priority executable action in the current window.',
-    routeLabel: `Tasks → ${selectedTask.name || 'Untitled task'} → begin`,
-    primaryAction: { type: 'begin-task', label: 'Begin' },
-    priorityClass: taskPriorityClass(selectedTask, now),
-    sourceEntityRefs: [{ type: 'task', UUID: selectedTask.UUID }],
-    invalidationKeys: [
-      materialStateKey('task', selectedTask),
-      `executable-set:${executableSetKey}`,
-    ],
-  } : null;
-
-  const fixedCommitments = reminders
-    .filter((item) => item.fixedCommitment && !item.completedAt && !item.dismissedAt)
-    .map((item) => ({
-      ...item,
-      startAt: item.startAt || item.remindAt,
-      durationMinutes: item.durationMinutes || item.estimatedDuration || 30,
-    }));
-  const dayOrientation = evaluateDayOrientationNeed({
-    fixedCommitments,
-    executableTasks,
-    urgentTasks,
-    availableWindowSeconds,
-    impossibleSuggestionCount,
-  });
-  const goalDirection = evaluateGoalDirectionNeed({ goals, milestones });
+  const boundaryState = await databaseConnection.get(STORES.appSetting, `r1.workWindow:${playerUUID}`);
+  const workEnd = safeTime(boundaryState?.value?.endsAt);
+  const windowEndMs = [nextStart, workEnd].filter(t => t != null && t > nowMs).sort((a,b)=>a-b)[0] || null;
+  let r1Result = await databaseConnection.decideR1({ now: new Date(nowMs), todos,
+    windowEnd: windowEndMs == null ? null : new Date(windowEndMs) });
+  const endedAt = safeTime(boundaryState?.value?.endedAt);
+  if (endedAt != null && new Date(endedAt).toDateString() === new Date(nowMs).toDateString()) {
+    r1Result = { decision: { kind: 'free', ref: null, length: 0, rule: '1-work-ended', mode: 'normal', alerts: [], prompts: [] }, view: { items: [], disc: [] } };
+  }
+  const { executableWork, alternatives, r1 } = mapR1NextMove({ ...r1Result, todos,
+    windowMinutes: windowEndMs == null ? Infinity : Math.max(0, (windowEndMs-nowMs)/MINUTE) });
+  const dayOrientation = null;
+  const goalDirection = null;
   const boundary = latestMeaningfulSession(sessions);
   const boundaryAgeMs = boundary?.endedAt ? nowMs - safeTime(boundary.endedAt) : Infinity;
   const meaningfulReflection = boundary
@@ -212,21 +136,7 @@ export async function buildNextMoveState({
         invalidationKeys: [materialStateKey('action-session', boundary)],
       }
     : null;
-  const recovery = boundary
-    && boundaryAgeMs >= 0
-    && boundaryAgeMs <= 30 * MINUTE
-    && Number(boundary.activeDurationMs || 0) >= 25 * MINUTE
-    && urgentTasks.length === 0
-    && !commitment
-    ? {
-        UUID: boundary.UUID,
-        title: 'Take a break',
-        context: 'You completed a sustained work period. Nothing fixed begins soon.',
-        primaryAction: { type: 'step-away', label: 'Step away' },
-        sourceEntityRefs: [{ type: 'action-session', UUID: boundary.UUID }],
-        invalidationKeys: [materialStateKey('action-session', boundary)],
-      }
-    : null;
+  const recovery = null;
 
   return {
     playerUUID,
@@ -249,31 +159,15 @@ export async function buildNextMoveState({
       sourceEntityRefs: [{ type: 'reminder', UUID: commitment.item.UUID }],
       invalidationKeys: [materialStateKey('reminder', commitment.item)],
     } : null,
-    continuation,
+    continuation: null,
     executableWork,
     clarification,
     dayOrientation,
     goalDirection,
     reflection: meaningfulReflection,
     recovery,
-    alternatives: [
-      ...executableTasks
-        .filter((task) => task.UUID !== selectedTask?.UUID)
-        .slice(0, 2)
-        .map((task) => ({
-          title: task.name,
-          entityUUID: task.UUID,
-          destination: {
-            panel: 'tasks',
-            entityType: 'task',
-            entityUUID: task.UUID,
-            subview: 'preview',
-            focusTarget: 'begin-action',
-            routeLabel: `Tasks → ${task.name} → begin`,
-            worldLocationId: 'tasks',
-          },
-        })),
-    ],
+    alternatives,
+    r1,
   };
 }
 

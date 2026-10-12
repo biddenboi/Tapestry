@@ -29,3 +29,19 @@ test('completion with an Action Session leaves time logging to that session',asy
  const db=database(); const rows=await prepareR1Mutation(db,[{type:'put',store:'taskCompletionEvents',record:{UUID:'c',todoUUID:'a',completedAt:at,durationMs:60000,actionSessionUUID:'s'}}],'complete');
  assert.deepEqual(rows.map(r=>r.type),['complete']);
 });
+
+test('Module 2 holds survive event replay and protect a short availability window',async()=>{
+ const {decideR1}=await import('./R1EventService.js'); const db=database();
+ db.stores.get('r1Events').push(...eventRecords([{ev:'block',id:'a',now:toModelHours(at),block:1.5}],{sourceKey:'block',seq:1}));
+ db.commitAtomicMutation=async({puts})=>{db.stores.get('r1Events').push(...puts.map(p=>p.record));return {changed:true};};
+ const end=new Date(new Date(at).getTime()+40*60000);
+ await decideR1(db,{now:new Date(at),windowEnd:end});
+ const restored=await loadR1State(db); assert.equal(restored.holds.get('a'),toModelHours(end));
+ const {view}=await import('@domain/r1/view.js');assert.equal(view(restored,toModelHours(at)).items[0].start_now,null);
+});
+
+test('first live mutation seeds current facts and captures the change when no backfill was imported',async()=>{
+ const db=database();db.stores.set('r1Events',[]);
+ const rows=await prepareR1Mutation(db,[{type:'put',store:'todos',record:{...todo,estimatedDuration:120}}],'first-edit');
+ assert.deepEqual(rows.map(r=>r.type),['add','estimate']);assert.equal(rows.at(-1).payload.q,2);
+});

@@ -1,3 +1,4 @@
+import { startR1Shift } from '@app/day-boundary/R1DayBoundary.js';
 import '@features/events/modals/EndDayConfirm/EndDayConfirm.css';
 import '@features/events/modals/WakePopup/WakePopup.css';
 import { useEffect, useRef, useState } from 'react';
@@ -165,6 +166,7 @@ export default NiceModal.create(({ lifecycleFlowId = '', origin = 'desktop' }) =
       if (!result) {
         throw new Error('The selected profile could not enter the day.');
       }
+      await startR1Shift(databaseConnection, currentPlayer, new Date(confirmedAt));
       const activeRun = routineRun || await startRoutineRun(databaseConnection, {
         playerId: currentPlayer.UUID,
         routineType: 'day',

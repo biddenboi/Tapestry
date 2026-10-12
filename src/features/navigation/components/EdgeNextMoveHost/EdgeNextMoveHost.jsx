@@ -1,3 +1,4 @@
+import { recordR1Override } from '@features/r1/r1Commands.js';
 import {
   useCallback,
   useEffect,
@@ -249,7 +250,7 @@ export default function EdgeNextMoveHost() {
     return accepted;
   }, [decision, decisionRepository]);
 
-  const beginTask = useCallback(async (task, suggestedMinutes = null) => {
+  const beginTask = useCallback(async (task, suggestedMinutes = null, sessionKind = 'work') => {
     if (!task) return;
     setActiveTask({
       ...task,
@@ -259,6 +260,7 @@ export default function EdgeNextMoveHost() {
       originalDuration: Number(task.estimatedDuration || 0),
       ...(suggestedMinutes ? { sessionDuration: Number(suggestedMinutes) * 60 * 1000 } : {}),
       continuitySource: 'recommended',
+      sessionKind,
     });
     close();
     requestAnimationFrame(() => {
@@ -275,13 +277,22 @@ export default function EdgeNextMoveHost() {
       if (task) setClarificationTask(task);
       return;
     }
+    if (decision.r1 && ['rest', 'reward', 'wait'].includes(decision.r1.kind)) {
+      const kind = decision.r1.kind;
+      const startedAt = new Date().toISOString();
+      setActiveTask({ UUID: `r1:${kind}:${crypto.randomUUID()}`, name: kind === 'rest' ? 'Rest' : kind === 'reward' ? 'Reward time' : 'Wait',
+        sessionKind: kind, targetType: 'r1', sessionDuration: decision.r1.suggestedMinutes * 60000,
+        createdAt: startedAt, sessionRequestedAt: startedAt, continuitySource: 'recommended' });
+      await markAccepted(); close(); return;
+    }
     await markAccepted();
     if (decision.resultType === 'execute' || decision.resultType === 'continue') {
       const task = await databaseConnection.get(STORES.todo, decision.destination?.entityUUID);
-      await beginTask(task, stateRef.current?.executableWork?.suggestedMinutes);
+      await beginTask(task, stateRef.current?.executableWork?.suggestedMinutes, decision.r1?.kind === 'extra' ? 'extra' : 'work');
       return;
     }
     if (decision.resultType === 'recover') {
+      if (decision.r1?.kind === 'free') followNavigationRoute(openRoute, { panel: 'tasks', worldLocationId: 'tasks', routeLabel: 'Tasks → choose manually' });
       close();
       return;
     }
@@ -303,6 +314,7 @@ export default function EdgeNextMoveHost() {
     decision,
     markAccepted,
     openRoute,
+    setActiveTask,
   ]);
 
   const correct = useCallback(async (type) => {
@@ -353,11 +365,19 @@ export default function EdgeNextMoveHost() {
     playerUUID,
   ]);
 
-  const chooseAlternative = useCallback((alternative) => {
-    if (!alternative?.destination) return;
-    followNavigationRoute(openRoute, alternative.destination);
-    close();
-  }, [close, openRoute]);
+  const chooseAlternative = useCallback(async (alternative) => {
+    if (!alternative) return;
+    await recordR1Override(databaseConnection, { target: alternative.entityUUID,
+      kind: alternative.kind || 'work', suggested: decision?.r1?.ref || null });
+    if (['rest', 'reward', 'wait'].includes(alternative.kind)) {
+      const at = new Date().toISOString();
+      setActiveTask({ UUID: `r1:${alternative.kind}:${crypto.randomUUID()}`, name: alternative.title,
+        sessionKind: alternative.kind, targetType: 'r1', sessionDuration: alternative.suggestedMinutes * 60000,
+        createdAt: at, sessionRequestedAt: at }); close(); return;
+    }
+    const task = await databaseConnection.get(STORES.todo, alternative.entityUUID);
+    await beginTask(task, alternative.suggestedMinutes);
+  }, [beginTask, close, databaseConnection, decision, setActiveTask]);
 
   const manual = useCallback(() => {
     followNavigationRoute(openRoute, {

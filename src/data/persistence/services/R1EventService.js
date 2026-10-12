@@ -1,4 +1,6 @@
 import { STORES } from '@domain/constants.js';
+import { decideWith } from '@domain/r1/decide.js';
+import { view } from '@domain/r1/view.js';
 import { replay } from '@domain/r1/state.js';
 import { syncFacts, factsFromState } from '@domain/r1/host.js';
 import { factsFromTodo } from '@domain/r1/facts.js';
@@ -35,11 +37,14 @@ export async function prepareR1Mutation(db, operations, sourceKey) {
   const relevant = operations.filter((op) => [STORES.todo, STORES.taskCompletionEvent, STORES.actionSession, STORES.transaction].includes(op.store));
   if (!relevant.length) return [];
   const rows = await db.getAll(STORES.r1Event);
-  // Backfill initializes the model before live capture starts. No empty-history guesses.
-  if (!rows.length || rows.some((r) => r.sourceKey === sourceKey)) return [];
+  if (rows.some((r) => r.sourceKey === sourceKey)) return [];
   const m = await loadR1State(db); const events = []; const now = toModelHours(new Date());
   const emit = (event) => { events.push(event); m.apply(event); };
   const todos = new Map((await db.getAll(STORES.todo)).map((t) => [t.UUID, t]));
+  if (!rows.length) {
+    const initial = [...todos.values()].map(t => todoFacts(t, m)).filter(Boolean);
+    syncFacts([], initial, now, { state: m }).forEach(emit);
+  }
   for (const op of relevant) {
     const r = op.record;
     if (op.store === STORES.todo) { if (op.type === 'delete') todos.delete(op.UUID); else todos.set(r.UUID, r); }
@@ -53,6 +58,7 @@ export async function prepareR1Mutation(db, operations, sourceKey) {
     if (op.store === STORES.taskCompletionEvent) {
       if (await db.get(STORES.taskCompletionEvent, r.UUID)) continue;
       const id = String(r.todoUUID || r.taskUUID);
+      if (!m.index.has(id)) emit({ ev: 'add', id, now: toModelHours(r.completedAt) - Math.max(0, Number(r.durationMs || 0)) / 3600000, q: Math.max(0, Number(r.durationMs || 0)) / 3600000, d: toModelHours(r.completedAt), start: null, cycle: null, habit: false, category: null });
       if (!r.actionSessionUUID && r.durationMs > 0) emit({ ev: 'log', start: toModelHours(r.completedAt) - r.durationMs / 3600000, dur: r.durationMs / 3600000, kind: 'work', ref: id });
       emit({ ev: 'complete', id, now: toModelHours(r.completedAt) });
     }
@@ -70,4 +76,19 @@ export async function prepareR1Mutation(db, operations, sourceKey) {
 export async function recordR1Change(db, { sourceKey = crypto.randomUUID(), now = new Date() } = {}) {
   const m = await loadR1State(db); const facts = (await db.getAll(STORES.todo)).map((t) => todoFacts(t, m)).filter(Boolean);
   return appendR1Events(db, syncFacts(factsFromState(m), facts, toModelHours(now), { state: m }), { sourceKey });
+}
+
+export async function decideR1(db, { now = new Date(), todos = null, windowEnd = null, params = null } = {}) {
+  const m = await loadR1State(db); const at = toModelHours(now);
+  const rows = await db.getAll(STORES.r1Event);
+  // Until the hand-run backfill is imported, the card can still use current facts
+  // without preempting the guarded history import with a guessed live seed.
+  if (!rows.length) {
+    const current = (todos || await db.getAll(STORES.todo)).map(t => todoFacts(t, m)).filter(Boolean);
+    syncFacts([], current, at, { state: m }).forEach(e => m.apply(e));
+  }
+  const decision = decideWith(m, at, windowEnd ? toModelHours(windowEnd) : null, params);
+  const holds = m.takeHolds().map(([id, now, until]) => ({ ev: 'hold', id, now, until }));
+  if (rows.length && holds.length) await appendR1Events(db, holds);
+  return { decision, view: view(m, at), initialized: rows.length > 0 };
 }

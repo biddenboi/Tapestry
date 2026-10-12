@@ -33,6 +33,7 @@ function decision(state, resultType, candidate, defaults = {}) {
     sourceEntityRefs: candidate?.sourceEntityRefs || defaults.sourceEntityRefs || [],
     invalidationKeys: candidate?.invalidationKeys || defaults.invalidationKeys || [],
     alternatives: state.alternatives || [],
+    r1: candidate === state.executableWork ? state.r1 || null : null,
     question: candidate?.question || defaults.question || null,
     secondaryAction: candidate?.secondaryAction || defaults.secondaryAction || null,
   });
@@ -93,7 +94,7 @@ export function chooseNextMove(state = {}) {
     });
   }
   if (state.executableWork) {
-    return decision(state, NEXT_MOVE_RESULT.execute, state.executableWork, {
+    return decision(state, state.executableWork.resultType || NEXT_MOVE_RESULT.execute, state.executableWork, {
       phase: 'execute',
       destination: route('tasks', {
         ...state.executableWork,
