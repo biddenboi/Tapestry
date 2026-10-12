@@ -116,6 +116,8 @@ function LocationNode({
   const setLocationRef = useCallback((node) => {
     registerLocation(location.id, node);
   }, [location.id, registerLocation]);
+  // Historical scene data can retain locations whose UI has been retired.
+  if (!layout) return null;
   const occupants = location.occupants
     .map((profileId) => scene.memberById.get(profileId))
     .filter(Boolean);
