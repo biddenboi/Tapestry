@@ -238,7 +238,9 @@ export class SyncOperationRepository {
         sql: `SELECT operation_id AS operationId,last_error_code AS code,last_error_message AS message,
                      updated_at AS updatedAt
               FROM sync_operations
-              WHERE last_error_code IS NOT NULL OR status='rejected'
+              WHERE (last_error_code IS NOT NULL OR status='rejected')
+                AND NOT EXISTS (SELECT 1 FROM sync_conflicts c
+                  WHERE c.operation_id=sync_operations.operation_id AND c.status!='open')
               ORDER BY updated_at DESC LIMIT 1`,
         result: 'one',
       }),

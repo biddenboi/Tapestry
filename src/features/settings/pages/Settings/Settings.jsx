@@ -1,3 +1,4 @@
+import RewardTimeSetting from '@features/r1/RewardTimeSetting.jsx';
 import { useState, useEffect, useRef } from 'react';
 import { v4 as uuid } from 'uuid';
 import { useAppContext } from '@app/hooks/useAppContext.js';
@@ -410,6 +411,7 @@ export default function Settings({ embedded = false, routeIntent = null, mobileR
 
       <div className="settings-form">
         <form id="general-settings-form" onSubmit={handleSave} />
+        {presentedPageId === 'general' && <RewardTimeSetting databaseConnection={databaseConnection} />}
         {saveError && <div role="alert" className="settings-sync-error">{saveError}</div>}
         {/* Profile */}
         <SettingsSection page="general" activePage={presentedPageId} icon={<Icon name="profile" size={16} />} title="Profile">

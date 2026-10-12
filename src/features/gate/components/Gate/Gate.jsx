@@ -17,6 +17,7 @@ const dateLabel = (value) => new Date(value).toLocaleDateString(undefined, { mon
 const priceLabel = (kind) => gateItemPrice(kind) ? `${gateItemPrice(kind)} ◈` : 'free';
 const emptyDraft = () => ({ kind: 'bug', text: '', why: '', replaces: '' });
 const errors = {
+  'missing-estimate': 'Enter the estimate in whole minutes from the design note.',
   'insufficient-coins': 'You do not have enough coins to lock this item.',
   'checks-open': 'Add at least one hand check and tick every check before finishing.',
   'missing-name': 'Give this release a name.',
@@ -66,6 +67,7 @@ export default function Gate() {
   const writeInFlight = useRef(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [estimates, setEstimates] = useState({});
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
   const [releaseName, setReleaseName] = useState('');
@@ -86,9 +88,9 @@ export default function Gate() {
     return () => { active = false; };
   }, [db, refresh, domainRevisions.tasks, domainRevisions.dailyLifecycle]);
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30_000);
+    const timer = setInterval(() => refresh().catch(reason => setError(reason.message)), 30_000);
     return () => clearInterval(timer);
-  }, []);
+  }, [refresh]);
 
   const run = async (operation, { capture = false } = {}) => {
     if (writeInFlight.current) return false;
@@ -96,11 +98,11 @@ export default function Gate() {
     try {
       const [fresh, freshInputs] = await Promise.all([loadGate(db), loadGateInputs(db)]);
       setGate(fresh); setInputs(freshInputs);
-      if (!capture && todayLock(freshInputs.todos, new Date()).locked) {
+      if (!capture && todayLock(freshInputs.todos, new Date(), freshInputs.r1).locked) {
         setError("Locked until today's tasks are done"); return false;
       }
       await operation(fresh, freshInputs);
-      invalidateDomains(['dailyLifecycle']);
+      invalidateDomains(['dailyLifecycle', 'tasks', 'nextMove']);
       await refresh();
       return true;
     } catch (reason) { setError(errors[reason.code] || reason.message || 'The Gate could not save. Try again.'); return false; }
@@ -113,7 +115,7 @@ export default function Gate() {
   };
   if (!gate) return <div className="gate-panel"><p role={error ? 'alert' : 'status'}>{error || 'Loading the Gate…'}</p></div>;
   const conditions = gateConditions(gate, { completedTasks: inputs.completedTasks, now });
-  const lock = todayLock(inputs.todos, now);
+  const lock = todayLock(inputs.todos, now, inputs.r1);
   const disabled = busy || lock.locked;
   const status = gate.window ? 'Open' : conditions.allMet ? 'Ready' : 'Closed';
   const full = gate.window?.items.length >= GATE_RULES.maxItemsPerRelease;
@@ -125,7 +127,7 @@ export default function Gate() {
     {error && <p className="gate-banner" role="alert">{error}</p>}
     {notice && <p className="gate-success" role="status">{notice}</p>}
     <div className="gate-layout">
-    {lock.locked && <div className="gate-banner gate-lock-banner gate-row" role="status"><div><strong>Locked until today's tasks are done</strong><p>{lock.count} left: {lock.names.slice(0, 3).join(', ')}{lock.count > 3 ? '…' : ''}. Capturing to the inbox still works.</p></div><button type="button" onClick={() => replacePanel('tasks')}>Open Tasks</button></div>}
+    {lock.locked && <div className="gate-banner gate-lock-banner gate-row" role="status"><div><strong>{lock.margin ? 'Locked while work is behind pace' : "Locked until today's tasks are done"}</strong><p>{lock.count} left: {lock.names.slice(0, 3).join(', ')}{lock.count > 3 ? '…' : ''}. Capturing to the inbox still works.</p></div><button type="button" onClick={() => replacePanel('tasks')}>Open Tasks</button></div>}
       <aside className="gate-overview">
         <header className="gate-card">
           <div className="gate-row"><h1>The Gate</h1><div className="gate-row gate-header-status"><span className="gate-coins">◈ {currentPlayer?.tokens ?? 0}</span><span className={`gate-pill gate-pill--${status.toLowerCase()}`}>{status}</span></div></div>
@@ -137,7 +139,7 @@ export default function Gate() {
           <Condition label="Tracked work since last release" value={conditions.use.hours} needed={conditions.use.needed} met={conditions.use.met} display={`${Math.floor(conditions.use.hours)} h ${Math.floor(conditions.use.hours * 60 + 1e-6) % 60} m / ${conditions.use.needed} h`} />
           <Condition label="Days since last release" value={conditions.days.elapsed} needed={conditions.days.needed} met={conditions.days.met} display={`${Math.floor(conditions.days.elapsed)} / ${conditions.days.needed}`} />
           <Condition label="Something to do" value={conditions.inbox.ready} needed={1} met={conditions.inbox.met} display={`${conditions.inbox.ready} ready`} />
-          <p className="gate-muted gate-slack">Slack: arrives with R1</p>
+          <p className="gate-muted gate-slack">Slack: {inputs.r1?.mode === 'margin' ? 'behind pace' : 'on pace'}</p>
           <div className="gate-condition-action"><button type="button" className="gate-primary gate-wide" disabled={disabled || !conditions.allMet} onClick={() => write((state, nextInputs) => openGateWindow(state, { conditions: gateConditions(state, { completedTasks: nextInputs.completedTasks, now: new Date() }), now: new Date() }))}>Open release window</button><p className="gate-muted">Items are paid for when you lock them at triage.</p></div>
         </section> : <section className="gate-card">
           <div className="gate-row"><h2>Release v{gate.window.release}</h2><span>{gate.window.items.length} of 3</span></div>
@@ -152,9 +154,10 @@ export default function Gate() {
         <div className="gate-inbox-counts"><span className="gate-pill">All {gate.inbox.length}</span><span>Ready {conditions.inbox.ready}</span><span>Raw {gate.inbox.length - conditions.inbox.ready}</span></div>
         <div className="gate-item-list">{gate.inbox.map((item) => <article className={`gate-item ${!isGateItemReady(item) ? 'gate-item--raw' : ''}`} key={item.id}>
           <div className="gate-item-line"><span className={`gate-kind gate-kind--${item.kind}`}>{item.kind}</span><div className="gate-grow"><strong>{item.text}</strong>{item.why && <p className="gate-muted">Why: {item.why}</p>}{item.replaces && <p className="gate-muted">Replaces: {item.replaces}</p>}{!isGateItemReady(item) && <p className="gate-warning">Needs: {gateItemMissing(item).join('; ')}</p>}</div><span className={gateItemPrice(item.kind) ? 'gate-coins' : 'gate-muted'}>{priceLabel(item.kind)}</span></div>
+          {gate.window && isGateItemReady(item) && <label>Estimate from design note (minutes)<input type="number" min="1" step="1" disabled={disabled || full} value={estimates[item.id] || ''} onChange={event => setEstimates({ ...estimates, [item.id]: event.target.value })} /></label>}
           <fieldset disabled={disabled} className="gate-item-actions"><button type="button" onClick={() => setEditing(editing === item.id ? null : item.id)}>Edit</button><button type="button" onClick={() => write((state) => deleteGateItem(state, item.id))}>Delete</button>{gate.window && isGateItemReady(item) && <button type="button" disabled={disabled || full} onClick={() => run(async (state) => {
             const player = await db.get(STORES.player, currentPlayer.UUID);
-            const result = await lockItemWithCoins(db, player || currentPlayer, state, item.id);
+            const result = await lockItemWithCoins(db, player || currentPlayer, state, item.id, { estimateMinutes: Number(estimates[item.id]) });
             if (result.price > 0) invalidateDomains(DOMAIN_INVALIDATION.walletWrite);
           })}>{full ? 'Release is full' : `Lock · ${priceLabel(item.kind)}`}</button>}</fieldset>
           {editing === item.id && <ItemForm initial={item} disabled={disabled} submitLabel="Save" onCancel={() => setEditing(null)} onSubmit={async (patch) => { const saved = await write((state) => editGateItem(state, item.id, patch)); if (saved) setEditing(null); return saved; }} />}
@@ -168,7 +171,7 @@ export default function Gate() {
       </aside>
       {gate.window && <>
         <section className="gate-window"><h2>Locked items</h2>{!gate.window.items.length && <p className="gate-muted">Lock a ready item from the inbox to begin.</p>}{gate.window.items.map((item) => <article className="gate-card gate-locked-item" key={item.id}>
-          <div className="gate-item-line"><span className={`gate-kind gate-kind--${item.kind}`}>{item.kind}</span><strong className="gate-grow">{item.text}</strong><span className="gate-coins">paid {item.price} ◈</span></div>
+          <div className="gate-item-line"><span className={`gate-kind gate-kind--${item.kind}`}>{item.kind}</span><strong className="gate-grow">{item.text}</strong><span className="gate-coins">paid {item.price} ◈ · {item.estimateMinutes || '?'} min</span></div>
           <ol className="gate-steps">{GATE_STEPS.map((step, index) => <li key={step} className={index < GATE_STEPS.indexOf(item.step) ? 'is-done' : item.step === step ? 'is-current' : ''} aria-current={item.step === step ? 'step' : undefined}>{step}{index < GATE_STEPS.indexOf(item.step) ? ' ✓' : ''}</li>)}</ol>
           <fieldset disabled={disabled} className="gate-item-actions"><button type="button" onClick={() => copy(buildDesignPrompt(item, gate.window.release))}>Copy design prompt</button>{item.step !== 'done' && <button type="button" onClick={() => write((state) => advanceGateItem(state, item.id))}>Advance to {GATE_STEPS[GATE_STEPS.indexOf(item.step) + 1]}</button>}<button type="button" onClick={() => write((state) => returnGateItem(state, item.id))}>Return to inbox</button></fieldset>
           {item.step === 'verify' && <div className="gate-checks"><h3>Your hand checks · {item.checks.filter((check) => check.done).length} of {item.checks.length}</h3>{item.checks.map((check) => <label className="gate-checkbox" key={check.id}><input type="checkbox" disabled={disabled} checked={check.done} onChange={() => write((state) => toggleGateCheck(state, item.id, check.id))} />{check.text}</label>)}<CheckForm disabled={disabled} onAdd={(text) => write((state) => addGateCheck(state, item.id, text, { checkId: uuid() }))} /></div>}

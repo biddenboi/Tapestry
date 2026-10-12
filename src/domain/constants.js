@@ -59,6 +59,7 @@ export const STORES = {
   event: 'events',
   shop: 'shop',
   todo: 'todos',
+  r1Event: 'r1Events',
   transaction: 'transactions',
   inventory: 'inventory',
   match: 'matches',

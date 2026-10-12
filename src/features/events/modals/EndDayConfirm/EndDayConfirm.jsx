@@ -1,3 +1,4 @@
+import { endR1Shift } from '@app/day-boundary/R1DayBoundary.js';
 import '@features/events/modals/EndDayConfirm/EndDayConfirm.css';
 import '@features/events/modals/WakePopup/WakePopup.css';
 import { useEffect, useRef, useState } from 'react';
@@ -148,6 +149,7 @@ export default NiceModal.create(({ origin = 'desktop' } = {}) => {
     try {
       const endedAt = new Date().toISOString();
       const finalChecklistItems = getSelectedChecklistItems(finalCheckedItems);
+      await endR1Shift(databaseConnection, currentPlayer, new Date(endedAt));
       const result = await completeDailyLifecycle({
         databaseConnection,
         player: currentPlayer,

@@ -58,6 +58,9 @@ export class SyncConflictRepository {
     }
     const createdAt = entry.acceptedAt || this.now().toISOString();
     const id = `unsupported-remote:${operation}`;
+    // A rejected command from another device changed no canonical record.
+    // Keep its receipt for history without asking this device to resolve it.
+    const remoteRejection = entry.status === 'conflict';
     await this.client.executeAtomic({
       commandId: `sync-unsupported-remote:${operation}`,
       label: 'sync-unsupported-remote-preserve',
@@ -65,7 +68,7 @@ export class SyncConflictRepository {
         sql: `INSERT INTO sync_conflicts(
                 id,operation_id,entity_type,entity_id,local_payload_json,
                 server_payload_json,base_version,server_version,status,created_at,resolved_at
-              ) VALUES(?,?,?,?,?,?,?,?,?, ?,NULL)
+              ) VALUES(?,?,?,?,?,?,?,?,?,?,?)
               ON CONFLICT(operation_id) DO NOTHING`,
         bind: [
           id,
@@ -80,8 +83,9 @@ export class SyncConflictRepository {
           }),
           entry.baseVersion == null ? null : Number(entry.baseVersion),
           entry.result?.entity?.version == null ? null : Number(entry.result.entity.version),
-          'open',
+          remoteRejection ? 'resolved-server' : 'open',
           String(createdAt),
+          remoteRejection ? String(createdAt) : null,
         ],
         result: 'changes',
       }, {
@@ -95,6 +99,28 @@ export class SyncConflictRepository {
       }],
     });
     return this.get(id);
+  }
+
+  async acknowledgeRemoteRejections() {
+    // Repair old receipts only. Locally submitted conflicts still need a choice;
+    // unsupported *accepted* changes must remain open until a handler exists.
+    return this.client.executeAtomic({
+      commandId: operationId('sync-remote-rejections'),
+      label: 'sync-remote-rejections-acknowledge',
+      statements: [{
+        sql: `UPDATE sync_conflicts SET status='resolved-server',resolved_at=?
+              WHERE status='open' AND id=('unsupported-remote:' || operation_id)
+                AND local_payload_json='{}'
+                AND json_valid(server_payload_json)
+                AND json_extract(server_payload_json,'$.result.status')='conflict'
+                AND NOT EXISTS (
+                  SELECT 1 FROM sync_operations o
+                  WHERE o.operation_id=sync_conflicts.operation_id
+                )`,
+        bind: [this.now().toISOString()],
+        result: 'changes',
+      }],
+    });
   }
 
   async resolve(id, status) {

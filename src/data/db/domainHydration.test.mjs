@@ -40,6 +40,7 @@ test('lazy hydration exposes the requested typed domains', () => {
 
 test('high-value domains own only their persistence stores', () => {
   assert.deepEqual(DOMAIN_STORE_KEYS.tasks, [
+    'r1Events',
     'tasks',
     'todos',
     'projects',
@@ -56,6 +57,7 @@ test('high-value domains own only their persistence stores', () => {
     'taskPlanReceipts',
   ]);
   assert.deepEqual(DOMAIN_STORE_KEYS.nextMove, [
+    'r1Events',
     'taskPlanReceipts',
     'nextMoveDecisions',
     'nextMoveFeedback',

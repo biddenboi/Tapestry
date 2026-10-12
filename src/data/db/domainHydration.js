@@ -34,13 +34,14 @@ export const HYDRATION_DOMAINS = Object.freeze(Object.values(HYDRATION_DOMAIN));
 
 export const DOMAIN_STORE_KEYS = Object.freeze({
   [HYDRATION_DOMAIN.tasks]: Object.freeze([
-    'tasks', 'todos', 'projects', 'reminders', 'contributions',
+    'r1Events', 'tasks', 'todos', 'projects', 'reminders', 'contributions',
     'taskCompletionEvents', 'taskCompletionReceipts', 'actionPlans',
     'actionSessions', 'handoffs', 'rewardProvenance',
     'worldConsequenceReceipts', 'matchScoreEvents',
     'taskPlanReceipts',
   ]),
   [HYDRATION_DOMAIN.nextMove]: Object.freeze([
+    'r1Events',
     'taskPlanReceipts',
     'nextMoveDecisions',
     'nextMoveFeedback',

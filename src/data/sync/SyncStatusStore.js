@@ -97,7 +97,7 @@ export class SyncStatusStore {
     const operationError = visibleSyncError(diagnostics.latestError);
     const referenceError = visibleSyncError(referenceDiagnostics?.latestError);
     let status = SYNC_STATUS.localOnly;
-    if (conflicts.length || counts.conflict > 0) status = SYNC_STATUS.conflict;
+    if (conflicts.length) status = SYNC_STATUS.conflict;
     else if (counts.rejected > 0 || operationError || referenceError || runtimeError) status = SYNC_STATUS.error;
     else if (this.activity === 'syncing' || counts.uploading > 0) status = SYNC_STATUS.syncing;
     else if (counts.pending > 0) status = SYNC_STATUS.pending;

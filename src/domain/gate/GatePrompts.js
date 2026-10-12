@@ -3,7 +3,7 @@ export function slug(text) {
 }
 const notePath = (item, release) => `docs/releases/v${release}/${slug(item.text)}.md`;
 export function buildDesignPrompt(item, release) {
-  return `Read AGENTS.md first. Design only; no code.\nKind: ${item.kind}\nItem: ${item.text}\nWhy: ${item.why}\nReplaces or deletes: ${item.replaces || '(none)'}\nWrite ${notePath(item, release)} using docs/releases/TEMPLATE.md.`;
+  return `Read AGENTS.md first. Design only; no code.\nKind: ${item.kind}\nItem: ${item.text}\nWhy: ${item.why}\nReplaces or deletes: ${item.replaces || '(none)'}\nWrite ${notePath(item, release)} using docs/releases/TEMPLATE.md. Include Estimate (minutes): ${item.estimateMinutes ?? '(whole minutes needed)'}. `;
 }
 export function buildBuildPrompt(window) {
   const notes = window.items.filter((item) => item.step !== 'design').map((item) => `- ${item.text}: ${notePath(item, window.release)}`).join('\n');

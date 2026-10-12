@@ -40,7 +40,7 @@ export class RemoteOperationApplier {
       if (entry.status === 'conflict') {
         await this.conflicts.preserveUnsupportedRemote(entry, { streamName });
         cursor = { streamName, serverSequence };
-        conflicts += 1;
+        duplicates += 1;
         continue;
       }
       if (entry.status !== 'accepted') {

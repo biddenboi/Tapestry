@@ -37,6 +37,7 @@ export function createNextMoveDecision({
   sourceEntityRefs = [],
   invalidationKeys = [],
   alternatives = [],
+  r1 = null,
   question = null,
   secondaryAction = null,
 } = {}) {
@@ -63,7 +64,8 @@ export function createNextMoveDecision({
     confidence,
     sourceEntityRefs: sourceEntityRefs.filter(Boolean),
     invalidationKeys: [...new Set(invalidationKeys.filter(Boolean))],
-    alternatives: alternatives.slice(0, 2),
+    alternatives: r1 ? [...alternatives] : alternatives.slice(0, 2),
+    r1,
     question,
     secondaryAction,
     shownAt: null,

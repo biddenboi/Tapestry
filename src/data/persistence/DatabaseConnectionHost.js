@@ -1,3 +1,4 @@
+import { prepareR1Mutation, loadR1State, recordR1Change, decideR1 } from './services/R1EventService.js';
 import { sanitizeRetiredFeatureRecord } from './RetiredFeatureData.js';
 import { STORES } from '@domain/constants.js';
 import {
@@ -468,7 +469,17 @@ export class DatabaseConnectionHost {
     void mutationType;
   }
 
-  async commitAtomicMutation({
+  decideR1(options) { return decideR1(this, options); }
+  loadR1State() { return loadR1State(this); }
+  recordR1Change(options) { return recordR1Change(this, options); }
+
+  commitAtomicMutation(command = {}) {
+    const run = (this.atomicMutationTail || Promise.resolve()).then(() => this._commitAtomicMutation(command));
+    this.atomicMutationTail = run.catch(() => undefined);
+    return run;
+  }
+
+  async _commitAtomicMutation({
     label = 'atomic-mutation',
     puts = [],
     deletes = [],
@@ -494,6 +505,16 @@ export class DatabaseConnectionHost {
       }),
       ...requestedDeletes.map((entry) => ({ type: 'delete', ...entry })),
     ];
+    const r1Records = await prepareR1Mutation(this, requestedOperations, operationId || globalThis.crypto.randomUUID());
+    requestedOperations.unshift(...r1Records.map((record) => ({ type: 'put', store: STORES.r1Event, record })));
+    // Allocate explicit event sequences inside the serialized command boundary.
+    // Callers may prepare two append commands before either one commits.
+    const eventPuts = requestedOperations.filter((op) => op.store === STORES.r1Event);
+    if (eventPuts.length) {
+      if (eventPuts.some((op) => op.type !== 'put')) throw new Error('R1 history is append-only.');
+      let seq = Math.max(0, ...(await this.getAll(STORES.r1Event)).map((row) => row.seq));
+      for (const op of eventPuts) op.record = { ...op.record, seq: ++seq };
+    }
     if (requestedOperations.some((operation) => operation?.store === STORES.notes)) {
       throw new Error('Quick Notes require the protected revision-aware Notes repository.');
     }

@@ -1,6 +1,7 @@
 import { explainNextMoveReasons } from '../../../domain/navigation/NextMoveReasonCodes.js';
 
 export function buildSuggestionExplanation(decision = {}) {
+  if (decision.r1) return Object.freeze({ whyNow: decision.context, whyThis: decision.context, whatItUnlocks: 'Work, rest and reward time stay within the available window.', reasons: [] });
   const reasons = explainNextMoveReasons(decision.reasonCodes);
   const first = reasons[0]?.text || 'The current state created a useful decision point.';
   const second = reasons[1]?.text || 'This is the smallest useful intervention supported by the available evidence.';

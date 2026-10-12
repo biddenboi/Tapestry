@@ -1,13 +1,13 @@
 export default function NextMoveAlternatives({ alternatives = [], onChoose, onManual }) {
   return (
     <div className="next-move-alternatives" aria-label="Other moves">
-      {alternatives.slice(0, 2).map((alternative) => (
+      {alternatives.map((alternative) => (
         <button
           type="button"
           key={`${alternative.entityUUID || ''}:${alternative.title}`}
           onClick={() => onChoose?.(alternative)}
         >
-          <span>Alternative</span>
+          <span>Start something else</span>
           <strong>{alternative.title}</strong>
         </button>
       ))}

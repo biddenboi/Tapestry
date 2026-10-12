@@ -96,6 +96,7 @@ function activeTaskFromRecord(record, todo = null) {
     sessionDuration: record.committedMs || 0,
     actionSessionUUID: record.UUID,
     continuitySource: record.source,
+    sessionKind: record.sessionKind || 'work',
     restoredFromContinuity: true,
   };
 }
@@ -487,7 +488,7 @@ export function TaskSessionProvider({ children }) {
       const parent = currentPlayer?.UUID ? currentPlayer : await databaseConnection.getCurrentPlayer();
       if (!parent?.UUID) throw new Error('No active player is available for this session.');
       let primaryTaskResult = null;
-      if (outcome === ACTION_SESSION_OUTCOME.completed) {
+      if (outcome === ACTION_SESSION_OUTCOME.completed && !['rest', 'reward', 'wait'].includes(current.task.sessionKind)) {
         primaryTaskResult = await controller.settle({
           operationId: current.settlementOperationId,
           command: {
