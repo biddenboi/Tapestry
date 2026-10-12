@@ -45,3 +45,13 @@ test('first live mutation seeds current facts and captures the change when no ba
  const rows=await prepareR1Mutation(db,[{type:'put',store:'todos',record:{...todo,estimatedDuration:120}}],'first-edit');
  assert.deepEqual(rows.map(r=>r.type),['add','estimate']);assert.equal(rows.at(-1).payload.q,2);
 });
+
+
+test('an explicit first override seeds task facts before its log, without duplicating supplied adds',async()=>{
+ const db=database();db.stores.set('r1Events',[]);
+ const record={UUID:'override',payload:{ev:'log',start:toModelHours(at),dur:0,kind:'work',ref:'a'}};
+ const initial=await prepareR1Mutation(db,[{type:'put',store:'r1Events',record}],'first-override');
+ assert.deepEqual(initial.map(row=>row.type),['add']);assert.equal(initial[0].payload.id,'a');
+ const supplied={UUID:'add',payload:{ev:'add',id:'a',now:toModelHours(at),q:1,d:toModelHours(todo.dueDate)}};
+ assert.deepEqual(await prepareR1Mutation(db,[{type:'put',store:'r1Events',record:supplied}],'first-add'),[]);
+});

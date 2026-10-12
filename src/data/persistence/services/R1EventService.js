@@ -34,7 +34,7 @@ export async function appendR1Events(db, events, { sourceKey = crypto.randomUUID
 // Called by the database command boundary before the source mutation commits:
 // todo facts and observed time are saved atomically with the source records.
 export async function prepareR1Mutation(db, operations, sourceKey) {
-  const relevant = operations.filter((op) => [STORES.todo, STORES.taskCompletionEvent, STORES.actionSession, STORES.transaction].includes(op.store));
+  const relevant = operations.filter((op) => [STORES.todo, STORES.taskCompletionEvent, STORES.actionSession, STORES.transaction, STORES.r1Event].includes(op.store));
   if (!relevant.length) return [];
   const rows = await db.getAll(STORES.r1Event);
   if (rows.some((r) => r.sourceKey === sourceKey)) return [];
@@ -43,7 +43,8 @@ export async function prepareR1Mutation(db, operations, sourceKey) {
   const todos = new Map((await db.getAll(STORES.todo)).map((t) => [t.UUID, t]));
   if (!rows.length) {
     const initial = [...todos.values()].map(t => todoFacts(t, m)).filter(Boolean);
-    syncFacts([], initial, now, { state: m }).forEach(emit);
+    const suppliedAdds = new Set(relevant.filter(op => op.store === STORES.r1Event && op.record?.payload?.ev === 'add').map(op => op.record.payload.id));
+    syncFacts([], initial, now, { state: m }).filter(event => !suppliedAdds.has(event.id)).forEach(emit);
   }
   for (const op of relevant) {
     const r = op.record;

@@ -506,7 +506,7 @@ export class DatabaseConnectionHost {
       ...requestedDeletes.map((entry) => ({ type: 'delete', ...entry })),
     ];
     const r1Records = await prepareR1Mutation(this, requestedOperations, operationId || globalThis.crypto.randomUUID());
-    requestedOperations.push(...r1Records.map((record) => ({ type: 'put', store: STORES.r1Event, record })));
+    requestedOperations.unshift(...r1Records.map((record) => ({ type: 'put', store: STORES.r1Event, record })));
     // Allocate explicit event sequences inside the serialized command boundary.
     // Callers may prepare two append commands before either one commits.
     const eventPuts = requestedOperations.filter((op) => op.store === STORES.r1Event);

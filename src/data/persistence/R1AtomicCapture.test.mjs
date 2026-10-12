@@ -26,4 +26,11 @@ test('live R1 capture rolls back source failures and serializes concurrent event
  assert.equal(settled.coins,0);assert.equal(await db.get('todos','rest-test'),null);
  const log=(await db.getAll('r1Events')).at(-1).payload;assert.equal(log.kind,'rest');assert.equal(log.dur,1/30);
  assert.equal((await db.get('players','p')).tokens,50);
+ // Simulate an upgraded save with current todos but no R1 event history.
+ await adapter.documents.clear('r1Events');db.stores.set('r1Events',new Map());
+ const {recordR1Override}=await server.ssrLoadModule('/features/r1/r1Commands.js');
+ await recordR1Override(db,{target:'a',suggested:'other'});
+ const initialized=await db.getAll('r1Events');assert.equal(initialized[0].payload.ev,'add');assert.equal(initialized.at(-1).payload.ev,'log');
+ assert.deepEqual(initialized.at(-1).meta,{picked_by:'user',suggested:'other'});
+ assert.ok((await db.loadR1State()).index.has('a'));
 });
